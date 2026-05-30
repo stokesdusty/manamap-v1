@@ -1,0 +1,292 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum ProfileVisibility {
+  PUBLIC
+  CONNECTIONS_ONLY
+  PRIVATE
+}
+
+enum LocationSharing {
+  EVERYONE
+  CONNECTIONS_ONLY
+  NOBODY
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum EncounterResult {
+  WIN
+  LOSS
+  DRAW
+}
+
+enum StreakType {
+  CHECKIN
+  ENCOUNTER
+  EVENT
+}
+
+enum DeckSite {
+  MOXFIELD
+  ARCHIDEKT
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  displayName  String   @map("display_name")
+  avatarUrl    String?  @map("avatar_url")
+  bio          String?
+  pronouns     String?
+  avatarColors String[] @default([]) @map("avatar_colors")
+  commander    String?
+  powerLevel   Int?     @map("power_level")
+  vibe         String?
+  formats      String[] @default([])
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  identities          Identity[]
+  privacySettings     PrivacySettings?
+  deckLinks           DeckLink[]
+  sentConnections     Connection[]  @relation("Requester")
+  receivedConnections Connection[]  @relation("Addressee")
+  encounters          Encounter[]   @relation("UserEncounters")
+  opponentEncounters  Encounter[]   @relation("OpponentEncounters")
+  checkins            Checkin[]
+  userBadges          UserBadge[]
+  streaks             Streak[]
+  refreshTokens       RefreshToken[]
+
+  @@map("users")
+}
+
+model Identity {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  provider      String
+  providerId    String   @map("provider_id")
+  discordHandle String?  @map("discord_handle")
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@map("identities")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model PrivacySettings {
+  id                String            @id @default(uuid())
+  userId            String            @unique @map("user_id")
+  profileVisibility ProfileVisibility @default(PUBLIC) @map("profile_visibility")
+  locationSharing   LocationSharing   @default(CONNECTIONS_ONLY) @map("location_sharing")
+  discoverable      Boolean           @default(true)
+  showDiscord       Boolean           @default(true) @map("show_discord")
+  showDecks         Boolean           @default(true) @map("show_decks")
+  showMetHistory    Boolean           @default(true) @map("show_met_history")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("privacy_settings")
+}
+
+model Format {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  encounters Encounter[]
+  events     Event[]
+
+  @@map("formats")
+}
+
+model DeckLink {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  site      DeckSite
+  name      String
+  url       String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("deck_links")
+}
+
+model Connection {
+  id          String           @id @default(uuid())
+  requesterId String           @map("requester_id")
+  addresseeId String           @map("addressee_id")
+  status      ConnectionStatus @default(PENDING)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  requester User @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("Addressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@map("connections")
+}
+
+model Store {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  city      String?
+  state     String?
+  zip       String?
+  // geom is a PostGIS geography(Point,4326) — managed via $queryRaw / $executeRaw
+  geom      Unsupported("geography(Point,4326)")?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  checkins     Checkin[]
+  events       Event[]
+  encounters   Encounter[]
+  rewardOffers RewardOffer[]
+
+  @@map("stores")
+}
+
+model Checkin {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  storeId      String    @map("store_id")
+  checkedInAt  DateTime  @default(now()) @map("checked_in_at")
+  checkedOutAt DateTime? @map("checked_out_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store Store @relation(fields: [storeId], references: [id])
+
+  @@map("checkins")
+}
+
+model Event {
+  id        String    @id @default(uuid())
+  storeId   String    @map("store_id")
+  formatId  String    @map("format_id")
+  name      String
+  startsAt  DateTime  @map("starts_at")
+  endsAt    DateTime? @map("ends_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  store      Store       @relation(fields: [storeId], references: [id])
+  format     Format      @relation(fields: [formatId], references: [id])
+  encounters Encounter[]
+
+  @@map("events")
+}
+
+model Encounter {
+  id         String          @id @default(uuid())
+  userId     String          @map("user_id")
+  opponentId String          @map("opponent_id")
+  storeId    String?         @map("store_id")
+  eventId    String?         @map("event_id")
+  formatId   String          @map("format_id")
+  result     EncounterResult
+  notes      String?
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  user     User    @relation("UserEncounters", fields: [userId], references: [id], onDelete: Cascade)
+  opponent User    @relation("OpponentEncounters", fields: [opponentId], references: [id])
+  store    Store?  @relation(fields: [storeId], references: [id])
+  event    Event?  @relation(fields: [eventId], references: [id])
+  format   Format  @relation(fields: [formatId], references: [id])
+
+  @@map("encounters")
+}
+
+model Badge {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  iconUrl     String?  @map("icon_url")
+  criteria    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  userBadges UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id       String   @id @default(uuid())
+  userId   String   @map("user_id")
+  badgeId  String   @map("badge_id")
+  earnedAt DateTime @default(now()) @map("earned_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+model Streak {
+  id             String     @id @default(uuid())
+  userId         String     @map("user_id")
+  type           StreakType
+  currentCount   Int        @default(0) @map("current_count")
+  longestCount   Int        @default(0) @map("longest_count")
+  lastActivityAt DateTime?  @map("last_activity_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("streaks")
+}
+
+model RewardOffer {
+  id          String    @id @default(uuid())
+  storeId     String    @map("store_id")
+  title       String
+  description String?
+  startsAt    DateTime  @map("starts_at")
+  endsAt      DateTime? @map("ends_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  store Store @relation(fields: [storeId], references: [id])
+
+  @@map("reward_offers")
+}

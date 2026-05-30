@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --version)",
+      "PowerShell(node --version)",
+      "PowerShell(pnpm --version)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm run *)",
+      "Bash(pnpm --filter *)",
+      "Bash(pnpm dlx *)",
+      "Bash(docker compose up *)",
+      "Bash(docker compose down *)",
+      "Bash(docker compose logs *)",
+      "Bash(npx tsc *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(find \"/c/Program Files/Android/Android Studio\" -name \"java.exe\" 2>/dev/null | head -5)",
+      "PowerShell(pnpm install --config.confirmModulesPurge=false 2>&1)",
+      "Bash(./gradlew clean *)",
+      "Bash(rm -rf c:/dev/manamap/apps/mobile/android/.gradle)",
+      "Bash(rm -rf c:/dev/manamap/apps/mobile/android/build)",
+      "Bash(./gradlew :app:dependencies --configuration debugCompileClasspath)",
+      "Bash(Get-ChildItem -Path \"c:\\\\dev\\\\manamap\" -Directory)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(npx prisma *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(node -e \"const pkg = require\\('c:/dev/manamap/apps/mobile/node_modules/react-native-vision-camera/package.json'\\); console.log\\(JSON.stringify\\(Object.keys\\(pkg.exports || {}\\).slice\\(0,5\\)\\)\\); console.log\\(pkg.version\\);\")",
+      "Bash(npx expo *)",
+      "Bash(./gradlew app:assembleDebug -x lint -x test --configure-on-demand --build-cache -PreactNativeArchitectures=arm64-v8a)",
+      "Bash(node --print \"require.resolve\\('expo-modules-core/package.json'\\)\")",
+      "Bash(node --print \"require.resolve\\('expo/package.json'\\)\")",
+      "Bash(node --print \"require.resolve\\('expo-modules-core/package.json', { paths: [require.resolve\\('expo/package.json'\\)] }\\)\")",
+      "Bash(node -e \"const pkg = require\\('./node_modules/expo/package.json'\\); const cam = pkg.dependencies?.['expo-camera'] || ''; console.log\\('expo-camera peer:', cam\\);\")",
+      "Bash(npm info *)"
+    ]
+  }
+}
