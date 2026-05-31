@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PresenceService } from '../presence/presence.service';
 import { GamificationService } from '../gamification/gamification.service';
@@ -121,7 +120,7 @@ export class StoresService {
         CASE WHEN geom IS NOT NULL THEN ST_Y(geom::geometry) ELSE NULL END AS lat,
         CASE WHEN geom IS NOT NULL THEN ST_X(geom::geometry) ELSE NULL END AS lng
       FROM stores
-      WHERE id = ${Prisma.sql`${storeId}::uuid`}
+      WHERE id = ${storeId}
     `;
 
     if (!rows.length) throw new NotFoundException('Store not found');
