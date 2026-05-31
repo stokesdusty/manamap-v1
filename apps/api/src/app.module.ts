@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { validate } from './config/config.schema';
 import { AuthModule } from './auth/auth.module';
+import { GamificationModule } from './gamification/gamification.module';
 import { ConnectionsModule } from './connections/connections.module';
 import { EncountersModule } from './encounters/encounters.module';
 import { DiscoveryModule } from './discovery/discovery.module';
@@ -23,6 +24,7 @@ import { StoresModule } from './stores/stores.module';
     PrismaModule,
     RedisModule,
     AuthModule,
+    GamificationModule,
     HealthModule,
     MeModule,
     ExchangeModule,

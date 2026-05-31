@@ -267,12 +267,63 @@ export const StoreDetailSchema = z.object({
 });
 export type StoreDetail = z.infer<typeof StoreDetailSchema>;
 
+export const BadgeSchema = z.object({
+  id: IdSchema,
+  code: z.string(),
+  name: z.string(),
+  icon: z.string(),
+  description: z.string().nullable(),
+});
+export type Badge = z.infer<typeof BadgeSchema>;
+
+export const EarnedBadgeSchema = BadgeSchema;
+export type EarnedBadge = Badge;
+
+export const StoreStreakSchema = z.object({
+  currentStreak: z.number().int().nonnegative(),
+  longestStreak: z.number().int().nonnegative(),
+  totalCheckins: z.number().int().nonnegative(),
+});
+export type StoreStreak = z.infer<typeof StoreStreakSchema>;
+
+export const UserBadgeSchema = z.object({
+  id: IdSchema,
+  earnedAt: TimestampSchema,
+  badge: BadgeSchema,
+  store: z.object({ id: IdSchema, name: z.string() }).nullable(),
+});
+export type UserBadge = z.infer<typeof UserBadgeSchema>;
+
+export const LeaderboardEntrySchema = z.object({
+  rank: z.number().int().positive(),
+  userId: IdSchema,
+  displayName: z.string(),
+  avatarUrl: z.string().nullable(),
+  avatarColors: z.array(z.string()),
+  currentStreak: z.number().int().nonnegative(),
+  totalCheckins: z.number().int().nonnegative(),
+  isMe: z.boolean(),
+});
+export type LeaderboardEntry = z.infer<typeof LeaderboardEntrySchema>;
+
+export const LeaderboardResponseSchema = z.object({
+  entries: z.array(LeaderboardEntrySchema),
+  myEntry: z.object({
+    rank: z.number().int().positive(),
+    currentStreak: z.number().int().nonnegative(),
+    totalCheckins: z.number().int().nonnegative(),
+  }).nullable(),
+});
+export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
+
 export const CheckinResultSchema = z.object({
   checkinId: IdSchema,
   storeId: IdSchema,
   storeName: z.string(),
   checkedInAt: TimestampSchema,
   presenceExpiresIn: z.number().int().positive(),
+  newBadges: z.array(EarnedBadgeSchema),
+  streak: StoreStreakSchema.nullable(),
 });
 export type CheckinResult = z.infer<typeof CheckinResultSchema>;
 

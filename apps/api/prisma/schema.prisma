@@ -35,12 +35,6 @@ enum EncounterResult {
   DRAW
 }
 
-enum StreakType {
-  CHECKIN
-  ENCOUNTER
-  EVENT
-}
-
 enum DeckSite {
   MOXFIELD
   ARCHIDEKT
@@ -214,6 +208,8 @@ model Store {
   events       Event[]
   encounters   Encounter[]
   rewardOffers RewardOffer[]
+  streaks      Streak[]
+  userBadges   UserBadge[]
   homeUsers    User[]   @relation("HomeStore")
 
   @@map("stores")
@@ -290,10 +286,11 @@ model Encounter {
 
 model Badge {
   id          String   @id @default(uuid())
+  code        String   @unique
   name        String   @unique
   description String?
-  iconUrl     String?  @map("icon_url")
-  criteria    Json?
+  icon        String   @default("🏅")
+  criteria    Json
   createdAt   DateTime @default(now()) @map("created_at")
 
   userBadges UserBadge[]
@@ -305,27 +302,31 @@ model UserBadge {
   id       String   @id @default(uuid())
   userId   String   @map("user_id")
   badgeId  String   @map("badge_id")
+  storeId  String?  @map("store_id")
   earnedAt DateTime @default(now()) @map("earned_at")
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badge Badge @relation(fields: [badgeId], references: [id])
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge  @relation(fields: [badgeId], references: [id])
+  store Store? @relation(fields: [storeId], references: [id])
 
   @@unique([userId, badgeId])
   @@map("user_badges")
 }
 
 model Streak {
-  id             String     @id @default(uuid())
-  userId         String     @map("user_id")
-  type           StreakType
-  currentCount   Int        @default(0) @map("current_count")
-  longestCount   Int        @default(0) @map("longest_count")
-  lastActivityAt DateTime?  @map("last_activity_at")
-  updatedAt      DateTime   @updatedAt @map("updated_at")
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  storeId       String   @map("store_id")
+  currentStreak Int      @default(1) @map("current_streak")
+  longestStreak Int      @default(1) @map("longest_streak")
+  totalCheckins Int      @default(1) @map("total_checkins")
+  lastCheckinAt DateTime @map("last_checkin_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store Store @relation(fields: [storeId], references: [id])
 
-  @@unique([userId, type])
+  @@unique([userId, storeId])
   @@map("streaks")
 }
 

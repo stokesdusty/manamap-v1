@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PresenceService } from '../presence/presence.service';
+import { GamificationService } from '../gamification/gamification.service';
 import { StoreConnector } from './connectors/store.connector';
 import { DiscordConnector } from './connectors/discord.connector';
 import { WizardsConnector } from './connectors/wizards.connector';
@@ -38,6 +39,7 @@ export class StoresService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly presence: PresenceService,
+    private readonly gamification: GamificationService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -161,8 +163,11 @@ export class StoresService {
       data: { userId, storeId },
     });
 
-    // Activate presence heartbeat for this store
-    const presence = await this.presence.heartbeat(userId, storeId);
+    // Activate presence heartbeat + run gamification in parallel
+    const [presence, gamificationResult] = await Promise.all([
+      this.presence.heartbeat(userId, storeId),
+      this.gamification.processCheckin(userId, storeId),
+    ]);
 
     return {
       checkinId: checkin.id,
@@ -170,6 +175,8 @@ export class StoresService {
       storeName: store.name,
       checkedInAt: checkin.checkedInAt.toISOString(),
       presenceExpiresIn: presence.expiresIn,
+      newBadges: gamificationResult.newBadges,
+      streak: gamificationResult.streak,
     };
   }
 
@@ -250,6 +257,10 @@ export class StoresService {
     });
 
     return { eventId: event.id, eventName: event.name };
+  }
+
+  getLeaderboard(callerId: string, storeId: string) {
+    return this.gamification.getLeaderboard(callerId, storeId);
   }
 
   getConnectors() {

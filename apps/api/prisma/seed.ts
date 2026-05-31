@@ -51,6 +51,44 @@ const STORES = [
   },
 ];
 
+const BADGES = [
+  {
+    code: 'first_checkin',
+    name: 'First Steps',
+    description: 'Check in to any store for the first time',
+    icon: '🎯',
+    criteria: { type: 'first_checkin' },
+  },
+  {
+    code: 'store_regular',
+    name: 'Store Regular',
+    description: 'Check in to the same store 5 times',
+    icon: '🏪',
+    criteria: { type: 'store_total', count: 5 },
+  },
+  {
+    code: 'devoted_local',
+    name: 'Devoted Local',
+    description: 'Maintain a 4-week check-in streak at any store',
+    icon: '⚔️',
+    criteria: { type: 'streak', length: 4 },
+  },
+  {
+    code: 'explorer',
+    name: 'Store Explorer',
+    description: 'Check in to 3 different stores',
+    icon: '🗺️',
+    criteria: { type: 'unique_stores', count: 3 },
+  },
+  {
+    code: 'centurion',
+    name: 'Centurion',
+    description: 'Log 100 check-ins total',
+    icon: '💯',
+    criteria: { type: 'global_total', count: 100 },
+  },
+];
+
 async function main(): Promise<void> {
   console.log('Seeding formats…');
   for (const fmt of FORMATS) {
@@ -98,6 +136,15 @@ async function main(): Promise<void> {
         )
       `;
     }
+  }
+
+  console.log('Seeding badges…');
+  for (const b of BADGES) {
+    await prisma.badge.upsert({
+      where: { code: b.code },
+      update: { name: b.name, description: b.description, icon: b.icon, criteria: b.criteria },
+      create: b,
+    });
   }
 
   console.log('Seed complete.');

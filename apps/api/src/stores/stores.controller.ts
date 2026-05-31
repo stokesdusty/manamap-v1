@@ -39,6 +39,11 @@ export class StoresController {
     return this.stores.getEvents(req.user.sub, id);
   }
 
+  @Get(':id/leaderboard')
+  getLeaderboard(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.stores.getLeaderboard(req.user.sub, id);
+  }
+
   @Post(':id/events/:eventId/attend')
   @HttpCode(200)
   attendEvent(

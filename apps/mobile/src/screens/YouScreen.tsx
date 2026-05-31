@@ -33,6 +33,7 @@ import {
   useUpdateProfile,
 } from '../hooks/useMe';
 import { useStores } from '../hooks/useNearby';
+import { useBadges, useStreaksSummary } from '../hooks/useGamification';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -342,6 +343,115 @@ function DecksCard() {
     </View>
   );
 }
+
+// ---------------------------------------------------------------------------
+// RewardsCard
+// ---------------------------------------------------------------------------
+
+function RewardsCard() {
+  const { data: badges = [], isLoading: badgesLoading } = useBadges();
+  const { data: streaks } = useStreaksSummary();
+
+  const hasActivity = badges.length > 0 || (streaks?.totalCheckins ?? 0) > 0;
+
+  if (badgesLoading) {
+    return (
+      <View style={section.card}>
+        <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (!hasActivity) return null;
+
+  return (
+    <View style={[section.card, { paddingHorizontal: 0, paddingVertical: spacing.lg }]}>
+      <Text style={[section.heading, { paddingHorizontal: spacing.xl }]}>Achievements</Text>
+
+      {streaks && (streaks.bestLongestStreak > 0 || streaks.totalCheckins > 0) ? (
+        <View style={rewards.statsRow}>
+          <View style={rewards.stat}>
+            <Text style={rewards.statValue}>🔥 {streaks.bestLongestStreak}</Text>
+            <Text style={rewards.statLabel}>Best streak</Text>
+          </View>
+          <View style={rewards.statDivider} />
+          <View style={rewards.stat}>
+            <Text style={rewards.statValue}>{streaks.totalCheckins}</Text>
+            <Text style={rewards.statLabel}>Check-ins</Text>
+          </View>
+          {streaks.bestCurrentStreak > 1 && (
+            <>
+              <View style={rewards.statDivider} />
+              <View style={rewards.stat}>
+                <Text style={rewards.statValue}>🔥 {streaks.bestCurrentStreak} now</Text>
+                <Text style={rewards.statLabel}>Active streak</Text>
+              </View>
+            </>
+          )}
+        </View>
+      ) : null}
+
+      {badges.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={rewards.badgeRow}
+        >
+          {badges.map((ub) => (
+            <View key={ub.id} style={rewards.badge}>
+              <Text style={rewards.badgeIcon}>{ub.badge.icon}</Text>
+              <Text style={rewards.badgeName} numberOfLines={2}>{ub.badge.name}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      ) : (
+        <Text style={[section.empty, { paddingHorizontal: spacing.xl }]}>
+          No badges yet — keep checking in!
+        </Text>
+      )}
+    </View>
+  );
+}
+
+const rewards = StyleSheet.create({
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
+  stat: { flex: 1, alignItems: 'center', gap: 2 },
+  statValue: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.lg,
+    color: colors.textPrimary,
+  },
+  statLabel: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  statDivider: { width: 1, height: 32, backgroundColor: colors.borderLight, marginHorizontal: spacing.sm },
+  badgeRow: { paddingHorizontal: spacing.xl, gap: spacing.md, paddingVertical: spacing.xs },
+  badge: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    width: 72,
+    backgroundColor: colors.paper,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  badgeIcon: { fontSize: 28, lineHeight: 36 },
+  badgeName: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+});
 
 // ---------------------------------------------------------------------------
 // HomeStoreRow
@@ -1124,6 +1234,8 @@ export function YouScreen() {
         <DecksCard />
 
         <HomeStoreRow />
+
+        <RewardsCard />
 
         <Pressable
           style={({ pressed }) => [styles.signOutBtn, pressed && styles.pressed]}

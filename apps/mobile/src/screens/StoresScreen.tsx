@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
-import type { NearbyPlayer, StoreEvent, StorePin } from '@manamap/shared';
+import type { EarnedBadge, NearbyPlayer, StoreEvent, StorePin } from '@manamap/shared';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import {
   useAttendEvent,
@@ -25,6 +25,8 @@ import {
   useStoreEvents,
   useStores,
 } from '../hooks/useNearby';
+import { useLeaderboard } from '../hooks/useGamification';
+import { BadgeEarnedSheet } from '../components/BadgeEarnedSheet';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 
 // Default map region — US center, wide view
@@ -180,10 +182,14 @@ function StoreDetailSheet({
 }) {
   const { data: store, isLoading } = useStoreDetail(storeId);
   const { data: eventDays = [], isLoading: eventsLoading } = useStoreEvents(storeId);
+  const { data: leaderboard } = useLeaderboard(storeId);
   const { activeStore, setActiveStore } = useActiveStore();
   const isActiveStore = activeStore?.id === storeId;
   const { data: nearby } = useNearby(isActiveStore);
   const hereNow = isActiveStore ? (nearby?.players ?? []) : [];
+
+  const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
+  const [activeTab, setActiveTab] = useState<'schedule' | 'leaderboard'>('schedule');
 
   const { mutate: checkin, isPending: isCheckinPending, isSuccess: checkedIn } = useCheckin();
 
@@ -213,6 +219,9 @@ function StoreDetailSheet({
           lat: store.lat,
           lng: store.lng,
         });
+        if (result.newBadges.length > 0) {
+          setEarnedBadges(result.newBadges);
+        }
       },
     });
   }
@@ -225,6 +234,7 @@ function StoreDetailSheet({
   if (!storeId) return null;
 
   return (
+    <>
     <Modal
       transparent
       visible={!!storeId}
@@ -279,25 +289,68 @@ function StoreDetailSheet({
               </View>
             )}
 
-            {/* Schedule */}
-            <View style={sheet.sectionHeader}>
-              <Ionicons name="calendar-outline" size={15} color={colors.textTertiary} />
-              <Text style={sheet.sectionTitle}>Schedule</Text>
+            {/* Tab bar */}
+            <View style={sheet.tabBar}>
+              {(['schedule', 'leaderboard'] as const).map((tab) => (
+                <Pressable
+                  key={tab}
+                  style={[sheet.tab, activeTab === tab && sheet.tabActive]}
+                  onPress={() => setActiveTab(tab)}
+                >
+                  <Text style={[sheet.tabText, activeTab === tab && sheet.tabTextActive]}>
+                    {tab === 'schedule' ? 'Schedule' : 'Leaderboard'}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
 
-            {eventsLoading ? (
-              <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.md }} />
-            ) : eventDays.length === 0 ? (
-              <Text style={sheet.emptyHint}>No upcoming events</Text>
+            {activeTab === 'schedule' ? (
+              eventsLoading ? (
+                <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.md }} />
+              ) : eventDays.length === 0 ? (
+                <Text style={sheet.emptyHint}>No upcoming events</Text>
+              ) : (
+                eventDays.map((day) => (
+                  <View key={day.date}>
+                    <Text style={sheet.dayLabel}>{formatDateLabel(day.date)}</Text>
+                    {day.events.map((evt) => (
+                      <EventRow key={evt.id} event={evt} storeId={storeId} />
+                    ))}
+                  </View>
+                ))
+              )
             ) : (
-              eventDays.map((day) => (
-                <View key={day.date}>
-                  <Text style={sheet.dayLabel}>{formatDateLabel(day.date)}</Text>
-                  {day.events.map((evt) => (
-                    <EventRow key={evt.id} event={evt} storeId={storeId} />
+              /* Leaderboard tab */
+              leaderboard?.entries.length === 0 ? (
+                <Text style={sheet.emptyHint}>No check-ins yet — be the first!</Text>
+              ) : (
+                <>
+                  {leaderboard?.entries.map((entry) => (
+                    <View key={entry.userId} style={[sheet.lbRow, entry.isMe && sheet.lbRowMe]}>
+                      <Text style={sheet.lbRank}>#{entry.rank}</Text>
+                      <View style={sheet.lbAvatar}>
+                        <Text style={sheet.lbAvatarText}>{entry.displayName.charAt(0).toUpperCase()}</Text>
+                      </View>
+                      <Text style={sheet.lbName} numberOfLines={1}>{entry.displayName}</Text>
+                      <View style={sheet.lbStats}>
+                        <Text style={sheet.lbStreak}>🔥 {entry.currentStreak}w</Text>
+                        <Text style={sheet.lbTotal}>{entry.totalCheckins} visits</Text>
+                      </View>
+                    </View>
                   ))}
-                </View>
-              ))
+                  {leaderboard?.myEntry && !leaderboard.entries.some((e) => e.isMe) && (
+                    <View style={[sheet.lbRow, sheet.lbRowMe]}>
+                      <Text style={sheet.lbRank}>#{leaderboard.myEntry.rank}</Text>
+                      <View style={sheet.lbAvatar}><Text style={sheet.lbAvatarText}>Y</Text></View>
+                      <Text style={sheet.lbName}>You</Text>
+                      <View style={sheet.lbStats}>
+                        <Text style={sheet.lbStreak}>🔥 {leaderboard.myEntry.currentStreak}w</Text>
+                        <Text style={sheet.lbTotal}>{leaderboard.myEntry.totalCheckins} visits</Text>
+                      </View>
+                    </View>
+                  )}
+                </>
+              )
             )}
 
             {/* Who's here now */}
@@ -357,6 +410,12 @@ function StoreDetailSheet({
         )}
       </Animated.View>
     </Modal>
+
+    <BadgeEarnedSheet
+      badges={earnedBadges}
+      onDismiss={() => setEarnedBadges([])}
+    />
+    </>
   );
 }
 
@@ -818,6 +877,72 @@ const sheet = StyleSheet.create({
     color: colors.textTertiary,
     textAlign: 'center',
     padding: spacing.xl,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderRadius: radii.md,
+    backgroundColor: colors.borderLight,
+    padding: 3,
+    marginBottom: spacing.md,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: spacing.xs,
+    alignItems: 'center',
+    borderRadius: radii.sm,
+  },
+  tabActive: { backgroundColor: colors.surface, ...shadows.sm },
+  tabText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
+  },
+  tabTextActive: { color: colors.textPrimary },
+  lbRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderLight,
+  },
+  lbRowMe: { backgroundColor: colors.accentLight, borderRadius: radii.sm, paddingHorizontal: spacing.sm },
+  lbRank: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
+    width: 28,
+    textAlign: 'center',
+  },
+  lbAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.full,
+    backgroundColor: colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lbAvatarText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.sm,
+    color: colors.accent,
+  },
+  lbName: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  lbStats: { alignItems: 'flex-end', gap: 2 },
+  lbStreak: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  lbTotal: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
   },
 });
 

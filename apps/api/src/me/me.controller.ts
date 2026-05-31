@@ -102,6 +102,16 @@ export class MeController {
     return this.me.registerPushToken(req.user.sub, body.token);
   }
 
+  @Get('badges')
+  getBadges(@Req() req: AuthRequest) {
+    return this.me.getBadges(req.user.sub);
+  }
+
+  @Get('streaks')
+  getStreaks(@Req() req: AuthRequest) {
+    return this.me.getStreaksSummary(req.user.sub);
+  }
+
   @Get('home-store')
   getHomeStore(@Req() req: AuthRequest) {
     return this.me.getHomeStore(req.user.sub);

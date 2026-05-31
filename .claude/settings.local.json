@@ -38,7 +38,9 @@
       "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260530220000_community_hubs\")",
       "Bash(mkdir -p \"/c/dev/manamap/apps/api/prisma/migrations/20260530230000_encounter_source\")",
       "Bash(npx react-native *)",
-      "Bash(emulator -list-avds)"
+      "Bash(emulator -list-avds)",
+      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260530240000_gamification\")",
+      "Bash(pnpm approve-builds *)"
     ]
   }
 }

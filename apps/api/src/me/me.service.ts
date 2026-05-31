@@ -160,6 +160,36 @@ export class MeService {
     };
   }
 
+  async getBadges(userId: string) {
+    return this.prisma.userBadge.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        earnedAt: true,
+        store: { select: { id: true, name: true } },
+        badge: { select: { id: true, code: true, name: true, icon: true, description: true } },
+      },
+      orderBy: { earnedAt: 'desc' },
+    });
+  }
+
+  async getStreaksSummary(userId: string) {
+    const streaks = await this.prisma.streak.findMany({
+      where: { userId },
+      select: { currentStreak: true, longestStreak: true, totalCheckins: true },
+    });
+
+    if (streaks.length === 0) {
+      return { bestCurrentStreak: 0, bestLongestStreak: 0, totalCheckins: 0 };
+    }
+
+    return {
+      bestCurrentStreak: Math.max(...streaks.map((s) => s.currentStreak)),
+      bestLongestStreak: Math.max(...streaks.map((s) => s.longestStreak)),
+      totalCheckins: streaks.reduce((sum, s) => sum + s.totalCheckins, 0),
+    };
+  }
+
   async setHomeStore(userId: string, dto: SetHomeStore) {
     if (dto.storeId) {
       const exists = await this.prisma.store.findUnique({ where: { id: dto.storeId }, select: { id: true } });
