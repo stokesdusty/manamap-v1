@@ -3,6 +3,7 @@ import type Redis from 'ioredis';
 import { ConnectionStatus, EncounterResult, EncounterSource } from '@prisma/client';
 import { REDIS } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
 import { SUGGESTION_WEIGHTS, VIBE_COMPAT } from './suggestion-weights';
 
 const presenceKey = (userId: string) => `presence:${userId}`;
@@ -49,6 +50,7 @@ export class DiscoveryService {
   constructor(
     @Inject(REDIS) private readonly redis: Redis,
     private readonly prisma: PrismaService,
+    private readonly safety: SafetyService,
   ) {}
 
   private async _getPresence(callerId: string) {
@@ -77,8 +79,18 @@ export class DiscoveryService {
   }
 
   async nearby(callerId: string, filters?: NearbyFilters) {
-    const { storeId, storeName, validIds } = await this._getPresence(callerId);
+    const [presenceData, blockedIds, callerPrivacy] = await Promise.all([
+      this._getPresence(callerId),
+      this.safety.getBlockedIds(callerId),
+      this.prisma.privacySettings.findUnique({
+        where: { userId: callerId },
+        select: { discoverable: true },
+      }),
+    ]);
+    const { storeId, storeName, validIds: rawValidIds } = presenceData;
     if (!storeId) return { storeId: null, storeName: null, players: [] };
+
+    const validIds = rawValidIds.filter((id) => !blockedIds.has(id));
     if (!validIds.length) return { storeId, storeName, players: [] };
 
     const windowStart = new Date(Date.now() - 60 * 60 * 1000);
@@ -170,9 +182,10 @@ export class DiscoveryService {
         sharedEvent: sharedEventFor(u.id),
       }));
 
-    // Write PRESENCE encounters for all discoverable present players (before filtering)
+    // Write PRESENCE encounters only when caller is discoverable (invisible = no co-presence record)
+    const callerDiscoverable = callerPrivacy?.discoverable !== false;
     const discoverableIds = players.map((p) => p.id);
-    if (discoverableIds.length > 0) {
+    if (callerDiscoverable && discoverableIds.length > 0) {
       const dayStart = new Date();
       dayStart.setUTCHours(0, 0, 0, 0);
       const dayEnd = new Date(dayStart.getTime() + 86_400_000);
@@ -231,9 +244,18 @@ export class DiscoveryService {
   }
 
   async suggestions(callerId: string) {
-    const { storeId, storeName, validIds } = await this._getPresence(callerId);
-    if (!storeId || !validIds.length) {
+    const [presenceData, blockedIds] = await Promise.all([
+      this._getPresence(callerId),
+      this.safety.getBlockedIds(callerId),
+    ]);
+    const { storeId, storeName, validIds: rawValidIds } = presenceData;
+    if (!storeId || !rawValidIds.length) {
       return { storeId: storeId ?? null, storeName: storeName ?? null, suggestions: [] };
+    }
+
+    const validIds = rawValidIds.filter((id) => !blockedIds.has(id));
+    if (!validIds.length) {
+      return { storeId, storeName, suggestions: [] };
     }
 
     const [callerUser, peers, encounters, connections] = await Promise.all([

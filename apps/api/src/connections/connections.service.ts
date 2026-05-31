@@ -10,6 +10,7 @@ import { Expo } from 'expo-server-sdk';
 import type { ExpoPushMessage } from 'expo-server-sdk';
 import type { CreateConnection } from '@manamap/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
 
 const PEER_SELECT = {
   id: true,
@@ -27,7 +28,10 @@ const PEER_SELECT = {
 export class ConnectionsService {
   private readonly expo = new Expo();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly safety: SafetyService,
+  ) {}
 
   // -------------------------------------------------------------------------
   // Push helpers
@@ -65,6 +69,11 @@ export class ConnectionsService {
   async sendRequest(requesterId: string, dto: CreateConnection) {
     if (requesterId === dto.addresseeId) {
       throw new BadRequestException('Cannot connect with yourself');
+    }
+
+    const blockedIds = await this.safety.getBlockedIds(requesterId);
+    if (blockedIds.has(dto.addresseeId)) {
+      throw new ForbiddenException('Cannot connect with this user');
     }
 
     const existing = await this.prisma.connection.findFirst({

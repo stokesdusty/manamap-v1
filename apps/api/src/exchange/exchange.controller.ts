@@ -22,7 +22,11 @@ export class ExchangeController {
 
   @Post('resolve')
   @HttpCode(200)
-  resolveToken(@Body(new ZodValidationPipe(ResolveTokenBodySchema)) body: ResolveTokenBody) {
-    return this.exchange.resolveToken(body.token);
+  @UseGuards(AuthGuard)
+  resolveToken(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(ResolveTokenBodySchema)) body: ResolveTokenBody,
+  ) {
+    return this.exchange.resolveToken(req.user.sub, body.token);
   }
 }

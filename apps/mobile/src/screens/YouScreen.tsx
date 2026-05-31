@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import type { BlockedUser } from '@manamap/shared';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { DeckSite, ManaColor, MtgFormat, PlayerVibe, Privacy, Profile } from '@manamap/shared';
@@ -32,6 +33,7 @@ import {
   useUpdatePrivacy,
   useUpdateProfile,
 } from '../hooks/useMe';
+import { useBlockedUsers, useUnblockUser } from '../hooks/useSafety';
 import { useStores } from '../hooks/useNearby';
 import { useBadges, useStreaksSummary } from '../hooks/useGamification';
 
@@ -250,9 +252,9 @@ const card = StyleSheet.create({
 
 function PrivacyCard({ privacy }: { privacy: Privacy }) {
   const { mutate } = useUpdatePrivacy();
+  const isInvisible = !privacy.discoverable;
 
-  const rows: Array<{ key: keyof Privacy; label: string; sub?: string }> = [
-    { key: 'discoverable', label: 'Discoverable', sub: 'Appear in nearby player search' },
+  const otherRows: Array<{ key: keyof Privacy; label: string; sub?: string }> = [
     { key: 'showDiscord', label: 'Show Discord', sub: 'Visible to your connections' },
     { key: 'showDecks', label: 'Show decks', sub: 'Share your deck list publicly' },
     { key: 'showMetHistory', label: 'Show met history', sub: "Others can see who you've played" },
@@ -261,8 +263,35 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
   return (
     <View style={section.card}>
       <Text style={section.heading}>Privacy</Text>
-      {rows.map((row, i) => (
-        <View key={row.key} style={[section.privacyRow, i < rows.length - 1 && section.rowBorder]}>
+
+      {/* Prominent Go Invisible toggle */}
+      <Pressable
+        style={[section.invisibleRow, isInvisible && section.invisibleRowActive]}
+        onPress={() => mutate({ discoverable: isInvisible })}
+      >
+        <Ionicons
+          name={isInvisible ? 'eye-off' : 'eye-outline'}
+          size={20}
+          color={isInvisible ? colors.textInverse : colors.textSecondary}
+        />
+        <View style={section.privacyLabel}>
+          <Text style={[section.privacyTitle, isInvisible && { color: colors.textInverse }]}>
+            {isInvisible ? 'Invisible' : 'Visible'}
+          </Text>
+          <Text style={[section.privacySub, isInvisible && { color: colors.textInverse, opacity: 0.8 }]}>
+            {isInvisible ? "You're hidden from nearby search" : 'You appear in nearby player search'}
+          </Text>
+        </View>
+        <Switch
+          value={!isInvisible}
+          onValueChange={(val) => mutate({ discoverable: val })}
+          trackColor={{ true: colors.success, false: colors.border }}
+          thumbColor={colors.surface}
+        />
+      </Pressable>
+
+      {otherRows.map((row, i) => (
+        <View key={row.key} style={[section.privacyRow, i < otherRows.length - 1 && section.rowBorder]}>
           <View style={section.privacyLabel}>
             <Text style={section.privacyTitle}>{row.label}</Text>
             {row.sub ? <Text style={section.privacySub}>{row.sub}</Text> : null}
@@ -273,6 +302,47 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
             trackColor={{ true: colors.accent, false: colors.border }}
             thumbColor={colors.surface}
           />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// BlockedPlayersCard
+// ---------------------------------------------------------------------------
+
+function BlockedPlayersCard() {
+  const { data: blocked = [], isLoading } = useBlockedUsers();
+  const { mutate: unblockUser } = useUnblockUser();
+
+  function confirmUnblock(item: BlockedUser) {
+    Alert.alert('Unblock player', `Unblock ${item.displayName}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Unblock', onPress: () => unblockUser(item.userId) },
+    ]);
+  }
+
+  if (!isLoading && blocked.length === 0) return null;
+
+  return (
+    <View style={section.card}>
+      <Text style={section.heading}>Blocked players</Text>
+
+      {isLoading && <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.sm }} />}
+
+      {blocked.map((item) => (
+        <View key={item.id} style={section.blockedRow}>
+          <View style={section.blockedAvatar}>
+            <Text style={section.blockedAvatarText}>{item.displayName.charAt(0).toUpperCase()}</Text>
+          </View>
+          <Text style={section.blockedName} numberOfLines={1}>{item.displayName}</Text>
+          <Pressable
+            style={({ pressed }) => [section.unblockBtn, pressed && { opacity: 0.6 }]}
+            onPress={() => confirmUnblock(item)}
+          >
+            <Text style={section.unblockText}>Unblock</Text>
+          </Pressable>
         </View>
       ))}
     </View>
@@ -580,6 +650,22 @@ const section = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.accent,
   },
+  invisibleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.surface,
+    marginBottom: spacing.sm,
+  },
+  invisibleRowActive: {
+    backgroundColor: colors.textSecondary,
+    borderColor: colors.textSecondary,
+  },
   privacyRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -632,6 +718,45 @@ const section = StyleSheet.create({
     color: colors.textTertiary,
   },
   deleteBtn: { padding: spacing.xs },
+  blockedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  blockedAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.full,
+    backgroundColor: colors.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  blockedAvatarText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
+  },
+  blockedName: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  unblockBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  unblockText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.accent,
+  },
   storeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   storeTitle: {
     fontFamily: typography.fontFamily.medium,
@@ -1230,6 +1355,8 @@ export function YouScreen() {
         ) : privacy ? (
           <PrivacyCard privacy={privacy} />
         ) : null}
+
+        <BlockedPlayersCard />
 
         <DecksCard />
 

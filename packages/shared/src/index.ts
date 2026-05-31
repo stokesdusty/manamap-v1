@@ -594,6 +594,38 @@ export const UpdateStoreProfileSchema = z.object({
 });
 export type UpdateStoreProfile = z.infer<typeof UpdateStoreProfileSchema>;
 
+// --- Safety ---
+
+export const ReportReasonSchema = z.enum([
+  'HARASSMENT',
+  'SPAM',
+  'FAKE_PROFILE',
+  'INAPPROPRIATE',
+  'OTHER',
+]);
+export type ReportReason = z.infer<typeof ReportReasonSchema>;
+
+export const BlockBodySchema = z.object({
+  userId: IdSchema,
+});
+export type BlockBody = z.infer<typeof BlockBodySchema>;
+
+export const ReportBodySchema = z.object({
+  userId: IdSchema,
+  reason: ReportReasonSchema,
+  detail: z.string().max(1000).optional(),
+  context: z.string().max(256).optional(),
+});
+export type ReportBody = z.infer<typeof ReportBodySchema>;
+
+export const BlockedUserSchema = z.object({
+  id: z.string(),
+  userId: IdSchema,
+  displayName: z.string(),
+  avatarColors: z.array(z.string()),
+});
+export type BlockedUser = z.infer<typeof BlockedUserSchema>;
+
 export const PartnerAnalyticsSchema = z.object({
   totalCheckins: z.number().int(),
   checkinsThisWeek: z.number().int(),

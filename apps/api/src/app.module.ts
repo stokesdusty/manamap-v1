@@ -14,6 +14,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { StoresModule } from './stores/stores.module';
 import { PartnerModule } from './partner/partner.module';
+import { SafetyModule } from './safety/safety.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { PartnerModule } from './partner/partner.module';
     DiscoveryModule,
     StoresModule,
     PartnerModule,
+    SafetyModule,
   ],
 })
 export class AppModule {}

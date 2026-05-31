@@ -30,6 +30,7 @@ import { usePresence } from '../hooks/usePresence';
 import { useBleProximity, sortByBleProximity } from '../hooks/useBleProximity';
 import { useCrossedPathsCount } from '../hooks/useEncounters';
 import { useActiveStore } from '../context/ActiveStoreContext';
+import { usePrivacy, useUpdatePrivacy } from '../hooks/useMe';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 
 type DiscoverScreenProps = CompositeScreenProps<
@@ -568,6 +569,14 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   // Presence heartbeat
   usePresence();
 
+  // Go invisible toggle
+  const { data: privacy } = usePrivacy();
+  const { mutate: updatePrivacy } = useUpdatePrivacy();
+  const isInvisible = privacy?.discoverable === false;
+  const handleToggleInvisible = useCallback(() => {
+    updatePrivacy({ discoverable: isInvisible });
+  }, [isInvisible, updatePrivacy]);
+
   // Nearby players (filtered)
   const { data: nearby, isLoading: isLoadingNearby } = useNearby(!!activeStore, discoveryFilters);
 
@@ -624,6 +633,22 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
           )}
         </View>
         <View style={styles.headerActions}>
+          {/* Go invisible toggle */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.invisibleBtn,
+              isInvisible && styles.invisibleBtnActive,
+              pressed && { opacity: 0.7 },
+            ]}
+            onPress={handleToggleInvisible}
+            accessibilityLabel={isInvisible ? 'Go visible' : 'Go invisible'}
+          >
+            <Ionicons
+              name={isInvisible ? 'eye-off' : 'eye-outline'}
+              size={15}
+              color={isInvisible ? colors.textInverse : colors.textSecondary}
+            />
+          </Pressable>
           {activeStore && (
             <Pressable
               style={({ pressed }) => [
@@ -657,6 +682,17 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
           </Pressable>
         </View>
       </View>
+
+      {/* Invisible banner */}
+      {isInvisible && (
+        <Pressable style={styles.invisibleBanner} onPress={handleToggleInvisible}>
+          <Ionicons name="eye-off-outline" size={16} color={colors.textInverse} />
+          <Text style={styles.invisibleBannerText}>
+            You're invisible — nobody here can see you
+          </Text>
+          <Text style={styles.invisibleBannerCta}>Go visible</Text>
+        </Pressable>
+      )}
 
       {/* Advanced filter panel (outside ScrollView — stays fixed) */}
       {filtersOpen && activeStore && (
@@ -840,6 +876,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  invisibleBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  invisibleBtnActive: {
+    backgroundColor: colors.textSecondary,
+    borderColor: colors.textSecondary,
+  },
+  invisibleBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.textSecondary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+  },
+  invisibleBannerText: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textInverse,
+  },
+  invisibleBannerCta: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textInverse,
+    textDecorationLine: 'underline',
   },
   filterToggleBtn: {
     flexDirection: 'row',

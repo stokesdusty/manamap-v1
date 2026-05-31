@@ -1,12 +1,21 @@
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import type { ManaColor, MtgFormat, PlayerVibe } from '@manamap/shared';
+import type { ManaColor, MtgFormat, PlayerVibe, ReportReason } from '@manamap/shared';
 import { ManaPip } from '../components/ManaPip';
 import { useSendConnectionRequest } from '../hooks/useConnections';
+import { useBlockUser, useReportUser } from '../hooks/useSafety';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import type { RootStackScreenProps } from '../navigation/types';
+
+const REPORT_REASONS: Array<{ value: ReportReason; label: string }> = [
+  { value: 'HARASSMENT', label: 'Harassment' },
+  { value: 'SPAM', label: 'Spam' },
+  { value: 'FAKE_PROFILE', label: 'Fake profile' },
+  { value: 'INAPPROPRIATE', label: 'Inappropriate content' },
+  { value: 'OTHER', label: 'Other' },
+];
 
 // ---------------------------------------------------------------------------
 // Label maps (keep in sync with YouScreen)
@@ -43,6 +52,57 @@ export function PlayerPreviewScreen({
   const [sent, setSent] = useState(false);
   const { mutate: sendRequest, isPending } = useSendConnectionRequest();
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [selectedReason, setSelectedReason] = useState<ReportReason | null>(null);
+  const [alsoBlock, setAlsoBlock] = useState(false);
+  const { mutate: blockUser, isPending: isBlocking } = useBlockUser();
+  const { mutate: reportUser, isPending: isReporting } = useReportUser();
+
+  function handleBlock() {
+    setMenuOpen(false);
+    Alert.alert(
+      'Block player',
+      `Block ${profile.displayName}? They won't appear in discovery and any connection will be removed.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: () =>
+            blockUser(
+              { userId: profile.id },
+              { onSuccess: () => navigation.goBack() },
+            ),
+        },
+      ],
+    );
+  }
+
+  function handleOpenReport() {
+    setMenuOpen(false);
+    setSelectedReason(null);
+    setAlsoBlock(false);
+    setReportOpen(true);
+  }
+
+  function handleSubmitReport() {
+    if (!selectedReason) return;
+    reportUser(
+      { userId: profile.id, reason: selectedReason, context: 'PlayerPreview' },
+      {
+        onSuccess: () => {
+          setReportOpen(false);
+          if (alsoBlock) {
+            blockUser({ userId: profile.id }, { onSuccess: () => navigation.goBack() });
+          } else {
+            Alert.alert('Report submitted', 'Thank you for keeping ManaMap safe.');
+          }
+        },
+      },
+    );
+  }
+
   function handleConnect() {
     sendRequest(
       { addresseeId: profile.id, via: 'qr' },
@@ -76,7 +136,13 @@ export function PlayerPreviewScreen({
           <Ionicons name="chevron-down" size={28} color={colors.textSecondary} />
         </Pressable>
         <Text style={styles.headerTitle}>Player</Text>
-        <View style={{ width: 36 }} />
+        <Pressable
+          onPress={() => setMenuOpen(true)}
+          style={({ pressed }) => [styles.menuBtn, pressed && { opacity: 0.5 }]}
+          hitSlop={8}
+        >
+          <Ionicons name="ellipsis-horizontal" size={22} color={colors.textSecondary} />
+        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -210,6 +276,94 @@ export function PlayerPreviewScreen({
           </Pressable>
         )}
       </ScrollView>
+
+      {/* Overflow menu */}
+      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={menu.overlay} onPress={() => setMenuOpen(false)}>
+          <View style={menu.sheet}>
+            <Text style={menu.name} numberOfLines={1}>{profile.displayName}</Text>
+            <Pressable
+              style={({ pressed }) => [menu.item, pressed && { opacity: 0.6 }]}
+              onPress={handleOpenReport}
+            >
+              <Ionicons name="flag-outline" size={20} color={colors.textPrimary} />
+              <Text style={menu.itemText}>Report player</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [menu.item, menu.itemDanger, pressed && { opacity: 0.6 }]}
+              onPress={handleBlock}
+              disabled={isBlocking}
+            >
+              <Ionicons name="ban-outline" size={20} color={colors.error} />
+              <Text style={[menu.itemText, { color: colors.error }]}>Block player</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [menu.cancel, pressed && { opacity: 0.6 }]}
+              onPress={() => setMenuOpen(false)}
+            >
+              <Text style={menu.cancelText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Report sheet */}
+      <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
+        <Pressable style={menu.overlay} onPress={() => setReportOpen(false)}>
+          <View style={[menu.sheet, { gap: spacing.sm }]}>
+            <Text style={menu.name}>Report {profile.displayName}</Text>
+            <Text style={menu.sectionLabel}>Reason</Text>
+            {REPORT_REASONS.map((r) => (
+              <Pressable
+                key={r.value}
+                style={({ pressed }) => [
+                  menu.reasonRow,
+                  selectedReason === r.value && menu.reasonRowActive,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => setSelectedReason(r.value)}
+              >
+                <Text style={[menu.itemText, selectedReason === r.value && { color: colors.accent }]}>
+                  {r.label}
+                </Text>
+                {selectedReason === r.value && (
+                  <Ionicons name="checkmark" size={16} color={colors.accent} />
+                )}
+              </Pressable>
+            ))}
+            <Pressable
+              style={[menu.reasonRow, alsoBlock && menu.reasonRowActive]}
+              onPress={() => setAlsoBlock((v) => !v)}
+            >
+              <Text style={[menu.itemText, alsoBlock && { color: colors.accent }]}>
+                Also block this player
+              </Text>
+              {alsoBlock && <Ionicons name="checkmark" size={16} color={colors.accent} />}
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                menu.submitBtn,
+                (!selectedReason || isReporting) && { opacity: 0.5 },
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={handleSubmitReport}
+              disabled={!selectedReason || isReporting}
+            >
+              {isReporting ? (
+                <ActivityIndicator size="small" color={colors.textInverse} />
+              ) : (
+                <Text style={menu.submitText}>Submit report</Text>
+              )}
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [menu.cancel, pressed && { opacity: 0.6 }]}
+              onPress={() => setReportOpen(false)}
+            >
+              <Text style={menu.cancelText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -235,6 +389,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   backBtn: { width: 36, alignItems: 'flex-start' },
+  menuBtn: { width: 36, alignItems: 'flex-end' },
   scroll: { padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxxl },
   ctaBtn: {
     flexDirection: 'row',
@@ -424,5 +579,91 @@ const lock = StyleSheet.create({
     width: '70%',
     backgroundColor: colors.border,
     borderRadius: radii.full,
+  },
+});
+
+const menu = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: colors.paper,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.xs,
+  },
+  name: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+    marginBottom: spacing.sm,
+  },
+  sectionLabel: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.xs,
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderLight,
+  },
+  itemDanger: {},
+  itemText: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  reasonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.surface,
+  },
+  reasonRowActive: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentLight,
+  },
+  submitBtn: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.accent,
+    height: 48,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textInverse,
+  },
+  cancel: {
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
   },
 });
