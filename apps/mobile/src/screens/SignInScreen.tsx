@@ -45,7 +45,7 @@ export function SignInScreen() {
   useEffect(() => {
     if (!response) return;
     if (response.type === 'success') {
-      handleDiscordCode(response.params['code'] ?? '');
+      handleDiscordCode(response.params['code'] ?? '', request?.codeVerifier);
     } else {
       setLoading(null);
       if (response.type === 'error') {
@@ -77,14 +77,19 @@ export function SignInScreen() {
     }
   }
 
-  async function handleDiscordCode(code: string) {
+  async function handleDiscordCode(code: string, codeVerifier?: string) {
     if (!code) return;
     setLoading('discord');
     try {
-      const { data } = await api.post<AuthTokens>('/v1/auth/discord', { code });
+      const { data } = await api.post<AuthTokens>('/v1/auth/discord', { code, codeVerifier });
       await signIn(data);
-    } catch {
-      Alert.alert('Sign in failed', 'Discord sign in encountered an error. Please try again.');
+    } catch (err: unknown) {
+      const msg =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { data?: unknown } }).response?.data;
+      Alert.alert('Sign in failed', JSON.stringify(msg ?? err));
     } finally {
       setLoading(null);
     }

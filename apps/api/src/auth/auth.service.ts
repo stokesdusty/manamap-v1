@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { AuthTokens } from '@manamap/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppleService } from './apple.service';
@@ -7,6 +7,8 @@ import { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly apple: AppleService,
     private readonly discord: DiscordService,
@@ -34,16 +36,23 @@ export class AuthService {
     return this.tokens.issueTokens(user.id, user.email);
   }
 
-  async signInWithDiscord(code: string): Promise<AuthTokens> {
-    const profile = await this.discord.exchangeCode(code);
+  async signInWithDiscord(code: string, codeVerifier?: string): Promise<AuthTokens> {
+    let profile;
+    try {
+      profile = await this.discord.exchangeCode(code, codeVerifier);
+    } catch (error: any) {
+      this.logger.error(`Discord code exchange failed: ${error.message}`, error.stack);
+      throw error;
+    }
 
     if (!profile.email) {
+      this.logger.warn(`Discord sign-in failed: Email missing for user ${profile.id}`);
       throw new BadRequestException(
         'Discord account must have a verified email (enable the email scope)',
       );
     }
 
-    const discordHandle = profile.global_name ?? profile.username;
+    const discordHandle = profile.global_name ?? profile.username ?? 'Discord User';
 
     const existing = await this.prisma.identity.findFirst({
       where: { provider: 'discord', providerId: profile.id },
@@ -61,7 +70,7 @@ export class AuthService {
       return this.tokens.issueTokens(existing.user.id, existing.user.email);
     }
 
-    const user = await this.upsertUserByEmail(profile.email, profile.global_name ?? profile.username);
+    const user = await this.upsertUserByEmail(profile.email, discordHandle);
     await this.prisma.identity.create({
       data: { userId: user.id, provider: 'discord', providerId: profile.id, discordHandle },
     });
@@ -74,6 +83,15 @@ export class AuthService {
 
   logout(rawToken: string): Promise<void> {
     return this.tokens.revoke(rawToken);
+  }
+
+  async signInByEmail(email: string): Promise<AuthTokens> {
+    const user = await this.prisma.user.findFirst({
+      where: { email },
+    });
+
+    if (!user) throw new NotFoundException(`User with email ${email} not found`);
+    return this.tokens.issueTokens(user.id, user.email);
   }
 
   private async upsertUserByEmail(

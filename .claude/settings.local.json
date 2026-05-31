@@ -30,7 +30,15 @@
       "Bash(node --print \"require.resolve\\('expo/package.json'\\)\")",
       "Bash(node --print \"require.resolve\\('expo-modules-core/package.json', { paths: [require.resolve\\('expo/package.json'\\)] }\\)\")",
       "Bash(node -e \"const pkg = require\\('./node_modules/expo/package.json'\\); const cam = pkg.dependencies?.['expo-camera'] || ''; console.log\\('expo-camera peer:', cam\\);\")",
-      "Bash(npm info *)"
+      "Bash(npm info *)",
+      "Bash(mkdir \"c:/dev/manamap/apps/api/prisma/migrations/20260530200000_store_map\")",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260530220000_community_hubs\")",
+      "Bash(Out-Null)",
+      "Bash(Write-Host \"created\")",
+      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260530220000_community_hubs\")",
+      "Bash(mkdir -p \"/c/dev/manamap/apps/api/prisma/migrations/20260530230000_encounter_source\")",
+      "Bash(npx react-native *)",
+      "Bash(emulator -list-avds)"
     ]
   }
 }

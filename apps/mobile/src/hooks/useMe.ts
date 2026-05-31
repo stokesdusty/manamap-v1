@@ -4,6 +4,8 @@ import type {
   DeckLink,
   Privacy,
   Profile,
+  SetHomeStore,
+  StoreDetail,
   UpdateDeckLink,
   UpdatePrivacy,
   UpdateProfile,
@@ -14,6 +16,7 @@ const KEYS = {
   profile: ['me'] as const,
   privacy: ['me', 'privacy'] as const,
   decks: ['me', 'decks'] as const,
+  homeStore: ['me', 'home-store'] as const,
 };
 
 // --- Profile ---
@@ -105,5 +108,24 @@ export function useDeleteDeck() {
   return useMutation({
     mutationFn: (id: string) => api.delete(`/v1/me/decks/${id}`),
     onSuccess: () => void qc.invalidateQueries({ queryKey: KEYS.decks }),
+  });
+}
+
+// --- Home store ---
+
+export function useHomeStore() {
+  return useQuery<{ store: StoreDetail | null }>({
+    queryKey: KEYS.homeStore,
+    queryFn: () =>
+      api.get<{ store: StoreDetail | null }>('/v1/me/home-store').then((r) => r.data),
+  });
+}
+
+export function useSetHomeStore() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SetHomeStore) =>
+      api.patch<{ storeId: string | null }>('/v1/me/home-store', body).then((r) => r.data),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: KEYS.homeStore }),
   });
 }

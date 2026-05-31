@@ -1,14 +1,18 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
+import { ConnectedRevealScreen } from '../screens/ConnectedRevealScreen';
+import { HistoryScreen } from '../screens/HistoryScreen';
 import { PlayerPreviewScreen } from '../screens/PlayerPreviewScreen';
 import { SignInScreen } from '../screens/SignInScreen';
 import { TabNavigator } from './TabNavigator';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
+  usePushNotifications(isAuthenticated);
 
   if (isLoading) return null;
 
@@ -18,8 +22,18 @@ export function RootNavigator() {
         <>
           <Stack.Screen name="Main" component={TabNavigator} />
           <Stack.Screen
+            name="History"
+            component={HistoryScreen}
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen
             name="PlayerPreview"
             component={PlayerPreviewScreen}
+            options={{ presentation: 'modal', headerShown: false }}
+          />
+          <Stack.Screen
+            name="Connected"
+            component={ConnectedRevealScreen}
             options={{ presentation: 'modal', headerShown: false }}
           />
         </>

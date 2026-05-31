@@ -13,7 +13,9 @@ import {
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { queryClient } from './src/lib/queryClient';
+import { navigationRef } from './src/lib/navigationRef';
 import { AuthProvider } from './src/context/AuthContext';
+import { ActiveStoreProvider } from './src/context/ActiveStoreContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { colors } from './src/theme';
 
@@ -52,9 +54,11 @@ export default function App() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <NavigationContainer theme={navTheme}>
-              <RootNavigator />
-            </NavigationContainer>
+            <ActiveStoreProvider>
+              <NavigationContainer ref={navigationRef} theme={navTheme}>
+                <RootNavigator />
+              </NavigationContainer>
+            </ActiveStoreProvider>
           </AuthProvider>
         </QueryClientProvider>
         <StatusBar style="dark" />

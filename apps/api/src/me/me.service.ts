@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { DeckSite } from '@prisma/client';
+import { DeckSite, Prisma } from '@prisma/client';
 import {
   DECK_SITE_HOSTS,
   type CreateDeckLink,
+  type SetHomeStore,
   type UpdateDeckLink,
   type UpdatePrivacy,
   type UpdateProfile,
@@ -110,5 +111,66 @@ export class MeService {
     const existing = await this.prisma.deckLink.findFirst({ where: { id: deckId, userId } });
     if (!existing) throw new NotFoundException('Deck not found');
     await this.prisma.deckLink.delete({ where: { id: deckId } });
+  }
+
+  async registerPushToken(userId: string, token: string) {
+    await this.prisma.pushToken.upsert({
+      where: { token },
+      update: { userId },
+      create: { userId, token },
+    });
+    return { success: true };
+  }
+
+  // -------------------------------------------------------------------------
+  // Home store
+  // -------------------------------------------------------------------------
+
+  async getHomeStore(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { homeStoreId: true },
+    });
+    if (!user || !user.homeStoreId) return { store: null };
+
+    type HomeStoreRow = {
+      id: string; name: string; address: string | null; city: string | null;
+      state: string | null; zip: string | null; discordUrl: string | null;
+      lat: number | null; lng: number | null;
+    };
+
+    const rows = await this.prisma.$queryRaw<HomeStoreRow[]>`
+      SELECT
+        id, name, address, city, state, zip,
+        discord_url AS "discordUrl",
+        CASE WHEN geom IS NOT NULL THEN ST_Y(geom::geometry) ELSE NULL END AS lat,
+        CASE WHEN geom IS NOT NULL THEN ST_X(geom::geometry) ELSE NULL END AS lng
+      FROM stores
+      WHERE id = ${Prisma.sql`${user.homeStoreId}::uuid`}
+    `;
+
+    if (!rows.length) return { store: null };
+    const r = rows[0];
+    return {
+      store: {
+        ...r,
+        lat: r.lat != null ? Number(r.lat) : null,
+        lng: r.lng != null ? Number(r.lng) : null,
+      },
+    };
+  }
+
+  async setHomeStore(userId: string, dto: SetHomeStore) {
+    if (dto.storeId) {
+      const exists = await this.prisma.store.findUnique({ where: { id: dto.storeId }, select: { id: true } });
+      if (!exists) throw new NotFoundException('Store not found');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { homeStoreId: dto.storeId },
+    });
+
+    return { storeId: dto.storeId };
   }
 }

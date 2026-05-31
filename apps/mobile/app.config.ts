@@ -11,10 +11,19 @@ const config: ExpoConfig = {
     bundleIdentifier: 'com.manamap.app',
     supportsTablet: false,
     usesAppleSignIn: true,
+    // react-native-maps uses Apple Maps on iOS by default — no API key required
+    infoPlist: {
+      NSLocationWhenInUseUsageDescription:
+        '$(PRODUCT_NAME) can show your location on the store map to help you find nearby venues.',
+    },
   },
   android: {
     package: 'com.manamap.app',
     adaptiveIcon: { backgroundColor: '#F7F3EE' },
+    // Set MAPS_API_KEY env var at build time for Google Maps on Android
+    config: {
+      googleMaps: { apiKey: process.env['MAPS_API_KEY'] ?? '' },
+    },
   },
   plugins: [
     'expo-dev-client',
@@ -24,6 +33,10 @@ const config: ExpoConfig = {
     [
       'expo-camera',
       { cameraPermission: '$(PRODUCT_NAME) needs camera access to scan player QR codes.' },
+    ],
+    [
+      'expo-notifications',
+      { androidMode: 'default' },
     ],
   ],
   extra: {

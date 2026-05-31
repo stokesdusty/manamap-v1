@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -24,11 +25,14 @@ import {
   useCreateDeck,
   useDecks,
   useDeleteDeck,
+  useHomeStore,
   usePrivacy,
   useProfile,
+  useSetHomeStore,
   useUpdatePrivacy,
   useUpdateProfile,
 } from '../hooks/useMe';
+import { useStores } from '../hooks/useNearby';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -343,17 +347,102 @@ function DecksCard() {
 // HomeStoreRow
 // ---------------------------------------------------------------------------
 
+function HomeStorePicker({
+  visible,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSelect: (id: string) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const { data: stores = [], isLoading } = useStores(query.length >= 2 ? query : undefined);
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.paper }}>
+        <View style={section.pickerHeader}>
+          <Text style={section.pickerTitle}>Set home store</Text>
+          <Pressable onPress={onClose} hitSlop={8}>
+            <Ionicons name="close" size={24} color={colors.textSecondary} />
+          </Pressable>
+        </View>
+        <View style={section.pickerSearchWrap}>
+          <Ionicons name="search-outline" size={16} color={colors.textTertiary} />
+          <TextInput
+            style={section.pickerInput}
+            placeholder="Search stores…"
+            placeholderTextColor={colors.textTertiary}
+            value={query}
+            onChangeText={setQuery}
+            autoFocus
+          />
+        </View>
+        {isLoading ? (
+          <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
+        ) : (
+          <FlatList
+            data={stores}
+            keyExtractor={(s) => s.id}
+            renderItem={({ item }) => (
+              <Pressable
+                style={({ pressed }) => [section.pickerRow, pressed && { opacity: 0.6 }]}
+                onPress={() => { onSelect(item.id); onClose(); }}
+              >
+                <Ionicons name="storefront-outline" size={18} color={colors.textTertiary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={section.storeTitle}>{item.name}</Text>
+                  {(item.city || item.state) && (
+                    <Text style={section.storeSub}>
+                      {[item.city, item.state].filter(Boolean).join(', ')}
+                    </Text>
+                  )}
+                </View>
+              </Pressable>
+            )}
+            ListEmptyComponent={
+              <Text style={section.empty}>
+                {query.length < 2 ? 'Type to search' : 'No stores found'}
+              </Text>
+            }
+          />
+        )}
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
 function HomeStoreRow() {
+  const { data, isLoading } = useHomeStore();
+  const { mutate: setHomeStore, isPending } = useSetHomeStore();
+  const [showPicker, setShowPicker] = useState(false);
+
+  const store = data?.store;
+
   return (
     <View style={section.card}>
-      <View style={section.storeRow}>
+      <Pressable
+        style={({ pressed }) => [section.storeRow, pressed && { opacity: 0.7 }]}
+        onPress={() => setShowPicker(true)}
+      >
         <Ionicons name="storefront-outline" size={20} color={colors.textTertiary} />
         <View style={{ flex: 1 }}>
           <Text style={section.storeTitle}>Home store</Text>
-          <Text style={section.storeSub}>Not set</Text>
+          {isLoading || isPending ? (
+            <ActivityIndicator size="small" color={colors.accent} />
+          ) : (
+            <Text style={section.storeSub}>{store ? store.name : 'Not set'}</Text>
+          )}
         </View>
         <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-      </View>
+      </Pressable>
+
+      <HomeStorePicker
+        visible={showPicker}
+        onClose={() => setShowPicker(false)}
+        onSelect={(storeId) => setHomeStore({ storeId })}
+      />
     </View>
   );
 }
@@ -443,6 +532,48 @@ const section = StyleSheet.create({
     fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.sm,
     color: colors.textTertiary,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  pickerTitle: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.xl,
+    color: colors.textPrimary,
+  },
+  pickerSearchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: spacing.lg,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    gap: spacing.sm,
+  },
+  pickerInput: {
+    flex: 1,
+    height: 44,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderLight,
+    backgroundColor: colors.surface,
   },
 });
 

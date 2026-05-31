@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, ForbiddenException } from '@nestjs/common';
 import {
   AppleAuthBodySchema,
   DiscordAuthBodySchema,
@@ -28,7 +28,7 @@ export class AuthController {
   discord(
     @Body(new ZodValidationPipe(DiscordAuthBodySchema)) body: DiscordAuthBody,
   ): Promise<AuthTokens> {
-    return this.auth.signInWithDiscord(body.code);
+    return this.auth.signInWithDiscord(body.code, body.codeVerifier);
   }
 
   @Post('refresh')
@@ -41,5 +41,19 @@ export class AuthController {
   @HttpCode(204)
   logout(@Body(new ZodValidationPipe(LogoutBodySchema)) body: LogoutBody): Promise<void> {
     return this.auth.logout(body.refreshToken);
+  }
+
+  /**
+   * DEV ONLY: Bypass OAuth to test with seeded accounts.
+   * Usage: POST /v1/auth/dev-login { "email": "ghalta@example.com" }
+   */
+  @Post('dev-login')
+  @HttpCode(200)
+  async devLogin(@Body('email') email: string): Promise<AuthTokens> {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Dev login is only available in development mode');
+    }
+    // Bypass OAuth for testing
+    return this.auth.signInByEmail(email);
   }
 }

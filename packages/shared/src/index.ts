@@ -182,6 +182,199 @@ export const UpdateDeckLinkSchema = z
   );
 export type UpdateDeckLink = z.infer<typeof UpdateDeckLinkSchema>;
 
+// --- Connections ---
+
+export const ConnectionStatusSchema = z.enum(['pending', 'accepted', 'blocked']);
+export type ConnectionStatus = z.infer<typeof ConnectionStatusSchema>;
+
+export const CreateConnectionSchema = z.object({
+  addresseeId: IdSchema,
+  via: z.string().optional(),
+  note: z.string().max(200).optional(),
+});
+export type CreateConnection = z.infer<typeof CreateConnectionSchema>;
+
+export const ConnectionItemSchema = z.object({
+  id: IdSchema,
+  status: ConnectionStatusSchema,
+  direction: z.enum(['sent', 'received']),
+  via: z.string().nullable(),
+  note: z.string().nullable(),
+  createdAt: TimestampSchema,
+  updatedAt: TimestampSchema,
+  peer: PublicProfileSchema,
+});
+export type ConnectionItem = z.infer<typeof ConnectionItemSchema>;
+
+export const ConnectionsListSchema = z.object({
+  incoming: z.array(ConnectionItemSchema),
+  outgoing: z.array(ConnectionItemSchema),
+  accepted: z.array(ConnectionItemSchema),
+});
+export type ConnectionsList = z.infer<typeof ConnectionsListSchema>;
+
+export const ConnectedProfileSchema = PublicProfileSchema.extend({
+  discordHandle: z.string().nullable(),
+  deckLinks: z.array(DeckLinkSchema),
+});
+export type ConnectedProfile = z.infer<typeof ConnectedProfileSchema>;
+
+export const ConnectionDetailSchema = z.object({
+  id: IdSchema,
+  status: ConnectionStatusSchema,
+  direction: z.enum(['sent', 'received']),
+  via: z.string().nullable(),
+  note: z.string().nullable(),
+  createdAt: TimestampSchema,
+  updatedAt: TimestampSchema,
+  peer: ConnectedProfileSchema,
+});
+export type ConnectionDetail = z.infer<typeof ConnectionDetailSchema>;
+
+export const RegisterPushTokenSchema = z.object({
+  token: z.string().min(1),
+});
+export type RegisterPushToken = z.infer<typeof RegisterPushTokenSchema>;
+
+// --- Store ---
+
+export const StoreSchema = z.object({
+  id: IdSchema,
+  name: z.string().min(1).max(128),
+  city: z.string().nullable(),
+  state: z.string().nullable(),
+});
+export type Store = z.infer<typeof StoreSchema>;
+
+export const StorePinSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  lat: z.number(),
+  lng: z.number(),
+});
+export type StorePin = z.infer<typeof StorePinSchema>;
+
+export const StoreDetailSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  address: z.string().nullable(),
+  city: z.string().nullable(),
+  state: z.string().nullable(),
+  zip: z.string().nullable(),
+  discordUrl: z.string().url().nullable(),
+  lat: z.number().nullable(),
+  lng: z.number().nullable(),
+});
+export type StoreDetail = z.infer<typeof StoreDetailSchema>;
+
+export const CheckinResultSchema = z.object({
+  checkinId: IdSchema,
+  storeId: IdSchema,
+  storeName: z.string(),
+  checkedInAt: TimestampSchema,
+  presenceExpiresIn: z.number().int().positive(),
+});
+export type CheckinResult = z.infer<typeof CheckinResultSchema>;
+
+export const SetHomeStoreSchema = z.object({
+  storeId: IdSchema.nullable(),
+});
+export type SetHomeStore = z.infer<typeof SetHomeStoreSchema>;
+
+// --- Presence ---
+
+export const HeartbeatBodySchema = z.object({
+  storeId: IdSchema,
+});
+export type HeartbeatBody = z.infer<typeof HeartbeatBodySchema>;
+
+export const HeartbeatResponseSchema = z.object({
+  storeId: IdSchema,
+  storeName: z.string(),
+  expiresIn: z.number().int().positive(),
+});
+export type HeartbeatResponse = z.infer<typeof HeartbeatResponseSchema>;
+
+// --- Events ---
+
+export const EventSourceSchema = z.enum(['STORE', 'DISCORD', 'WIZARDS']);
+export type EventSource = z.infer<typeof EventSourceSchema>;
+
+export const StoreEventSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  source: EventSourceSchema,
+  description: z.string().nullable(),
+  url: z.string().url().nullable(),
+  eventChannelUrl: z.string().nullable(),
+  startsAt: TimestampSchema,
+  endsAt: TimestampSchema.nullable(),
+  formatName: z.string().nullable(),
+  formatSlug: z.string().nullable(),
+  attendeeCount: z.number().int().nonnegative(),
+  isAttending: z.boolean(),
+});
+export type StoreEvent = z.infer<typeof StoreEventSchema>;
+
+export const StoreEventsDaySchema = z.object({
+  date: z.string(),
+  events: z.array(StoreEventSchema),
+});
+export type StoreEventsDay = z.infer<typeof StoreEventsDaySchema>;
+
+export const StoreEventsResponseSchema = z.array(StoreEventsDaySchema);
+export type StoreEventsResponse = z.infer<typeof StoreEventsResponseSchema>;
+
+export const AttendEventResponseSchema = z.object({
+  eventId: IdSchema,
+  eventName: z.string(),
+});
+export type AttendEventResponse = z.infer<typeof AttendEventResponseSchema>;
+
+// --- Encounters ---
+
+export const EncounterSourceSchema = z.enum(['PRESENCE', 'CONNECTION', 'GAME']);
+export type EncounterSource = z.infer<typeof EncounterSourceSchema>;
+
+export const EncounterItemSchema = z.object({
+  id: IdSchema,
+  source: EncounterSourceSchema,
+  peer: PublicProfileSchema,
+  storeId: IdSchema.nullable(),
+  storeName: z.string().nullable(),
+  createdAt: TimestampSchema,
+});
+export type EncounterItem = z.infer<typeof EncounterItemSchema>;
+
+export const EncountersResponseSchema = z.object({
+  encounters: z.array(EncounterItemSchema),
+  crossedPathsCount: z.number().int().nonnegative(),
+});
+export type EncountersResponse = z.infer<typeof EncountersResponseSchema>;
+
+// --- Discovery ---
+
+export const SharedEventSummarySchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  startsAt: TimestampSchema,
+});
+export type SharedEventSummary = z.infer<typeof SharedEventSummarySchema>;
+
+export const NearbyPlayerSchema = PublicProfileSchema.extend({
+  metBefore: z.boolean(),
+  lastMetStoreName: z.string().nullable(),
+  sharedEvent: SharedEventSummarySchema.nullable(),
+});
+export type NearbyPlayer = z.infer<typeof NearbyPlayerSchema>;
+
+export const NearbyResponseSchema = z.object({
+  storeId: IdSchema.nullable(),
+  storeName: z.string().nullable(),
+  players: z.array(NearbyPlayerSchema),
+});
+export type NearbyResponse = z.infer<typeof NearbyResponseSchema>;
+
 // --- Place ---
 
 export const PlaceSchema = z.object({
@@ -202,6 +395,7 @@ export type AppleAuthBody = z.infer<typeof AppleAuthBodySchema>;
 
 export const DiscordAuthBodySchema = z.object({
   code: z.string().min(1, 'code is required'),
+  codeVerifier: z.string().optional(),
 });
 export type DiscordAuthBody = z.infer<typeof DiscordAuthBodySchema>;
 

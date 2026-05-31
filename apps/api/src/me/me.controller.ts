@@ -12,10 +12,14 @@ import {
 } from '@nestjs/common';
 import {
   CreateDeckLinkSchema,
+  RegisterPushTokenSchema,
+  SetHomeStoreSchema,
   UpdateDeckLinkSchema,
   UpdatePrivacySchema,
   UpdateProfileSchema,
   type CreateDeckLink,
+  type RegisterPushToken,
+  type SetHomeStore,
   type UpdateDeckLink,
   type UpdatePrivacy,
   type UpdateProfile,
@@ -87,5 +91,28 @@ export class MeController {
   @HttpCode(204)
   deleteDeck(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.me.deleteDeck(req.user.sub, id);
+  }
+
+  @Post('push-token')
+  @HttpCode(200)
+  registerPushToken(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(RegisterPushTokenSchema)) body: RegisterPushToken,
+  ) {
+    return this.me.registerPushToken(req.user.sub, body.token);
+  }
+
+  @Get('home-store')
+  getHomeStore(@Req() req: AuthRequest) {
+    return this.me.getHomeStore(req.user.sub);
+  }
+
+  @Patch('home-store')
+  @HttpCode(200)
+  setHomeStore(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(SetHomeStoreSchema)) body: SetHomeStore,
+  ) {
+    return this.me.setHomeStore(req.user.sub, body);
   }
 }

@@ -22,7 +22,7 @@ export class DiscordService {
 
   constructor(private readonly config: ConfigService<Env>) {}
 
-  async exchangeCode(code: string): Promise<DiscordProfile> {
+  async exchangeCode(code: string, codeVerifier?: string): Promise<DiscordProfile> {
     const clientId = this.config.get<string>('DISCORD_CLIENT_ID');
     const clientSecret = this.config.get<string>('DISCORD_CLIENT_SECRET');
     const redirectUri = this.config.get<string>('DISCORD_REDIRECT_URI');
@@ -32,15 +32,18 @@ export class DiscordService {
     }
 
     try {
+      const params: Record<string, string> = {
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: redirectUri,
+      };
+      if (codeVerifier) params['code_verifier'] = codeVerifier;
+
       const tokenRes = await axios.post<DiscordTokenResponse>(
         'https://discord.com/api/oauth2/token',
-        new URLSearchParams({
-          client_id: clientId,
-          client_secret: clientSecret,
-          grant_type: 'authorization_code',
-          code,
-          redirect_uri: redirectUri,
-        }),
+        new URLSearchParams(params),
         { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
       );
 

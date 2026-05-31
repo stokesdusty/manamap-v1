@@ -1,0 +1,56 @@
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  CreateConnectionSchema,
+  type CreateConnection,
+} from '@manamap/shared';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
+import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
+import { ConnectionsService } from './connections.service';
+
+type AuthRequest = { user: AccessTokenPayload };
+
+@Controller('v1/connections')
+@UseGuards(AuthGuard)
+export class ConnectionsController {
+  constructor(private readonly connections: ConnectionsService) {}
+
+  @Post()
+  @HttpCode(201)
+  sendRequest(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(CreateConnectionSchema)) body: CreateConnection,
+  ) {
+    return this.connections.sendRequest(req.user.sub, body);
+  }
+
+  @Get()
+  list(@Req() req: AuthRequest) {
+    return this.connections.list(req.user.sub);
+  }
+
+  @Post(':id/accept')
+  @HttpCode(200)
+  accept(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.connections.accept(req.user.sub, id);
+  }
+
+  @Post(':id/decline')
+  @HttpCode(200)
+  decline(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.connections.decline(req.user.sub, id);
+  }
+
+  @Get(':id')
+  getDetail(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.connections.getDetail(req.user.sub, id);
+  }
+}

@@ -46,6 +46,18 @@ enum DeckSite {
   ARCHIDEKT
 }
 
+enum EventSource {
+  STORE
+  DISCORD
+  WIZARDS
+}
+
+enum EncounterSource {
+  PRESENCE
+  CONNECTION
+  GAME
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -65,6 +77,8 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  homeStoreId         String?  @map("home_store_id")
+
   identities          Identity[]
   privacySettings     PrivacySettings?
   deckLinks           DeckLink[]
@@ -76,6 +90,9 @@ model User {
   userBadges          UserBadge[]
   streaks             Streak[]
   refreshTokens       RefreshToken[]
+  pushTokens          PushToken[]
+  eventAttendees      EventAttendee[]
+  homeStore           Store?   @relation("HomeStore", fields: [homeStoreId], references: [id])
 
   @@map("users")
 }
@@ -157,6 +174,8 @@ model Connection {
   requesterId String           @map("requester_id")
   addresseeId String           @map("addressee_id")
   status      ConnectionStatus @default(PENDING)
+  via         String?
+  note        String?
   createdAt   DateTime         @default(now()) @map("created_at")
   updatedAt   DateTime         @updatedAt @map("updated_at")
 
@@ -167,22 +186,35 @@ model Connection {
   @@map("connections")
 }
 
-model Store {
+model PushToken {
   id        String   @id @default(uuid())
-  name      String
-  address   String?
-  city      String?
-  state     String?
-  zip       String?
-  // geom is a PostGIS geography(Point,4326) — managed via $queryRaw / $executeRaw
-  geom      Unsupported("geography(Point,4326)")?
+  userId    String   @map("user_id")
+  token     String   @unique
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_tokens")
+}
+
+model Store {
+  id         String  @id @default(uuid())
+  name       String
+  address    String?
+  city       String?
+  state      String?
+  zip        String?
+  discordUrl String? @map("discord_url")
+  // geom is a PostGIS geography(Point,4326) — managed via $queryRaw / $executeRaw
+  geom       Unsupported("geography(Point,4326)")?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   checkins     Checkin[]
   events       Event[]
   encounters   Encounter[]
   rewardOffers RewardOffer[]
+  homeUsers    User[]   @relation("HomeStore")
 
   @@map("stores")
 }
@@ -201,19 +233,38 @@ model Checkin {
 }
 
 model Event {
-  id        String    @id @default(uuid())
-  storeId   String    @map("store_id")
-  formatId  String    @map("format_id")
-  name      String
-  startsAt  DateTime  @map("starts_at")
-  endsAt    DateTime? @map("ends_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  id              String      @id @default(uuid())
+  storeId         String      @map("store_id")
+  formatId        String?     @map("format_id")
+  source          EventSource @default(STORE)
+  name            String
+  description     String?
+  url             String?
+  externalId      String?     @map("external_id")
+  eventChannelUrl String?     @map("event_channel_url")
+  startsAt        DateTime    @map("starts_at")
+  endsAt          DateTime?   @map("ends_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
 
-  store      Store       @relation(fields: [storeId], references: [id])
-  format     Format      @relation(fields: [formatId], references: [id])
+  store      Store           @relation(fields: [storeId], references: [id])
+  format     Format?         @relation(fields: [formatId], references: [id])
+  attendees  EventAttendee[]
   encounters Encounter[]
 
   @@map("events")
+}
+
+model EventAttendee {
+  id      String   @id @default(uuid())
+  userId  String   @map("user_id")
+  eventId String   @map("event_id")
+  rsvpAt  DateTime @default(now()) @map("rsvp_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@map("event_attendees")
 }
 
 model Encounter {
@@ -222,7 +273,8 @@ model Encounter {
   opponentId String          @map("opponent_id")
   storeId    String?         @map("store_id")
   eventId    String?         @map("event_id")
-  formatId   String          @map("format_id")
+  formatId   String?         @map("format_id")
+  source     EncounterSource @default(GAME)
   result     EncounterResult
   notes      String?
   createdAt  DateTime        @default(now()) @map("created_at")
@@ -231,7 +283,7 @@ model Encounter {
   opponent User    @relation("OpponentEncounters", fields: [opponentId], references: [id])
   store    Store?  @relation(fields: [storeId], references: [id])
   event    Event?  @relation(fields: [eventId], references: [id])
-  format   Format  @relation(fields: [formatId], references: [id])
+  format   Format? @relation(fields: [formatId], references: [id])
 
   @@map("encounters")
 }

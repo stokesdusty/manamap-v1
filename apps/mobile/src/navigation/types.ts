@@ -1,16 +1,23 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps } from '@react-navigation/native';
-import type { PublicProfile } from '@manamap/shared';
+import type { PublicProfile, SharedEventSummary } from '@manamap/shared';
 
 export type RootStackParamList = {
   SignIn: undefined;
   Main: undefined;
-  PlayerPreview: { profile: PublicProfile };
+  History: undefined;
+  PlayerPreview: {
+    profile: PublicProfile;
+    sharedEvent?: SharedEventSummary | null;
+    lastMetStoreName?: string | null;
+  };
+  Connected: { connectionId: string };
 };
 
 export type TabParamList = {
   Discover: undefined;
+  Stores: undefined;
   Connect: undefined;
   Scan: undefined;
   You: undefined;

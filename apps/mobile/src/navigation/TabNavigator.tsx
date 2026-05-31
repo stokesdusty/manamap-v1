@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { DiscoverScreen } from '../screens/DiscoverScreen';
+import { StoresScreen } from '../screens/StoresScreen';
 import { ConnectScreen } from '../screens/ConnectScreen';
 import { ScanScreen } from '../screens/ScanScreen';
 import { YouScreen } from '../screens/YouScreen';
@@ -40,16 +41,16 @@ export function TabNavigator() {
         component={DiscoverScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map-outline" size={size} color={color} />
+            <Ionicons name="radio-outline" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="Connect"
-        component={ConnectScreen}
+        name="Stores"
+        component={StoresScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
+            <Ionicons name="map-outline" size={size} color={color} />
           ),
         }}
       />
@@ -59,6 +60,15 @@ export function TabNavigator() {
         options={{
           tabBarButton: (props) => <ScanButton {...props} />,
           tabBarLabel: () => null,
+        }}
+      />
+      <Tab.Screen
+        name="Connect"
+        component={ConnectScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen

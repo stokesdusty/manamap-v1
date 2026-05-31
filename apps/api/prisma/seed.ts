@@ -13,18 +13,18 @@ const FORMATS = [
 ];
 
 const USERS = [
-  { email: 'alice@example.com', displayName: 'Alice Chen' },
-  { email: 'bob@example.com', displayName: 'Bob Tanaka' },
-  { email: 'carol@example.com', displayName: 'Carol Díaz' },
-  { email: 'dave@example.com', displayName: 'Dave Okafor' },
-  { email: 'eve@example.com', displayName: 'Eve Johansson' },
-  { email: 'frank@example.com', displayName: 'Frank Müller' },
+  { displayName: 'Alice Chen', email: 'ghalta@example.com', avatarColors: ['G'] },
+  { displayName: 'Bob Tanaka', email: 'marchesa@example.com', avatarColors: ['U', 'B', 'R'] },
+  { displayName: 'Carol Díaz', email: 'giada@example.com', avatarColors: ['W'] },
+  { displayName: 'Dave Okafor', email: 'krenko@example.com', avatarColors: ['R'] },
+  { displayName: 'Eve Johansson', email: 'tatyova@example.com', avatarColors: ['U', 'G'] },
 ];
 
 const STORES = [
   {
     name: 'Mox Boarding House',
     address: '5105 Leary Ave NW',
+    timezone: 'America/Los_Angeles',
     city: 'Seattle',
     state: 'WA',
     zip: '98107',
@@ -69,6 +69,12 @@ async function main(): Promise<void> {
       create: {
         ...u,
         privacySettings: { create: {} },
+        identities: {
+          create: {
+            provider: 'apple',
+            providerId: `fake_apple_${u.email.split('@')[0]}`,
+          },
+        },
       },
     });
   }
