@@ -44,6 +44,11 @@ export class StoresController {
     return this.stores.getLeaderboard(req.user.sub, id);
   }
 
+  @Get(':id/offers')
+  getOffers(@Param('id') id: string) {
+    return this.stores.getActiveOffers(id);
+  }
+
   @Post(':id/events/:eventId/attend')
   @HttpCode(200)
   attendEvent(

@@ -1,0 +1,89 @@
+import {
+  Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, UseGuards,
+} from '@nestjs/common';
+import {
+  ClaimStoreSchema, CreateRewardOfferSchema, UpdateRewardOfferSchema, UpdateStoreProfileSchema,
+  type ClaimStore, type CreateRewardOffer, type UpdateRewardOffer, type UpdateStoreProfile,
+} from '@manamap/shared';
+import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
+import { PartnerService } from './partner.service';
+
+type AuthRequest = { user: AccessTokenPayload };
+
+@Controller('v1/partner')
+@UseGuards(AuthGuard)
+export class PartnerController {
+  constructor(private readonly partner: PartnerService) {}
+
+  // --- Store ownership ---
+
+  @Post('stores/claim')
+  @HttpCode(200)
+  claimStore(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(ClaimStoreSchema)) body: ClaimStore,
+  ) {
+    return this.partner.claimStore(req.user.sub, body.storeId);
+  }
+
+  @Get('stores')
+  getMyStores(@Req() req: AuthRequest) {
+    return this.partner.getMyStores(req.user.sub);
+  }
+
+  @Patch('stores/:storeId')
+  @HttpCode(200)
+  updateStore(
+    @Req() req: AuthRequest,
+    @Param('storeId') storeId: string,
+    @Body(new ZodValidationPipe(UpdateStoreProfileSchema)) body: UpdateStoreProfile,
+  ) {
+    return this.partner.updateStoreProfile(req.user.sub, storeId, body);
+  }
+
+  // --- Analytics ---
+
+  @Get('stores/:storeId/analytics')
+  getAnalytics(@Req() req: AuthRequest, @Param('storeId') storeId: string) {
+    return this.partner.getAnalytics(req.user.sub, storeId);
+  }
+
+  // --- Offer CRUD ---
+
+  @Get('stores/:storeId/offers')
+  listOffers(@Req() req: AuthRequest, @Param('storeId') storeId: string) {
+    return this.partner.listOffers(req.user.sub, storeId);
+  }
+
+  @Post('stores/:storeId/offers')
+  @HttpCode(201)
+  createOffer(
+    @Req() req: AuthRequest,
+    @Param('storeId') storeId: string,
+    @Body(new ZodValidationPipe(CreateRewardOfferSchema)) body: CreateRewardOffer,
+  ) {
+    return this.partner.createOffer(req.user.sub, storeId, body);
+  }
+
+  @Patch('stores/:storeId/offers/:offerId')
+  @HttpCode(200)
+  updateOffer(
+    @Req() req: AuthRequest,
+    @Param('storeId') storeId: string,
+    @Param('offerId') offerId: string,
+    @Body(new ZodValidationPipe(UpdateRewardOfferSchema)) body: UpdateRewardOffer,
+  ) {
+    return this.partner.updateOffer(req.user.sub, storeId, offerId, body);
+  }
+
+  @Delete('stores/:storeId/offers/:offerId')
+  @HttpCode(204)
+  deleteOffer(
+    @Req() req: AuthRequest,
+    @Param('storeId') storeId: string,
+    @Param('offerId') offerId: string,
+  ) {
+    return this.partner.deleteOffer(req.user.sub, storeId, offerId);
+  }
+}

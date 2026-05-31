@@ -26,6 +26,7 @@ import {
   useStores,
 } from '../hooks/useNearby';
 import { useLeaderboard } from '../hooks/useGamification';
+import { useStoreOffers } from '../hooks/useOffers';
 import { BadgeEarnedSheet } from '../components/BadgeEarnedSheet';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 
@@ -188,7 +189,9 @@ function StoreDetailSheet({
   const { data: nearby } = useNearby(isActiveStore);
   const hereNow = isActiveStore ? (nearby?.players ?? []) : [];
 
+  const { data: offers = [] } = useStoreOffers(storeId);
   const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
+  const [eligibleOffers, setEligibleOffers] = useState<Array<{ id: string; type: string; title: string; description: string | null; terms: string | null; redemptionCode: string }>>([]);
   const [activeTab, setActiveTab] = useState<'schedule' | 'leaderboard'>('schedule');
 
   const { mutate: checkin, isPending: isCheckinPending, isSuccess: checkedIn } = useCheckin();
@@ -221,6 +224,9 @@ function StoreDetailSheet({
         });
         if (result.newBadges.length > 0) {
           setEarnedBadges(result.newBadges);
+        }
+        if (result.eligibleOffers?.length > 0) {
+          setEligibleOffers(result.eligibleOffers);
         }
       },
     });
@@ -279,6 +285,31 @@ function StoreDetailSheet({
                 <Text style={sheet.discordText}>Join Discord community</Text>
                 <Ionicons name="open-outline" size={14} color={colors.textTertiary} />
               </Pressable>
+            )}
+
+            {/* Active offers */}
+            {offers.length > 0 && (
+              <View style={sheet.offersSection}>
+                <Text style={sheet.offersSectionTitle}>Promotions</Text>
+                {offers.map((offer) => (
+                  <View key={offer.id} style={sheet.offerChip}>
+                    <Text style={sheet.offerChipIcon}>
+                      {offer.type === 'FIRST_VISIT' ? '🎁' : '🔥'}
+                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={sheet.offerChipTitle}>{offer.title}</Text>
+                      {offer.description ? (
+                        <Text style={sheet.offerChipDesc} numberOfLines={2}>{offer.description}</Text>
+                      ) : null}
+                      {offer.type === 'STREAK' && offer.streakRequired ? (
+                        <Text style={sheet.offerChipHint}>Requires {offer.streakRequired}-week streak</Text>
+                      ) : offer.type === 'FIRST_VISIT' ? (
+                        <Text style={sheet.offerChipHint}>First visit bonus — check in to unlock</Text>
+                      ) : null}
+                    </View>
+                  </View>
+                ))}
+              </View>
             )}
 
             {/* Active store badge */}
@@ -415,6 +446,38 @@ function StoreDetailSheet({
       badges={earnedBadges}
       onDismiss={() => setEarnedBadges([])}
     />
+
+    {/* First-visit / streak promo modal */}
+    {eligibleOffers.length > 0 && (
+      <Modal transparent animationType="fade" visible={true} onRequestClose={() => setEligibleOffers([])}>
+        <Pressable style={promoStyles.backdrop} onPress={() => setEligibleOffers([])}>
+          <View style={promoStyles.card}>
+            <Text style={promoStyles.heading}>You unlocked a reward!</Text>
+            {eligibleOffers.map((offer) => (
+              <View key={offer.id} style={promoStyles.offerBlock}>
+                <Text style={promoStyles.offerTitle}>{offer.title}</Text>
+                {offer.description ? (
+                  <Text style={promoStyles.offerDesc}>{offer.description}</Text>
+                ) : null}
+                <View style={promoStyles.codeBox}>
+                  <Text style={promoStyles.codeLabel}>Show this code to staff</Text>
+                  <Text style={promoStyles.code}>{offer.redemptionCode}</Text>
+                </View>
+                {offer.terms ? (
+                  <Text style={promoStyles.terms}>{offer.terms}</Text>
+                ) : null}
+              </View>
+            ))}
+            <Pressable
+              style={({ pressed }) => [promoStyles.dismissBtn, pressed && { opacity: 0.8 }]}
+              onPress={() => setEligibleOffers([])}
+            >
+              <Text style={promoStyles.dismissText}>Got it!</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+    )}
     </>
   );
 }
@@ -943,6 +1006,116 @@ const sheet = StyleSheet.create({
     fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.xs,
     color: colors.textTertiary,
+  },
+  offersSection: { gap: spacing.sm, marginBottom: spacing.md },
+  offersSectionTitle: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  offerChip: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    backgroundColor: colors.accentLight,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    alignItems: 'flex-start',
+  },
+  offerChipIcon: { fontSize: 20, lineHeight: 26 },
+  offerChipTitle: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  offerChipDesc: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  offerChipHint: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.accent,
+    marginTop: 2,
+  },
+});
+
+const promoStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.xl,
+    padding: spacing.xxxl,
+    width: '100%',
+    maxWidth: 340,
+    gap: spacing.lg,
+    ...shadows.lg,
+  },
+  heading: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.xl,
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  offerBlock: { gap: spacing.sm },
+  offerTitle: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  offerDesc: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  codeBox: {
+    backgroundColor: colors.paper,
+    borderRadius: radii.md,
+    padding: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderStyle: 'dashed',
+  },
+  codeLabel: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  code: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 28,
+    color: colors.accent,
+    letterSpacing: 4,
+  },
+  terms: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    fontStyle: 'italic',
+  },
+  dismissBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: radii.full,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  dismissText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textInverse,
   },
 });
 

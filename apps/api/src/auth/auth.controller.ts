@@ -28,7 +28,7 @@ export class AuthController {
   discord(
     @Body(new ZodValidationPipe(DiscordAuthBodySchema)) body: DiscordAuthBody,
   ): Promise<AuthTokens> {
-    return this.auth.signInWithDiscord(body.code, body.codeVerifier);
+    return this.auth.signInWithDiscord(body.code, body.codeVerifier, body.redirectUri);
   }
 
   @Post('refresh')

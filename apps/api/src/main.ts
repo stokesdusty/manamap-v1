@@ -14,6 +14,14 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix('api');
 
+  app.enableCors({
+    origin: [
+      'http://localhost:5173', // admin portal (Vite dev)
+      'http://localhost:4173', // admin portal (Vite preview)
+    ],
+    credentials: true,
+  });
+
   await app.listen(env.API_PORT, env.API_HOST);
   console.log(`API listening on http://${env.API_HOST}:${env.API_PORT}/api`);
 }

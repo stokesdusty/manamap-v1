@@ -36,10 +36,10 @@ export class AuthService {
     return this.tokens.issueTokens(user.id, user.email);
   }
 
-  async signInWithDiscord(code: string, codeVerifier?: string): Promise<AuthTokens> {
+  async signInWithDiscord(code: string, codeVerifier?: string, redirectUri?: string): Promise<AuthTokens> {
     let profile;
     try {
-      profile = await this.discord.exchangeCode(code, codeVerifier);
+      profile = await this.discord.exchangeCode(code, codeVerifier, redirectUri);
     } catch (error: any) {
       this.logger.error(`Discord code exchange failed: ${error.message}`, error.stack);
       throw error;

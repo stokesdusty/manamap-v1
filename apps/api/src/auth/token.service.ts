@@ -19,7 +19,9 @@ export class TokenService {
   ) {}
 
   async issueTokens(userId: string, email: string): Promise<AuthTokens> {
-    const accessToken = this.jwt.sign({ sub: userId, email });
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    const role = user?.role ?? 'USER';
+    const accessToken = this.jwt.sign({ sub: userId, email, role });
 
     const rawRefresh = randomBytes(32).toString('hex');
     await this.prisma.refreshToken.create({

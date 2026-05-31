@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 export interface AccessTokenPayload {
   sub: string;
   email: string;
+  role: string; // UserRole value
   iat: number;
   exp: number;
 }

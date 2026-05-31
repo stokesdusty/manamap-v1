@@ -52,6 +52,17 @@ enum EncounterSource {
   GAME
 }
 
+enum UserRole {
+  USER
+  PARTNER
+  ADMIN
+}
+
+enum OfferType {
+  FIRST_VISIT
+  STREAK
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -72,6 +83,7 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   homeStoreId         String?  @map("home_store_id")
+  role                UserRole @default(USER)
 
   identities          Identity[]
   privacySettings     PrivacySettings?
@@ -86,7 +98,8 @@ model User {
   refreshTokens       RefreshToken[]
   pushTokens          PushToken[]
   eventAttendees      EventAttendee[]
-  homeStore           Store?   @relation("HomeStore", fields: [homeStoreId], references: [id])
+  homeStore           Store?          @relation("HomeStore", fields: [homeStoreId], references: [id])
+  ownerships          StoreOwnership[]
 
   @@map("users")
 }
@@ -210,7 +223,8 @@ model Store {
   rewardOffers RewardOffer[]
   streaks      Streak[]
   userBadges   UserBadge[]
-  homeUsers    User[]   @relation("HomeStore")
+  homeUsers    User[]          @relation("HomeStore")
+  ownerships   StoreOwnership[]
 
   @@map("stores")
 }
@@ -330,16 +344,35 @@ model Streak {
   @@map("streaks")
 }
 
-model RewardOffer {
-  id          String    @id @default(uuid())
-  storeId     String    @map("store_id")
-  title       String
-  description String?
-  startsAt    DateTime  @map("starts_at")
-  endsAt      DateTime? @map("ends_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
+model StoreOwnership {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  storeId   String   @map("store_id")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  store Store @relation(fields: [storeId], references: [id])
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storeId])
+  @@map("store_ownerships")
+}
+
+model RewardOffer {
+  id             String    @id @default(uuid())
+  storeId        String    @map("store_id")
+  type           OfferType @default(FIRST_VISIT)
+  title          String
+  description    String?
+  terms          String?
+  redemptionCode String    @unique @map("redemption_code")
+  active         Boolean   @default(true)
+  streakRequired Int?      @map("streak_required")
+  startsAt       DateTime? @map("starts_at")
+  endsAt         DateTime? @map("ends_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@map("reward_offers")
 }

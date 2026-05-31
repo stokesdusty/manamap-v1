@@ -22,12 +22,13 @@ export class DiscordService {
 
   constructor(private readonly config: ConfigService<Env>) {}
 
-  async exchangeCode(code: string, codeVerifier?: string): Promise<DiscordProfile> {
+  async exchangeCode(code: string, codeVerifier?: string, redirectUri?: string): Promise<DiscordProfile> {
     const clientId = this.config.get<string>('DISCORD_CLIENT_ID');
     const clientSecret = this.config.get<string>('DISCORD_CLIENT_SECRET');
-    const redirectUri = this.config.get<string>('DISCORD_REDIRECT_URI');
+    const configuredRedirectUri = this.config.get<string>('DISCORD_REDIRECT_URI');
+    const finalRedirectUri = redirectUri ?? configuredRedirectUri;
 
-    if (!clientId || !clientSecret || !redirectUri) {
+    if (!clientId || !clientSecret || !finalRedirectUri) {
       throw new ServiceUnavailableException('Discord OAuth is not configured on this server');
     }
 
@@ -37,7 +38,7 @@ export class DiscordService {
         client_secret: clientSecret,
         grant_type: 'authorization_code',
         code,
-        redirect_uri: redirectUri,
+        redirect_uri: finalRedirectUri,
       };
       if (codeVerifier) params['code_verifier'] = codeVerifier;
 

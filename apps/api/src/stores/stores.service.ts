@@ -145,28 +145,26 @@ export class StoresService {
   // -------------------------------------------------------------------------
 
   async checkin(userId: string, storeId: string) {
-    // Validate store exists (also used in presence.heartbeat, but we need the name here)
     const store = await this.prisma.store.findUnique({
       where: { id: storeId },
       select: { id: true, name: true },
     });
     if (!store) throw new NotFoundException('Store not found');
 
-    // Close any open check-in at a different store
     await this.prisma.checkin.updateMany({
       where: { userId, checkedOutAt: null, storeId: { not: storeId } },
       data: { checkedOutAt: new Date() },
     });
 
-    // Create new check-in row (open-ended — closed when they check into another store)
     const checkin = await this.prisma.checkin.create({
       data: { userId, storeId },
     });
 
-    // Activate presence heartbeat + run gamification in parallel
-    const [presence, gamificationResult] = await Promise.all([
+    const [presence, gamificationResult, priorVisits, eligibleOffers] = await Promise.all([
       this.presence.heartbeat(userId, storeId),
       this.gamification.processCheckin(userId, storeId),
+      this.prisma.checkin.count({ where: { userId, storeId, id: { not: checkin.id } } }),
+      this.getEligibleOffers(userId, storeId),
     ]);
 
     return {
@@ -177,7 +175,46 @@ export class StoresService {
       presenceExpiresIn: presence.expiresIn,
       newBadges: gamificationResult.newBadges,
       streak: gamificationResult.streak,
+      eligibleOffers: eligibleOffers.filter((o) => {
+        if (o.type === 'FIRST_VISIT') return priorVisits === 0;
+        if (o.type === 'STREAK') return (gamificationResult.streak?.currentStreak ?? 0) >= (o.streakRequired ?? 2);
+        return false;
+      }).map((o) => ({
+        id: o.id,
+        type: o.type,
+        title: o.title,
+        description: o.description,
+        terms: o.terms,
+        redemptionCode: o.redemptionCode,
+      })),
     };
+  }
+
+  async getActiveOffers(storeId: string) {
+    const now = new Date();
+    return this.prisma.rewardOffer.findMany({
+      where: {
+        storeId,
+        active: true,
+        OR: [{ startsAt: null }, { startsAt: { lte: now } }],
+        AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: now } }] }],
+      },
+      select: { id: true, type: true, title: true, description: true, terms: true, streakRequired: true, startsAt: true, endsAt: true },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  private async getEligibleOffers(userId: string, storeId: string) {
+    const now = new Date();
+    return this.prisma.rewardOffer.findMany({
+      where: {
+        storeId,
+        active: true,
+        OR: [{ startsAt: null }, { startsAt: { lte: now } }],
+        AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: now } }] }],
+      },
+      select: { id: true, type: true, title: true, description: true, terms: true, redemptionCode: true, streakRequired: true },
+    });
   }
 
   // -------------------------------------------------------------------------

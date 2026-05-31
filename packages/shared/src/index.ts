@@ -324,6 +324,14 @@ export const CheckinResultSchema = z.object({
   presenceExpiresIn: z.number().int().positive(),
   newBadges: z.array(EarnedBadgeSchema),
   streak: StoreStreakSchema.nullable(),
+  eligibleOffers: z.array(z.object({
+    id: IdSchema,
+    type: z.string(),
+    title: z.string(),
+    description: z.string().nullable(),
+    terms: z.string().nullable(),
+    redemptionCode: z.string(),
+  })),
 });
 export type CheckinResult = z.infer<typeof CheckinResultSchema>;
 
@@ -447,6 +455,7 @@ export type AppleAuthBody = z.infer<typeof AppleAuthBodySchema>;
 export const DiscordAuthBodySchema = z.object({
   code: z.string().min(1, 'code is required'),
   codeVerifier: z.string().optional(),
+  redirectUri: z.string().url().optional(),
 });
 export type DiscordAuthBody = z.infer<typeof DiscordAuthBodySchema>;
 
@@ -477,3 +486,79 @@ export const ApiErrorSchema = z.object({
   error: z.object({ code: z.string(), message: z.string() }),
 });
 export type ApiError = z.infer<typeof ApiErrorSchema>;
+
+// --- Partner program ---
+
+export const UserRoleSchema = z.enum(['USER', 'PARTNER', 'ADMIN']);
+export type UserRole = z.infer<typeof UserRoleSchema>;
+
+export const OfferTypeSchema = z.enum(['FIRST_VISIT', 'STREAK']);
+export type OfferType = z.infer<typeof OfferTypeSchema>;
+
+export const RewardOfferSchema = z.object({
+  id: IdSchema,
+  storeId: IdSchema,
+  type: OfferTypeSchema,
+  title: z.string(),
+  description: z.string().nullable(),
+  terms: z.string().nullable(),
+  active: z.boolean(),
+  streakRequired: z.number().int().nullable(),
+  startsAt: TimestampSchema.nullable(),
+  endsAt: TimestampSchema.nullable(),
+  createdAt: TimestampSchema,
+});
+export type RewardOffer = z.infer<typeof RewardOfferSchema>;
+
+export const ActiveOfferSchema = RewardOfferSchema.extend({
+  redemptionCode: z.string().optional(), // only present when user has checked in
+});
+export type ActiveOffer = z.infer<typeof ActiveOfferSchema>;
+
+export const CreateRewardOfferSchema = z.object({
+  type: OfferTypeSchema,
+  title: z.string().min(1).max(128),
+  description: z.string().max(500).nullable().optional(),
+  terms: z.string().max(500).nullable().optional(),
+  streakRequired: z.number().int().min(2).max(52).nullable().optional(),
+  startsAt: z.string().datetime().nullable().optional(),
+  endsAt: z.string().datetime().nullable().optional(),
+});
+export type CreateRewardOffer = z.infer<typeof CreateRewardOfferSchema>;
+
+export const UpdateRewardOfferSchema = CreateRewardOfferSchema.partial().extend({
+  active: z.boolean().optional(),
+});
+export type UpdateRewardOffer = z.infer<typeof UpdateRewardOfferSchema>;
+
+export const StoreOwnershipSchema = z.object({
+  id: IdSchema,
+  userId: IdSchema,
+  storeId: IdSchema,
+  createdAt: TimestampSchema,
+});
+export type StoreOwnership = z.infer<typeof StoreOwnershipSchema>;
+
+export const ClaimStoreSchema = z.object({
+  storeId: IdSchema,
+});
+export type ClaimStore = z.infer<typeof ClaimStoreSchema>;
+
+export const UpdateStoreProfileSchema = z.object({
+  name: z.string().min(1).max(128).optional(),
+  address: z.string().max(256).nullable().optional(),
+  city: z.string().max(64).nullable().optional(),
+  state: z.string().max(64).nullable().optional(),
+  zip: z.string().max(16).nullable().optional(),
+  discordUrl: z.string().url().nullable().optional(),
+});
+export type UpdateStoreProfile = z.infer<typeof UpdateStoreProfileSchema>;
+
+export const PartnerAnalyticsSchema = z.object({
+  totalCheckins: z.number().int(),
+  checkinsThisWeek: z.number().int(),
+  checkinsThisMonth: z.number().int(),
+  uniqueVisitors: z.number().int(),
+  activeOffers: z.number().int(),
+});
+export type PartnerAnalytics = z.infer<typeof PartnerAnalyticsSchema>;

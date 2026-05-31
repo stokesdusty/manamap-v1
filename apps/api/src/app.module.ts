@@ -13,6 +13,7 @@ import { PresenceModule } from './presence/presence.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
 import { StoresModule } from './stores/stores.module';
+import { PartnerModule } from './partner/partner.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { StoresModule } from './stores/stores.module';
     PresenceModule,
     DiscoveryModule,
     StoresModule,
+    PartnerModule,
   ],
 })
 export class AppModule {}
