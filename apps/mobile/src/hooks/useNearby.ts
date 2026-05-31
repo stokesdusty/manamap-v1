@@ -1,5 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AttendEventResponse, CheckinResult, NearbyResponse, StoreDetail, StoreEventsResponse, StorePin } from '@manamap/shared';
+import type {
+  AttendEventResponse,
+  CheckinResult,
+  ManaColor,
+  MtgFormat,
+  NearbyResponse,
+  PlayerVibe,
+  StoreDetail,
+  StoreEventsResponse,
+  StorePin,
+  SuggestionsResponse,
+} from '@manamap/shared';
 import { api } from '../api/client';
 
 const POLL_INTERVAL_MS = 30 * 1000; // 30 seconds
@@ -8,11 +19,42 @@ const POLL_INTERVAL_MS = 30 * 1000; // 30 seconds
 // Nearby (discovery)
 // ---------------------------------------------------------------------------
 
-export function useNearby(enabled = true) {
+export interface DiscoveryFilters {
+  format?: MtgFormat;
+  colors?: ManaColor[];
+  powerMin?: number;
+  powerMax?: number;
+  vibe?: PlayerVibe;
+}
+
+export function useNearby(enabled = true, filters?: DiscoveryFilters) {
   return useQuery<NearbyResponse>({
-    queryKey: ['discovery', 'nearby'],
+    queryKey: ['discovery', 'nearby', filters ?? null],
+    queryFn: () => {
+      const params: Record<string, string | number> = {};
+      if (filters?.format) params.format = filters.format;
+      if (filters?.colors?.length) params.colors = filters.colors.join(',');
+      if (filters?.powerMin != null) params.powerMin = filters.powerMin;
+      if (filters?.powerMax != null) params.powerMax = filters.powerMax;
+      if (filters?.vibe) params.vibe = filters.vibe;
+      return api
+        .get<NearbyResponse>('/v1/discovery/nearby', { params })
+        .then((r) => r.data);
+    },
+    refetchInterval: POLL_INTERVAL_MS,
+    enabled,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Suggestions (matchmaking)
+// ---------------------------------------------------------------------------
+
+export function useSuggestions(enabled = true) {
+  return useQuery<SuggestionsResponse>({
+    queryKey: ['discovery', 'suggestions'],
     queryFn: () =>
-      api.get<NearbyResponse>('/v1/discovery/nearby').then((r) => r.data),
+      api.get<SuggestionsResponse>('/v1/discovery/suggestions').then((r) => r.data),
     refetchInterval: POLL_INTERVAL_MS,
     enabled,
   });
@@ -45,7 +87,7 @@ export function useStorePins(bbox: string | null) {
         .get<StorePin[]>('/v1/stores', { params: { bbox } })
         .then((r) => r.data),
     enabled: !!bbox,
-    staleTime: 60 * 1000, // pins are fairly stable
+    staleTime: 60 * 1000,
   });
 }
 
@@ -74,6 +116,7 @@ export function useCheckin() {
       api.post<CheckinResult>(`/v1/stores/${storeId}/checkin`).then((r) => r.data),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['discovery', 'nearby'] });
+      void qc.invalidateQueries({ queryKey: ['discovery', 'suggestions'] });
     },
   });
 }

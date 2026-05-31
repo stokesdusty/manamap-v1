@@ -434,6 +434,46 @@ export const NearbyResponseSchema = z.object({
 });
 export type NearbyResponse = z.infer<typeof NearbyResponseSchema>;
 
+// --- Advanced discovery ---
+
+export const NearbyFiltersSchema = z.object({
+  format: MtgFormatSchema.optional(),
+  colors: z.string().optional(), // comma-separated WUBRG, e.g. "W,U"
+  powerMin: z.coerce.number().int().min(1).max(10).optional(),
+  powerMax: z.coerce.number().int().min(1).max(10).optional(),
+  vibe: PlayerVibeSchema.optional(),
+});
+export type NearbyFilters = z.infer<typeof NearbyFiltersSchema>;
+
+export const MatchReasonTypeSchema = z.enum([
+  'shared_format',
+  'similar_power',
+  'color_overlap',
+  'positive_encounter',
+  'compatible_vibe',
+  'new_connection',
+]);
+export type MatchReasonType = z.infer<typeof MatchReasonTypeSchema>;
+
+export const MatchReasonSchema = z.object({
+  type: MatchReasonTypeSchema,
+  label: z.string(),
+});
+export type MatchReason = z.infer<typeof MatchReasonSchema>;
+
+export const SuggestionSchema = NearbyPlayerSchema.extend({
+  score: z.number(),
+  reasons: z.array(MatchReasonSchema),
+});
+export type Suggestion = z.infer<typeof SuggestionSchema>;
+
+export const SuggestionsResponseSchema = z.object({
+  storeId: IdSchema.nullable(),
+  storeName: z.string().nullable(),
+  suggestions: z.array(SuggestionSchema),
+});
+export type SuggestionsResponse = z.infer<typeof SuggestionsResponseSchema>;
+
 // --- Place ---
 
 export const PlaceSchema = z.object({

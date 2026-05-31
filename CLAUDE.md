@@ -208,6 +208,17 @@ No Docker config is in the repo — run them directly or via Docker outside the 
 - All DB IDs are `TEXT` in migrations (not `UUID` type) — Prisma generates UUIDs in application code
 - NestJS modules follow: `module.ts` → `service.ts` → `controller.ts`
 - API guards: `AuthGuard` (JWT) for all protected routes; `RolesGuard` + `@Roles()` for role checks
+- Any NestJS module that uses `AuthGuard` must import `AuthModule` (it exports `AuthGuard` + `JwtModule`)
+- TypeScript is strict about unused variables — prefix intentionally unused params with `_`
+- After running a migration that changes the Prisma schema, run `pnpm --filter @manamap/api exec prisma generate` to update the client (or just use `db:migrate` which does it automatically)
 - No comments unless the WHY is non-obvious
 - Mobile hooks live in `apps/mobile/src/hooks/`
 - Shared Zod schemas go in `packages/shared/src/index.ts`
+
+---
+
+## Known gotchas
+
+- **React Strict Mode + OAuth callbacks**: `AuthCallbackPage` uses a `sessionStorage` key (scoped to the code value) to prevent React 18 Strict Mode's double-invoke from firing the Discord code exchange twice. Discord codes are single-use — a second request with the same code will fail and bounce the user to `/login`.
+- **CORS on Fastify**: `enableCors` must explicitly list `methods` and `allowedHeaders` — defaults are insufficient. See `apps/api/src/main.ts`.
+- **Prisma client drift**: if the API fails to compile with "property does not exist on type" for a model field, the Prisma client is stale. Run `db:migrate` or `prisma generate`.
