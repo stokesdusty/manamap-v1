@@ -204,7 +204,7 @@ export class StoresService {
     });
   }
 
-  private async getEligibleOffers(userId: string, storeId: string) {
+  private async getEligibleOffers(_userId: string, storeId: string) {
     const now = new Date();
     return this.prisma.rewardOffer.findMany({
       where: {

@@ -16,9 +16,11 @@ async function bootstrap(): Promise<void> {
 
   app.enableCors({
     origin: [
-      'http://localhost:5173', // admin portal (Vite dev)
-      'http://localhost:4173', // admin portal (Vite preview)
+      'http://localhost:5173',
+      'http://localhost:4173',
     ],
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });
 
