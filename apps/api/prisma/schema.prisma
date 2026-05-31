@@ -223,13 +223,16 @@ model PushToken {
 }
 
 model Store {
-  id         String  @id @default(uuid())
+  id         String   @id @default(uuid())
   name       String
   address    String?
   city       String?
   state      String?
   zip        String?
-  discordUrl String? @map("discord_url")
+  timezone   String?
+  website    String?
+  discordUrl String?  @map("discord_url")
+  isPartner  Boolean  @default(false) @map("is_partner")
   // geom is a PostGIS geography(Point,4326) — managed via $queryRaw / $executeRaw
   geom       Unsupported("geography(Point,4326)")?
   createdAt  DateTime @default(now()) @map("created_at")
@@ -244,6 +247,7 @@ model Store {
   homeUsers    User[]          @relation("HomeStore")
   ownerships   StoreOwnership[]
 
+  @@unique([name, city])
   @@map("stores")
 }
 

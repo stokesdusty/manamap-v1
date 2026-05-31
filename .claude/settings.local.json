@@ -43,7 +43,9 @@
       "Bash(pnpm approve-builds *)",
       "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260530260000_partner_program\")",
       "Bash(awk '{print $2}')",
-      "Bash(mkdir -p \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\src\\\\safety\\\\__tests__\")"
+      "Bash(mkdir -p \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\src\\\\safety\\\\__tests__\")",
+      "Bash(grep -E \"\\\\.ts$|\\\\.tsx$|spec\\\\.ts$\")",
+      "Bash(mkdir -p \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\data\" \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260531180000_store_launch_dataset\")"
     ]
   }
 }

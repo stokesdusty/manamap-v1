@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 const prisma = new PrismaClient();
 
@@ -18,37 +20,6 @@ const USERS = [
   { displayName: 'Carol Díaz', email: 'giada@example.com', avatarColors: ['W'] },
   { displayName: 'Dave Okafor', email: 'krenko@example.com', avatarColors: ['R'] },
   { displayName: 'Eve Johansson', email: 'tatyova@example.com', avatarColors: ['U', 'G'] },
-];
-
-const STORES = [
-  {
-    name: 'Mox Boarding House',
-    address: '5105 Leary Ave NW',
-    timezone: 'America/Los_Angeles',
-    city: 'Seattle',
-    state: 'WA',
-    zip: '98107',
-    lat: 47.6665,
-    lng: -122.3756,
-  },
-  {
-    name: 'Card Kingdom',
-    address: '6006 Roosevelt Way NE',
-    city: 'Seattle',
-    state: 'WA',
-    zip: '98115',
-    lat: 47.6729,
-    lng: -122.3175,
-  },
-  {
-    name: 'The Wandering Dragon',
-    address: '123 Main St',
-    city: 'Bellevue',
-    state: 'WA',
-    zip: '98004',
-    lat: 47.6101,
-    lng: -122.2015,
-  },
 ];
 
 const BADGES = [
@@ -89,6 +60,71 @@ const BADGES = [
   },
 ];
 
+interface StoreRecord {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  lat: number;
+  lng: number;
+  timezone?: string;
+  discordUrl?: string;
+  website?: string;
+}
+
+async function seedStores(): Promise<void> {
+  const raw = readFileSync(join(__dirname, 'data', 'stores.json'), 'utf-8');
+  const json = raw.replace(/^\/\/.*$/gm, '').trim();
+  const stores: StoreRecord[] = JSON.parse(json);
+
+  const existing = await prisma.store.findMany({
+    where: { OR: stores.map((s) => ({ name: s.name, city: s.city })) },
+    select: { name: true, city: true },
+  });
+  const existingKeys = new Set(existing.map((e) => `${e.name}|||${e.city}`));
+
+  let created = 0;
+  let updated = 0;
+
+  for (const s of stores) {
+    const isNew = !existingKeys.has(`${s.name}|||${s.city}`);
+
+    const store = await prisma.store.upsert({
+      where: { name_city: { name: s.name, city: s.city } },
+      update: {
+        address: s.address,
+        state: s.state,
+        zip: s.zip,
+        timezone: s.timezone ?? null,
+        website: s.website ?? null,
+        discordUrl: s.discordUrl ?? null,
+      },
+      create: {
+        name: s.name,
+        address: s.address,
+        city: s.city,
+        state: s.state,
+        zip: s.zip,
+        timezone: s.timezone ?? null,
+        website: s.website ?? null,
+        discordUrl: s.discordUrl ?? null,
+      },
+    });
+
+    await prisma.$executeRaw`
+      UPDATE stores
+      SET geom = ST_SetSRID(ST_MakePoint(${s.lng}, ${s.lat}), 4326)::geography
+      WHERE id = ${store.id}
+    `;
+
+    if (isNew) created++;
+    else updated++;
+  }
+
+  console.log(`Stores: ${created} created, ${updated} updated`);
+}
+
 async function main(): Promise<void> {
   console.log('Seeding formats…');
   for (const fmt of FORMATS) {
@@ -118,25 +154,7 @@ async function main(): Promise<void> {
   }
 
   console.log('Seeding stores (with PostGIS geometry)…');
-  for (const s of STORES) {
-    const existing = await prisma.store.findFirst({ where: { name: s.name } });
-    if (!existing) {
-      await prisma.$executeRaw`
-        INSERT INTO stores (id, name, address, city, state, zip, geom, created_at, updated_at)
-        VALUES (
-          gen_random_uuid(),
-          ${s.name},
-          ${s.address},
-          ${s.city},
-          ${s.state},
-          ${s.zip},
-          ST_SetSRID(ST_MakePoint(${s.lng}, ${s.lat}), 4326)::geography,
-          NOW(),
-          NOW()
-        )
-      `;
-    }
-  }
+  await seedStores();
 
   console.log('Seeding badges…');
   for (const b of BADGES) {

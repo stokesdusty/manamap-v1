@@ -70,6 +70,43 @@ import { UserSchema, PlaceSchema } from '@manamap/shared';
 import type { User, Place, Coordinates } from '@manamap/shared';
 ```
 
+## Store seed data
+
+Launch store data lives in `apps/api/prisma/data/stores.json` — a curated list of real MTG local game stores across the Seattle and Portland metros.
+
+### JSON record format
+
+```json
+{
+  "name": "Guardian Games",
+  "address": "345 SE Taylor St",
+  "city": "Portland",
+  "state": "OR",
+  "zip": "97214",
+  "lat": 45.5167,
+  "lng": -122.6602,
+  "timezone": "America/Los_Angeles",
+  "website": "https://www.ggportland.com",
+  "discordUrl": "https://discord.gg/example"
+}
+```
+
+`timezone`, `website`, and `discordUrl` are optional. Use `America/Los_Angeles` for WA and OR stores.
+
+### Idempotent seeding
+
+Stores are upserted on the `(name, city)` compound unique key. Re-running the seed updates non-geo columns and refreshes coordinates — it never duplicates rows.
+
+```bash
+pnpm --filter @manamap/api db:seed          # full seed (formats, users, stores, badges)
+pnpm --filter @manamap/api db:seed:stores   # stores only — prints "X created, Y updated"
+```
+
+### Adding a new city
+
+1. Append store objects to `stores.json` with the correct `city`, `state`, and timezone.
+2. Run `pnpm --filter @manamap/api db:seed:stores` — the script is safe to re-run.
+
 ## Tech stack
 
 | Tool | Purpose |
