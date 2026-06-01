@@ -2,7 +2,8 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export function Layout() {
-  const { logout } = useAuth();
+  const { logout, role } = useAuth();
+  const isAdmin = role === 'ADMIN';
 
   return (
     <div className="layout">
@@ -14,6 +15,19 @@ export function Layout() {
         <NavLink to="/stores/claim" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
           + Claim Store
         </NavLink>
+        {isAdmin && (
+          <>
+            <div style={{ margin: '16px 8px 8px', fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: 1 }}>
+              Admin
+            </div>
+            <NavLink to="/moderation" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+              Moderation
+            </NavLink>
+            <NavLink to="/users" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`} style={{ opacity: 0.45, pointerEvents: 'none' }}>
+              Users
+            </NavLink>
+          </>
+        )}
         <div style={{ flex: 1 }} />
         <button
           className="sidebar-link"

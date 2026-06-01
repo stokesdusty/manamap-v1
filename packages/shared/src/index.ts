@@ -643,6 +643,65 @@ export const PartnerAnalyticsSchema = z.object({
 });
 export type PartnerAnalytics = z.infer<typeof PartnerAnalyticsSchema>;
 
+// --- Moderation ---
+
+export const ModerationStatusSchema = z.enum(['ACTIVE', 'SUSPENDED', 'BANNED']);
+export type ModerationStatus = z.infer<typeof ModerationStatusSchema>;
+
+export const ModerationActionTypeSchema = z.enum(['DISMISS', 'WARN', 'SUSPEND', 'BAN']);
+export type ModerationActionType = z.infer<typeof ModerationActionTypeSchema>;
+
+export const ModerationUserSummarySchema = z.object({
+  id: IdSchema,
+  displayName: z.string(),
+  handle: z.string().nullable(),
+  avatarColors: z.array(z.string()),
+  moderationStatus: ModerationStatusSchema,
+  priorReports: z.number().int().nonnegative(),
+  priorActions: z.number().int().nonnegative(),
+});
+export type ModerationUserSummary = z.infer<typeof ModerationUserSummarySchema>;
+
+export const ModerationReportSchema = z.object({
+  id: IdSchema,
+  reason: ReportReasonSchema,
+  context: z.string().nullable(),
+  createdAt: TimestampSchema,
+  status: z.enum(['OPEN', 'REVIEWED', 'ACTIONED']),
+  resolvedAt: TimestampSchema.nullable(),
+  resolutionNote: z.string().nullable(),
+  reported: ModerationUserSummarySchema,
+});
+export type ModerationReport = z.infer<typeof ModerationReportSchema>;
+
+export const ModerationSignalSchema = z.object({
+  type: z.enum(['open_report', 'prior_action']),
+  label: z.string(),
+  createdAt: TimestampSchema,
+});
+export type ModerationSignal = z.infer<typeof ModerationSignalSchema>;
+
+export const ModerationDetailSchema = ModerationReportSchema.extend({
+  detail: z.string().nullable(),
+  signals: z.array(ModerationSignalSchema),
+});
+export type ModerationDetail = z.infer<typeof ModerationDetailSchema>;
+
+export const ResolveReportSchema = z.object({
+  action: ModerationActionTypeSchema,
+  note: z.string().max(1000).optional(),
+  suspendDays: z.number().int().min(1).max(365).optional(),
+});
+export type ResolveReport = z.infer<typeof ResolveReportSchema>;
+
+export const ModerationStatsSchema = z.object({
+  open: z.number().int().nonnegative(),
+  repeatOffenders: z.number().int().nonnegative(),
+  reviewed: z.number().int().nonnegative(),
+  actionedAllTime: z.number().int().nonnegative(),
+});
+export type ModerationStats = z.infer<typeof ModerationStatsSchema>;
+
 // --- Onboarding ---
 
 export const OnboardingDeckSchema = CreateDeckLinkSchema;

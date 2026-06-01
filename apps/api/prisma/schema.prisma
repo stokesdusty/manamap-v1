@@ -77,6 +77,19 @@ enum ReportStatus {
   ACTIONED
 }
 
+enum ModerationStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum ModerationActionType {
+  DISMISS
+  WARN
+  SUSPEND
+  BAN
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -99,6 +112,8 @@ model User {
 
   homeStoreId         String?  @map("home_store_id")
   role                UserRole @default(USER)
+  moderationStatus    ModerationStatus @default(ACTIVE) @map("moderation_status")
+  suspendedUntil      DateTime? @map("suspended_until")
 
   identities          Identity[]
   privacySettings     PrivacySettings?
@@ -119,6 +134,9 @@ model User {
   blocksAgainst       Block[]  @relation("Blocked")
   reportsMade         Report[] @relation("ReportsMade")
   reportsAgainst      Report[] @relation("ReportsAgainst")
+  resolvedReports     Report[] @relation("ResolvedReports")
+  targetedActions     ModerationAction[] @relation("TargetedActions")
+  adminActions        ModerationAction[] @relation("AdminActions")
 
   @@map("users")
 }
@@ -416,17 +434,36 @@ model Block {
 }
 
 model Report {
-  id         String       @id @default(uuid())
-  reporterId String       @map("reporter_id")
-  reportedId String       @map("reported_id")
-  reason     ReportReason
-  detail     String?
-  context    String?
-  status     ReportStatus @default(OPEN)
-  createdAt  DateTime     @default(now()) @map("created_at")
+  id             String       @id @default(uuid())
+  reporterId     String       @map("reporter_id")
+  reportedId     String       @map("reported_id")
+  reason         ReportReason
+  detail         String?
+  context        String?
+  status         ReportStatus @default(OPEN)
+  resolvedById   String?      @map("resolved_by_id")
+  resolvedAt     DateTime?    @map("resolved_at")
+  resolutionNote String?      @map("resolution_note")
+  createdAt      DateTime     @default(now()) @map("created_at")
 
-  reporter User @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
-  reported User @relation("ReportsAgainst", fields: [reportedId], references: [id])
+  reporter   User @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported   User @relation("ReportsAgainst", fields: [reportedId], references: [id])
+  resolvedBy User? @relation("ResolvedReports", fields: [resolvedById], references: [id], onDelete: SetNull)
 
   @@map("reports")
+}
+
+model ModerationAction {
+  id           String               @id @default(uuid())
+  reportId     String?              @map("report_id")
+  targetUserId String               @map("target_user_id")
+  adminId      String               @map("admin_id")
+  action       ModerationActionType
+  note         String?
+  createdAt    DateTime             @default(now()) @map("created_at")
+
+  targetUser User @relation("TargetedActions", fields: [targetUserId], references: [id], onDelete: Cascade)
+  admin      User @relation("AdminActions", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("moderation_actions")
 }

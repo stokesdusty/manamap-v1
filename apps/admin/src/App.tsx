@@ -8,6 +8,7 @@ import { StoresPage } from './pages/StoresPage';
 import { ClaimStorePage } from './pages/ClaimStorePage';
 import { StoreDashboardPage } from './pages/StoreDashboardPage';
 import { OfferFormPage } from './pages/OfferFormPage';
+import { ModerationPage } from './pages/ModerationPage';
 
 const qc = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 60_000 } },
@@ -16,6 +17,11 @@ const qc = new QueryClient({
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+}
+
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const { role } = useAuth();
+  return role === 'ADMIN' ? <>{children}</> : <Navigate to="/stores" replace />;
 }
 
 function AppRoutes() {
@@ -38,6 +44,14 @@ function AppRoutes() {
         <Route path="/stores/:storeId" element={<StoreDashboardPage />} />
         <Route path="/stores/:storeId/offers/new" element={<OfferFormPage />} />
         <Route path="/stores/:storeId/offers/:offerId/edit" element={<OfferFormPage />} />
+        <Route
+          path="/moderation"
+          element={
+            <RequireAdmin>
+              <ModerationPage />
+            </RequireAdmin>
+          }
+        />
       </Route>
       <Route path="*" element={<Navigate to="/stores" replace />} />
     </Routes>

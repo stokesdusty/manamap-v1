@@ -27,11 +27,12 @@ export class ExchangeService {
     if (!userId) throw new GoneException('Token expired or invalid');
 
     const [user, blockedIds] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: userId } }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, displayName: true, pronouns: true, bio: true, avatarColors: true, commander: true, powerLevel: true, vibe: true, formats: true, moderationStatus: true } }),
       this.safety.getBlockedIds(callerId),
     ]);
     if (!user) throw new NotFoundException('User not found');
     if (blockedIds.has(userId)) throw new NotFoundException('User not found');
+    if (user.moderationStatus !== 'ACTIVE') throw new NotFoundException('User not found');
 
     return {
       id: user.id,

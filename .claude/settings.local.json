@@ -48,7 +48,8 @@
       "Bash(mkdir -p \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\data\" \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260531180000_store_launch_dataset\")",
       "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260531190000_onboarding\")",
       "Bash(mkdir -p /c/dev/manamap/apps/api/prisma/migrations/20260531200000_checkin_radius)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260531210000_moderation\")"
     ]
   }
 }

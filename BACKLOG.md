@@ -7,15 +7,12 @@ context. Move items into a milestone prompt when you pick them up; strike them
 through or delete when shipped.
 
 > Status as of this writing: Phases 1–3 + M14 (safety) · M15 (seeding) ·
-> M16 (onboarding) · M17 (dark theme) · M18 (proximity check-in) are **shipped**.
+> M16 (onboarding) · M17 (dark theme) · M18 (proximity check-in) · M19 (moderation dashboard + enforcement) are **shipped**.
 
 ---
 
 ## 🛡️ Trust & Safety
-- [ ] **Moderation dashboard** (ADMIN-gated, admin portal) — action the `Report`
-  rows currently written as `OPEN` with no review path. Queue + detail + actions
-  (review / dismiss / warn / suspend / ban, with block). *In progress — see the
-  moderation design + build prompt.*
+- [x] **Moderation dashboard** — ADMIN-gated two-pane queue in admin portal; warn/suspend/ban enforcement in AuthGuard; discovery + exchange exclude non-ACTIVE users. *(shipped M19)*
 - [ ] **Rate limiting** — cap connection requests, reports, and exchange-token
   mints per user/IP to stop spam and abuse (Redis token bucket).
 

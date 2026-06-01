@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type Redis from 'ioredis';
-import { ConnectionStatus, EncounterResult, EncounterSource } from '@prisma/client';
+import { ConnectionStatus, EncounterResult, EncounterSource, ModerationStatus } from '@prisma/client';
 import { REDIS } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafetyService } from '../safety/safety.service';
@@ -97,7 +97,7 @@ export class DiscoveryService {
 
     const [users, encounters, connections, upcomingEvents] = await Promise.all([
       this.prisma.user.findMany({
-        where: { id: { in: validIds } },
+        where: { id: { in: validIds }, moderationStatus: ModerationStatus.ACTIVE },
         select: { ...PROFILE_SELECT, privacySettings: { select: { discoverable: true } } },
       }),
       this.prisma.encounter.findMany({
@@ -261,7 +261,7 @@ export class DiscoveryService {
     const [callerUser, peers, encounters, connections] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: callerId }, select: PROFILE_SELECT }),
       this.prisma.user.findMany({
-        where: { id: { in: validIds } },
+        where: { id: { in: validIds }, moderationStatus: ModerationStatus.ACTIVE },
         select: { ...PROFILE_SELECT, privacySettings: { select: { discoverable: true } } },
       }),
       this.prisma.encounter.findMany({

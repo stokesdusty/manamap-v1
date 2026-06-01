@@ -15,6 +15,7 @@ import { RedisModule } from './redis/redis.module';
 import { StoresModule } from './stores/stores.module';
 import { PartnerModule } from './partner/partner.module';
 import { SafetyModule } from './safety/safety.module';
+import { AdminModerationModule } from './admin-moderation/admin-moderation.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { SafetyModule } from './safety/safety.module';
     StoresModule,
     PartnerModule,
     SafetyModule,
+    AdminModerationModule,
   ],
 })
 export class AppModule {}

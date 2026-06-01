@@ -57,12 +57,14 @@ DISCORD_REDIRECT_URI=manamap://auth/discord
 | stores | GET /v1/stores, GET /v1/stores/:id, POST /v1/stores/:id/checkin, GET /v1/stores/:id/offers, GET /v1/stores/:id/events, GET /v1/stores/:id/leaderboard |
 | partner | POST /v1/partner/stores/claim, GET /v1/partner/stores, PATCH /v1/partner/stores/:id, GET /v1/partner/stores/:id/analytics, CRUD /v1/partner/stores/:id/offers |
 | presence | POST /v1/presence/heartbeat, GET /v1/presence/stores |
-| discovery | GET /v1/discovery/nearby |
+| discovery | GET /v1/discovery/nearby, GET /v1/discovery/suggestions |
 | encounters | GET /v1/encounters |
 | connections | standard CRUD |
+| safety | POST /v1/blocks, DELETE /v1/blocks/:userId, GET /v1/blocks, POST /v1/reports |
+| admin-moderation | GET /v1/admin/moderation/stats, GET /v1/admin/moderation/reports, GET /v1/admin/moderation/reports/:id, POST /v1/admin/moderation/reports/:id/resolve — ADMIN only |
 | gamification | BullMQ queue, processes badge/streak logic after checkin |
 
-**Role guard**: `apps/api/src/common/guards/roles.guard.ts` + `@Roles()` decorator. Partner routes check ownership in service layer (ADMINs bypass). Regular `AuthGuard` is used on all protected routes.
+**Role guard**: `apps/api/src/common/guards/roles.guard.ts` + `@Roles()` decorator. Partner routes check ownership in service layer (ADMINs bypass). `AuthGuard` is used on all protected routes — it is **async** and checks `moderationStatus` on every request: BANNED → 403 `account_banned`; actively SUSPENDED → 403 `account_suspended`; expired suspension → lazily resets to ACTIVE. Auth/refresh routes are unguarded and remain reachable.
 
 **Redemption codes**: 8-char alphanumeric from charset `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no confusable chars).
 
@@ -128,6 +130,9 @@ VITE_API_URL=http://localhost:3000/api
 | /stores/:storeId | Analytics dashboard + offers list |
 | /stores/:storeId/offers/new | Create offer |
 | /stores/:storeId/offers/:id/edit | Edit offer |
+| /moderation | Admin-only moderation queue + detail (redirects non-ADMINs) |
+
+`AuthContext` exposes `role` decoded from the JWT (no extra network call). The sidebar shows an Admin section with the Moderation link only when `role === 'ADMIN'`.
 
 **Discord setup**: Add `http://localhost:5173/auth/callback` as an OAuth2 redirect URI in the Discord developer portal.
 
@@ -144,7 +149,7 @@ All IDs are `TEXT` (Prisma `@id @default(uuid())`), stored as plain text UUIDs i
 
 | Model | Purpose |
 |---|---|
-| User | Player account, has `role: UserRole (USER/PARTNER/ADMIN)` |
+| User | Player account — `role: UserRole (USER/PARTNER/ADMIN)`, `moderationStatus: ModerationStatus (ACTIVE/SUSPENDED/BANNED)`, `suspendedUntil DateTime?` |
 | Identity | Discord OAuth identity linked to User |
 | Store | Game store with PostGIS geom column |
 | StoreOwnership | Join table — which users own which stores |
@@ -157,6 +162,9 @@ All IDs are `TEXT` (Prisma `@id @default(uuid())`), stored as plain text UUIDs i
 | Encounter | PvP game result or co-presence encounter |
 | Connection | Player friend/connection request |
 | RefreshToken | Hashed refresh tokens (rotated on use) |
+| Block | Bidirectional block between two users |
+| Report | Player report — `reason`, `status (OPEN/REVIEWED/ACTIONED)`, `resolvedById/At/note` — reporter identity never returned by admin endpoints |
+| ModerationAction | Immutable audit log entry — `action (DISMISS/WARN/SUSPEND/BAN)`, `targetUserId`, `adminId`, optional `reportId` |
 
 **PostGIS**: `stores.geom` is `geography(Point,4326)`. Always use `$queryRaw`/`$executeRaw` for geom queries — Prisma doesn't natively support it.
 
@@ -169,6 +177,8 @@ Located at `apps/api/prisma/migrations/`. Applied in timestamp order. Key notes:
 - Migration `20260530200949_pnpm_db_seed` uses `DROP INDEX IF EXISTS` (idempotent)
 - Migration `20260530240000_gamification` drops the encounters index at the top (ordering fix between shadow DB and real DB)
 - Migration `20260530260000_partner_program` adds `UserRole`, `OfferType` enums, `store_ownerships` table, extends `reward_offers`
+- Migration `20260531172252_safety_blocks_reports` adds `blocks` and `reports` tables, `ReportReason`/`ReportStatus` enums
+- Migration `20260531210000_moderation` adds `ModerationStatus`/`ModerationActionType` enums, `moderationStatus`/`suspendedUntil` to `users`, resolution fields to `reports`, and the `moderation_actions` table
 - If Prisma detects drift and wants to reset — check if shadow DB ordering is the cause before agreeing
 
 ---
@@ -183,6 +193,8 @@ Located at `apps/api/prisma/migrations/`. Applied in timestamp order. Key notes:
 - `PartnerAnalyticsSchema`
 - `BadgeSchema`, `StreakSchema`, `LeaderboardEntrySchema`
 - `NearbyPlayerSchema`, `PresenceHeartbeatSchema`
+- `BlockBodySchema`, `ReportBodySchema`, `BlockedUserSchema`, `ReportReasonSchema`
+- `ModerationStatusSchema`, `ModerationActionTypeSchema`, `ModerationReportSchema`, `ModerationDetailSchema`, `ModerationSignalSchema`, `ResolveReportSchema`, `ModerationStatsSchema`
 
 ---
 
@@ -221,4 +233,6 @@ No Docker config is in the repo — run them directly or via Docker outside the 
 
 - **React Strict Mode + OAuth callbacks**: `AuthCallbackPage` uses a `sessionStorage` key (scoped to the code value) to prevent React 18 Strict Mode's double-invoke from firing the Discord code exchange twice. Discord codes are single-use — a second request with the same code will fail and bounce the user to `/login`.
 - **CORS on Fastify**: `enableCors` must explicitly list `methods` and `allowedHeaders` — defaults are insufficient. See `apps/api/src/main.ts`.
-- **Prisma client drift**: if the API fails to compile with "property does not exist on type" for a model field, the Prisma client is stale. Run `db:migrate` or `prisma generate`.
+- **Prisma client drift**: if the API fails to compile with "property does not exist on type" for a model field, the Prisma client is stale. Run `db:migrate` or `prisma generate`. On Windows, this requires stopping the API first (the native query engine DLL is locked while the process runs).
+- **Moderation enforcement location**: ban/suspend checks live in `AuthGuard` (every authenticated request). Discovery and exchange also exclude non-ACTIVE users at the query level. If you add a new surface that fetches user data, filter on `moderationStatus: ModerationStatus.ACTIVE` to stay consistent.
+- **Reporter identity**: the `reporter` / `reporterId` field on `Report` must never be returned by any admin endpoint — only `reported` (the subject) is exposed.
