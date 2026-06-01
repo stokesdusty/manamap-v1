@@ -54,7 +54,11 @@
       "Bash(Select-Object -First 20)",
       "Bash(Format-Table FullName)",
       "Bash(git -C c:\\\\dev\\\\manamap diff --name-only HEAD)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(npx jest *)",
+      "Bash(git -C c:/dev/manamap diff --name-only HEAD apps/api/src/auth)",
+      "Bash(git -C c:/dev/manamap stash)",
+      "Bash(git -C c:/dev/manamap stash pop)"
     ]
   }
 }

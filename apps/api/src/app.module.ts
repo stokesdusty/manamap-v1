@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { validate } from './config/config.schema';
 import { AuthModule } from './auth/auth.module';
+import { ThrottleModule } from './throttle/throttle.module';
+import { ThrottleGuard } from './throttle/throttle.guard';
 import { GamificationModule } from './gamification/gamification.module';
 import { ConnectionsModule } from './connections/connections.module';
 import { EncountersModule } from './encounters/encounters.module';
@@ -41,6 +44,8 @@ import { LfgModule } from './lfg/lfg.module';
     SafetyModule,
     AdminModerationModule,
     LfgModule,
+    ThrottleModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottleGuard }],
 })
 export class AppModule {}

@@ -17,6 +17,9 @@ export const envSchema = z.object({
   DISCORD_CLIENT_ID: z.string().optional(),
   DISCORD_CLIENT_SECRET: z.string().optional(),
   DISCORD_REDIRECT_URI: z.string().optional(),
+
+  // Rate limiting — set to 'true' to disable all throttling (e2e / CI)
+  THROTTLE_DISABLED: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -63,12 +63,26 @@ DISCORD_REDIRECT_URI=manamap://auth/discord
 | safety | POST /v1/blocks, DELETE /v1/blocks/:userId, GET /v1/blocks, POST /v1/reports |
 | admin-moderation | GET /v1/admin/moderation/stats, GET /v1/admin/moderation/reports, GET /v1/admin/moderation/reports/:id, POST /v1/admin/moderation/reports/:id/resolve — ADMIN only |
 | gamification | BullMQ queue, processes badge/streak logic after checkin |
+| lfg | GET/POST/PATCH/DELETE /v1/lfg, GET /v1/lfg/me, POST /v1/lfg/:hostUserId/invite, POST /v1/lfg/:hostUserId/lock |
 
 **Role guard**: `apps/api/src/common/guards/roles.guard.ts` + `@Roles()` decorator. Partner routes check ownership in service layer (ADMINs bypass). `AuthGuard` is used on all protected routes — it is **async** and checks `moderationStatus` on every request: BANNED → 403 `account_banned`; actively SUSPENDED → 403 `account_suspended`; expired suspension → lazily resets to ACTIVE. Auth/refresh routes are unguarded and remain reachable.
 
 **Redemption codes**: 8-char alphanumeric from charset `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (no confusable chars).
 
 **CORS**: allows `http://localhost:5173` and `http://localhost:4173` (admin portal).
+
+**Rate limiting**: Redis sliding-window guard (`ThrottleGuard`, registered as global `APP_GUARD`). Keyed by authenticated user ID when a Bearer token is present, else by client IP. `trustProxy: true` on the Fastify adapter ensures the real IP is used behind a proxy.
+
+| Named throttler | Route | Limit | Window |
+|---|---|---|---|
+| global (default) | all other routes | 100 req | 60 s |
+| connections | POST /v1/connections | 10 req | 10 min |
+| reports | POST /v1/reports | 5 req | 10 min |
+| exchange | POST /v1/exchange/token | 20 req | 5 min |
+
+Constants live in `apps/api/src/throttle/throttle.constants.ts`. Exceeding a limit returns 429 with `Retry-After` (seconds) and `{ statusCode: 429, error: "Too Many Requests", message: "Rate limit exceeded" }`.
+
+Env var: `THROTTLE_DISABLED=true` — skips all throttling. Set this in e2e / CI environments to prevent flaky tests.
 
 **DB commands** (run from repo root):
 ```
@@ -101,6 +115,7 @@ pnpm --filter @manamap/api db:studio    # Prisma Studio
 - `useBadges`, `useStreaksSummary`, `useLeaderboard` — gamification
 - `useStoreOffers` — active reward offers for a store
 - `useCheckin` — POST checkin, returns `{ newBadges, streak, eligibleOffers }`
+- `useLfgMe`, `useLfgFeed`, `useCreateLfg`, `useUpdateLfg`, `useDeleteLfg`, `useLfgInvite`, `useLfgLock` — LFG session management (polls every 15s)
 
 **Dev**:
 ```
@@ -195,6 +210,7 @@ Located at `apps/api/prisma/migrations/`. Applied in timestamp order. Key notes:
 - `NearbyPlayerSchema`, `PresenceHeartbeatSchema`
 - `BlockBodySchema`, `ReportBodySchema`, `BlockedUserSchema`, `ReportReasonSchema`
 - `ModerationStatusSchema`, `ModerationActionTypeSchema`, `ModerationReportSchema`, `ModerationDetailSchema`, `ModerationSignalSchema`, `ResolveReportSchema`, `ModerationStatsSchema`
+- `LfgDurationSchema`, `LfgSessionSchema`, `CreateLfgSchema`, `UpdateLfgSchema`, `LfgFeedItemSchema`, `LfgLockBodySchema`
 
 ---
 
@@ -236,3 +252,6 @@ No Docker config is in the repo — run them directly or via Docker outside the 
 - **Prisma client drift**: if the API fails to compile with "property does not exist on type" for a model field, the Prisma client is stale. Run `db:migrate` or `prisma generate`. On Windows, this requires stopping the API first (the native query engine DLL is locked while the process runs).
 - **Moderation enforcement location**: ban/suspend checks live in `AuthGuard` (every authenticated request). Discovery and exchange also exclude non-ACTIVE users at the query level. If you add a new surface that fetches user data, filter on `moderationStatus: ModerationStatus.ACTIVE` to stay consistent.
 - **Reporter identity**: the `reporter` / `reporterId` field on `Report` must never be returned by any admin endpoint — only `reported` (the subject) is exposed.
+- **LFG sessions are Redis-only**: `lfg:${userId}` (JSON + TTL) and `lfg_store:${storeId}` (zset by expiresAt). No Prisma table. The only durable artifact from an LFG interaction is the `Encounter` rows written at pod lock-in (source `GAME`, result `DRAW`). Feed filtering mirrors `nearby()` — blocked / non-ACTIVE / non-discoverable / absent-from-store users are excluded.
+- **LFG `LfgSession` interface** in `lfg.service.ts` must be `export interface` (not just `interface`) — `declaration: true` in tsconfig requires exported types for public controller return types.
+- **`exactOptionalPropertyTypes` + optional props**: when passing a query result (`T | undefined`) to a prop typed `?: T | null`, normalize with `?? null` at the call site rather than widening the prop type.

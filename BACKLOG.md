@@ -13,11 +13,10 @@ through or delete when shipped.
 
 ## 🛡️ Trust & Safety
 - [x] **Moderation dashboard** — ADMIN-gated two-pane queue in admin portal; warn/suspend/ban enforcement in AuthGuard; discovery + exchange exclude non-ACTIVE users. *(shipped M19)*
-- [ ] **Rate limiting** — cap connection requests, reports, and exchange-token
-  mints per user/IP to stop spam and abuse (Redis token bucket).
+- [x] **Rate limiting** — sliding-window caps on connection requests, reports, and exchange-token mints; global backstop on all routes; per-user keying when authed, per-IP otherwise; Redis-backed for multi-instance consistency. *(shipped M21)*
 
 ## 🎲 The "play a game" loop  *(highest product upside)*
-- [ ] **LFG / "Open to play now"** — a live, expiring status at your current store
+- [x] **LFG / "Open to play now"** — a live, expiring status at your current store
   so players know you want a pod right now. Builds on the presence layer.
 - [ ] **Pod formation** — assemble a 4-player Commander pod from who's open at the
   store; suggest by power level + format.
