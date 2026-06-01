@@ -16,6 +16,7 @@ import { StoresModule } from './stores/stores.module';
 import { PartnerModule } from './partner/partner.module';
 import { SafetyModule } from './safety/safety.module';
 import { AdminModerationModule } from './admin-moderation/admin-moderation.module';
+import { LfgModule } from './lfg/lfg.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AdminModerationModule } from './admin-moderation/admin-moderation.modul
     PartnerModule,
     SafetyModule,
     AdminModerationModule,
+    LfgModule,
   ],
 })
 export class AppModule {}

@@ -49,7 +49,12 @@
       "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260531190000_onboarding\")",
       "Bash(mkdir -p /c/dev/manamap/apps/api/prisma/migrations/20260531200000_checkin_radius)",
       "Bash(grep -v \"^$\")",
-      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260531210000_moderation\")"
+      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260531210000_moderation\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\dev\\\\manamap\" -Recurse -Directory)",
+      "Bash(Select-Object -First 20)",
+      "Bash(Format-Table FullName)",
+      "Bash(git -C c:\\\\dev\\\\manamap diff --name-only HEAD)",
+      "Bash(git stash *)"
     ]
   }
 }

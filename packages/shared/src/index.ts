@@ -702,6 +702,53 @@ export const ModerationStatsSchema = z.object({
 });
 export type ModerationStats = z.infer<typeof ModerationStatsSchema>;
 
+// --- LFG ---
+
+export const LfgDurationSchema = z.union([z.literal(30), z.literal(60), z.literal(120)]);
+export type LfgDuration = z.infer<typeof LfgDurationSchema>;
+
+export const LfgSessionSchema = z.object({
+  storeId: IdSchema,
+  format: MtgFormatSchema.nullable(),
+  power: z.number().int().min(1).max(10),
+  seats: z.number().int().min(1).max(3),
+  durationMins: LfgDurationSchema,
+  note: z.string().max(140).nullable(),
+  createdAt: TimestampSchema,
+  expiresAt: TimestampSchema,
+});
+export type LfgSession = z.infer<typeof LfgSessionSchema>;
+
+export const CreateLfgSchema = z.object({
+  format: MtgFormatSchema.nullable().optional(),
+  power: z.number().int().min(1).max(10),
+  seats: z.number().int().min(1).max(3),
+  durationMins: LfgDurationSchema,
+  note: z.string().max(140).nullable().optional(),
+});
+export type CreateLfg = z.infer<typeof CreateLfgSchema>;
+
+export const UpdateLfgSchema = z.object({
+  format: MtgFormatSchema.nullable().optional(),
+  power: z.number().int().min(1).max(10).optional(),
+  seats: z.number().int().min(1).max(3).optional(),
+  durationMins: LfgDurationSchema.optional(),
+  note: z.string().max(140).nullable().optional(),
+});
+export type UpdateLfg = z.infer<typeof UpdateLfgSchema>;
+
+export const LfgFeedItemSchema = PublicProfileSchema.extend({
+  session: LfgSessionSchema,
+  minutesLeft: z.number().int(),
+  metBefore: z.boolean(),
+});
+export type LfgFeedItem = z.infer<typeof LfgFeedItemSchema>;
+
+export const LfgLockBodySchema = z.object({
+  memberIds: z.array(IdSchema).min(1).max(3),
+});
+export type LfgLockBody = z.infer<typeof LfgLockBodySchema>;
+
 // --- Onboarding ---
 
 export const OnboardingDeckSchema = CreateDeckLinkSchema;
