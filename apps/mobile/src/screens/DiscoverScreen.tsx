@@ -30,7 +30,7 @@ import { usePresence } from '../hooks/usePresence';
 import { useBleProximity, sortByBleProximity } from '../hooks/useBleProximity';
 import { useCrossedPathsCount } from '../hooks/useEncounters';
 import { useActiveStore } from '../context/ActiveStoreContext';
-import { usePrivacy, useUpdatePrivacy } from '../hooks/useMe';
+import { usePrivacy, useProfile, useUpdatePrivacy } from '../hooks/useMe';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 
 type DiscoverScreenProps = CompositeScreenProps<
@@ -569,6 +569,10 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   // Presence heartbeat
   usePresence();
 
+  // Onboarding banner
+  const { data: profile } = useProfile();
+  const showOnboardBanner = profile != null && profile.onboardedAt == null;
+
   // Go invisible toggle
   const { data: privacy } = usePrivacy();
   const { mutate: updatePrivacy } = useUpdatePrivacy();
@@ -622,6 +626,14 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
 
   return (
     <SafeAreaView style={styles.safe}>
+      {showOnboardBanner && (
+        <Pressable style={({ pressed }) => [banner.root, pressed && { opacity: 0.85 }]}>
+          <Ionicons name="person-outline" size={16} color={colors.accent} />
+          <Text style={banner.text}>Finish your profile to appear in nearby search</Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+        </Pressable>
+      )}
+
       {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
@@ -1080,6 +1092,28 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.accent,
     lineHeight: 18,
+  },
+});
+
+const banner = StyleSheet.create({
+  root: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.accentLight,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  text: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.accentInk,
   },
 });
 

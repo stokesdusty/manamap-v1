@@ -1,92 +1,60 @@
-// Reconciled to the manamap prototype palette (design/app/data.js + Soft-paper theme).
-// All keys from the original colors.ts are preserved; new keys (accentInk,
-// manaLight, manaDark, manaLetter, chipBg, chipFg) are additive.
+// manamap — DUSK dark theme, green accent. Drop-in replacement for
+// apps/mobile/src/theme/colors.ts. Same keys as the light theme so every
+// screen that reads tokens goes dark with no per-component edits.
+// Mana identity colors are intentionally unchanged (theme-independent).
 
 export const colors = {
-  // Soft paper — warm cream backgrounds (prototype --bg / --surface)
-  paper: '#F4ECE0',
-  surface: '#FFFCF6',
-  surfaceWarm: '#FBF4E9',
-  borderLight: '#EBE0D1',
-  border: '#D9CBB8',
+  // Dusk surfaces — deep plum-charcoal (prototype --bg / --surface)
+  paper: '#191420',
+  surface: '#241E2E',
+  surfaceWarm: '#2B2436',
+  borderLight: '#332B40',
+  border: '#463C56',
 
-  // Text (prototype --ink / --ink-2 / --muted)
-  textPrimary: '#2A211B',
-  textSecondary: '#5B5048',
-  textTertiary: '#9C8E7F',
-  textInverse: '#FFFFFF',
+  // Text on dark (prototype --ink / --ink-2 / --muted)
+  textPrimary: '#F3ECF6',
+  textSecondary: '#C4B9CF',
+  textTertiary: '#8E839B',
+  textInverse: '#FFFFFF', // used on the accent button + tinted avatars
 
-  // Accent — warm orange (prototype --brand). accentInk is the readable
-  // on-soft text tone (prototype --brand-ink); accentLight is the soft fill.
-  accent: '#E8743B',
-  accentInk: '#A0542F',
-  accentLight: '#FBE6D8',
+  // Accent — green (prototype #5AA452). accentInk reads on accentLight;
+  // accentLight is a subtle tint on the dark surface.
+  accent: '#5AA452',
+  accentInk: '#A3C7A1',
+  accentLight: '#2C3133',
 
   // Chip surface (prototype --chip-bg / --chip-fg)
-  chipBg: '#EFE6D8',
-  chipFg: '#6C5E50',
+  chipBg: '#322A3E',
+  chipFg: '#C4B9CF',
 
-  // WUBRG mana pip fills — soft & playful (prototype MANA.fill)
+  // WUBRG mana pip fills — unchanged across themes (prototype MANA.fill)
   mana: {
-    W: '#F2E6BE',
-    U: '#4FA9E6',
-    B: '#574F5E',
-    R: '#F0705B',
-    G: '#5FB97E',
-    C: '#B8AEA0',
-    M: '#E6C36A',
+    W: '#F2E6BE', U: '#4FA9E6', B: '#574F5E', R: '#F0705B', G: '#5FB97E',
+    C: '#B8AEA0', M: '#E6C36A',
   },
-
-  // Highlight stop for the radial sheen (prototype shade(fill, +22))
   manaLight: {
-    W: '#F5ECCC',
-    U: '#76BCEC',
-    B: '#7C7681',
-    R: '#F38F7F',
-    G: '#82C89A',
-    C: '#C8C0B5',
-    M: '#ECD08B',
+    W: '#F5ECCC', U: '#76BCEC', B: '#7C7681', R: '#F38F7F', G: '#82C89A',
+    C: '#C8C0B5', M: '#ECD08B',
   },
-
-  // Shadow stop (prototype shade(fill, -14))
   manaDark: {
-    W: '#D0C6A3',
-    U: '#4491C6',
-    B: '#4B4451',
-    R: '#CE604E',
-    G: '#529F6C',
-    C: '#9E968A',
-    M: '#C6A85B',
+    W: '#D0C6A3', U: '#4491C6', B: '#4B4451', R: '#CE604E', G: '#529F6C',
+    C: '#9E968A', M: '#C6A85B',
   },
-
-  // Pip ring / border (prototype MANA.ring)
   manaBorder: {
-    W: '#E4D199',
-    U: '#3F97D6',
-    B: '#473F4E',
-    R: '#E25E4A',
-    G: '#4FA96E',
-    C: '#A89E90',
-    M: '#C9A227',
+    W: '#E4D199', U: '#3F97D6', B: '#6B6276', R: '#E25E4A', G: '#4FA96E',
+    C: '#A89E90', M: '#C9A227',
   },
-
-  // Letter color inside the pip (prototype MANA.letter)
   manaLetter: {
-    W: '#6E5E27',
-    U: '#FFFFFF',
-    B: '#FFFFFF',
-    R: '#FFFFFF',
-    G: '#FFFFFF',
-    C: '#5A5043',
-    M: '#6E5A1E',
+    W: '#6E5E27', U: '#FFFFFF', B: '#FFFFFF', R: '#FFFFFF', G: '#FFFFFF',
+    C: '#3A3340', M: '#6E5A1E',
   },
 
-  // Status
-  success: '#16A34A',
-  error: '#DC2626',
-  warning: '#D97706',
+  // Status — brightened for dark backgrounds
+  success: '#4ED07F',
+  error: '#F06A66',
+  warning: '#E0992E',
 
-  overlay: 'rgba(40, 30, 20, 0.45)',
+  overlay: 'rgba(8, 5, 12, 0.6)',
 } as const;
 
 export type ManaColor = keyof typeof colors.mana;

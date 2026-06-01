@@ -45,7 +45,10 @@
       "Bash(awk '{print $2}')",
       "Bash(mkdir -p \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\src\\\\safety\\\\__tests__\")",
       "Bash(grep -E \"\\\\.ts$|\\\\.tsx$|spec\\\\.ts$\")",
-      "Bash(mkdir -p \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\data\" \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260531180000_store_launch_dataset\")"
+      "Bash(mkdir -p \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\data\" \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260531180000_store_launch_dataset\")",
+      "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260531190000_onboarding\")",
+      "Bash(mkdir -p /c/dev/manamap/apps/api/prisma/migrations/20260531200000_checkin_radius)",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }

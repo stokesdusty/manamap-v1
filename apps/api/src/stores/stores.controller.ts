@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -8,6 +9,8 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { CheckinBodySchema, type CheckinBody } from '@manamap/shared';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { StoresService } from './stores.service';
 
@@ -30,8 +33,12 @@ export class StoresController {
 
   @Post(':id/checkin')
   @HttpCode(200)
-  checkin(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.stores.checkin(req.user.sub, id);
+  checkin(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(CheckinBodySchema)) body: CheckinBody,
+  ) {
+    return this.stores.checkin(req.user.sub, id, body);
   }
 
   @Get(':id/events')

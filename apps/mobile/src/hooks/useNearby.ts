@@ -109,11 +109,20 @@ export function useStoreDetail(storeId: string | null) {
 // Check-in
 // ---------------------------------------------------------------------------
 
+export interface CheckinArgs {
+  storeId: string;
+  lat: number;
+  lng: number;
+  accuracy?: number;
+}
+
 export function useCheckin() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (storeId: string) =>
-      api.post<CheckinResult>(`/v1/stores/${storeId}/checkin`).then((r) => r.data),
+    mutationFn: ({ storeId, lat, lng, accuracy }: CheckinArgs) =>
+      api
+        .post<CheckinResult>(`/v1/stores/${storeId}/checkin`, { lat, lng, accuracy })
+        .then((r) => r.data),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['discovery', 'nearby'] });
       void qc.invalidateQueries({ queryKey: ['discovery', 'suggestions'] });

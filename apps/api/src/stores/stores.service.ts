@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type { CheckinBody } from '@manamap/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { PresenceService } from '../presence/presence.service';
 import { GamificationService } from '../gamification/gamification.service';
@@ -6,6 +7,9 @@ import { StoreConnector } from './connectors/store.connector';
 import { DiscordConnector } from './connectors/discord.connector';
 import { WizardsConnector } from './connectors/wizards.connector';
 import type { IEventConnector } from './connectors/event-connector.interface';
+
+const DEFAULT_CHECKIN_RADIUS_M = 250;
+const ACCURACY_CAP_M = 150;
 
 // Raw row returned by the PostGIS bbox query
 type StorePinRow = {
@@ -29,6 +33,7 @@ type StoreDetailRow = {
 
 @Injectable()
 export class StoresService {
+  private readonly logger = new Logger(StoresService.name);
   private readonly connectors: IEventConnector[] = [
     new StoreConnector(),
     new DiscordConnector(),
@@ -143,12 +148,53 @@ export class StoresService {
   // Check-in
   // -------------------------------------------------------------------------
 
-  async checkin(userId: string, storeId: string) {
-    const store = await this.prisma.store.findUnique({
-      where: { id: storeId },
-      select: { id: true, name: true },
-    });
-    if (!store) throw new NotFoundException('Store not found');
+  async checkin(userId: string, storeId: string, body: CheckinBody) {
+    // Single raw query: fetch store + compute proximity in one round-trip.
+    // Using COALESCE so per-store radius overrides the global default,
+    // and LEAST caps device accuracy to ACCURACY_CAP_M.
+    const cappedAccuracy = Math.min(body.accuracy ?? 0, ACCURACY_CAP_M);
+    type StoreProxRow = {
+      id: string;
+      name: string;
+      has_geom: boolean;
+      within: boolean | null;
+      distance_m: number | null;
+      allowed_m: number;
+    };
+    const rows = await this.prisma.$queryRaw<StoreProxRow[]>`
+      SELECT
+        id,
+        name,
+        geom IS NOT NULL AS has_geom,
+        CASE WHEN geom IS NOT NULL
+          THEN ST_DWithin(
+            geom,
+            ST_SetSRID(ST_MakePoint(${body.lng}, ${body.lat}), 4326)::geography,
+            COALESCE(checkin_radius_meters, ${DEFAULT_CHECKIN_RADIUS_M}) + ${cappedAccuracy}
+          )
+          ELSE NULL
+        END AS within,
+        CASE WHEN geom IS NOT NULL
+          THEN ST_Distance(geom, ST_SetSRID(ST_MakePoint(${body.lng}, ${body.lat}), 4326)::geography)
+          ELSE NULL
+        END AS distance_m,
+        COALESCE(checkin_radius_meters, ${DEFAULT_CHECKIN_RADIUS_M}) + ${cappedAccuracy} AS allowed_m
+      FROM stores
+      WHERE id = ${storeId}
+    `;
+
+    if (!rows.length) throw new NotFoundException('Store not found');
+    const store = rows[0];
+
+    if (!store.has_geom) {
+      this.logger.warn(`Store ${storeId} has no geom — skipping proximity check`);
+    } else if (store.within === false) {
+      const distanceMeters = Math.round(Number(store.distance_m ?? 0));
+      throw new HttpException(
+        { code: 'too_far', distanceMeters, allowedMeters: Math.round(Number(store.allowed_m)) },
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
 
     await this.prisma.checkin.updateMany({
       where: { userId, checkedOutAt: null, storeId: { not: storeId } },

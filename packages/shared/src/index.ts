@@ -102,6 +102,7 @@ export const ProfileSchema = z.object({
   vibe: PlayerVibeSchema.nullable(),
   formats: z.array(MtgFormatSchema),
   createdAt: TimestampSchema,
+  onboardedAt: z.string().datetime().nullable(),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
 
@@ -334,6 +335,13 @@ export const CheckinResultSchema = z.object({
   })),
 });
 export type CheckinResult = z.infer<typeof CheckinResultSchema>;
+
+export const CheckinBodySchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  accuracy: z.number().nonnegative().optional(),
+});
+export type CheckinBody = z.infer<typeof CheckinBodySchema>;
 
 export const SetHomeStoreSchema = z.object({
   storeId: IdSchema.nullable(),
@@ -634,3 +642,22 @@ export const PartnerAnalyticsSchema = z.object({
   activeOffers: z.number().int(),
 });
 export type PartnerAnalytics = z.infer<typeof PartnerAnalyticsSchema>;
+
+// --- Onboarding ---
+
+export const OnboardingDeckSchema = CreateDeckLinkSchema;
+
+export const OnboardingSubmitSchema = z.object({
+  displayName: z.string().min(1).max(64),
+  pronouns: z.string().max(32).nullable().optional(),
+  avatarColors: z.array(ManaColorSchema).min(1).max(5),
+  formats: z.array(MtgFormatSchema).min(1),
+  commander: z.string().max(128).nullable().optional(),
+  powerLevel: z.number().int().min(1).max(10).nullable().optional(),
+  vibe: PlayerVibeSchema.nullable().optional(),
+  bio: z.string().max(500).nullable().optional(),
+  discoverable: z.boolean().optional(),
+  decks: z.array(OnboardingDeckSchema).max(10).optional(),
+  homeStoreId: IdSchema.optional(),
+});
+export type OnboardingSubmit = z.infer<typeof OnboardingSubmitSchema>;

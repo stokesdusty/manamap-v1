@@ -14,7 +14,7 @@ const config: ExpoConfig = {
     // react-native-maps uses Apple Maps on iOS by default — no API key required
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
-        '$(PRODUCT_NAME) can show your location on the store map to help you find nearby venues.',
+        '$(PRODUCT_NAME) uses your location to confirm you\'re at the store before checking in.',
     },
   },
   android: {
@@ -37,6 +37,13 @@ const config: ExpoConfig = {
     [
       'expo-notifications',
       { androidMode: 'default' },
+    ],
+    [
+      'expo-location',
+      {
+        locationWhenInUsePermission:
+          '$(PRODUCT_NAME) uses your location to confirm you\'re at the store before checking in.',
+      },
     ],
   ],
   extra: {

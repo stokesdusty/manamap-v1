@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { DeckSite, Prisma } from '@prisma/client';
+import { DeckSite } from '@prisma/client';
 import {
   DECK_SITE_HOSTS,
   type CreateDeckLink,
+  type OnboardingSubmit,
   type SetHomeStore,
   type UpdateDeckLink,
   type UpdatePrivacy,
@@ -146,7 +147,7 @@ export class MeService {
         CASE WHEN geom IS NOT NULL THEN ST_Y(geom::geometry) ELSE NULL END AS lat,
         CASE WHEN geom IS NOT NULL THEN ST_X(geom::geometry) ELSE NULL END AS lng
       FROM stores
-      WHERE id = ${Prisma.sql`${user.homeStoreId}::uuid`}
+      WHERE id = ${user.homeStoreId}
     `;
 
     if (!rows.length) return { store: null };
@@ -202,5 +203,59 @@ export class MeService {
     });
 
     return { storeId: dto.storeId };
+  }
+
+  async submitOnboarding(userId: string, dto: OnboardingSubmit) {
+    if (dto.homeStoreId) {
+      const store = await this.prisma.store.findUnique({
+        where: { id: dto.homeStoreId },
+        select: { id: true },
+      });
+      if (!store) throw new NotFoundException('Store not found');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: userId },
+        data: {
+          displayName: dto.displayName,
+          pronouns: dto.pronouns ?? null,
+          avatarColors: dto.avatarColors,
+          formats: dto.formats,
+          commander: dto.commander ?? null,
+          powerLevel: dto.powerLevel ?? null,
+          vibe: dto.vibe ?? null,
+          bio: dto.bio ?? null,
+          ...(dto.homeStoreId !== undefined ? { homeStoreId: dto.homeStoreId } : {}),
+          onboardedAt: new Date(),
+        },
+      });
+
+      await tx.privacySettings.upsert({
+        where: { userId },
+        update: { discoverable: dto.discoverable ?? true },
+        create: {
+          userId,
+          discoverable: dto.discoverable ?? true,
+          showDiscord: true,
+          showDecks: true,
+          showMetHistory: true,
+        },
+      });
+
+      if (dto.decks?.length) {
+        await tx.deckLink.createMany({
+          data: dto.decks.map((d) => ({
+            userId,
+            site: d.site.toUpperCase() as DeckSite,
+            name: d.name,
+            url: d.url,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      return user;
+    });
   }
 }

@@ -11,6 +11,8 @@ import {
   View,
 } from 'react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as Location from 'expo-location';
+import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +21,7 @@ import { useActiveStore } from '../context/ActiveStoreContext';
 import {
   useAttendEvent,
   useCheckin,
+  type CheckinArgs,
   useNearby,
   useStorePins,
   useStoreDetail,
@@ -193,6 +196,10 @@ function StoreDetailSheet({
   const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
   const [eligibleOffers, setEligibleOffers] = useState<Array<{ id: string; type: string; title: string; description: string | null; terms: string | null; redemptionCode: string }>>([]);
   const [activeTab, setActiveTab] = useState<'schedule' | 'leaderboard'>('schedule');
+  const [locPhase, setLocPhase] = useState<'idle' | 'acquiring'>('idle');
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [tooFarError, setTooFarError] = useState<{ distanceMeters: number; allowedMeters: number } | null>(null);
+  const [locationError, setLocationError] = useState(false);
 
   const { mutate: checkin, isPending: isCheckinPending, isSuccess: checkedIn } = useCheckin();
 
@@ -207,9 +214,46 @@ function StoreDetailSheet({
     }).start();
   }, [storeId, slideAnim]);
 
-  function handleCheckin() {
+  // Reset location error states when a different store is opened
+  useEffect(() => {
+    setLocPhase('idle');
+    setPermissionDenied(false);
+    setTooFarError(null);
+    setLocationError(false);
+  }, [storeId]);
+
+  async function handleCheckin() {
     if (!store) return;
-    checkin(store.id, {
+    setPermissionDenied(false);
+    setTooFarError(null);
+    setLocationError(false);
+    setLocPhase('acquiring');
+
+    let args: CheckinArgs;
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setPermissionDenied(true);
+        setLocPhase('idle');
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      args = {
+        storeId: store.id,
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        ...(pos.coords.accuracy != null ? { accuracy: pos.coords.accuracy } : {}),
+      };
+    } catch {
+      setLocationError(true);
+      setLocPhase('idle');
+      return;
+    }
+
+    setLocPhase('idle');
+    checkin(args, {
       onSuccess: (result) => {
         setActiveStore({
           id: result.storeId,
@@ -222,11 +266,19 @@ function StoreDetailSheet({
           lat: store.lat,
           lng: store.lng,
         });
-        if (result.newBadges.length > 0) {
-          setEarnedBadges(result.newBadges);
-        }
-        if (result.eligibleOffers?.length > 0) {
-          setEligibleOffers(result.eligibleOffers);
+        if (result.newBadges.length > 0) setEarnedBadges(result.newBadges);
+        if (result.eligibleOffers?.length > 0) setEligibleOffers(result.eligibleOffers);
+      },
+      onError: (err) => {
+        if (axios.isAxiosError(err) && err.response?.status === 422) {
+          const body = err.response.data as Record<string, unknown>;
+          if (
+            body.code === 'too_far' &&
+            typeof body.distanceMeters === 'number' &&
+            typeof body.allowedMeters === 'number'
+          ) {
+            setTooFarError({ distanceMeters: body.distanceMeters, allowedMeters: body.allowedMeters });
+          }
         }
       },
     });
@@ -405,6 +457,37 @@ function StoreDetailSheet({
               </>
             )}
 
+            {/* Location / permission errors */}
+            {permissionDenied && (
+              <View style={sheet.alertBox}>
+                <Ionicons name="location-outline" size={16} color={colors.warning} />
+                <Text style={sheet.alertText}>Location access is needed to verify you're at the store.</Text>
+                <Pressable onPress={() => void Linking.openSettings()} style={sheet.alertLink}>
+                  <Text style={sheet.alertLinkText}>Open Settings</Text>
+                </Pressable>
+              </View>
+            )}
+            {locationError && (
+              <View style={sheet.alertBox}>
+                <Ionicons name="warning-outline" size={16} color={colors.warning} />
+                <Text style={sheet.alertText}>Couldn't get your location. Try again.</Text>
+              </View>
+            )}
+            {tooFarError && (
+              <View style={sheet.tooFarBox}>
+                <Text style={sheet.tooFarTitle}>You're too far away</Text>
+                <Text style={sheet.tooFarBody}>
+                  You're ~{tooFarError.distanceMeters}m from {store?.name ?? 'this store'} — get within {tooFarError.allowedMeters}m to check in.
+                </Text>
+                <Pressable
+                  style={({ pressed }) => [sheet.retryBtn, pressed && { opacity: 0.7 }]}
+                  onPress={() => { setTooFarError(null); void handleCheckin(); }}
+                >
+                  <Text style={sheet.retryText}>Try again</Text>
+                </Pressable>
+              </View>
+            )}
+
             {/* Check-in button */}
             {checkedIn ? (
               <View style={sheet.successRow}>
@@ -416,12 +499,12 @@ function StoreDetailSheet({
                 style={({ pressed }) => [
                   sheet.checkinBtn,
                   isActiveStore && sheet.checkinBtnActive,
-                  (pressed || isCheckinPending) && { opacity: 0.8 },
+                  (pressed || isCheckinPending || locPhase === 'acquiring') && { opacity: 0.8 },
                 ]}
-                onPress={isActiveStore ? onClose : handleCheckin}
-                disabled={isCheckinPending}
+                onPress={isActiveStore ? onClose : () => void handleCheckin()}
+                disabled={isCheckinPending || locPhase === 'acquiring'}
               >
-                {isCheckinPending ? (
+                {(isCheckinPending || locPhase === 'acquiring') ? (
                   <ActivityIndicator size="small" color={colors.textInverse} />
                 ) : (
                   <Ionicons
@@ -431,7 +514,13 @@ function StoreDetailSheet({
                   />
                 )}
                 <Text style={sheet.checkinText}>
-                  {isCheckinPending ? 'Checking in…' : isActiveStore ? 'Already here' : 'Check in here'}
+                  {locPhase === 'acquiring'
+                    ? 'Getting your location…'
+                    : isCheckinPending
+                    ? 'Checking you in…'
+                    : isActiveStore
+                    ? 'Already here'
+                    : 'Check in here'}
                 </Text>
               </Pressable>
             )}
@@ -940,6 +1029,61 @@ const sheet = StyleSheet.create({
     color: colors.textTertiary,
     textAlign: 'center',
     padding: spacing.xl,
+  },
+  alertBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    backgroundColor: colors.warning + '18',
+    borderRadius: radii.md,
+    padding: spacing.md,
+  },
+  alertText: {
+    flex: 1,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+    flexShrink: 1,
+  },
+  alertLink: { marginTop: spacing.xs },
+  alertLinkText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.accent,
+    textDecorationLine: 'underline',
+  },
+  tooFarBox: {
+    backgroundColor: colors.accentLight,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.accent + '40',
+  },
+  tooFarTitle: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  tooFarBody: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  retryBtn: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+    backgroundColor: colors.accent,
+    marginTop: spacing.xs,
+  },
+  retryText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textInverse,
   },
   tabBar: {
     flexDirection: 'row',

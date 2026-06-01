@@ -95,6 +95,7 @@ model User {
   formats      String[] @default([])
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+  onboardedAt  DateTime? @map("onboarded_at")
 
   homeStoreId         String?  @map("home_store_id")
   role                UserRole @default(USER)
@@ -234,7 +235,8 @@ model Store {
   discordUrl String?  @map("discord_url")
   isPartner  Boolean  @default(false) @map("is_partner")
   // geom is a PostGIS geography(Point,4326) — managed via $queryRaw / $executeRaw
-  geom       Unsupported("geography(Point,4326)")?
+  geom                 Unsupported("geography(Point,4326)")?
+  checkinRadiusMeters  Int?     @map("checkin_radius_meters")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 

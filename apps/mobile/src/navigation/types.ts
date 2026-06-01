@@ -5,6 +5,7 @@ import type { PublicProfile, SharedEventSummary } from '@manamap/shared';
 
 export type RootStackParamList = {
   SignIn: undefined;
+  Onboarding: undefined;
   Main: undefined;
   History: undefined;
   PlayerPreview: {
