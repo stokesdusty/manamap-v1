@@ -767,3 +767,63 @@ export const OnboardingSubmitSchema = z.object({
   homeStoreId: IdSchema.optional(),
 });
 export type OnboardingSubmit = z.infer<typeof OnboardingSubmitSchema>;
+
+// --- Pods ---
+
+export const PodToleranceSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+export type PodTolerance = z.infer<typeof PodToleranceSchema>;
+
+export const PodFitTierSchema = z.enum(['great', 'close', 'off']);
+export type PodFitTier = z.infer<typeof PodFitTierSchema>;
+
+export const PodFitSchema = z.object({
+  tier: PodFitTierSchema,
+  label: z.string(),
+});
+export type PodFit = z.infer<typeof PodFitSchema>;
+
+export const CreatePodSchema = z.object({
+  format: MtgFormatSchema.nullable().optional(),
+  targetPower: z.number().int().min(1).max(10),
+  tolerance: PodToleranceSchema,
+  seats: z.number().int().min(2).max(4),
+  where: z.string().min(1).max(40),
+  note: z.string().max(140).nullable().optional(),
+});
+export type CreatePod = z.infer<typeof CreatePodSchema>;
+
+export const PodFeedItemSchema = z.object({
+  id: IdSchema,
+  hostId: IdSchema,
+  storeId: IdSchema,
+  format: MtgFormatSchema.nullable(),
+  targetPower: z.number().int().min(1).max(10),
+  tolerance: PodToleranceSchema,
+  seats: z.number().int().min(2).max(4),
+  seatsOpen: z.number().int().min(0),
+  where: z.string().max(40),
+  note: z.string().max(140).nullable(),
+  host: PublicProfileSchema,
+  fit: PodFitSchema,
+  createdAt: TimestampSchema,
+  expiresAt: TimestampSchema,
+});
+export type PodFeedItem = z.infer<typeof PodFeedItemSchema>;
+
+export const PodCandidateSchema = PublicProfileSchema.extend({
+  fit: PodFitSchema,
+});
+export type PodCandidate = z.infer<typeof PodCandidateSchema>;
+
+export const PodDetailSchema = PodFeedItemSchema.extend({
+  members: z.array(PublicProfileSchema),
+  requests: z.array(PublicProfileSchema),
+  candidates: z.array(PodCandidateSchema),
+  hasRequested: z.boolean(),
+});
+export type PodDetail = z.infer<typeof PodDetailSchema>;
+
+export const PodMemberActionSchema = z.object({
+  userId: IdSchema,
+});
+export type PodMemberAction = z.infer<typeof PodMemberActionSchema>;

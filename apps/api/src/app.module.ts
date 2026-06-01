@@ -20,6 +20,7 @@ import { PartnerModule } from './partner/partner.module';
 import { SafetyModule } from './safety/safety.module';
 import { AdminModerationModule } from './admin-moderation/admin-moderation.module';
 import { LfgModule } from './lfg/lfg.module';
+import { PodsModule } from './pods/pods.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { LfgModule } from './lfg/lfg.module';
     SafetyModule,
     AdminModerationModule,
     LfgModule,
+    PodsModule,
     ThrottleModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottleGuard }],

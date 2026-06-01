@@ -18,7 +18,7 @@ through or delete when shipped.
 ## 🎲 The "play a game" loop  *(highest product upside)*
 - [x] **LFG / "Open to play now"** — a live, expiring status at your current store
   so players know you want a pod right now. Builds on the presence layer.
-- [ ] **Pod formation** — assemble a 4-player Commander pod from who's open at the
+- [x] **Pod formation** — assemble a 4-player Commander pod from who's open at the
   store; suggest by power level + format.
 - [ ] **Log a game** — record the pod roster + result after playing. Feeds
   matchmaking, "played before" history, and stats. (`Encounter` model already

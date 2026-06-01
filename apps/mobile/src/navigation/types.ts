@@ -14,6 +14,7 @@ export type RootStackParamList = {
     lastMetStoreName?: string | null;
   };
   Connected: { connectionId: string };
+  Pod: { podId: string };
 };
 
 export type TabParamList = {

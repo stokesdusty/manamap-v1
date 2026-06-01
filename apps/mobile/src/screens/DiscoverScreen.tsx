@@ -24,6 +24,10 @@ import type {
   LfgSession,
   CreateLfg,
   LfgDuration,
+  PodFeedItem,
+  CreatePod,
+  PodFitTier,
+  PodTolerance,
 } from '@manamap/shared';
 import {
   useLfgMe,
@@ -34,6 +38,7 @@ import {
   useLfgInvite,
   useLfgLock,
 } from '../hooks/useLfg';
+import { usePodFeed, useCreatePod } from '../hooks/usePods';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -694,6 +699,276 @@ function LFGSection({ items, sentInvites, onJoin }: LFGSectionProps) {
 }
 
 // ---------------------------------------------------------------------------
+// Pods helpers
+// ---------------------------------------------------------------------------
+
+const POD_FIT_COLORS: Record<PodFitTier, string> = {
+  great: colors.success,
+  close: colors.accent,
+  off: colors.textTertiary,
+};
+
+const POD_FIT_BG: Record<PodFitTier, string> = {
+  great: colors.success + '20',
+  close: colors.accentLight,
+  off: colors.borderLight,
+};
+
+const POD_FIT_LABELS: Record<PodFitTier, string> = {
+  great: 'Great fit',
+  close: 'Close fit',
+  off: 'Off range',
+};
+
+// ---------------------------------------------------------------------------
+// PodsSection
+// ---------------------------------------------------------------------------
+
+interface PodsSectionProps {
+  pods: PodFeedItem[];
+  isCheckedIn: boolean;
+  onStartPod: () => void;
+  onOpenPod: (pod: PodFeedItem) => void;
+}
+
+function PodsSection({ pods, isCheckedIn, onStartPod, onOpenPod }: PodsSectionProps) {
+  return (
+    <View style={podsSection.wrap}>
+      <View style={podsSection.header}>
+        <View style={podsSection.headerLeft}>
+          <Ionicons name="people-outline" size={13} color={colors.accent} />
+          <Text style={podsSection.headerText}>Pods forming here</Text>
+          {pods.length > 0 && (
+            <Text style={podsSection.headerCount}>{pods.length}</Text>
+          )}
+        </View>
+        <Pressable
+          style={({ pressed }) => [
+            podsSection.startBtn,
+            !isCheckedIn && podsSection.startBtnDisabled,
+            pressed && { opacity: 0.7 },
+          ]}
+          onPress={isCheckedIn ? onStartPod : undefined}
+          accessibilityLabel="Start a pod"
+        >
+          <Ionicons name="add" size={13} color={isCheckedIn ? colors.accent : colors.textTertiary} />
+          <Text style={[podsSection.startBtnText, !isCheckedIn && podsSection.startBtnTextDisabled]}>
+            Start a pod
+          </Text>
+        </Pressable>
+      </View>
+
+      {pods.length === 0 ? (
+        <Text style={podsSection.empty}>No pods forming at this store yet</Text>
+      ) : (
+        <View style={podsSection.list}>
+          {pods.map((pod) => {
+            const fill = pod.host.avatarColors.length > 0
+              ? (MANA_FILL[pod.host.avatarColors[0] as SharedManaColor] ?? colors.border)
+              : colors.border;
+            const textFill = pod.host.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+            return (
+              <Pressable
+                key={pod.id}
+                style={({ pressed }) => [podsSection.row, pressed && { opacity: 0.7 }]}
+                onPress={() => onOpenPod(pod)}
+              >
+                <View style={[podsSection.avatar, { backgroundColor: fill }]}>
+                  <Text style={[podsSection.avatarText, { color: textFill }]}>
+                    {pod.host.displayName.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1, gap: 3 }}>
+                  <Text style={podsSection.hostName} numberOfLines={1}>
+                    {pod.host.displayName}'s pod
+                  </Text>
+                  <View style={podsSection.chips}>
+                    {pod.format && (
+                      <View style={podsSection.chip}>
+                        <Text style={podsSection.chipText}>{FORMAT_LABELS[pod.format as MtgFormat] ?? pod.format}</Text>
+                      </View>
+                    )}
+                    <View style={podsSection.chip}>
+                      <Text style={podsSection.chipText}>P{pod.targetPower}±{pod.tolerance}</Text>
+                    </View>
+                    <View style={podsSection.chip}>
+                      <Text style={podsSection.chipText}>{pod.seatsOpen} open</Text>
+                    </View>
+                  </View>
+                  <Text style={podsSection.where} numberOfLines={1}>
+                    📍 {pod.where}
+                  </Text>
+                </View>
+                <View style={[podsSection.fitBadge, { backgroundColor: POD_FIT_BG[pod.fit.tier] }]}>
+                  <Text style={[podsSection.fitText, { color: POD_FIT_COLORS[pod.fit.tier] }]}>
+                    {POD_FIT_LABELS[pod.fit.tier]}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PodCreateSheet
+// ---------------------------------------------------------------------------
+
+const ALL_POD_FORMATS: MtgFormat[] = ['commander', 'modern', 'standard', 'pioneer', 'legacy', 'vintage', 'draft'];
+const POD_TOLERANCES: PodTolerance[] = [1, 2, 3];
+const POD_SEATS = [2, 3, 4] as const;
+
+interface PodCreateSheetProps {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (data: CreatePod) => void;
+  isSubmitting: boolean;
+}
+
+function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateSheetProps) {
+  const [format, setFormat] = useState<MtgFormat | null>(null);
+  const [targetPower, setTargetPower] = useState(7);
+  const [tolerance, setTolerance] = useState<PodTolerance>(1);
+  const [seats, setSeats] = useState<2 | 3 | 4>(4);
+  const [where, setWhere] = useState('');
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    if (visible) {
+      setFormat(null);
+      setTargetPower(7);
+      setTolerance(1);
+      setSeats(4);
+      setWhere('');
+      setNote('');
+    }
+  }, [visible]);
+
+  const canSubmit = where.trim().length > 0;
+
+  const handleSubmit = useCallback(() => {
+    if (!canSubmit) return;
+    onSubmit({
+      format: format ?? null,
+      targetPower,
+      tolerance,
+      seats,
+      where: where.trim(),
+      note: note.trim() || null,
+    });
+  }, [canSubmit, format, targetPower, tolerance, seats, where, note, onSubmit]);
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <SafeAreaView style={podCreate.safe}>
+        <View style={podCreate.header}>
+          <Pressable onPress={onClose} hitSlop={8}>
+            <Ionicons name="close" size={24} color={colors.textSecondary} />
+          </Pressable>
+          <Text style={podCreate.title}>Start a pod</Text>
+          <Pressable
+            style={({ pressed }) => [
+              podCreate.submitBtn,
+              !canSubmit && podCreate.submitBtnDisabled,
+              isSubmitting && { opacity: 0.5 },
+              pressed && { opacity: 0.75 },
+            ]}
+            onPress={handleSubmit}
+            disabled={isSubmitting || !canSubmit}
+          >
+            {isSubmitting
+              ? <ActivityIndicator size="small" color={colors.textInverse} />
+              : <Text style={podCreate.submitText}>Create</Text>}
+          </Pressable>
+        </View>
+
+        <ScrollView contentContainerStyle={podCreate.scroll} keyboardShouldPersistTaps="handled">
+          <Text style={podCreate.sectionLabel}>Format (optional)</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={podCreate.chipRow}>
+            {ALL_POD_FORMATS.map((f) => {
+              const active = format === f;
+              return (
+                <Pressable
+                  key={f}
+                  style={[podCreate.chip, active && podCreate.chipActive]}
+                  onPress={() => setFormat(format === f ? null : f)}
+                >
+                  <Text style={[podCreate.chipText, active && podCreate.chipTextActive]}>
+                    {FORMAT_FULL_LABELS[f] ?? f}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <Text style={podCreate.sectionLabel}>Target power</Text>
+          <View style={podCreate.stepper}>
+            <Pressable style={podCreate.stepBtn} onPress={() => setTargetPower((p) => Math.max(1, p - 1))} hitSlop={6}>
+              <Ionicons name="remove" size={16} color={colors.textSecondary} />
+            </Pressable>
+            <Text style={podCreate.stepVal}>{targetPower}</Text>
+            <Pressable style={podCreate.stepBtn} onPress={() => setTargetPower((p) => Math.min(10, p + 1))} hitSlop={6}>
+              <Ionicons name="add" size={16} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+
+          <Text style={podCreate.sectionLabel}>Tolerance</Text>
+          <View style={podCreate.segRow}>
+            {POD_TOLERANCES.map((t) => (
+              <Pressable
+                key={t}
+                style={[podCreate.seg, tolerance === t && podCreate.segActive]}
+                onPress={() => setTolerance(t)}
+              >
+                <Text style={[podCreate.segText, tolerance === t && podCreate.segTextActive]}>±{t}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={podCreate.sectionLabel}>Seats (total players)</Text>
+          <View style={podCreate.segRow}>
+            {POD_SEATS.map((s) => (
+              <Pressable
+                key={s}
+                style={[podCreate.seg, seats === s && podCreate.segActive]}
+                onPress={() => setSeats(s)}
+              >
+                <Text style={[podCreate.segText, seats === s && podCreate.segTextActive]}>{s}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={podCreate.sectionLabel}>Where to meet <Text style={podCreate.required}>*</Text></Text>
+          <TextInput
+            style={podCreate.whereInput}
+            placeholder="e.g. back table by the draft pods"
+            placeholderTextColor={colors.textTertiary}
+            value={where}
+            onChangeText={setWhere}
+            maxLength={40}
+          />
+          <Text style={podCreate.charCount}>{where.length}/40</Text>
+
+          <Text style={podCreate.sectionLabel}>Note (optional)</Text>
+          <TextInput
+            style={podCreate.noteInput}
+            placeholder="e.g. all welcome, have extra decks"
+            placeholderTextColor={colors.textTertiary}
+            value={note}
+            onChangeText={setNote}
+            maxLength={140}
+            multiline
+          />
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // LFGComposer (create / edit sheet)
 // ---------------------------------------------------------------------------
 
@@ -922,6 +1197,9 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   const [showPodSheet, setShowPodSheet] = useState(false);
   const [sentInvites, setSentInvites] = useState<Set<string>>(new Set());
 
+  // Pod state
+  const [showPodComposer, setShowPodComposer] = useState(false);
+
   // LFG hooks
   const { data: myLfgSession } = useLfgMe();
   const { data: lfgFeed = [] } = useLfgFeed(!!activeStore);
@@ -930,6 +1208,10 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   const deleteLfg = useDeleteLfg();
   const inviteLfg = useLfgInvite();
   const lockLfg = useLfgLock();
+
+  // Pod hooks
+  const { data: podFeed = [] } = usePodFeed(!!activeStore);
+  const createPod = useCreatePod();
 
   // Advanced filter state
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -1012,6 +1294,15 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
       { onSuccess: () => setShowPodSheet(false) },
     );
   }, [lockLfg, myUserId]);
+
+  // Pod handlers
+  const handlePodComposerSubmit = useCallback((data: CreatePod) => {
+    createPod.mutate(data, { onSuccess: () => setShowPodComposer(false) });
+  }, [createPod]);
+
+  const handleOpenPod = useCallback((pod: PodFeedItem) => {
+    navigation.navigate('Pod', { podId: pod.id });
+  }, [navigation]);
 
   // Go invisible toggle
   const { data: privacy } = usePrivacy();
@@ -1276,6 +1567,14 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
               </Text>
             )}
 
+            {/* Pods forming here */}
+            <PodsSection
+              pods={podFeed}
+              isCheckedIn={!!activeStore}
+              onStartPod={() => setShowPodComposer(true)}
+              onOpenPod={handleOpenPod}
+            />
+
             {/* Open to play — LFG feed */}
             <LFGSection
               items={lfgFeed}
@@ -1321,6 +1620,13 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
         onClose={() => setShowPodSheet(false)}
         onLock={handleLfgLock}
         isLocking={lockLfg.isPending}
+      />
+
+      <PodCreateSheet
+        visible={showPodComposer}
+        onClose={() => setShowPodComposer(false)}
+        onSubmit={handlePodComposerSubmit}
+        isSubmitting={createPod.isPending}
       />
     </SafeAreaView>
   );
@@ -2189,6 +2495,256 @@ const composer = StyleSheet.create({
     color: colors.textSecondary,
   },
   segTextActive: { color: colors.success, fontFamily: typography.fontFamily.semiBold },
+  noteInput: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+    minHeight: 72,
+    textAlignVertical: 'top',
+  },
+});
+
+const podsSection = StyleSheet.create({
+  wrap: {
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.lg,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  headerText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.xs,
+    color: colors.accent,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  headerCount: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  startBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.accent + '60',
+    backgroundColor: colors.accentLight,
+  },
+  startBtnDisabled: {
+    borderColor: colors.borderLight,
+    backgroundColor: colors.surface,
+  },
+  startBtnText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.accent,
+  },
+  startBtnTextDisabled: {
+    color: colors.textTertiary,
+  },
+  empty: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
+  list: {
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.accent + '30',
+    ...shadows.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderLight,
+  },
+  avatar: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.md,
+  },
+  hostName: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
+  chip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 1,
+    backgroundColor: colors.chipBg,
+    borderRadius: radii.full,
+  },
+  chipText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.chipFg,
+  },
+  where: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
+  },
+  fitBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  fitText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.xs,
+  },
+});
+
+const podCreate = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.paper },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+    gap: spacing.md,
+  },
+  title: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.lg,
+    color: colors.textPrimary,
+  },
+  submitBtn: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    minWidth: 72,
+    alignItems: 'center',
+  },
+  submitBtnDisabled: { backgroundColor: colors.accent + '50' },
+  submitText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textInverse,
+  },
+  scroll: { padding: spacing.xl, gap: spacing.lg },
+  sectionLabel: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  required: { color: colors.error },
+  chipRow: { gap: spacing.sm, paddingVertical: 2 },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.surface,
+  },
+  chipActive: { borderColor: colors.accent, backgroundColor: colors.accentLight },
+  chipText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  chipTextActive: { color: colors.accent },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+  },
+  stepBtn: {
+    width: 36,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceWarm,
+  },
+  stepVal: {
+    width: 40,
+    textAlign: 'center',
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.lg,
+    color: colors.textPrimary,
+  },
+  segRow: { flexDirection: 'row', gap: spacing.sm },
+  seg: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.surface,
+  },
+  segActive: { borderColor: colors.accent, backgroundColor: colors.accentLight },
+  segText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  segTextActive: { color: colors.accent, fontFamily: typography.fontFamily.semiBold },
+  whereInput: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  charCount: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    textAlign: 'right',
+    marginTop: -spacing.sm,
+  },
   noteInput: {
     backgroundColor: colors.surface,
     borderRadius: radii.md,
