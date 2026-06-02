@@ -22,6 +22,91 @@ const USERS = [
   { displayName: 'Eve Johansson', email: 'tatyova@example.com', avatarColors: ['U', 'G'] },
 ];
 
+// Stable dev bot accounts — IDs are fixed strings for easy reference.
+// See CLAUDE.md for the full list and field details.
+const BOTS = [
+  {
+    id: 'bot_wren',
+    displayName: 'Wren',
+    email: 'bot.wren@manamap.dev',
+    avatarColors: ['W', 'U'],
+    formats: ['commander'],
+    powerLevel: 7,
+    vibe: 'casual',
+    bio: 'Bot pilot. Commander only.',
+  },
+  {
+    id: 'bot_sol',
+    displayName: 'Sol',
+    email: 'bot.sol@manamap.dev',
+    avatarColors: ['R'],
+    formats: ['modern'],
+    powerLevel: 8,
+    vibe: 'spike',
+    bio: 'Fast mana. Faster wins.',
+  },
+  {
+    id: 'bot_kira',
+    displayName: 'Kira',
+    email: 'bot.kira@manamap.dev',
+    avatarColors: ['U', 'B'],
+    formats: ['pioneer'],
+    powerLevel: 6,
+    vibe: 'johnny',
+    bio: 'Combo or bust.',
+  },
+  {
+    id: 'bot_dune',
+    displayName: 'Dune',
+    email: 'bot.dune@manamap.dev',
+    avatarColors: ['G', 'W'],
+    formats: ['standard'],
+    powerLevel: 5,
+    vibe: 'casual',
+    bio: 'Stompy beatdown.',
+  },
+  {
+    id: 'bot_ash',
+    displayName: 'Ash',
+    email: 'bot.ash@manamap.dev',
+    avatarColors: ['B'],
+    formats: ['legacy'],
+    powerLevel: 9,
+    vibe: 'competitive',
+    bio: 'Storm clouds incoming.',
+  },
+  {
+    id: 'bot_nyx',
+    displayName: 'Nyx',
+    email: 'bot.nyx@manamap.dev',
+    avatarColors: ['U'],
+    formats: ['commander', 'modern'],
+    powerLevel: 7,
+    vibe: 'vorthos',
+    bio: 'Thematic builds only.',
+  },
+  {
+    id: 'bot_tarn',
+    displayName: 'Tarn',
+    email: 'bot.tarn@manamap.dev',
+    avatarColors: ['R', 'G'],
+    formats: ['draft'],
+    powerLevel: 4,
+    vibe: 'timmy',
+    bio: 'Big monsters, big fun.',
+  },
+  {
+    id: 'bot_vex',
+    displayName: 'Vex',
+    email: 'bot.vex@manamap.dev',
+    avatarColors: ['U', 'R'],
+    formats: ['commander', 'pioneer'],
+    powerLevel: 6,
+    vibe: 'johnny',
+    bio: 'Jank that somehow works.',
+  },
+];
+
 const BADGES = [
   {
     code: 'first_checkin',
@@ -147,6 +232,36 @@ async function main(): Promise<void> {
           create: {
             provider: 'apple',
             providerId: `fake_apple_${u.email.split('@')[0]}`,
+          },
+        },
+      },
+    });
+  }
+
+  console.log('Seeding dev bots…');
+  for (const b of BOTS) {
+    await prisma.user.upsert({
+      where: { email: b.email },
+      update: { isBot: true, formats: b.formats, powerLevel: b.powerLevel, vibe: b.vibe, bio: b.bio, avatarColors: b.avatarColors },
+      create: {
+        id: b.id,
+        displayName: b.displayName,
+        email: b.email,
+        avatarColors: b.avatarColors,
+        formats: b.formats,
+        powerLevel: b.powerLevel,
+        vibe: b.vibe,
+        bio: b.bio,
+        isBot: true,
+        onboardedAt: new Date(),
+        privacySettings: {
+          create: { discoverable: true },
+        },
+        identities: {
+          create: {
+            provider: 'discord',
+            providerId: `bot_${b.id}`,
+            discordHandle: b.displayName.toLowerCase(),
           },
         },
       },

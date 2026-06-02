@@ -15,6 +15,7 @@ export type RootStackParamList = {
   };
   Connected: { connectionId: string };
   Pod: { podId: string };
+  Dev: undefined;
 };
 
 export type TabParamList = {

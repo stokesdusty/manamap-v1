@@ -267,3 +267,46 @@ No Docker config is in the repo — run them directly or via Docker outside the 
 - **`exactOptionalPropertyTypes` + optional props**: when passing a query result (`T | undefined`) to a prop typed `?: T | null`, normalize with `?? null` at the call site rather than widening the prop type. When the prop is `?: T` (no null), use a conditional spread: `{...(val !== undefined ? { prop: val } : {})}`.
 - **Game stats vs Encounter rows**: `GET /v1/me/stats` (W/L/winRate/byDeck) is computed directly from `GameLog` + `GamePlayer`, not from `Encounter` rows — avoids double-counting since each confirmed game writes multiple Encounter rows. Do not add encounter-based stats to the stats endpoint.
 - **GamesService vs MeService for stats**: `getGameStats` lives in `MeService` (not `GamesService`) to avoid a circular dependency chain. `MeService` queries `gameLog` directly via Prisma.
+
+---
+
+## Dev harness (M24)
+
+A DEV-ONLY simulation harness lets one developer populate all screens with believable bot activity.
+
+### Gating
+- **API**: DevModule + `/v1/dev/*` routes are only registered when `NODE_ENV !== 'production' && DEV_TOOLS === 'true'`. Without the flag the routes 404.
+- **Mobile**: DevScreen is bundled only in `__DEV__` builds and is never reachable in production.
+
+### Enabling
+Set `DEV_TOOLS=true` in `apps/api/.env` and restart the API. In the mobile app, long-press the **"You"** tab title (800 ms) to open the Dev panel.
+
+### Bot accounts
+Eight stable bot users are seeded by `pnpm --filter @manamap/api db:seed`. All have `isBot=true`, `moderationStatus=ACTIVE`, `discoverable=true`.
+
+| ID | Name | Colors | Formats | Power |
+|---|---|---|---|---|
+| `bot_wren` | Wren | W/U | commander | 7 |
+| `bot_sol` | Sol | R | modern | 8 |
+| `bot_kira` | Kira | U/B | pioneer | 6 |
+| `bot_dune` | Dune | G/W | standard | 5 |
+| `bot_ash` | Ash | B | legacy | 9 |
+| `bot_nyx` | Nyx | U | commander/modern | 7 |
+| `bot_tarn` | Tarn | R/G | draft | 4 |
+| `bot_vex` | Vex | U/R | commander/pioneer | 6 |
+
+### Endpoints (`POST /api/v1/dev/...` — require Bearer token)
+| Endpoint | What it does |
+|---|---|
+| `populate-store` | Bots check in + half go LFG at your store |
+| `host-pod` | One bot checks in and creates a pod |
+| `request-me` | One bot sends you a connection request |
+| `accept-mine` | Bots accept your pending requests to them |
+| `log-game-with-me` | Bot logs a game; caller must confirm (caller wins by default) |
+| `full-scene` | Runs all of the above in sequence |
+| `reset` | Clears all bot Redis keys + pending connections/games involving bots |
+
+### Module structure
+- `apps/api/src/dev/` — DevModule, DevService, DevController, dev.bots.ts
+- `apps/mobile/src/screens/DevScreen.tsx` — in-app panel (7 buttons)
+- `LfgModule`, `PodsModule`, `ConnectionsModule` now export their primary service so DevModule can import them.

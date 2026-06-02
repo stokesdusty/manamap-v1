@@ -8,5 +8,6 @@ import { ConnectionsService } from './connections.service';
   imports: [AuthModule, SafetyModule],
   controllers: [ConnectionsController],
   providers: [ConnectionsService],
+  exports: [ConnectionsService],
 })
 export class ConnectionsModule {}

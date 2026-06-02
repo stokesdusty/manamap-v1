@@ -9,6 +9,7 @@ import { TabNavigator } from './TabNavigator';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { useProfile } from '../hooks/useMe';
+import { DevScreen } from '../screens/DevScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -34,6 +35,13 @@ export function RootNavigator() {
             <Stack.Screen name="PlayerPreview" component={PlayerPreviewScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="Connected" component={ConnectedRevealScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="Pod" component={PodScreen} options={{ presentation: 'modal' }} />
+            {__DEV__ ? (
+              <Stack.Screen
+                name="Dev"
+                component={DevScreen}
+                options={{ presentation: 'modal' }}
+              />
+            ) : null}
           </>
         )
       ) : (

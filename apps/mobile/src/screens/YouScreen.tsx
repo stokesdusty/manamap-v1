@@ -14,6 +14,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/types';
 import { LogGameSheet } from '../components/LogGameSheet';
 import { useMyGameStats, useMyGames } from '../hooks/useGames';
 import type { Game, GameStats } from '@manamap/shared';
@@ -1514,6 +1517,7 @@ export function YouScreen() {
   const { data: gameStats } = useMyGameStats();
   const [editOpen, setEditOpen] = useState(false);
   const [logGameOpen, setLogGameOpen] = useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   if (profileLoading) {
     return (
@@ -1538,7 +1542,12 @@ export function YouScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Text style={styles.title}>You</Text>
+        <Pressable
+          onLongPress={__DEV__ ? () => navigation.navigate('Dev') : undefined}
+          delayLongPress={800}
+        >
+          <Text style={styles.title}>You</Text>
+        </Pressable>
       </View>
 
       <ScrollView

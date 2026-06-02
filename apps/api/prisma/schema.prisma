@@ -120,6 +120,7 @@ model User {
   role                UserRole @default(USER)
   moderationStatus    ModerationStatus @default(ACTIVE) @map("moderation_status")
   suspendedUntil      DateTime? @map("suspended_until")
+  isBot               Boolean  @default(false) @map("is_bot")
 
   identities          Identity[]
   privacySettings     PrivacySettings?

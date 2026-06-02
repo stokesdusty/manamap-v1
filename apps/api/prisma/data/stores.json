@@ -49,6 +49,16 @@
     "timezone": "America/Los_Angeles"
   },
   {
+    "name": "Home Test",
+    "address": "Home",
+    "city": "Federal Way",
+    "state": "WA",
+    "zip": "98003",
+    "lat": 47.29903743304852,
+    "lng": -122.37379358064209,
+    "timezone": "America/Los_Angeles"
+  },
+  {
     "name": "Mox Boarding House",
     "address": "14300 NE 20th St",
     "city": "Bellevue",

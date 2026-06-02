@@ -8,5 +8,6 @@ import { PodsService } from './pods.service';
   imports: [AuthModule, SafetyModule],
   controllers: [PodsController],
   providers: [PodsService],
+  exports: [PodsService],
 })
 export class PodsModule {}

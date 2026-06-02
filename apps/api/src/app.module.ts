@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, type DynamicModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { validate } from './config/config.schema';
@@ -22,6 +22,12 @@ import { AdminModerationModule } from './admin-moderation/admin-moderation.modul
 import { LfgModule } from './lfg/lfg.module';
 import { PodsModule } from './pods/pods.module';
 import { GamesModule } from './games/games.module';
+import { DevModule } from './dev/dev.module';
+
+const devEnabled =
+  process.env['NODE_ENV'] !== 'production' && process.env['DEV_TOOLS'] === 'true';
+
+const conditionalModules: Array<DynamicModule | typeof DevModule> = devEnabled ? [DevModule] : [];
 
 @Module({
   imports: [
@@ -49,6 +55,7 @@ import { GamesModule } from './games/games.module';
     PodsModule,
     GamesModule,
     ThrottleModule,
+    ...conditionalModules,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottleGuard }],
 })

@@ -229,7 +229,7 @@ function StoreDetailSheet({
     setLocationError(false);
     setLocPhase('acquiring');
 
-    let args: CheckinArgs;
+    let args: CheckinArgs | undefined;
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -237,15 +237,29 @@ function StoreDetailSheet({
         setLocPhase('idle');
         return;
       }
-      const pos = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      args = {
-        storeId: store.id,
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude,
-        ...(pos.coords.accuracy != null ? { accuracy: pos.coords.accuracy } : {}),
-      };
+      let pos: Location.LocationObject | null = null;
+      try {
+        pos = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+      } catch {
+        // Simulator often can't get a real fix — fall back to store coords in dev
+        if (__DEV__ && store.lat != null && store.lng != null) {
+          args = { storeId: store.id, lat: store.lat, lng: store.lng };
+        } else {
+          setLocationError(true);
+          setLocPhase('idle');
+          return;
+        }
+      }
+      if (pos) {
+        args = {
+          storeId: store.id,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          ...(pos.coords.accuracy != null ? { accuracy: pos.coords.accuracy } : {}),
+        };
+      }
     } catch {
       setLocationError(true);
       setLocPhase('idle');
@@ -253,6 +267,7 @@ function StoreDetailSheet({
     }
 
     setLocPhase('idle');
+    if (!args) return;
     checkin(args, {
       onSuccess: (result) => {
         setActiveStore({

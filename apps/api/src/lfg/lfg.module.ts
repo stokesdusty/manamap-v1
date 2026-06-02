@@ -8,5 +8,6 @@ import { LfgService } from './lfg.service';
   imports: [AuthModule, SafetyModule],
   controllers: [LfgController],
   providers: [LfgService],
+  exports: [LfgService],
 })
 export class LfgModule {}
