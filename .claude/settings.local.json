@@ -62,7 +62,14 @@
       "Bash(Get-ChildItem \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\")",
       "Bash(Select-Object -Last 5)",
       "Bash(Format-Table Name)",
-      "Bash(dir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\")"
+      "Bash(dir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\")",
+      "Bash(Get-ChildItem c:\\\\dev\\\\manamap -Filter \"*.md\" -Depth 0)",
+      "Bash(Test-Path c:\\\\dev\\\\manamap\\\\README.md)",
+      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260602200000_checkin_event_link\")",
+      "Bash(Get-Process -Name node -ErrorAction SilentlyContinue)",
+      "Bash(Stop-Process -Force)",
+      "Bash(Start-Sleep -Seconds 2)",
+      "Bash(Write-Output \"Done\")"
     ]
   }
 }

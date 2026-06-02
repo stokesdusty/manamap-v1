@@ -36,4 +36,20 @@ export class PresenceService {
     return { storeId: store.id, storeName: store.name, expiresIn: PRESENCE_TTL };
   }
 
+  async getStoreMembers(storeId: string): Promise<string[]> {
+    const allIds = await this.redis.zrange(storeMembersKey(storeId), 0, -1);
+    if (!allIds.length) return [];
+
+    const existsResults = await Promise.all(allIds.map((id) => this.redis.exists(presenceKey(id))));
+    const validIds: string[] = [];
+    const expiredIds: string[] = [];
+    allIds.forEach((id, i) => {
+      if (existsResults[i]) validIds.push(id);
+      else expiredIds.push(id);
+    });
+
+    if (expiredIds.length) await this.redis.zrem(storeMembersKey(storeId), ...expiredIds);
+    return validIds;
+  }
+
 }

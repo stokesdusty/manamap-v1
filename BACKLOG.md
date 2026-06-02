@@ -10,6 +10,10 @@ through or delete when shipped.
 > M16 (onboarding) · M17 (dark theme) · M18 (proximity check-in) · M19 (moderation dashboard + enforcement) · M20 (LFG) · M21 (rate limiting) · M22 (pods) · M23 (log a game + player stats) are **shipped**.
 
 ---
+MtG Artist Connection Logo
+Social Post Review Queue
+Manage imported posts from social platforms
+
 
 ## 🛡️ Trust & Safety
 - [x] **Moderation dashboard** — ADMIN-gated two-pane queue in admin portal; warn/suspend/ban enforcement in AuthGuard; discovery + exchange exclude non-ACTIVE users. *(shipped M19)*
@@ -27,7 +31,7 @@ through or delete when shipped.
   the profile card. *(shipped M23)*
 
 ## 📅 Events
-- [ ] **RSVP reminders** — push the morning of / hour before an event you're
+- [x] **RSVP reminders** — push the morning of / hour before an event you're
   attending.
 - [ ] **Event-day check-in tie-in** — link a check-in to an active event; "who's
   here for Friday Commander."

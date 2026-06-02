@@ -286,12 +286,15 @@ model Checkin {
   id           String    @id @default(uuid())
   userId       String    @map("user_id")
   storeId      String    @map("store_id")
+  eventId      String?   @map("event_id")
   checkedInAt  DateTime  @default(now()) @map("checked_in_at")
   checkedOutAt DateTime? @map("checked_out_at")
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  store Store @relation(fields: [storeId], references: [id])
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store Store  @relation(fields: [storeId], references: [id])
+  event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
+  @@index([eventId])
   @@map("checkins")
 }
 
@@ -313,6 +316,7 @@ model Event {
   format     Format?         @relation(fields: [formatId], references: [id])
   attendees  EventAttendee[]
   encounters Encounter[]
+  checkins   Checkin[]
 
   @@map("events")
 }

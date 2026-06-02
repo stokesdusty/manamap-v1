@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  AssociateCheckinEventBody,
   AttendEventResponse,
   CheckinResult,
+  EventAttendanceResponse,
   ManaColor,
   MtgFormat,
   NearbyResponse,
@@ -10,6 +12,7 @@ import type {
   StoreEventsResponse,
   StorePin,
   SuggestionsResponse,
+  UnattendEventResponse,
 } from '@manamap/shared';
 import { api } from '../api/client';
 
@@ -158,5 +161,57 @@ export function useAttendEvent() {
     onSuccess: (_data, { storeId }) => {
       void qc.invalidateQueries({ queryKey: ['stores', storeId, 'events'] });
     },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Un-attend event (cancel RSVP)
+// ---------------------------------------------------------------------------
+
+export function useUnattendEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ storeId, eventId }: { storeId: string; eventId: string }) =>
+      api
+        .delete<UnattendEventResponse>(`/v1/stores/${storeId}/events/${eventId}/attend`)
+        .then((r) => r.data),
+    onSuccess: (_data, { storeId }) => {
+      void qc.invalidateQueries({ queryKey: ['stores', storeId, 'events'] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Associate check-in with an active event
+// ---------------------------------------------------------------------------
+
+export function useAssociateCheckinEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ storeId, checkinId, eventId }: { storeId: string; checkinId: string; eventId: string }) =>
+      api
+        .post<AssociateCheckinEventBody>(`/v1/stores/${storeId}/checkin/${checkinId}/event`, { eventId })
+        .then((r) => r.data),
+    onSuccess: (_data, { storeId }) => {
+      void qc.invalidateQueries({ queryKey: ['stores', storeId, 'events'] });
+      void qc.invalidateQueries({ queryKey: ['stores', storeId, 'eventAttendance'] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Event attendance roster (here now + RSVP'd)
+// ---------------------------------------------------------------------------
+
+export function useEventAttendance(storeId: string | null, eventId: string | null) {
+  return useQuery<EventAttendanceResponse>({
+    queryKey: ['stores', storeId, 'eventAttendance', eventId],
+    queryFn: () =>
+      api
+        .get<EventAttendanceResponse>(`/v1/stores/${storeId}/events/${eventId}/attendance`)
+        .then((r) => r.data),
+    enabled: !!storeId && !!eventId,
+    staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
   });
 }

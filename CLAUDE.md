@@ -30,7 +30,7 @@ Run everything from the repo root with `pnpm`.
 - **Database**: PostgreSQL 15 + PostGIS at `localhost:5432`, db `manamap`
 - **Cache**: Redis at `localhost:6379` (presence/nearby)
 - **ORM**: Prisma — schema at `apps/api/prisma/schema.prisma`
-- **Queue**: BullMQ (gamification badges/streaks after checkin)
+- **Queue**: BullMQ — two queues: `gamification` (badges/streaks after checkin), `event-reminders` (RSVP push reminders)
 - **Auth**: Discord OAuth → JWT access + refresh tokens
   - Mobile uses PKCE with custom scheme `manamap://auth/discord`
   - Web (admin portal) uses standard redirect URI with `redirectUri` passed in body
@@ -54,7 +54,7 @@ DISCORD_REDIRECT_URI=manamap://auth/discord
 |---|---|
 | auth | POST /v1/auth/discord, POST /v1/auth/refresh |
 | me | GET/PATCH /v1/me, GET/PATCH /v1/me/privacy, GET /v1/me/decks, GET /v1/me/streaks |
-| stores | GET /v1/stores, GET /v1/stores/:id, POST /v1/stores/:id/checkin, GET /v1/stores/:id/offers, GET /v1/stores/:id/events, GET /v1/stores/:id/leaderboard |
+| stores | GET /v1/stores, GET /v1/stores/:id, POST /v1/stores/:id/checkin, GET /v1/stores/:id/offers, GET /v1/stores/:id/events, GET /v1/stores/:id/leaderboard, POST /v1/stores/:id/events/:eventId/attend, DELETE /v1/stores/:id/events/:eventId/attend |
 | partner | POST /v1/partner/stores/claim, GET /v1/partner/stores, PATCH /v1/partner/stores/:id, GET /v1/partner/stores/:id/analytics, CRUD /v1/partner/stores/:id/offers |
 | presence | POST /v1/presence/heartbeat, GET /v1/presence/stores |
 | discovery | GET /v1/discovery/nearby, GET /v1/discovery/suggestions |
@@ -63,6 +63,7 @@ DISCORD_REDIRECT_URI=manamap://auth/discord
 | safety | POST /v1/blocks, DELETE /v1/blocks/:userId, GET /v1/blocks, POST /v1/reports |
 | admin-moderation | GET /v1/admin/moderation/stats, GET /v1/admin/moderation/reports, GET /v1/admin/moderation/reports/:id, POST /v1/admin/moderation/reports/:id/resolve — ADMIN only |
 | gamification | BullMQ queue, processes badge/streak logic after checkin |
+| event-reminders | BullMQ queue + processor — schedules/cancels morning-of + T-60min push reminders on RSVP; no HTTP routes |
 | lfg | GET/POST/PATCH/DELETE /v1/lfg, GET /v1/lfg/me, POST /v1/lfg/:hostUserId/invite, POST /v1/lfg/:hostUserId/lock |
 | games | POST /v1/games, GET /v1/games/pending, POST /v1/games/:id/confirm, POST /v1/games/:id/dispute, GET /v1/games/me |
 | me (stats) | GET /v1/me/stats — game W/L/winRate/byDeck, computed from GameLog |
@@ -119,6 +120,7 @@ pnpm --filter @manamap/api db:studio    # Prisma Studio
 - `useBadges`, `useStreaksSummary`, `useLeaderboard` — gamification
 - `useStoreOffers` — active reward offers for a store
 - `useCheckin` — POST checkin, returns `{ newBadges, streak, eligibleOffers }`
+- `useStoreEvents` — event calendar for a store; `useAttendEvent` / `useUnattendEvent` — RSVP toggle (invalidates events query on success)
 - `useLfgMe`, `useLfgFeed`, `useCreateLfg`, `useUpdateLfg`, `useDeleteLfg`, `useLfgInvite`, `useLfgLock` — LFG session management (polls every 15s)
 - `usePendingGames`, `useMyGames`, `useMyGameStats`, `useCreateGame`, `useConfirmGame`, `useDisputeGame` — game logging and stats
 
@@ -221,6 +223,7 @@ Located at `apps/api/prisma/migrations/`. Applied in timestamp order. Key notes:
 - `LfgDurationSchema`, `LfgSessionSchema`, `CreateLfgSchema`, `UpdateLfgSchema`, `LfgFeedItemSchema`, `LfgLockBodySchema`
 - `GameStatusSchema`, `GamePlayerSchema`, `GameSchema`, `CreateGameSchema`, `DeckStatSchema`, `GameStatsSchema`, `WinsLeaderboardEntrySchema`
 - `WinsLeaderboardEntrySchema` **must be declared before `LeaderboardResponseSchema`** — forward reference; `LeaderboardResponseSchema` has an optional `winsLeaderboard` key
+- `AttendEventResponseSchema`, `UnattendEventResponseSchema` — RSVP responses (same shape: `{ eventId, eventName }`)
 
 ---
 
@@ -267,6 +270,9 @@ No Docker config is in the repo — run them directly or via Docker outside the 
 - **`exactOptionalPropertyTypes` + optional props**: when passing a query result (`T | undefined`) to a prop typed `?: T | null`, normalize with `?? null` at the call site rather than widening the prop type. When the prop is `?: T` (no null), use a conditional spread: `{...(val !== undefined ? { prop: val } : {})}`.
 - **Game stats vs Encounter rows**: `GET /v1/me/stats` (W/L/winRate/byDeck) is computed directly from `GameLog` + `GamePlayer`, not from `Encounter` rows — avoids double-counting since each confirmed game writes multiple Encounter rows. Do not add encounter-based stats to the stats endpoint.
 - **GamesService vs MeService for stats**: `getGameStats` lives in `MeService` (not `GamesService`) to avoid a circular dependency chain. `MeService` queries `gameLog` directly via Prisma.
+- **Event reminder job idempotency**: `EventRemindersService.scheduleReminders` uses deterministic BullMQ jobIds (`${eventId}:${userId}:morning|hour`). Re-RSVPing is safe — BullMQ silently ignores adds for existing jobIds. `cancelReminders` calls `job.remove()` which is also safe when the job doesn't exist.
+- **Event reminder timezone**: `morningOfAt()` in `event-reminders.service.ts` uses an `Intl` probe to find the UTC time corresponding to 9am in the store's timezone. Falls back to `America/Los_Angeles` when `Store.timezone` is null.
+- **Notification opt-out**: no preference field exists yet — reminders always send. When a field is added to `PrivacySettings`, gate it in `EventRemindersProcessor.process()` before the `sendPush` call.
 
 ---
 
@@ -310,3 +316,33 @@ Eight stable bot users are seeded by `pnpm --filter @manamap/api db:seed`. All h
 - `apps/api/src/dev/` — DevModule, DevService, DevController, dev.bots.ts
 - `apps/mobile/src/screens/DevScreen.tsx` — in-app panel (7 buttons)
 - `LfgModule`, `PodsModule`, `ConnectionsModule` now export their primary service so DevModule can import them.
+
+---
+
+## Event reminders (M25)
+
+Push notifications when a user RSVPs to a store event — morning-of (9am store timezone) and T-60min before start. Un-RSVP cancels both jobs.
+
+### API
+- `apps/api/src/event-reminders/` — `EventRemindersModule`, `EventRemindersService`, `EventRemindersProcessor`
+- Queue name: `'event-reminders'` (separate from `'gamification'`)
+- JobId pattern: `${eventId}:${userId}:morning` / `${eventId}:${userId}:hour` — idempotent; re-RSVP is safe
+- `StoresService.attendEvent` now fetches `startsAt` + `store.{ id, name, timezone }` and calls `scheduleReminders`
+- `StoresService.unattendEvent` — deletes `EventAttendee` row + cancels both jobs
+- Route: `DELETE /v1/stores/:id/events/:eventId/attend`
+
+### Mobile
+- `useUnattendEvent` hook in `useNearby.ts` — DELETE mutation, invalidates events query
+- `EventRow` in `StoresScreen.tsx` — "Going!" toggles both directions; relies on server-side `isAttending` (no optimistic local state)
+
+### Processor guards (run on every job fire)
+1. Event `startsAt` already passed → skip
+2. `EventAttendee` row no longer exists → skip
+3. `Event` row deleted → skip
+4. Notification opt-out (TODO — no field yet)
+
+### Push payload
+```json
+{ "type": "event_reminder", "eventId": "...", "storeId": "..." }
+```
+Title: `"Event starting soon"` (hour) / `"Event reminder"` (morning).

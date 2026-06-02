@@ -335,6 +335,14 @@ export const LeaderboardResponseSchema = z.object({
 });
 export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
 
+export const ActiveEventSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  startsAt: TimestampSchema,
+  formatName: z.string().nullable(),
+});
+export type ActiveEvent = z.infer<typeof ActiveEventSchema>;
+
 export const CheckinResultSchema = z.object({
   checkinId: IdSchema,
   storeId: IdSchema,
@@ -351,6 +359,7 @@ export const CheckinResultSchema = z.object({
     terms: z.string().nullable(),
     redemptionCode: z.string(),
   })),
+  activeEvents: z.array(ActiveEventSchema),
 });
 export type CheckinResult = z.infer<typeof CheckinResultSchema>;
 
@@ -398,8 +407,26 @@ export const StoreEventSchema = z.object({
   formatSlug: z.string().nullable(),
   attendeeCount: z.number().int().nonnegative(),
   isAttending: z.boolean(),
+  hereNowCount: z.number().int().nonnegative(),
 });
 export type StoreEvent = z.infer<typeof StoreEventSchema>;
+
+export const AssociateCheckinEventBodySchema = z.object({
+  eventId: IdSchema,
+});
+export type AssociateCheckinEventBody = z.infer<typeof AssociateCheckinEventBodySchema>;
+
+export const EventAttendeeEntrySchema = PublicProfileSchema.extend({
+  isHereNow: z.boolean(),
+});
+export type EventAttendeeEntry = z.infer<typeof EventAttendeeEntrySchema>;
+
+export const EventAttendanceResponseSchema = z.object({
+  hereNow: z.array(EventAttendeeEntrySchema),
+  rsvpd: z.array(EventAttendeeEntrySchema),
+  hereNowCount: z.number().int().nonnegative(),
+});
+export type EventAttendanceResponse = z.infer<typeof EventAttendanceResponseSchema>;
 
 export const StoreEventsDaySchema = z.object({
   date: z.string(),
@@ -415,6 +442,12 @@ export const AttendEventResponseSchema = z.object({
   eventName: z.string(),
 });
 export type AttendEventResponse = z.infer<typeof AttendEventResponseSchema>;
+
+export const UnattendEventResponseSchema = z.object({
+  eventId: IdSchema,
+  eventName: z.string(),
+});
+export type UnattendEventResponse = z.infer<typeof UnattendEventResponseSchema>;
 
 // --- Encounters ---
 

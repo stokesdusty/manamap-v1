@@ -1,8 +1,11 @@
-import { HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import type { CheckinBody } from '@manamap/shared';
+import { BadRequestException, HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type { AssociateCheckinEventBody, CheckinBody } from '@manamap/shared';
+import { ModerationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PresenceService } from '../presence/presence.service';
 import { GamificationService } from '../gamification/gamification.service';
+import { EventRemindersService } from '../event-reminders/event-reminders.service';
+import { SafetyService } from '../safety/safety.service';
 import { StoreConnector } from './connectors/store.connector';
 import { DiscordConnector } from './connectors/discord.connector';
 import { WizardsConnector } from './connectors/wizards.connector';
@@ -40,10 +43,24 @@ export class StoresService {
     new WizardsConnector(),
   ];
 
+  private static readonly PROFILE_SELECT = {
+    id: true,
+    displayName: true,
+    pronouns: true,
+    bio: true,
+    avatarColors: true,
+    commander: true,
+    powerLevel: true,
+    vibe: true,
+    formats: true,
+  } as const;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly presence: PresenceService,
     private readonly gamification: GamificationService,
+    private readonly eventReminders: EventRemindersService,
+    private readonly safety: SafetyService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -205,11 +222,12 @@ export class StoresService {
       data: { userId, storeId },
     });
 
-    const [presence, gamificationResult, priorVisits, eligibleOffers] = await Promise.all([
+    const [presence, gamificationResult, priorVisits, eligibleOffers, activeEvents] = await Promise.all([
       this.presence.heartbeat(userId, storeId),
       this.gamification.processCheckin(userId, storeId),
       this.prisma.checkin.count({ where: { userId, storeId, id: { not: checkin.id } } }),
       this.getEligibleOffers(userId, storeId),
+      this.getActiveEventsNow(storeId),
     ]);
 
     return {
@@ -232,7 +250,70 @@ export class StoresService {
         terms: o.terms,
         redemptionCode: o.redemptionCode,
       })),
+      activeEvents,
     };
+  }
+
+  private async getActiveEventsNow(storeId: string) {
+    const now = new Date();
+    // Include events starting within the next 15 minutes (early arrivals)
+    const windowOpen = new Date(now.getTime() + 15 * 60 * 1000);
+
+    const events = await this.prisma.event.findMany({
+      where: { storeId, startsAt: { lte: windowOpen } },
+      select: {
+        id: true,
+        name: true,
+        startsAt: true,
+        endsAt: true,
+        format: { select: { name: true } },
+      },
+    });
+
+    return events
+      .filter((e) => {
+        const effectiveEnd = e.endsAt ?? new Date(e.startsAt.getTime() + 4 * 60 * 60 * 1000);
+        return effectiveEnd >= now;
+      })
+      .map((e) => ({
+        id: e.id,
+        name: e.name,
+        startsAt: e.startsAt.toISOString(),
+        formatName: e.format?.name ?? null,
+      }));
+  }
+
+  async associateCheckinEvent(userId: string, storeId: string, checkinId: string, body: AssociateCheckinEventBody) {
+    const [checkin, event] = await Promise.all([
+      this.prisma.checkin.findFirst({
+        where: { id: checkinId, userId, storeId, checkedOutAt: null },
+      }),
+      this.prisma.event.findFirst({
+        where: { id: body.eventId, storeId },
+        select: { id: true, name: true, startsAt: true, endsAt: true },
+      }),
+    ]);
+
+    if (!checkin) throw new NotFoundException('Active check-in not found');
+    if (!event) throw new NotFoundException('Event not found at this store');
+
+    const now = new Date();
+    const windowOpen = new Date(now.getTime() + 15 * 60 * 1000);
+    const effectiveEnd = event.endsAt ?? new Date(event.startsAt.getTime() + 4 * 60 * 60 * 1000);
+    if (event.startsAt > windowOpen || effectiveEnd < now) {
+      throw new BadRequestException('Event is not currently active');
+    }
+
+    await Promise.all([
+      this.prisma.checkin.update({ where: { id: checkinId }, data: { eventId: event.id } }),
+      this.prisma.eventAttendee.upsert({
+        where: { userId_eventId: { userId, eventId: event.id } },
+        create: { userId, eventId: event.id },
+        update: {},
+      }),
+    ]);
+
+    return { checkinId, eventId: event.id, eventName: event.name };
   }
 
   async getActiveOffers(storeId: string) {
@@ -272,7 +353,7 @@ export class StoresService {
 
     const windowStart = new Date(Date.now() - 60 * 60 * 1000); // include events started in past hour
 
-    const [events, userAttendances] = await Promise.all([
+    const [events, userAttendances, storeMembers] = await Promise.all([
       this.prisma.event.findMany({
         where: { storeId, startsAt: { gte: windowStart } },
         select: {
@@ -294,9 +375,48 @@ export class StoresService {
         where: { userId },
         select: { eventId: true },
       }),
+      this.presence.getStoreMembers(storeId),
     ]);
 
     const attendingSet = new Set(userAttendances.map((a) => a.eventId));
+    const memberSet = new Set(storeMembers);
+
+    // For each event, count how many store members are attending
+    let hereNowByEvent = new Map<string, number>();
+    if (memberSet.size > 0) {
+      const eventIds = events.map((e) => e.id);
+      const memberAttendances = await this.prisma.eventAttendee.findMany({
+        where: { eventId: { in: eventIds }, userId: { in: storeMembers } },
+        select: { eventId: true },
+      });
+      for (const a of memberAttendances) {
+        hereNowByEvent.set(a.eventId, (hereNowByEvent.get(a.eventId) ?? 0) + 1);
+      }
+      // Also count check-ins tagged with these events (may not have RSVPd)
+      const taggedCheckins = await this.prisma.checkin.findMany({
+        where: { eventId: { in: eventIds }, userId: { in: storeMembers }, checkedOutAt: null },
+        select: { eventId: true, userId: true },
+      });
+      const taggedByEvent = new Map<string, Set<string>>();
+      for (const c of taggedCheckins) {
+        if (!c.eventId) continue;
+        if (!taggedByEvent.has(c.eventId)) taggedByEvent.set(c.eventId, new Set());
+        taggedByEvent.get(c.eventId)!.add(c.userId);
+      }
+      // Merge tagged-only (not already counted via RSVP) into hereNowByEvent
+      const rsvpdByEvent = new Map<string, Set<string>>();
+      for (const a of memberAttendances) {
+        if (!rsvpdByEvent.has(a.eventId)) rsvpdByEvent.set(a.eventId, new Set());
+      }
+      for (const [eid, userIds] of taggedByEvent) {
+        const alreadyCounted = rsvpdByEvent.get(eid) ?? new Set<string>();
+        for (const uid of userIds) {
+          if (!alreadyCounted.has(uid)) {
+            hereNowByEvent.set(eid, (hereNowByEvent.get(eid) ?? 0) + 1);
+          }
+        }
+      }
+    }
 
     // Group by calendar date (UTC date string)
     const byDay = new Map<string, typeof events>();
@@ -321,14 +441,93 @@ export class StoresService {
         formatSlug: e.format?.slug ?? null,
         attendeeCount: e._count.attendees,
         isAttending: attendingSet.has(e.id),
+        hereNowCount: hereNowByEvent.get(e.id) ?? 0,
       })),
     }));
+  }
+
+  async getEventAttendance(callerId: string, storeId: string, eventId: string) {
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, storeId },
+      select: { id: true },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    const [storeMembers, attendees, blockedIds] = await Promise.all([
+      this.presence.getStoreMembers(storeId),
+      this.prisma.eventAttendee.findMany({
+        where: { eventId },
+        select: { userId: true },
+      }),
+      this.safety.getBlockedIds(callerId),
+    ]);
+
+    const memberSet = new Set(storeMembers);
+    const attendeeIds = attendees.map((a) => a.userId);
+
+    // Users tagged via check-in but not necessarily RSVP'd
+    const taggedCheckins = await this.prisma.checkin.findMany({
+      where: { eventId, storeId, checkedOutAt: null },
+      select: { userId: true },
+    });
+    const taggedIds = taggedCheckins.map((c) => c.userId);
+
+    // HERE NOW: in store presence AND (RSVP'd OR tagged via check-in)
+    const rsvpdSet = new Set(attendeeIds);
+    const taggedSet = new Set(taggedIds);
+    const hereNowIds = new Set<string>();
+    for (const id of memberSet) {
+      if (rsvpdSet.has(id) || taggedSet.has(id)) hereNowIds.add(id);
+    }
+
+    // RSVP'd but not here now
+    const rsvpdOnlyIds = attendeeIds.filter((id) => !hereNowIds.has(id));
+
+    // All user IDs we need profiles for, minus blocked/self
+    const allIds = [...new Set([...hereNowIds, ...rsvpdOnlyIds])].filter(
+      (id) => id !== callerId && !blockedIds.has(id),
+    );
+
+    if (!allIds.length) {
+      return { hereNow: [], rsvpd: [], hereNowCount: 0 };
+    }
+
+    const users = await this.prisma.user.findMany({
+      where: {
+        id: { in: allIds },
+        moderationStatus: ModerationStatus.ACTIVE,
+      },
+      select: {
+        ...StoresService.PROFILE_SELECT,
+        privacySettings: { select: { discoverable: true } },
+      },
+    });
+
+    const visibleUsers = users.filter((u) => u.privacySettings?.discoverable !== false);
+
+    const toEntry = (u: (typeof visibleUsers)[number]) => ({
+      id: u.id,
+      displayName: u.displayName,
+      pronouns: u.pronouns ?? null,
+      bio: u.bio ?? null,
+      avatarColors: u.avatarColors,
+      commander: u.commander ?? null,
+      powerLevel: u.powerLevel ?? null,
+      vibe: u.vibe ?? null,
+      formats: u.formats,
+      isHereNow: hereNowIds.has(u.id),
+    });
+
+    const hereNow = visibleUsers.filter((u) => hereNowIds.has(u.id)).map(toEntry);
+    const rsvpd = visibleUsers.filter((u) => !hereNowIds.has(u.id)).map(toEntry);
+
+    return { hereNow, rsvpd, hereNowCount: hereNow.length };
   }
 
   async attendEvent(userId: string, storeId: string, eventId: string) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, storeId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, startsAt: true, store: { select: { id: true, name: true, timezone: true } } },
     });
     if (!event) throw new NotFoundException('Event not found');
 
@@ -337,6 +536,29 @@ export class StoresService {
       create: { userId, eventId },
       update: {},
     });
+
+    // Schedule reminders; jobId idempotency prevents duplicates on re-RSVP
+    await this.eventReminders.scheduleReminders(userId, {
+      eventId: event.id,
+      eventName: event.name,
+      startsAt: event.startsAt,
+      storeId: event.store.id,
+      storeName: event.store.name,
+      timezone: event.store.timezone,
+    });
+
+    return { eventId: event.id, eventName: event.name };
+  }
+
+  async unattendEvent(userId: string, storeId: string, eventId: string) {
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, storeId },
+      select: { id: true, name: true },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+
+    await this.prisma.eventAttendee.deleteMany({ where: { userId, eventId } });
+    await this.eventReminders.cancelReminders(userId, eventId);
 
     return { eventId: event.id, eventName: event.name };
   }

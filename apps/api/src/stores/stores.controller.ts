@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -9,7 +10,12 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { CheckinBodySchema, type CheckinBody } from '@manamap/shared';
+import {
+  AssociateCheckinEventBodySchema,
+  CheckinBodySchema,
+  type AssociateCheckinEventBody,
+  type CheckinBody,
+} from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { StoresService } from './stores.service';
@@ -64,5 +70,35 @@ export class StoresController {
     @Param('eventId') eventId: string,
   ) {
     return this.stores.attendEvent(req.user.sub, id, eventId);
+  }
+
+  @Delete(':id/events/:eventId/attend')
+  @HttpCode(200)
+  unattendEvent(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Param('eventId') eventId: string,
+  ) {
+    return this.stores.unattendEvent(req.user.sub, id, eventId);
+  }
+
+  @Post(':id/checkin/:checkinId/event')
+  @HttpCode(200)
+  associateCheckinEvent(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Param('checkinId') checkinId: string,
+    @Body(new ZodValidationPipe(AssociateCheckinEventBodySchema)) body: AssociateCheckinEventBody,
+  ) {
+    return this.stores.associateCheckinEvent(req.user.sub, id, checkinId, body);
+  }
+
+  @Get(':id/events/:eventId/attendance')
+  getEventAttendance(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Param('eventId') eventId: string,
+  ) {
+    return this.stores.getEventAttendance(req.user.sub, id, eventId);
   }
 }

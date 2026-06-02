@@ -16,10 +16,13 @@ import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
-import type { EarnedBadge, NearbyPlayer, StoreEvent, StorePin } from '@manamap/shared';
+import type { ActiveEvent, EarnedBadge, EventAttendeeEntry, NearbyPlayer, StoreEvent, StorePin } from '@manamap/shared';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import {
   useAttendEvent,
+  useUnattendEvent,
+  useAssociateCheckinEvent,
+  useEventAttendance,
   useCheckin,
   type CheckinArgs,
   useNearby,
@@ -77,6 +80,29 @@ function formatDateLabel(dateStr: string) {
 // Event row
 // ---------------------------------------------------------------------------
 
+function AttendeeRow({ entry }: { entry: EventAttendeeEntry }) {
+  const fill = entry.avatarColors[0]
+    ? ({ W: colors.mana.W, U: colors.mana.U, B: colors.mana.B, R: colors.mana.R, G: colors.mana.G }[entry.avatarColors[0]] ?? colors.border)
+    : colors.border;
+  const textFill = entry.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+  return (
+    <View style={attendeeRow.root}>
+      <View style={[attendeeRow.avatar, { backgroundColor: fill }]}>
+        <Text style={[attendeeRow.avatarText, { color: textFill }]}>
+          {entry.displayName.charAt(0).toUpperCase()}
+        </Text>
+      </View>
+      <Text style={attendeeRow.name} numberOfLines={1}>{entry.displayName}</Text>
+      {entry.isHereNow && (
+        <View style={attendeeRow.hereBadge}>
+          <Ionicons name="radio-outline" size={10} color={colors.success} />
+          <Text style={attendeeRow.hereText}>Here</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
 function EventRow({
   event,
   storeId,
@@ -84,17 +110,33 @@ function EventRow({
   event: StoreEvent;
   storeId: string;
 }) {
-  const { mutate: attend, isPending, isSuccess } = useAttendEvent();
-  const attending = isSuccess || event.isAttending;
+  const { mutate: attend, isPending: isAttending } = useAttendEvent();
+  const { mutate: unattend, isPending: isUnattending } = useUnattendEvent();
+  const [expanded, setExpanded] = useState(false);
+  const { data: attendance } = useEventAttendance(expanded ? storeId : null, expanded ? event.id : null);
+
+  const isPending = isAttending || isUnattending;
+  const attending = event.isAttending;
   const sourceColor = SOURCE_COLORS[event.source] ?? colors.accent;
+
+  const handleRsvpPress = () => {
+    if (attending) {
+      unattend({ storeId, eventId: event.id });
+    } else {
+      attend({ storeId, eventId: event.id });
+    }
+  };
 
   return (
     <View style={evtRow.root}>
-      <View style={evtRow.topRow}>
-        <View style={[evtRow.sourceDot, { backgroundColor: sourceColor }]} />
-        <Text style={evtRow.name} numberOfLines={2}>{event.name}</Text>
-        <Text style={evtRow.time}>{formatTime(event.startsAt)}</Text>
-      </View>
+      <Pressable onPress={() => setExpanded((v) => !v)}>
+        <View style={evtRow.topRow}>
+          <View style={[evtRow.sourceDot, { backgroundColor: sourceColor }]} />
+          <Text style={evtRow.name} numberOfLines={2}>{event.name}</Text>
+          <Text style={evtRow.time}>{formatTime(event.startsAt)}</Text>
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color={colors.textTertiary} />
+        </View>
+      </Pressable>
 
       <View style={evtRow.metaRow}>
         {event.formatName && (
@@ -105,6 +147,12 @@ function EventRow({
         {event.attendeeCount > 0 && (
           <Text style={evtRow.going}>{event.attendeeCount} going</Text>
         )}
+        {event.hereNowCount > 0 && (
+          <View style={evtRow.hereNowBadge}>
+            <Ionicons name="radio-outline" size={10} color={colors.success} />
+            <Text style={evtRow.hereNowText}>{event.hereNowCount} here now</Text>
+          </View>
+        )}
       </View>
 
       <View style={evtRow.actions}>
@@ -114,8 +162,8 @@ function EventRow({
             attending && evtRow.rsvpBtnActive,
             (pressed || isPending) && { opacity: 0.7 },
           ]}
-          onPress={attending ? undefined : () => attend({ storeId, eventId: event.id })}
-          disabled={isPending || attending}
+          onPress={isPending ? undefined : handleRsvpPress}
+          disabled={isPending}
         >
           {isPending ? (
             <ActivityIndicator size="small" color={attending ? colors.success : colors.accent} />
@@ -143,6 +191,36 @@ function EventRow({
           </Pressable>
         )}
       </View>
+
+      {expanded && (
+        <View style={evtRow.attendanceSection}>
+          {attendance ? (
+            <>
+              {attendance.hereNow.length > 0 && (
+                <>
+                  <Text style={evtRow.attendanceLabel}>Here now ({attendance.hereNow.length})</Text>
+                  {attendance.hereNow.map((entry) => (
+                    <AttendeeRow key={entry.id} entry={entry} />
+                  ))}
+                </>
+              )}
+              {attendance.rsvpd.length > 0 && (
+                <>
+                  <Text style={evtRow.attendanceLabel}>RSVP'd</Text>
+                  {attendance.rsvpd.map((entry) => (
+                    <AttendeeRow key={entry.id} entry={entry} />
+                  ))}
+                </>
+              )}
+              {attendance.hereNow.length === 0 && attendance.rsvpd.length === 0 && (
+                <Text style={evtRow.attendanceEmpty}>No attendees yet</Text>
+              )}
+            </>
+          ) : (
+            <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 4 }} />
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -195,6 +273,9 @@ function StoreDetailSheet({
   const { data: offers = [] } = useStoreOffers(storeId);
   const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
   const [eligibleOffers, setEligibleOffers] = useState<Array<{ id: string; type: string; title: string; description: string | null; terms: string | null; redemptionCode: string }>>([]);
+  const [activeEvents, setActiveEvents] = useState<ActiveEvent[]>([]);
+  const [pendingCheckinId, setPendingCheckinId] = useState<string | null>(null);
+  const { mutate: associateEvent, isPending: isAssociating } = useAssociateCheckinEvent();
   const [activeTab, setActiveTab] = useState<'schedule' | 'leaderboard'>('schedule');
   const [locPhase, setLocPhase] = useState<'idle' | 'acquiring'>('idle');
   const [permissionDenied, setPermissionDenied] = useState(false);
@@ -283,6 +364,10 @@ function StoreDetailSheet({
         });
         if (result.newBadges.length > 0) setEarnedBadges(result.newBadges);
         if (result.eligibleOffers?.length > 0) setEligibleOffers(result.eligibleOffers);
+        if (result.activeEvents?.length > 0) {
+          setActiveEvents(result.activeEvents);
+          setPendingCheckinId(result.checkinId);
+        }
       },
       onError: (err) => {
         if (axios.isAxiosError(err) && err.response?.status === 422) {
@@ -550,6 +635,43 @@ function StoreDetailSheet({
       badges={earnedBadges}
       onDismiss={() => setEarnedBadges([])}
     />
+
+    {/* Event tag prompt — shown after check-in when an event is happening now */}
+    {activeEvents.length > 0 && pendingCheckinId && (
+      <Modal transparent animationType="fade" visible={true} onRequestClose={() => setActiveEvents([])}>
+        <Pressable style={promoStyles.backdrop} onPress={() => setActiveEvents([])}>
+          <View style={promoStyles.card}>
+            <Text style={promoStyles.heading}>Here for an event?</Text>
+            {activeEvents.map((evt) => (
+              <Pressable
+                key={evt.id}
+                style={({ pressed }) => [eventTagStyles.eventBtn, (pressed || isAssociating) && { opacity: 0.7 }]}
+                disabled={isAssociating}
+                onPress={() => {
+                  if (!pendingCheckinId || !storeId) return;
+                  associateEvent(
+                    { storeId, checkinId: pendingCheckinId, eventId: evt.id },
+                    { onSettled: () => setActiveEvents([]) },
+                  );
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={eventTagStyles.eventName}>{evt.name}</Text>
+                  <Text style={eventTagStyles.eventTime}>{formatTime(evt.startsAt)}{evt.formatName ? ` · ${evt.formatName}` : ''}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.accent} />
+              </Pressable>
+            ))}
+            <Pressable
+              style={({ pressed }) => [eventTagStyles.skipBtn, pressed && { opacity: 0.7 }]}
+              onPress={() => setActiveEvents([])}
+            >
+              <Text style={eventTagStyles.skipText}>Just visiting</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+    )}
 
     {/* First-visit / streak promo modal */}
     {eligibleOffers.length > 0 && (
@@ -1328,6 +1450,20 @@ const evtRow = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textTertiary,
   },
+  hereNowBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+    backgroundColor: colors.success + '18',
+  },
+  hereNowText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.success,
+  },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1369,6 +1505,100 @@ const evtRow = StyleSheet.create({
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.xs,
     color: '#5865F2',
+  },
+  attendanceSection: {
+    marginTop: spacing.xs,
+    paddingLeft: spacing.md,
+    gap: spacing.xs,
+  },
+  attendanceLabel: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: spacing.xs,
+    marginBottom: 2,
+  },
+  attendanceEmpty: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    paddingVertical: spacing.xs,
+  },
+});
+
+const attendeeRow = StyleSheet.create({
+  root: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: 4,
+  },
+  avatar: {
+    width: 24,
+    height: 24,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.xs,
+  },
+  name: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.textPrimary,
+  },
+  hereBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    backgroundColor: colors.success + '18',
+    borderRadius: radii.full,
+  },
+  hereText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.success,
+  },
+});
+
+const eventTagStyles = StyleSheet.create({
+  eventBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.accentLight,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.accent + '30',
+  },
+  eventName: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  eventTime: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  skipBtn: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  skipText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
   },
 });
 
