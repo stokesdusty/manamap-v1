@@ -125,6 +125,7 @@ export const PrivacySchema = z.object({
   showDiscord: z.boolean(),
   showDecks: z.boolean(),
   showMetHistory: z.boolean(),
+  storeMessages: z.boolean().default(true),
 });
 export type Privacy = z.infer<typeof PrivacySchema>;
 
@@ -133,6 +134,7 @@ export const UpdatePrivacySchema = z.object({
   showDiscord: z.boolean().optional(),
   showDecks: z.boolean().optional(),
   showMetHistory: z.boolean().optional(),
+  storeMessages: z.boolean().optional(),
 });
 export type UpdatePrivacy = z.infer<typeof UpdatePrivacySchema>;
 
@@ -936,3 +938,44 @@ export const GameStatsSchema = z.object({
   byDeck: z.array(DeckStatSchema),
 });
 export type GameStats = z.infer<typeof GameStatsSchema>;
+
+// --- Broadcast ---
+
+export const BroadcastAudienceSchema = z.enum([
+  'CHECKED_IN_NOW',
+  'TODAY',
+  'EVENT_RSVPS',
+  'RECENT_30D',
+]);
+export type BroadcastAudience = z.infer<typeof BroadcastAudienceSchema>;
+
+export const SendBroadcastSchema = z.object({
+  audience: BroadcastAudienceSchema,
+  title: z.string().min(1).max(40),
+  body: z.string().min(1).max(140),
+  eventId: z.string().optional(),
+});
+export type SendBroadcast = z.infer<typeof SendBroadcastSchema>;
+
+export const BroadcastSchema = z.object({
+  id: z.string(),
+  audience: BroadcastAudienceSchema,
+  title: z.string(),
+  body: z.string(),
+  eventId: z.string().nullable(),
+  recipientCount: z.number(),
+  createdAt: z.string(),
+});
+export type Broadcast = z.infer<typeof BroadcastSchema>;
+
+export const AudienceCountsSchema = z.object({
+  CHECKED_IN_NOW: z.number(),
+  TODAY: z.number(),
+  EVENT_RSVPS: z.object({
+    count: z.number(),
+    eventId: z.string().nullable(),
+    eventName: z.string().nullable(),
+  }),
+  RECENT_30D: z.number(),
+});
+export type AudienceCounts = z.infer<typeof AudienceCountsSchema>;

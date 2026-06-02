@@ -2,19 +2,25 @@ import {
   Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, UseGuards,
 } from '@nestjs/common';
 import {
-  ClaimStoreSchema, CreateRewardOfferSchema, UpdateRewardOfferSchema, UpdateStoreProfileSchema,
-  type ClaimStore, type CreateRewardOffer, type UpdateRewardOffer, type UpdateStoreProfile,
+  ClaimStoreSchema, CreateRewardOfferSchema, SendBroadcastSchema, UpdateRewardOfferSchema,
+  UpdateStoreProfileSchema,
+  type ClaimStore, type CreateRewardOffer, type SendBroadcast, type UpdateRewardOffer,
+  type UpdateStoreProfile,
 } from '@manamap/shared';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { PartnerService } from './partner.service';
+import { BroadcastService } from './broadcast.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 
 @Controller('v1/partner')
 @UseGuards(AuthGuard)
 export class PartnerController {
-  constructor(private readonly partner: PartnerService) {}
+  constructor(
+    private readonly partner: PartnerService,
+    private readonly broadcast: BroadcastService,
+  ) {}
 
   // --- Store ownership ---
 
@@ -85,5 +91,27 @@ export class PartnerController {
     @Param('offerId') offerId: string,
   ) {
     return this.partner.deleteOffer(req.user.sub, storeId, offerId);
+  }
+
+  // --- Broadcast ---
+
+  @Get('stores/:storeId/broadcast/audiences')
+  getAudiences(@Req() req: AuthRequest, @Param('storeId') storeId: string) {
+    return this.broadcast.getAudienceCounts(req.user.sub, storeId);
+  }
+
+  @Post('stores/:storeId/broadcast')
+  @HttpCode(200)
+  sendBroadcast(
+    @Req() req: AuthRequest,
+    @Param('storeId') storeId: string,
+    @Body(new ZodValidationPipe(SendBroadcastSchema)) body: SendBroadcast,
+  ) {
+    return this.broadcast.sendBroadcast(req.user.sub, storeId, body);
+  }
+
+  @Get('stores/:storeId/broadcast')
+  listBroadcasts(@Req() req: AuthRequest, @Param('storeId') storeId: string) {
+    return this.broadcast.listBroadcasts(req.user.sub, storeId);
   }
 }

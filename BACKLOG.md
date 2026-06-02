@@ -33,11 +33,11 @@ Manage imported posts from social platforms
 ## 📅 Events
 - [x] **RSVP reminders** — push the morning of / hour before an event you're
   attending.
-- [ ] **Event-day check-in tie-in** — link a check-in to an active event; "who's
+- [x] **Event-day check-in tie-in** — link a check-in to an active event; "who's
   here for Friday Commander."
 
 ## 🏪 Store-owner value (admin portal)
-- [ ] **Broadcast announcement** — let a store push a message to players currently
+- [x] **Broadcast announcement** — let a store push a message to players currently
   checked in (or recent visitors).
 - [ ] **Event management** — create/edit store events in the portal (today events
   are read-only / connector-sourced).

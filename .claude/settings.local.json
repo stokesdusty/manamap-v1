@@ -69,7 +69,8 @@
       "Bash(Get-Process -Name node -ErrorAction SilentlyContinue)",
       "Bash(Stop-Process -Force)",
       "Bash(Start-Sleep -Seconds 2)",
-      "Bash(Write-Output \"Done\")"
+      "Bash(Write-Output \"Done\")",
+      "Bash(mkdir -p \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260602300000_broadcast\")"
     ]
   }
 }

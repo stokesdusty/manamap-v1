@@ -45,6 +45,7 @@ export class MeService {
         showDiscord: true,
         showDecks: true,
         showMetHistory: true,
+        storeMessages: true,
       }
     );
   }
@@ -55,6 +56,7 @@ export class MeService {
       ...(dto.showDiscord !== undefined ? { showDiscord: dto.showDiscord } : {}),
       ...(dto.showDecks !== undefined ? { showDecks: dto.showDecks } : {}),
       ...(dto.showMetHistory !== undefined ? { showMetHistory: dto.showMetHistory } : {}),
+      ...(dto.storeMessages !== undefined ? { storeMessages: dto.storeMessages } : {}),
     };
     return this.prisma.privacySettings.upsert({
       where: { userId },
@@ -65,6 +67,7 @@ export class MeService {
         showDiscord: dto.showDiscord ?? true,
         showDecks: dto.showDecks ?? true,
         showMetHistory: dto.showMetHistory ?? true,
+        storeMessages: dto.storeMessages ?? true,
       },
     });
   }

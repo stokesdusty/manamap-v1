@@ -1,9 +1,12 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useMatch } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export function Layout() {
   const { logout, role } = useAuth();
   const isAdmin = role === 'ADMIN';
+  const storeMatch = useMatch('/stores/:storeId/*');
+  const currentStoreId = storeMatch?.params?.storeId;
+  const inStore = currentStoreId && currentStoreId !== 'claim';
 
   return (
     <div className="layout">
@@ -15,6 +18,11 @@ export function Layout() {
         <NavLink to="/stores/claim" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
           + Claim Store
         </NavLink>
+        {inStore && (
+          <NavLink to={`/stores/${currentStoreId}/broadcast`} className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+            📢 Broadcast
+          </NavLink>
+        )}
         {isAdmin && (
           <>
             <div style={{ margin: '16px 8px 8px', fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: 1 }}>
