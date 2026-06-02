@@ -70,7 +70,10 @@
       "Bash(Stop-Process -Force)",
       "Bash(Start-Sleep -Seconds 2)",
       "Bash(Write-Output \"Done\")",
-      "Bash(mkdir -p \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260602300000_broadcast\")"
+      "Bash(mkdir -p \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260602300000_broadcast\")",
+      "Bash(dir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\\")",
+      "Bash(dir c:/dev/manamap/apps/api/prisma/migrations/)",
+      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260603000000_offer_redemptions\")"
     ]
   }
 }

@@ -103,6 +103,12 @@ enum BroadcastAudience {
   RECENT_30D
 }
 
+enum RedemptionStatus {
+  PENDING
+  REDEEMED
+  VOID
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -155,6 +161,8 @@ model User {
   gamesWon            GameLog[]          @relation("GamesWon")
   gamePlayers         GamePlayer[]
   broadcastsSent      Broadcast[]        @relation("BroadcastsSent")
+  offerRedemptions    OfferRedemption[]
+  staffRedemptions    OfferRedemption[]  @relation("RedemptionStaff")
 
   @@map("users")
 }
@@ -285,8 +293,9 @@ model Store {
   userBadges   UserBadge[]
   homeUsers    User[]          @relation("HomeStore")
   ownerships   StoreOwnership[]
-  gameLogs     GameLog[]
-  broadcasts   Broadcast[]
+  gameLogs         GameLog[]
+  broadcasts       Broadcast[]
+  offerRedemptions OfferRedemption[]
 
   @@unique([name, city])
   @@map("stores")
@@ -441,9 +450,30 @@ model RewardOffer {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  store       Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  redemptions OfferRedemption[]
 
   @@map("reward_offers")
+}
+
+model OfferRedemption {
+  id                String           @id @default(uuid())
+  offerId           String           @map("offer_id")
+  userId            String           @map("user_id")
+  storeId           String           @map("store_id")
+  code              String           @unique
+  status            RedemptionStatus @default(PENDING)
+  createdAt         DateTime         @default(now()) @map("created_at")
+  redeemedAt        DateTime?        @map("redeemed_at")
+  redeemedByStaffId String?          @map("redeemed_by_staff_id")
+
+  offer           RewardOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store           Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  redeemedByStaff User?       @relation("RedemptionStaff", fields: [redeemedByStaffId], references: [id], onDelete: SetNull)
+
+  @@index([storeId, status])
+  @@map("offer_redemptions")
 }
 
 model Block {

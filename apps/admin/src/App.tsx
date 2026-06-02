@@ -11,6 +11,7 @@ import { OfferFormPage } from './pages/OfferFormPage';
 import { ModerationPage } from './pages/ModerationPage';
 import { BroadcastPage } from './pages/BroadcastPage';
 import { EventsPage } from './pages/EventsPage';
+import { RedeemPage } from './pages/RedeemPage';
 
 const qc = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 60_000 } },
@@ -48,6 +49,7 @@ function AppRoutes() {
         <Route path="/stores/:storeId/offers/:offerId/edit" element={<OfferFormPage />} />
         <Route path="/stores/:storeId/events" element={<EventsPage />} />
         <Route path="/stores/:storeId/broadcast" element={<BroadcastPage />} />
+        <Route path="/stores/:storeId/redeem" element={<RedeemPage />} />
         <Route
           path="/moderation"
           element={

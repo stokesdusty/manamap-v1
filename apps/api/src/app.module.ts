@@ -23,6 +23,7 @@ import { LfgModule } from './lfg/lfg.module';
 import { PodsModule } from './pods/pods.module';
 import { GamesModule } from './games/games.module';
 import { DevModule } from './dev/dev.module';
+import { RedemptionsModule } from './redemptions/redemptions.module';
 
 const devEnabled =
   process.env['NODE_ENV'] !== 'production' && process.env['DEV_TOOLS'] === 'true';
@@ -54,6 +55,7 @@ const conditionalModules: Array<DynamicModule | typeof DevModule> = devEnabled ?
     LfgModule,
     PodsModule,
     GamesModule,
+    RedemptionsModule,
     ThrottleModule,
     ...conditionalModules,
   ],

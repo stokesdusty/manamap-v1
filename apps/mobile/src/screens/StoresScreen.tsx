@@ -31,8 +31,9 @@ import {
   useStoreEvents,
   useStores,
 } from '../hooks/useNearby';
+import QRCode from 'react-native-qrcode-svg';
 import { useLeaderboard } from '../hooks/useGamification';
-import { useStoreOffers } from '../hooks/useOffers';
+import { useClaimOffer, useRedemptionStatus, useStoreOffers, type ClaimResult } from '../hooks/useOffers';
 import { BadgeEarnedSheet } from '../components/BadgeEarnedSheet';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 
@@ -274,6 +275,10 @@ function StoreDetailSheet({
   const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
   const [eligibleOffers, setEligibleOffers] = useState<Array<{ id: string; type: string; title: string; description: string | null; terms: string | null; redemptionCode: string }>>([]);
   const [activeEvents, setActiveEvents] = useState<ActiveEvent[]>([]);
+  const [claimResult, setClaimResult] = useState<ClaimResult | null>(null);
+  const { mutate: claimOffer, isPending: isClaiming } = useClaimOffer();
+  const { data: redemptionStatus } = useRedemptionStatus(claimResult?.offerId ?? null, claimResult !== null);
+  const effectiveStatus = redemptionStatus?.status ?? claimResult?.status;
   const [pendingCheckinId, setPendingCheckinId] = useState<string | null>(null);
   const { mutate: associateEvent, isPending: isAssociating } = useAssociateCheckinEvent();
   const [activeTab, setActiveTab] = useState<'schedule' | 'leaderboard'>('schedule');
@@ -685,20 +690,70 @@ function StoreDetailSheet({
                 {offer.description ? (
                   <Text style={promoStyles.offerDesc}>{offer.description}</Text>
                 ) : null}
-                <View style={promoStyles.codeBox}>
-                  <Text style={promoStyles.codeLabel}>Show this code to staff</Text>
-                  <Text style={promoStyles.code}>{offer.redemptionCode}</Text>
-                </View>
                 {offer.terms ? (
                   <Text style={promoStyles.terms}>{offer.terms}</Text>
                 ) : null}
+                <Pressable
+                  style={({ pressed }) => [claimStyles.redeemBtn, (pressed || isClaiming) && { opacity: 0.7 }]}
+                  disabled={isClaiming}
+                  onPress={() => {
+                    claimOffer({ offerId: offer.id }, {
+                      onSuccess: (result) => {
+                        setEligibleOffers([]);
+                        setClaimResult(result);
+                      },
+                    });
+                  }}
+                >
+                  {isClaiming ? (
+                    <ActivityIndicator size="small" color={colors.textInverse} />
+                  ) : (
+                    <Text style={claimStyles.redeemBtnText}>Redeem at counter</Text>
+                  )}
+                </Pressable>
               </View>
             ))}
             <Pressable
               style={({ pressed }) => [promoStyles.dismissBtn, pressed && { opacity: 0.8 }]}
               onPress={() => setEligibleOffers([])}
             >
-              <Text style={promoStyles.dismissText}>Got it!</Text>
+              <Text style={promoStyles.dismissText}>Not now</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+    )}
+
+    {/* Claim code sheet */}
+    {claimResult && (
+      <Modal transparent animationType="fade" visible={true} onRequestClose={() => setClaimResult(null)}>
+        <Pressable style={promoStyles.backdrop} onPress={() => setClaimResult(null)}>
+          <View style={[promoStyles.card, { alignItems: 'center' }]}>
+            <Text style={promoStyles.heading}>
+              {effectiveStatus === 'REDEEMED' ? 'Redeemed!' : 'Show staff this code'}
+            </Text>
+            <Text style={claimStyles.offerTitle}>{claimResult.offerTitle}</Text>
+
+            {effectiveStatus === 'REDEEMED' ? (
+              <View style={claimStyles.redeemedBadge}>
+                <Ionicons name="checkmark-circle" size={48} color={colors.success} />
+                <Text style={claimStyles.redeemedText}>Offer redeemed — enjoy!</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={claimStyles.codeDisplay}>{claimResult.code}</Text>
+                <View style={claimStyles.qrWrapper}>
+                  <QRCode value={claimResult.code} size={180} />
+                </View>
+                <Text style={claimStyles.hint}>Staff will scan or enter this code</Text>
+              </>
+            )}
+
+            <Pressable
+              style={({ pressed }) => [promoStyles.dismissBtn, { marginTop: 16 }, pressed && { opacity: 0.8 }]}
+              onPress={() => setClaimResult(null)}
+            >
+              <Text style={promoStyles.dismissText}>Done</Text>
             </Pressable>
           </View>
         </Pressable>
@@ -1397,6 +1452,56 @@ const promoStyles = StyleSheet.create({
     fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.md,
     color: colors.textInverse,
+  },
+});
+
+const claimStyles = StyleSheet.create({
+  redeemBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: radii.full,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  redeemBtnText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textInverse,
+  },
+  offerTitle: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  codeDisplay: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 32,
+    color: colors.accent,
+    letterSpacing: 5,
+    textAlign: 'center',
+  },
+  qrWrapper: {
+    padding: spacing.lg,
+    backgroundColor: '#fff',
+    borderRadius: radii.lg,
+  },
+  hint: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
+    textAlign: 'center',
+  },
+  redeemedBadge: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
+  },
+  redeemedText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.success,
+    textAlign: 'center',
   },
 });
 

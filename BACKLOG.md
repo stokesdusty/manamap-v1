@@ -41,7 +41,7 @@ Manage imported posts from social platforms
   checked in (or recent visitors).
 - [x] **Event management** — create/edit store events in the portal (today events
   are read-only / connector-sourced).
-- [ ] **Staff redemption-verify** — a counter flow to validate/redeem the 8-char
+- [x] **Staff redemption-verify** — a counter flow to validate/redeem the 8-char
   offer codes (enter or scan), marking them used.
 
 ## 🔁 Retention

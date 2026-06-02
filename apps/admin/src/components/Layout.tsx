@@ -26,6 +26,9 @@ export function Layout() {
             <NavLink to={`/stores/${currentStoreId}/broadcast`} className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
               📢 Broadcast
             </NavLink>
+            <NavLink to={`/stores/${currentStoreId}/redeem`} className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+              🎟 Redeem
+            </NavLink>
           </>
         )}
         {isAdmin && (

@@ -980,6 +980,52 @@ export const AudienceCountsSchema = z.object({
 });
 export type AudienceCounts = z.infer<typeof AudienceCountsSchema>;
 
+// --- Offer redemptions ---
+
+export const RedemptionStatusSchema = z.enum(['PENDING', 'REDEEMED', 'VOID']);
+export type RedemptionStatus = z.infer<typeof RedemptionStatusSchema>;
+
+export const ClaimOfferResponseSchema = z.object({
+  code: z.string().length(8),
+  offerId: IdSchema,
+  offerTitle: z.string(),
+  status: RedemptionStatusSchema,
+});
+export type ClaimOfferResponse = z.infer<typeof ClaimOfferResponseSchema>;
+
+export const RedeemCodeSchema = z.object({
+  code: z.string().length(8),
+});
+export type RedeemCode = z.infer<typeof RedeemCodeSchema>;
+
+export const RedemptionResultSchema = z.object({
+  id: IdSchema,
+  code: z.string().length(8),
+  status: RedemptionStatusSchema,
+  offer: z.object({ id: IdSchema, title: z.string(), type: OfferTypeSchema }),
+  player: PublicProfileSchema,
+  qualifyingReason: z.string(),
+  createdAt: TimestampSchema,
+  redeemedAt: TimestampSchema.nullable(),
+});
+export type RedemptionResult = z.infer<typeof RedemptionResultSchema>;
+
+export const RedemptionListItemSchema = z.object({
+  id: IdSchema,
+  code: z.string(),
+  status: RedemptionStatusSchema,
+  offerTitle: z.string(),
+  offerType: OfferTypeSchema,
+  player: z.object({
+    id: IdSchema,
+    displayName: z.string(),
+    avatarColors: z.array(z.string()),
+  }),
+  createdAt: TimestampSchema,
+  redeemedAt: TimestampSchema.nullable(),
+});
+export type RedemptionListItem = z.infer<typeof RedemptionListItemSchema>;
+
 // --- Partner event management ---
 
 export const FormatItemSchema = z.object({
