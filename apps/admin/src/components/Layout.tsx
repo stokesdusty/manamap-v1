@@ -19,9 +19,14 @@ export function Layout() {
           + Claim Store
         </NavLink>
         {inStore && (
-          <NavLink to={`/stores/${currentStoreId}/broadcast`} className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
-            📢 Broadcast
-          </NavLink>
+          <>
+            <NavLink to={`/stores/${currentStoreId}/events`} className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+              📅 Events
+            </NavLink>
+            <NavLink to={`/stores/${currentStoreId}/broadcast`} className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+              📢 Broadcast
+            </NavLink>
+          </>
         )}
         {isAdmin && (
           <>

@@ -2,10 +2,10 @@ import {
   Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, UseGuards,
 } from '@nestjs/common';
 import {
-  ClaimStoreSchema, CreateRewardOfferSchema, SendBroadcastSchema, UpdateRewardOfferSchema,
-  UpdateStoreProfileSchema,
-  type ClaimStore, type CreateRewardOffer, type SendBroadcast, type UpdateRewardOffer,
-  type UpdateStoreProfile,
+  ClaimStoreSchema, CreateEventSchema, CreateRewardOfferSchema, SendBroadcastSchema,
+  UpdateEventSchema, UpdateRewardOfferSchema, UpdateStoreProfileSchema,
+  type ClaimStore, type CreateEvent, type CreateRewardOffer, type SendBroadcast,
+  type UpdateEvent, type UpdateRewardOffer, type UpdateStoreProfile,
 } from '@manamap/shared';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
@@ -91,6 +91,51 @@ export class PartnerController {
     @Param('offerId') offerId: string,
   ) {
     return this.partner.deleteOffer(req.user.sub, storeId, offerId);
+  }
+
+  // --- Formats ---
+
+  @Get('formats')
+  listFormats() {
+    return this.partner.listFormats();
+  }
+
+  // --- Event CRUD ---
+
+  @Get('stores/:storeId/events')
+  listEvents(@Req() req: AuthRequest, @Param('storeId') storeId: string) {
+    return this.partner.listPartnerEvents(req.user.sub, storeId);
+  }
+
+  @Post('stores/:storeId/events')
+  @HttpCode(201)
+  createEvent(
+    @Req() req: AuthRequest,
+    @Param('storeId') storeId: string,
+    @Body(new ZodValidationPipe(CreateEventSchema)) body: CreateEvent,
+  ) {
+    return this.partner.createPartnerEvent(req.user.sub, storeId, body);
+  }
+
+  @Patch('stores/:storeId/events/:eventId')
+  @HttpCode(200)
+  updateEvent(
+    @Req() req: AuthRequest,
+    @Param('storeId') storeId: string,
+    @Param('eventId') eventId: string,
+    @Body(new ZodValidationPipe(UpdateEventSchema)) body: UpdateEvent,
+  ) {
+    return this.partner.updatePartnerEvent(req.user.sub, storeId, eventId, body);
+  }
+
+  @Delete('stores/:storeId/events/:eventId')
+  @HttpCode(204)
+  deleteEvent(
+    @Req() req: AuthRequest,
+    @Param('storeId') storeId: string,
+    @Param('eventId') eventId: string,
+  ) {
+    return this.partner.deletePartnerEvent(req.user.sub, storeId, eventId);
   }
 
   // --- Broadcast ---

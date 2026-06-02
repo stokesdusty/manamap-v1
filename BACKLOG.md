@@ -39,7 +39,7 @@ Manage imported posts from social platforms
 ## 🏪 Store-owner value (admin portal)
 - [x] **Broadcast announcement** — let a store push a message to players currently
   checked in (or recent visitors).
-- [ ] **Event management** — create/edit store events in the portal (today events
+- [x] **Event management** — create/edit store events in the portal (today events
   are read-only / connector-sourced).
 - [ ] **Staff redemption-verify** — a counter flow to validate/redeem the 8-char
   offer codes (enter or scan), marking them used.

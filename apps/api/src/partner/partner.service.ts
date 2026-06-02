@@ -1,7 +1,15 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { EventSource } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CreateRewardOffer, UpdateRewardOffer, UpdateStoreProfile } from '@manamap/shared';
+import { EventRemindersService } from '../event-reminders/event-reminders.service';
+import type {
+  CreateEvent,
+  CreateRewardOffer,
+  UpdateEvent,
+  UpdateRewardOffer,
+  UpdateStoreProfile,
+} from '@manamap/shared';
 
 function generateRedemptionCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -12,7 +20,10 @@ function generateRedemptionCode(): string {
 
 @Injectable()
 export class PartnerService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventReminders: EventRemindersService,
+  ) {}
 
   // ---------------------------------------------------------------------------
   // Store ownership
@@ -156,6 +167,188 @@ export class PartnerService {
     const offer = await this.prisma.rewardOffer.findFirst({ where: { id: offerId, storeId }, select: { id: true } });
     if (!offer) throw new NotFoundException('Offer not found');
     await this.prisma.rewardOffer.delete({ where: { id: offerId } });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Formats
+  // ---------------------------------------------------------------------------
+
+  async listFormats() {
+    return this.prisma.format.findMany({
+      select: { id: true, name: true, slug: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Event CRUD
+  // ---------------------------------------------------------------------------
+
+  async listPartnerEvents(userId: string, storeId: string) {
+    await this.assertOwner(userId, storeId);
+    const events = await this.prisma.event.findMany({
+      where: { storeId },
+      select: {
+        id: true,
+        name: true,
+        source: true,
+        description: true,
+        formatId: true,
+        startsAt: true,
+        endsAt: true,
+        eventChannelUrl: true,
+        createdAt: true,
+        format: { select: { name: true } },
+        _count: { select: { attendees: true } },
+      },
+      orderBy: { startsAt: 'asc' },
+    });
+
+    return events.map((e) => ({
+      id: e.id,
+      name: e.name,
+      source: e.source,
+      description: e.description ?? null,
+      formatId: e.formatId ?? null,
+      formatName: e.format?.name ?? null,
+      startsAt: e.startsAt.toISOString(),
+      endsAt: e.endsAt?.toISOString() ?? null,
+      eventChannelUrl: e.eventChannelUrl ?? null,
+      attendeeCount: e._count.attendees,
+      createdAt: e.createdAt.toISOString(),
+    }));
+  }
+
+  async createPartnerEvent(userId: string, storeId: string, dto: CreateEvent) {
+    await this.assertOwner(userId, storeId);
+
+    const event = await this.prisma.event.create({
+      data: {
+        storeId,
+        source: EventSource.STORE,
+        name: dto.name,
+        ...(dto.formatId !== undefined ? { formatId: dto.formatId } : {}),
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        startsAt: new Date(dto.startsAt),
+        ...(dto.endsAt !== undefined ? { endsAt: new Date(dto.endsAt) } : {}),
+        ...(dto.eventChannelUrl !== undefined ? { eventChannelUrl: dto.eventChannelUrl } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        source: true,
+        description: true,
+        formatId: true,
+        startsAt: true,
+        endsAt: true,
+        eventChannelUrl: true,
+        createdAt: true,
+        format: { select: { name: true } },
+      },
+    });
+
+    return {
+      id: event.id,
+      name: event.name,
+      source: event.source,
+      description: event.description ?? null,
+      formatId: event.formatId ?? null,
+      formatName: event.format?.name ?? null,
+      startsAt: event.startsAt.toISOString(),
+      endsAt: event.endsAt?.toISOString() ?? null,
+      eventChannelUrl: event.eventChannelUrl ?? null,
+      attendeeCount: 0,
+      createdAt: event.createdAt.toISOString(),
+    };
+  }
+
+  async updatePartnerEvent(userId: string, storeId: string, eventId: string, dto: UpdateEvent) {
+    await this.assertOwner(userId, storeId);
+
+    const existing = await this.prisma.event.findFirst({
+      where: { id: eventId, storeId },
+      select: {
+        id: true,
+        source: true,
+        name: true,
+        startsAt: true,
+        store: { select: { id: true, name: true, timezone: true } },
+      },
+    });
+    if (!existing) throw new NotFoundException('Event not found');
+    if (existing.source !== EventSource.STORE) throw new ForbiddenException('read_only_event');
+
+    const updated = await this.prisma.event.update({
+      where: { id: eventId },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.formatId !== undefined ? { formatId: dto.formatId } : {}),
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.startsAt !== undefined ? { startsAt: new Date(dto.startsAt) } : {}),
+        ...(dto.endsAt !== undefined ? { endsAt: dto.endsAt ? new Date(dto.endsAt) : null } : {}),
+        ...(dto.eventChannelUrl !== undefined ? { eventChannelUrl: dto.eventChannelUrl } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        source: true,
+        description: true,
+        formatId: true,
+        startsAt: true,
+        endsAt: true,
+        eventChannelUrl: true,
+        createdAt: true,
+        format: { select: { name: true } },
+        _count: { select: { attendees: true } },
+      },
+    });
+
+    if (dto.startsAt && new Date(dto.startsAt).getTime() !== existing.startsAt.getTime()) {
+      const attendees = await this.prisma.eventAttendee.findMany({
+        where: { eventId },
+        select: { userId: true },
+      });
+      await Promise.all(
+        attendees.map(async (a) => {
+          await this.eventReminders.cancelReminders(a.userId, eventId);
+          await this.eventReminders.scheduleReminders(a.userId, {
+            eventId,
+            eventName: updated.name,
+            startsAt: updated.startsAt,
+            storeId: existing.store.id,
+            storeName: existing.store.name,
+            timezone: existing.store.timezone,
+          });
+        }),
+      );
+    }
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      source: updated.source,
+      description: updated.description ?? null,
+      formatId: updated.formatId ?? null,
+      formatName: updated.format?.name ?? null,
+      startsAt: updated.startsAt.toISOString(),
+      endsAt: updated.endsAt?.toISOString() ?? null,
+      eventChannelUrl: updated.eventChannelUrl ?? null,
+      attendeeCount: updated._count.attendees,
+      createdAt: updated.createdAt.toISOString(),
+    };
+  }
+
+  async deletePartnerEvent(userId: string, storeId: string, eventId: string) {
+    await this.assertOwner(userId, storeId);
+
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, storeId },
+      select: { id: true, source: true },
+    });
+    if (!event) throw new NotFoundException('Event not found');
+    if (event.source !== EventSource.STORE) throw new ForbiddenException('read_only_event');
+
+    await this.prisma.event.delete({ where: { id: eventId } });
   }
 
   // ---------------------------------------------------------------------------

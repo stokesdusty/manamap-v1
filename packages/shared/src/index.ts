@@ -979,3 +979,60 @@ export const AudienceCountsSchema = z.object({
   RECENT_30D: z.number(),
 });
 export type AudienceCounts = z.infer<typeof AudienceCountsSchema>;
+
+// --- Partner event management ---
+
+export const FormatItemSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  slug: z.string(),
+});
+export type FormatItem = z.infer<typeof FormatItemSchema>;
+
+export const PartnerEventSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  source: EventSourceSchema,
+  description: z.string().nullable(),
+  formatId: z.string().nullable(),
+  formatName: z.string().nullable(),
+  startsAt: TimestampSchema,
+  endsAt: TimestampSchema.nullable(),
+  eventChannelUrl: z.string().nullable(),
+  attendeeCount: z.number().int().nonnegative(),
+  createdAt: TimestampSchema,
+});
+export type PartnerEvent = z.infer<typeof PartnerEventSchema>;
+
+export const CreateEventSchema = z
+  .object({
+    name: z.string().min(1).max(256),
+    formatId: z.string().uuid().optional(),
+    description: z.string().max(2000).optional(),
+    startsAt: z.string().datetime(),
+    endsAt: z.string().datetime().optional(),
+    eventChannelUrl: z.string().url().optional(),
+  })
+  .refine((d) => !d.endsAt || new Date(d.endsAt) > new Date(d.startsAt), {
+    message: 'endsAt must be after startsAt',
+    path: ['endsAt'],
+  });
+export type CreateEvent = z.infer<typeof CreateEventSchema>;
+
+export const UpdateEventSchema = z
+  .object({
+    name: z.string().min(1).max(256).optional(),
+    formatId: z.string().uuid().nullable().optional(),
+    description: z.string().max(2000).nullable().optional(),
+    startsAt: z.string().datetime().optional(),
+    endsAt: z.string().datetime().nullable().optional(),
+    eventChannelUrl: z.string().url().nullable().optional(),
+  })
+  .refine(
+    (d) => {
+      if (d.startsAt && d.endsAt) return new Date(d.endsAt) > new Date(d.startsAt);
+      return true;
+    },
+    { message: 'endsAt must be after startsAt', path: ['endsAt'] },
+  );
+export type UpdateEvent = z.infer<typeof UpdateEventSchema>;
