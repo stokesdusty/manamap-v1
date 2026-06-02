@@ -14,6 +14,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { LogGameSheet } from '../components/LogGameSheet';
+import { useMyGameStats, useMyGames } from '../hooks/useGames';
+import type { Game, GameStats } from '@manamap/shared';
 import type { BlockedUser } from '@manamap/shared';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -1307,6 +1310,200 @@ const addDeck = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
+// GameRecordCard
+// ---------------------------------------------------------------------------
+
+function GameRecordCard({ stats }: { stats: GameStats }) {
+  if (stats.games === 0) return null;
+
+  return (
+    <View style={[section.card, { paddingHorizontal: 0, paddingVertical: spacing.lg }]}>
+      <Text style={[section.heading, { paddingHorizontal: spacing.xl }]}>Game record</Text>
+
+      <View style={gr.statsRow}>
+        <View style={gr.stat}>
+          <Text style={gr.statValue}>{stats.wins}W</Text>
+          <Text style={gr.statLabel}>Wins</Text>
+        </View>
+        <View style={gr.statDivider} />
+        <View style={gr.stat}>
+          <Text style={gr.statValue}>{stats.losses}L</Text>
+          <Text style={gr.statLabel}>Losses</Text>
+        </View>
+        <View style={gr.statDivider} />
+        <View style={gr.stat}>
+          <Text style={gr.statValue}>{Math.round(stats.winRate * 100)}%</Text>
+          <Text style={gr.statLabel}>Win rate</Text>
+        </View>
+      </View>
+
+      {stats.byDeck.length > 0 && (
+        <View style={{ paddingHorizontal: spacing.xl, gap: spacing.sm }}>
+          <Text style={[section.heading, { fontSize: typography.fontSize.sm, marginTop: spacing.xs }]}>By deck</Text>
+          {stats.byDeck.slice(0, 5).map((d) => {
+            const total = d.wins + d.losses;
+            const pct = total > 0 ? d.wins / total : 0;
+            return (
+              <View key={d.deck} style={gr.deckRow}>
+                <Text style={gr.deckName} numberOfLines={1}>{d.deck}</Text>
+                <View style={gr.barBg}>
+                  <View style={[gr.barFill, { width: `${Math.round(pct * 100)}%` as `${number}%` }]} />
+                </View>
+                <Text style={gr.deckRecord}>{d.wins}–{d.losses}</Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
+const gr = StyleSheet.create({
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
+  stat: { flex: 1, alignItems: 'center', gap: 2 },
+  statValue: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.lg,
+    color: colors.textPrimary,
+  },
+  statLabel: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  statDivider: { width: 1, height: 32, backgroundColor: colors.borderLight, marginHorizontal: spacing.sm },
+  deckRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  deckName: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  barBg: {
+    width: 80,
+    height: 6,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.full,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: 6,
+    backgroundColor: colors.accent,
+    borderRadius: radii.full,
+  },
+  deckRecord: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    width: 36,
+    textAlign: 'right',
+  },
+});
+
+// ---------------------------------------------------------------------------
+// RecentGamesCard
+// ---------------------------------------------------------------------------
+
+function gameResultLabel(game: Game, myId: string): { label: string; color: string } {
+  if (game.winnerId === myId) return { label: 'W', color: colors.success };
+  return { label: 'L', color: colors.error };
+}
+
+function RecentGamesCard({ myId }: { myId: string }) {
+  const { data: games = [], isLoading } = useMyGames(8);
+
+  if (isLoading) {
+    return (
+      <View style={section.card}>
+        <Text style={section.heading}>Recent games</Text>
+        <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.sm }} />
+      </View>
+    );
+  }
+
+  if (games.length === 0) return null;
+
+  return (
+    <View style={section.card}>
+      <Text style={section.heading}>Recent games</Text>
+      {games.map((game, i) => {
+        const { label, color } = gameResultLabel(game, myId);
+        const opponents = game.players.filter((p) => p.userId !== myId);
+        const myPlayer = game.players.find((p) => p.userId === myId);
+        return (
+          <View
+            key={game.id}
+            style={[rg.row, i < games.length - 1 && rg.rowBorder]}
+          >
+            <View style={[rg.result, { backgroundColor: color + '20' }]}>
+              <Text style={[rg.resultText, { color }]}>{label}</Text>
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={rg.opponents} numberOfLines={1}>
+                vs {opponents.map((p) => p.displayName).join(', ')}
+              </Text>
+              {myPlayer?.deck ? (
+                <Text style={rg.deck} numberOfLines={1}>{myPlayer.deck}</Text>
+              ) : null}
+            </View>
+            <Text style={rg.date}>
+              {new Date(game.confirmedAt ?? game.createdAt).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const rg = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  result: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  resultText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.sm,
+  },
+  opponents: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  deck: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  date: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    flexShrink: 0,
+  },
+});
+
+// ---------------------------------------------------------------------------
 // YouScreen
 // ---------------------------------------------------------------------------
 
@@ -1314,7 +1511,9 @@ export function YouScreen() {
   const { signOut } = useAuth();
   const { data: profile, isLoading: profileLoading, error: profileError } = useProfile();
   const { data: privacy, isLoading: privacyLoading } = usePrivacy();
+  const { data: gameStats } = useMyGameStats();
   const [editOpen, setEditOpen] = useState(false);
+  const [logGameOpen, setLogGameOpen] = useState(false);
 
   if (profileLoading) {
     return (
@@ -1348,6 +1547,14 @@ export function YouScreen() {
       >
         <ProfileCard profile={profile} onEdit={() => setEditOpen(true)} />
 
+        <Pressable
+          style={({ pressed }) => [styles.logGameBtn, pressed && { opacity: 0.8 }]}
+          onPress={() => setLogGameOpen(true)}
+        >
+          <Ionicons name="game-controller-outline" size={18} color={colors.accent} />
+          <Text style={styles.logGameText}>Log game result</Text>
+        </Pressable>
+
         {privacyLoading ? (
           <View style={[section.card, { alignItems: 'center' }]}>
             <ActivityIndicator color={colors.accent} />
@@ -1364,6 +1571,10 @@ export function YouScreen() {
 
         <RewardsCard />
 
+        {gameStats && <GameRecordCard stats={gameStats} />}
+
+        <RecentGamesCard myId={profile.id} />
+
         <Pressable
           style={({ pressed }) => [styles.signOutBtn, pressed && styles.pressed]}
           onPress={signOut}
@@ -1376,6 +1587,11 @@ export function YouScreen() {
         visible={editOpen}
         profile={profile}
         onClose={() => setEditOpen(false)}
+      />
+
+      <LogGameSheet
+        visible={logGameOpen}
+        onClose={() => setLogGameOpen(false)}
       />
     </SafeAreaView>
   );
@@ -1417,5 +1633,23 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.md,
     color: colors.textSecondary,
+  },
+  logGameBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.md,
+    height: 44,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.accent + '60',
+    backgroundColor: colors.accentLight,
+  },
+  logGameText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
+    color: colors.accent,
   },
 });

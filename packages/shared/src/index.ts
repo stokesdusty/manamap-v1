@@ -307,6 +307,17 @@ export const LeaderboardEntrySchema = z.object({
 });
 export type LeaderboardEntry = z.infer<typeof LeaderboardEntrySchema>;
 
+export const WinsLeaderboardEntrySchema = z.object({
+  rank: z.number().int().positive(),
+  userId: IdSchema,
+  displayName: z.string(),
+  avatarUrl: z.string().nullable(),
+  avatarColors: z.array(z.string()),
+  wins: z.number().int().nonnegative(),
+  isMe: z.boolean(),
+});
+export type WinsLeaderboardEntry = z.infer<typeof WinsLeaderboardEntrySchema>;
+
 export const LeaderboardResponseSchema = z.object({
   entries: z.array(LeaderboardEntrySchema),
   myEntry: z.object({
@@ -314,6 +325,13 @@ export const LeaderboardResponseSchema = z.object({
     currentStreak: z.number().int().nonnegative(),
     totalCheckins: z.number().int().nonnegative(),
   }).nullable(),
+  winsLeaderboard: z.object({
+    entries: z.array(WinsLeaderboardEntrySchema),
+    myEntry: z.object({
+      rank: z.number().int().positive(),
+      wins: z.number().int().nonnegative(),
+    }).nullable(),
+  }).optional(),
 });
 export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
 
@@ -827,3 +845,61 @@ export const PodMemberActionSchema = z.object({
   userId: IdSchema,
 });
 export type PodMemberAction = z.infer<typeof PodMemberActionSchema>;
+
+// --- Games ---
+
+export const GameStatusSchema = z.enum(['PENDING', 'CONFIRMED', 'DISPUTED']);
+export type GameStatus = z.infer<typeof GameStatusSchema>;
+
+export const GamePlayerSchema = z.object({
+  userId: IdSchema,
+  displayName: z.string(),
+  avatarColors: z.array(z.string()),
+  deck: z.string().nullable(),
+  confirmed: z.boolean(),
+});
+export type GamePlayer = z.infer<typeof GamePlayerSchema>;
+
+export const GameSchema = z.object({
+  id: IdSchema,
+  status: GameStatusSchema,
+  storeId: IdSchema.nullable(),
+  storeName: z.string().nullable(),
+  format: z.string().nullable(),
+  winnerId: IdSchema,
+  winnerName: z.string(),
+  note: z.string().nullable(),
+  players: z.array(GamePlayerSchema),
+  createdAt: TimestampSchema,
+  confirmedAt: TimestampSchema.nullable(),
+});
+export type Game = z.infer<typeof GameSchema>;
+
+export const CreateGameSchema = z.object({
+  storeId: IdSchema.optional(),
+  format: MtgFormatSchema.optional(),
+  winnerId: IdSchema,
+  players: z
+    .array(z.object({ userId: IdSchema, deck: z.string().max(128).optional() }))
+    .min(2)
+    .max(4),
+  note: z.string().max(500).optional(),
+});
+export type CreateGame = z.infer<typeof CreateGameSchema>;
+
+export const DeckStatSchema = z.object({
+  deck: z.string(),
+  wins: z.number().int().nonnegative(),
+  losses: z.number().int().nonnegative(),
+  rate: z.number().min(0).max(1),
+});
+export type DeckStat = z.infer<typeof DeckStatSchema>;
+
+export const GameStatsSchema = z.object({
+  games: z.number().int().nonnegative(),
+  wins: z.number().int().nonnegative(),
+  losses: z.number().int().nonnegative(),
+  winRate: z.number().min(0).max(1),
+  byDeck: z.array(DeckStatSchema),
+});
+export type GameStats = z.infer<typeof GameStatsSchema>;

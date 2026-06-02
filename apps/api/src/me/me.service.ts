@@ -191,6 +191,58 @@ export class MeService {
     };
   }
 
+  async getGameStats(userId: string) {
+    const games = await this.prisma.gameLog.findMany({
+      where: {
+        status: 'CONFIRMED',
+        players: { some: { userId } },
+      },
+      select: {
+        winnerId: true,
+        players: {
+          where: { userId },
+          select: { deck: true },
+        },
+      },
+    });
+
+    let wins = 0;
+    let losses = 0;
+    const deckMap = new Map<string, { wins: number; losses: number }>();
+
+    for (const game of games) {
+      const isWin = game.winnerId === userId;
+      if (isWin) wins++;
+      else losses++;
+
+      const deck = game.players[0]?.deck;
+      if (deck) {
+        const stats = deckMap.get(deck) ?? { wins: 0, losses: 0 };
+        if (isWin) stats.wins++;
+        else stats.losses++;
+        deckMap.set(deck, stats);
+      }
+    }
+
+    const total = wins + losses;
+    const byDeck = Array.from(deckMap.entries())
+      .map(([deck, stats]) => ({
+        deck,
+        wins: stats.wins,
+        losses: stats.losses,
+        rate: stats.wins + stats.losses > 0 ? stats.wins / (stats.wins + stats.losses) : 0,
+      }))
+      .sort((a, b) => b.wins + b.losses - (a.wins + a.losses));
+
+    return {
+      games: total,
+      wins,
+      losses,
+      winRate: total > 0 ? wins / total : 0,
+      byDeck,
+    };
+  }
+
   async setHomeStore(userId: string, dto: SetHomeStore) {
     if (dto.storeId) {
       const exists = await this.prisma.store.findUnique({ where: { id: dto.storeId }, select: { id: true } });

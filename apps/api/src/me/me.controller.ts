@@ -136,4 +136,9 @@ export class MeController {
   ) {
     return this.me.submitOnboarding(req.user.sub, body);
   }
+
+  @Get('stats')
+  getGameStats(@Req() req: AuthRequest) {
+    return this.me.getGameStats(req.user.sub);
+  }
 }

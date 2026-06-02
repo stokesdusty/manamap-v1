@@ -341,8 +341,15 @@ export class StoresService {
     return { eventId: event.id, eventName: event.name };
   }
 
-  getLeaderboard(callerId: string, storeId: string) {
-    return this.gamification.getLeaderboard(callerId, storeId);
+  async getLeaderboard(callerId: string, storeId: string) {
+    const [streakBoard, winsBoard] = await Promise.all([
+      this.gamification.getLeaderboard(callerId, storeId),
+      this.gamification.getWinsLeaderboard(callerId, storeId),
+    ]);
+    return {
+      ...streakBoard,
+      winsLeaderboard: winsBoard,
+    };
   }
 
   getConnectors() {

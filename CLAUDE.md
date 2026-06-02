@@ -64,6 +64,8 @@ DISCORD_REDIRECT_URI=manamap://auth/discord
 | admin-moderation | GET /v1/admin/moderation/stats, GET /v1/admin/moderation/reports, GET /v1/admin/moderation/reports/:id, POST /v1/admin/moderation/reports/:id/resolve — ADMIN only |
 | gamification | BullMQ queue, processes badge/streak logic after checkin |
 | lfg | GET/POST/PATCH/DELETE /v1/lfg, GET /v1/lfg/me, POST /v1/lfg/:hostUserId/invite, POST /v1/lfg/:hostUserId/lock |
+| games | POST /v1/games, GET /v1/games/pending, POST /v1/games/:id/confirm, POST /v1/games/:id/dispute, GET /v1/games/me |
+| me (stats) | GET /v1/me/stats — game W/L/winRate/byDeck, computed from GameLog |
 
 **Role guard**: `apps/api/src/common/guards/roles.guard.ts` + `@Roles()` decorator. Partner routes check ownership in service layer (ADMINs bypass). `AuthGuard` is used on all protected routes — it is **async** and checks `moderationStatus` on every request: BANNED → 403 `account_banned`; actively SUSPENDED → 403 `account_suspended`; expired suspension → lazily resets to ACTIVE. Auth/refresh routes are unguarded and remain reachable.
 
@@ -106,7 +108,9 @@ pnpm --filter @manamap/api db:studio    # Prisma Studio
 | Discover (radar + nearby players) | `src/screens/DiscoverScreen.tsx` |
 | Stores (map + list + detail sheet + checkin) | `src/screens/StoresScreen.tsx` |
 | History (encounters grouped by date) | `src/screens/HistoryScreen.tsx` |
-| You (profile + RewardsCard) | `src/screens/YouScreen.tsx` |
+| You (profile + RewardsCard + game record) | `src/screens/YouScreen.tsx` |
+| Connect (connections + confirm game results) | `src/screens/ConnectScreen.tsx` |
+| Pod (active pod view + log game on lock) | `src/screens/PodScreen.tsx` |
 
 **Key hooks** (all in `src/hooks/`):
 - `useAuth` — Discord PKCE login, secure token storage
@@ -116,6 +120,7 @@ pnpm --filter @manamap/api db:studio    # Prisma Studio
 - `useStoreOffers` — active reward offers for a store
 - `useCheckin` — POST checkin, returns `{ newBadges, streak, eligibleOffers }`
 - `useLfgMe`, `useLfgFeed`, `useCreateLfg`, `useUpdateLfg`, `useDeleteLfg`, `useLfgInvite`, `useLfgLock` — LFG session management (polls every 15s)
+- `usePendingGames`, `useMyGames`, `useMyGameStats`, `useCreateGame`, `useConfirmGame`, `useDisputeGame` — game logging and stats
 
 **Dev**:
 ```
@@ -174,7 +179,9 @@ All IDs are `TEXT` (Prisma `@id @default(uuid())`), stored as plain text UUIDs i
 | Badge | Badge definition with `criteria` JSON |
 | RewardOffer | Store reward — type `FIRST_VISIT` or `STREAK`, has `redemptionCode`, `active`, `streakRequired` |
 | Event | Store event (source: STORE/DISCORD/WIZARDS) |
-| Encounter | PvP game result or co-presence encounter |
+| Encounter | PvP game result or co-presence encounter; `gameId` FK links to GameLog |
+| GameLog | Logged game — `status (PENDING/CONFIRMED/DISPUTED)`, `winnerId`, `format?`, `storeId?`; format stored as plain `String?` (no FK) |
+| GamePlayer | Player row per game — `deck?`, `confirmed`; @@unique([gameLogId, userId]); creator auto-confirmed |
 | Connection | Player friend/connection request |
 | RefreshToken | Hashed refresh tokens (rotated on use) |
 | Block | Bidirectional block between two users |
@@ -194,6 +201,7 @@ Located at `apps/api/prisma/migrations/`. Applied in timestamp order. Key notes:
 - Migration `20260530260000_partner_program` adds `UserRole`, `OfferType` enums, `store_ownerships` table, extends `reward_offers`
 - Migration `20260531172252_safety_blocks_reports` adds `blocks` and `reports` tables, `ReportReason`/`ReportStatus` enums
 - Migration `20260531210000_moderation` adds `ModerationStatus`/`ModerationActionType` enums, `moderationStatus`/`suspendedUntil` to `users`, resolution fields to `reports`, and the `moderation_actions` table
+- Migration `20260601120000_games` adds `GameStatus` enum, `game_logs` and `game_players` tables, `game_id` column on `encounters`
 - If Prisma detects drift and wants to reset — check if shadow DB ordering is the cause before agreeing
 
 ---
@@ -211,6 +219,8 @@ Located at `apps/api/prisma/migrations/`. Applied in timestamp order. Key notes:
 - `BlockBodySchema`, `ReportBodySchema`, `BlockedUserSchema`, `ReportReasonSchema`
 - `ModerationStatusSchema`, `ModerationActionTypeSchema`, `ModerationReportSchema`, `ModerationDetailSchema`, `ModerationSignalSchema`, `ResolveReportSchema`, `ModerationStatsSchema`
 - `LfgDurationSchema`, `LfgSessionSchema`, `CreateLfgSchema`, `UpdateLfgSchema`, `LfgFeedItemSchema`, `LfgLockBodySchema`
+- `GameStatusSchema`, `GamePlayerSchema`, `GameSchema`, `CreateGameSchema`, `DeckStatSchema`, `GameStatsSchema`, `WinsLeaderboardEntrySchema`
+- `WinsLeaderboardEntrySchema` **must be declared before `LeaderboardResponseSchema`** — forward reference; `LeaderboardResponseSchema` has an optional `winsLeaderboard` key
 
 ---
 
@@ -254,4 +264,6 @@ No Docker config is in the repo — run them directly or via Docker outside the 
 - **Reporter identity**: the `reporter` / `reporterId` field on `Report` must never be returned by any admin endpoint — only `reported` (the subject) is exposed.
 - **LFG sessions are Redis-only**: `lfg:${userId}` (JSON + TTL) and `lfg_store:${storeId}` (zset by expiresAt). No Prisma table. The only durable artifact from an LFG interaction is the `Encounter` rows written at pod lock-in (source `GAME`, result `DRAW`). Feed filtering mirrors `nearby()` — blocked / non-ACTIVE / non-discoverable / absent-from-store users are excluded.
 - **LFG `LfgSession` interface** in `lfg.service.ts` must be `export interface` (not just `interface`) — `declaration: true` in tsconfig requires exported types for public controller return types.
-- **`exactOptionalPropertyTypes` + optional props**: when passing a query result (`T | undefined`) to a prop typed `?: T | null`, normalize with `?? null` at the call site rather than widening the prop type.
+- **`exactOptionalPropertyTypes` + optional props**: when passing a query result (`T | undefined`) to a prop typed `?: T | null`, normalize with `?? null` at the call site rather than widening the prop type. When the prop is `?: T` (no null), use a conditional spread: `{...(val !== undefined ? { prop: val } : {})}`.
+- **Game stats vs Encounter rows**: `GET /v1/me/stats` (W/L/winRate/byDeck) is computed directly from `GameLog` + `GamePlayer`, not from `Encounter` rows — avoids double-counting since each confirmed game writes multiple Encounter rows. Do not add encounter-based stats to the stats endpoint.
+- **GamesService vs MeService for stats**: `getGameStats` lives in `MeService` (not `GamesService`) to avoid a circular dependency chain. `MeService` queries `gameLog` directly via Prisma.

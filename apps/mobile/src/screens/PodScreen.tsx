@@ -10,7 +10,8 @@ import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { PodCandidate, PodDetail, MtgFormat, PodFitTier } from '@manamap/shared';
+import type { PodCandidate, PodDetail, MtgFormat, PodFitTier, PublicProfile } from '@manamap/shared';
+import { LogGameSheet, type RosterPlayer } from '../components/LogGameSheet';
 import {
   usePodDetail,
   usePodRequest,
@@ -240,6 +241,9 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
   const { data: pod, isLoading, isError } = usePodDetail(podId);
   const { data: profile } = useProfile();
   const [hasSentRequest, setHasSentRequest] = useState(false);
+  const [lockedPlayers, setLockedPlayers] = useState<RosterPlayer[] | null>(null);
+  const [logGameOpen, setLogGameOpen] = useState(false);
+  const [lockedStoreId, setLockedStoreId] = useState<string | undefined>();
 
   const isHost = profile?.id === pod?.hostId;
   const isInPod = pod?.members.some((m) => m.id === profile?.id) ?? false;
@@ -255,7 +259,20 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
   };
 
   const handleLock = () => {
-    lock.mutate(undefined, { onSuccess: () => navigation.goBack() });
+    // Capture members before pod is disbanded from Redis
+    const members: RosterPlayer[] = (pod?.members ?? []).map((m: PublicProfile) => ({
+      userId: m.id,
+      displayName: m.displayName,
+      avatarColors: m.avatarColors as string[],
+    }));
+    const sid = pod?.storeId;
+    lock.mutate(undefined, {
+      onSuccess: () => {
+        setLockedPlayers(members);
+        setLockedStoreId(sid);
+        setLogGameOpen(true);
+      },
+    });
   };
 
   const handleRequest = () => {
@@ -296,6 +313,16 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
   if (isHost) {
     return (
       <SafeAreaView style={s.safe}>
+        {lockedPlayers && (
+          <LogGameSheet
+            visible={logGameOpen}
+            onClose={() => { setLogGameOpen(false); navigation.goBack(); }}
+            onSuccess={() => navigation.goBack()}
+            preselectedPlayers={lockedPlayers}
+            {...(lockedStoreId !== undefined ? { storeId: lockedStoreId } : {})}
+          />
+        )}
+
         <View style={s.header}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="close" size={24} color={colors.textSecondary} />
@@ -380,6 +407,16 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
 
   return (
     <SafeAreaView style={s.safe}>
+      {lockedPlayers && (
+        <LogGameSheet
+          visible={logGameOpen}
+          onClose={() => { setLogGameOpen(false); navigation.goBack(); }}
+          onSuccess={() => navigation.goBack()}
+          preselectedPlayers={lockedPlayers}
+          {...(lockedStoreId !== undefined ? { storeId: lockedStoreId } : {})}
+        />
+      )}
+
       <View style={s.header}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="close" size={24} color={colors.textSecondary} />

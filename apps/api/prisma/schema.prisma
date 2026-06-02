@@ -90,6 +90,12 @@ enum ModerationActionType {
   BAN
 }
 
+enum GameStatus {
+  PENDING
+  CONFIRMED
+  DISPUTED
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -137,6 +143,9 @@ model User {
   resolvedReports     Report[] @relation("ResolvedReports")
   targetedActions     ModerationAction[] @relation("TargetedActions")
   adminActions        ModerationAction[] @relation("AdminActions")
+  gamesCreated        GameLog[]          @relation("GamesCreated")
+  gamesWon            GameLog[]          @relation("GamesWon")
+  gamePlayers         GamePlayer[]
 
   @@map("users")
 }
@@ -266,6 +275,7 @@ model Store {
   userBadges   UserBadge[]
   homeUsers    User[]          @relation("HomeStore")
   ownerships   StoreOwnership[]
+  gameLogs     GameLog[]
 
   @@unique([name, city])
   @@map("stores")
@@ -329,13 +339,15 @@ model Encounter {
   source     EncounterSource @default(GAME)
   result     EncounterResult
   notes      String?
+  gameId     String?         @map("game_id")
   createdAt  DateTime        @default(now()) @map("created_at")
 
-  user     User    @relation("UserEncounters", fields: [userId], references: [id], onDelete: Cascade)
-  opponent User    @relation("OpponentEncounters", fields: [opponentId], references: [id])
-  store    Store?  @relation(fields: [storeId], references: [id])
-  event    Event?  @relation(fields: [eventId], references: [id])
-  format   Format? @relation(fields: [formatId], references: [id])
+  user     User     @relation("UserEncounters", fields: [userId], references: [id], onDelete: Cascade)
+  opponent User     @relation("OpponentEncounters", fields: [opponentId], references: [id])
+  store    Store?   @relation(fields: [storeId], references: [id])
+  event    Event?   @relation(fields: [eventId], references: [id])
+  format   Format?  @relation(fields: [formatId], references: [id])
+  gameLog  GameLog? @relation(fields: [gameId], references: [id], onDelete: SetNull)
 
   @@map("encounters")
 }
@@ -451,6 +463,40 @@ model Report {
   resolvedBy User? @relation("ResolvedReports", fields: [resolvedById], references: [id], onDelete: SetNull)
 
   @@map("reports")
+}
+
+model GameLog {
+  id          String     @id @default(uuid())
+  createdById String     @map("created_by_id")
+  storeId     String?    @map("store_id")
+  format      String?
+  winnerId    String     @map("winner_id")
+  status      GameStatus @default(PENDING)
+  note        String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  confirmedAt DateTime?  @map("confirmed_at")
+
+  createdBy  User        @relation("GamesCreated", fields: [createdById], references: [id], onDelete: Cascade)
+  winner     User        @relation("GamesWon", fields: [winnerId], references: [id], onDelete: Cascade)
+  store      Store?      @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  players    GamePlayer[]
+  encounters Encounter[]
+
+  @@map("game_logs")
+}
+
+model GamePlayer {
+  id        String  @id @default(uuid())
+  gameLogId String  @map("game_log_id")
+  userId    String  @map("user_id")
+  deck      String?
+  confirmed Boolean @default(false)
+
+  gameLog GameLog @relation(fields: [gameLogId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gameLogId, userId])
+  @@map("game_players")
 }
 
 model ModerationAction {

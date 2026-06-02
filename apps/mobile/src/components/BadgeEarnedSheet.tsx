@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Modal, Pressable, StyleSheet, Text } from 'react-native';
 import type { EarnedBadge } from '@manamap/shared';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 

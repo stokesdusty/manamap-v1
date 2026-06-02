@@ -9,13 +9,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import type { ConnectionItem, ManaColor } from '@manamap/shared';
+import type { ConnectionItem, Game, ManaColor } from '@manamap/shared';
 import { ManaPip } from '../components/ManaPip';
 import {
   useAcceptConnection,
   useConnections,
   useDeclineConnection,
 } from '../hooks/useConnections';
+import { useConfirmGame, useDisputeGame, usePendingGames } from '../hooks/useGames';
+import { useProfile } from '../hooks/useMe';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -113,6 +115,143 @@ function ConnectionCard({
 }
 
 // ---------------------------------------------------------------------------
+// ConfirmResultsSection
+// ---------------------------------------------------------------------------
+
+function ConfirmResultsSection({ myId }: { myId: string }) {
+  const { data: pending = [], isLoading } = usePendingGames();
+  const { mutate: confirmGame, isPending: confirming, variables: confirmingId } = useConfirmGame();
+  const { mutate: disputeGame, isPending: disputing, variables: disputingId } = useDisputeGame();
+
+  if (isLoading || pending.length === 0) return null;
+
+  function handleDispute(gameId: string) {
+    Alert.alert('Dispute game?', 'This marks the result as disputed and no Encounters are recorded.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Dispute',
+        style: 'destructive',
+        onPress: () => disputeGame(gameId),
+      },
+    ]);
+  }
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionLabel}>Confirm results ({pending.length})</Text>
+      {pending.map((game: Game) => {
+        const others = game.players.filter((p) => p.userId !== myId);
+        const myPlayer = game.players.find((p) => p.userId === myId);
+        const winner = game.players.find((p) => p.userId === game.winnerId);
+        const isConfirming = confirming && confirmingId === game.id;
+        const isDisputing = disputing && disputingId === game.id;
+
+        return (
+          <View key={game.id} style={cr.card}>
+            <View style={cr.header}>
+              <Ionicons name="game-controller-outline" size={16} color={colors.textTertiary} />
+              <Text style={cr.players} numberOfLines={1}>
+                {others.map((p) => p.displayName).join(', ')} logged a game
+              </Text>
+            </View>
+
+            <View style={cr.details}>
+              <Text style={cr.detail}>
+                Winner: <Text style={cr.detailBold}>{winner?.displayName ?? '?'}</Text>
+              </Text>
+              {myPlayer?.deck ? (
+                <Text style={cr.detail}>Your deck: {myPlayer.deck}</Text>
+              ) : null}
+            </View>
+
+            <View style={cr.actions}>
+              <Pressable
+                style={({ pressed }) => [cr.disputeBtn, (pressed || isDisputing) && { opacity: 0.6 }]}
+                onPress={() => handleDispute(game.id)}
+                disabled={isDisputing || isConfirming}
+              >
+                {isDisputing ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <Text style={cr.disputeText}>Dispute</Text>
+                )}
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [cr.confirmBtn, (pressed || isConfirming) && { opacity: 0.8 }]}
+                onPress={() => confirmGame(game.id)}
+                disabled={isConfirming || isDisputing}
+              >
+                {isConfirming ? (
+                  <ActivityIndicator size="small" color={colors.textInverse} />
+                ) : (
+                  <Text style={cr.confirmText}>Confirm</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const cr = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    padding: spacing.md,
+    gap: spacing.sm,
+    marginHorizontal: spacing.xl,
+    ...shadows.sm,
+  },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  players: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  details: { gap: 2 },
+  detail: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  detailBold: { fontFamily: typography.fontFamily.semiBold, color: colors.textPrimary },
+  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  disputeBtn: {
+    flex: 1,
+    height: 36,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.error + '50',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disputeText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.error,
+  },
+  confirmBtn: {
+    flex: 2,
+    height: 36,
+    borderRadius: radii.md,
+    backgroundColor: colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  confirmText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textInverse,
+  },
+});
+
+// ---------------------------------------------------------------------------
 // ConnectScreen
 // ---------------------------------------------------------------------------
 
@@ -120,6 +259,7 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
   const { data, isLoading } = useConnections();
   const { mutate: accept, isPending: accepting, variables: acceptingId } = useAcceptConnection();
   const { mutate: decline } = useDeclineConnection();
+  const { data: profile } = useProfile();
 
   function handleAccept(connectionId: string) {
     accept(connectionId, {
@@ -154,14 +294,18 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
         <View style={styles.center}>
           <ActivityIndicator color={colors.accent} />
         </View>
-      ) : !hasContent ? (
-        <View style={styles.empty}>
-          <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
-          <Text style={styles.emptyText}>No connections yet</Text>
-          <Text style={styles.emptyHint}>Scan a player's code to send a request</Text>
-        </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {profile && <ConfirmResultsSection myId={profile.id} />}
+
+          {!hasContent && (
+            <View style={styles.emptyInline}>
+              <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
+              <Text style={styles.emptyText}>No connections yet</Text>
+              <Text style={styles.emptyHint}>Scan a player's code to send a request</Text>
+            </View>
+          )}
+
           {incoming.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>
@@ -226,12 +370,12 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: {
-    flex: 1,
+  emptyInline: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxxl,
   },
   emptyText: {
     fontFamily: typography.fontFamily.medium,

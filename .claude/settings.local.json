@@ -58,7 +58,10 @@
       "Bash(npx jest *)",
       "Bash(git -C c:/dev/manamap diff --name-only HEAD apps/api/src/auth)",
       "Bash(git -C c:/dev/manamap stash)",
-      "Bash(git -C c:/dev/manamap stash pop)"
+      "Bash(git -C c:/dev/manamap stash pop)",
+      "Bash(Get-ChildItem \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\")",
+      "Bash(Select-Object -Last 5)",
+      "Bash(Format-Table Name)"
     ]
   }
 }

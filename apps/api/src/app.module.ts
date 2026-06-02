@@ -21,6 +21,7 @@ import { SafetyModule } from './safety/safety.module';
 import { AdminModerationModule } from './admin-moderation/admin-moderation.module';
 import { LfgModule } from './lfg/lfg.module';
 import { PodsModule } from './pods/pods.module';
+import { GamesModule } from './games/games.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { PodsModule } from './pods/pods.module';
     AdminModerationModule,
     LfgModule,
     PodsModule,
+    GamesModule,
     ThrottleModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottleGuard }],

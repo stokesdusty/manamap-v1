@@ -7,7 +7,7 @@ context. Move items into a milestone prompt when you pick them up; strike them
 through or delete when shipped.
 
 > Status as of this writing: Phases 1–3 + M14 (safety) · M15 (seeding) ·
-> M16 (onboarding) · M17 (dark theme) · M18 (proximity check-in) · M19 (moderation dashboard + enforcement) are **shipped**.
+> M16 (onboarding) · M17 (dark theme) · M18 (proximity check-in) · M19 (moderation dashboard + enforcement) · M20 (LFG) · M21 (rate limiting) · M22 (pods) · M23 (log a game + player stats) are **shipped**.
 
 ---
 
@@ -20,11 +20,11 @@ through or delete when shipped.
   so players know you want a pod right now. Builds on the presence layer.
 - [x] **Pod formation** — assemble a 4-player Commander pod from who's open at the
   store; suggest by power level + format.
-- [ ] **Log a game** — record the pod roster + result after playing. Feeds
+- [x] **Log a game** — record the pod roster + result after playing. Feeds
   matchmaking, "played before" history, and stats. (`Encounter` model already
-  anticipates PvP results.)
-- [ ] **Player stats** — games played + win/loss per commander/deck; surfaced on
-  the profile card.
+  anticipates PvP results.) *(shipped M23)*
+- [x] **Player stats** — games played + win/loss per commander/deck; surfaced on
+  the profile card. *(shipped M23)*
 
 ## 📅 Events
 - [ ] **RSVP reminders** — push the morning of / hour before an event you're
