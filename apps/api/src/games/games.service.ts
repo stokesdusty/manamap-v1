@@ -4,44 +4,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { EncounterResult, EncounterSource, GameStatus, ModerationStatus } from '@prisma/client';
-import { Expo } from 'expo-server-sdk';
-import type { ExpoPushMessage } from 'expo-server-sdk';
+import { EncounterResult, EncounterSource, GameStatus, ModerationStatus, NotificationKind } from '@prisma/client';
 import type { CreateGame } from '@manamap/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafetyService } from '../safety/safety.service';
 import { GamificationService } from '../gamification/gamification.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { QuestsService } from '../quests/quests.service';
 
 @Injectable()
 export class GamesService {
-  private readonly expo = new Expo();
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly safety: SafetyService,
     private readonly gamification: GamificationService,
+    private readonly notifications: NotificationsService,
+    private readonly quests: QuestsService,
   ) {}
-
-  private async sendPushToUser(
-    userId: string,
-    payload: { title: string; body: string; data?: Record<string, unknown> },
-  ) {
-    const rows = await this.prisma.pushToken.findMany({ where: { userId } });
-    const valid = rows.filter((r) => Expo.isExpoPushToken(r.token));
-    if (!valid.length) return;
-    const messages: ExpoPushMessage[] = valid.map((r) => ({
-      to: r.token,
-      title: payload.title,
-      body: payload.body,
-      ...(payload.data !== undefined ? { data: payload.data } : {}),
-    }));
-    try {
-      const chunks = this.expo.chunkPushNotifications(messages);
-      for (const chunk of chunks) await this.expo.sendPushNotificationsAsync(chunk);
-    } catch {
-      // Push failures must not affect the main operation
-    }
-  }
 
   private async fetchGame(gameId: string) {
     return this.prisma.gameLog.findUnique({
@@ -137,7 +116,8 @@ export class GamesService {
 
     const creator = users.find((u) => u.id === creatorId);
     for (const id of playerIds.filter((id) => id !== creatorId)) {
-      void this.sendPushToUser(id, {
+      void this.notifications.create(id, {
+        kind: NotificationKind.GAME_CONFIRM,
         title: `${creator?.displayName ?? 'Someone'} logged a game`,
         body: 'Confirm the result',
         data: { type: 'game_confirm', gameId: gl.id },
@@ -207,6 +187,10 @@ export class GamesService {
       if (game.storeId) {
         void this.gamification.refreshWinsLeaderboard(game.storeId);
       }
+
+      for (const p of game.players) {
+        void this.quests.evaluate(p.userId);
+      }
     }
 
     return { success: true, allConfirmed };
@@ -230,7 +214,8 @@ export class GamesService {
     });
 
     if (game.createdById !== callerId) {
-      void this.sendPushToUser(game.createdById, {
+      void this.notifications.create(game.createdById, {
+        kind: NotificationKind.GAME_CONFIRM,
         title: 'Game result disputed',
         body: 'A player disputed your logged game',
         data: { type: 'game_disputed', gameId },

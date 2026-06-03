@@ -6,13 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type Redis from 'ioredis';
-import { EncounterResult, EncounterSource, ModerationStatus } from '@prisma/client';
-import { Expo } from 'expo-server-sdk';
-import type { ExpoPushMessage } from 'expo-server-sdk';
+import { EncounterResult, EncounterSource, ModerationStatus, NotificationKind } from '@prisma/client';
 import type { CreateLfg, UpdateLfg, LfgLockBody } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafetyService } from '../safety/safety.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const presenceKey = (userId: string) => `presence:${userId}`;
 const lfgKey = (userId: string) => `lfg:${userId}`;
@@ -43,34 +42,12 @@ const PROFILE_SELECT = {
 
 @Injectable()
 export class LfgService {
-  private readonly expo = new Expo();
-
   constructor(
     @Inject(REDIS) private readonly redis: Redis,
     private readonly prisma: PrismaService,
     private readonly safety: SafetyService,
+    private readonly notifications: NotificationsService,
   ) {}
-
-  private async sendPushToUser(
-    userId: string,
-    payload: { title: string; body: string; data?: Record<string, unknown> },
-  ) {
-    const rows = await this.prisma.pushToken.findMany({ where: { userId } });
-    const valid = rows.filter((r) => Expo.isExpoPushToken(r.token));
-    if (!valid.length) return;
-    const messages: ExpoPushMessage[] = valid.map((r) => ({
-      to: r.token,
-      title: payload.title,
-      body: payload.body,
-      ...(payload.data !== undefined ? { data: payload.data } : {}),
-    }));
-    try {
-      const chunks = this.expo.chunkPushNotifications(messages);
-      for (const chunk of chunks) await this.expo.sendPushNotificationsAsync(chunk);
-    } catch {
-      // Push failures must not affect the main operation
-    }
-  }
 
   private async getActiveSession(userId: string): Promise<LfgSession | null> {
     const raw = await this.redis.get(lfgKey(userId));
@@ -238,7 +215,8 @@ export class LfgService {
     ]);
     if (!hostSession) throw new NotFoundException('Host has no active LFG session');
 
-    void this.sendPushToUser(hostUserId, {
+    void this.notifications.create(hostUserId, {
+      kind: NotificationKind.POD,
       title: `${caller?.displayName ?? 'Someone'} wants to join your pod`,
       body: 'Tap to manage your LFG session',
       data: { type: 'lfg_join_request', userId: callerId },

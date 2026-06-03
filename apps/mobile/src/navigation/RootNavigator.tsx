@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { ConnectedRevealScreen } from '../screens/ConnectedRevealScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { PlayerPreviewScreen } from '../screens/PlayerPreviewScreen';
 import { PodScreen } from '../screens/PodScreen';
 import { SignInScreen } from '../screens/SignInScreen';
@@ -32,6 +33,7 @@ export function RootNavigator() {
           <>
             <Stack.Screen name="Main" component={TabNavigator} />
             <Stack.Screen name="History" component={HistoryScreen} options={{ presentation: 'modal' }} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="PlayerPreview" component={PlayerPreviewScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="Connected" component={ConnectedRevealScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="Pod" component={PodScreen} options={{ presentation: 'modal' }} />

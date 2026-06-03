@@ -62,6 +62,7 @@ export function useAcceptConnection() {
     onSuccess: (_data, connectionId) => {
       void qc.invalidateQueries({ queryKey: KEYS.list });
       void qc.invalidateQueries({ queryKey: KEYS.detail(connectionId) });
+      void qc.invalidateQueries({ queryKey: ['quests'] });
     },
   });
 }

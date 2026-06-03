@@ -10,7 +10,8 @@ export type BadgeCriteria =
   | { type: 'store_total'; count: number }
   | { type: 'global_total'; count: number }
   | { type: 'streak'; length: number }
-  | { type: 'unique_stores'; count: number };
+  | { type: 'unique_stores'; count: number }
+  | { type: 'quest_reward' };
 
 export interface EarnedBadge {
   id: string;
@@ -137,6 +138,9 @@ export class GamificationService {
           break;
         case 'unique_stores':
           qualifies = uniqueStoreCount >= criteria.count;
+          break;
+        case 'quest_reward':
+          qualifies = false;
           break;
       }
 

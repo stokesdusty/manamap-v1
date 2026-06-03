@@ -49,6 +49,7 @@ import { useBleProximity, sortByBleProximity } from '../hooks/useBleProximity';
 import { useCrossedPathsCount } from '../hooks/useEncounters';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import { usePrivacy, useProfile, useUpdatePrivacy } from '../hooks/useMe';
+import { BellButton } from '../navigation/TabNavigator';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 
 type DiscoverScreenProps = CompositeScreenProps<
@@ -1423,6 +1424,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
             <Ionicons name="storefront-outline" size={16} color={colors.accent} />
             <Text style={styles.storeBtnText}>{activeStore ? 'Change' : 'Select store'}</Text>
           </Pressable>
+          <BellButton />
         </View>
       </View>
 

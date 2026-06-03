@@ -1,9 +1,9 @@
 import { ForbiddenException, HttpException, Inject, Injectable } from '@nestjs/common';
 import type Redis from 'ioredis';
-import { Expo } from 'expo-server-sdk';
-import type { ExpoPushMessage } from 'expo-server-sdk';
+import { NotificationKind } from '@prisma/client';
 import { REDIS } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { SendBroadcast } from '@manamap/shared';
 
 const BROADCAST_DAILY_CAP = 3;
@@ -22,11 +22,10 @@ const presenceKey = (userId: string) => `presence:${userId}`;
 
 @Injectable()
 export class BroadcastService {
-  private readonly expo = new Expo();
-
   constructor(
     @Inject(REDIS) private readonly redis: Redis,
     private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async getAudienceCounts(userId: string, storeId: string) {
@@ -98,7 +97,12 @@ export class BroadcastService {
     });
 
     // Fan-out is fire-and-forget; push failures must not block the response
-    this.fanOutPush(recipientIds, dto.title, dto.body, storeId).catch(() => {});
+    this.notifications.createBulk(recipientIds, {
+      kind: NotificationKind.BROADCAST,
+      title: dto.title,
+      body: dto.body,
+      data: { type: 'store_broadcast', storeId },
+    }).catch(() => {});
 
     return { id: broadcast.id, recipientCount: recipientIds.length };
   }
@@ -194,36 +198,6 @@ export class BroadcastService {
     });
     if (expired.length) await this.redis.zrem(storeMembersKey(storeId), ...expired);
     return valid;
-  }
-
-  private async fanOutPush(
-    userIds: string[],
-    title: string,
-    body: string,
-    storeId: string,
-  ): Promise<void> {
-    if (!userIds.length) return;
-    const tokenRows = await this.prisma.pushToken.findMany({
-      where: { userId: { in: userIds } },
-    });
-    const valid = tokenRows.filter((r) => Expo.isExpoPushToken(r.token));
-    if (!valid.length) return;
-
-    const messages: ExpoPushMessage[] = valid.map((r) => ({
-      to: r.token,
-      title,
-      body,
-      data: { type: 'store_broadcast', storeId },
-    }));
-
-    try {
-      const chunks = this.expo.chunkPushNotifications(messages);
-      for (const chunk of chunks) {
-        await this.expo.sendPushNotificationsAsync(chunk);
-      }
-    } catch {
-      // Push failures are non-fatal
-    }
   }
 
   private async assertOwner(userId: string, storeId: string): Promise<void> {

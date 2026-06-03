@@ -42,6 +42,9 @@ import {
 import { useBlockedUsers, useUnblockUser } from '../hooks/useSafety';
 import { useStores } from '../hooks/useNearby';
 import { useBadges, useStreaksSummary } from '../hooks/useGamification';
+import { useQuests } from '../hooks/useQuests';
+import type { ActiveQuest } from '@manamap/shared';
+import { BellButton } from '../navigation/TabNavigator';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -1313,6 +1316,137 @@ const addDeck = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
+// QuestsCard
+// ---------------------------------------------------------------------------
+
+function QuestRow({ item }: { item: ActiveQuest }) {
+  const { quest, progress, goal, completed } = item;
+  const pct = Math.min(progress / goal, 1);
+
+  return (
+    <View style={qc.row}>
+      <Text style={qc.icon}>{quest.icon}</Text>
+      <View style={qc.body}>
+        <View style={qc.titleRow}>
+          <Text style={qc.title} numberOfLines={1}>{quest.title}</Text>
+          {completed ? (
+            <View style={qc.donePill}>
+              <Text style={qc.doneText}>DONE</Text>
+            </View>
+          ) : (
+            <Text style={qc.count}>{progress}/{goal}</Text>
+          )}
+        </View>
+        {quest.description ? (
+          <Text style={qc.sub} numberOfLines={1}>{quest.description}</Text>
+        ) : null}
+        <View style={qc.barBg}>
+          <View style={[qc.barFill, { width: `${Math.round(pct * 100)}%` as `${number}%` }, completed && qc.barDone]} />
+        </View>
+        {quest.rewardBadge ? (
+          <Text style={qc.reward} numberOfLines={1}>
+            Reward: {quest.rewardBadge.icon} {quest.rewardBadge.name}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+function QuestsCard() {
+  const { data: quests, isLoading } = useQuests();
+
+  if (isLoading) {
+    return (
+      <View style={section.card}>
+        <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (!quests?.length) return null;
+
+  const done = quests.filter((q) => q.completed).length;
+
+  return (
+    <View style={section.card}>
+      <View style={section.cardHeader}>
+        <Text style={section.heading}>This month's quests</Text>
+        <Text style={qc.summary}>{done}/{quests.length} done</Text>
+      </View>
+      {quests.map((q, i) => (
+        <View key={q.quest.id} style={i > 0 ? qc.divider : undefined}>
+          <QuestRow item={q} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const qc = StyleSheet.create({
+  row: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.sm },
+  icon: { fontSize: 28, lineHeight: 36, marginTop: 2 },
+  body: { flex: 1, gap: spacing.xs },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  title: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  sub: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  count: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    flexShrink: 0,
+  },
+  donePill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    backgroundColor: colors.success + '25',
+    borderRadius: radii.full,
+    flexShrink: 0,
+  },
+  doneText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.xs,
+    color: colors.success,
+    letterSpacing: 0.5,
+  },
+  barBg: {
+    height: 5,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.full,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: 5,
+    backgroundColor: colors.accent,
+    borderRadius: radii.full,
+  },
+  barDone: { backgroundColor: colors.success },
+  reward: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  summary: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  divider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.borderLight,
+  },
+});
+
+// ---------------------------------------------------------------------------
 // GameRecordCard
 // ---------------------------------------------------------------------------
 
@@ -1548,6 +1682,7 @@ export function YouScreen() {
         >
           <Text style={styles.title}>You</Text>
         </Pressable>
+        <BellButton />
       </View>
 
       <ScrollView
@@ -1579,6 +1714,8 @@ export function YouScreen() {
         <HomeStoreRow />
 
         <RewardsCard />
+
+        <QuestsCard />
 
         {gameStats && <GameRecordCard stats={gameStats} />}
 

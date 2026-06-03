@@ -1,15 +1,16 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { Expo } from 'expo-server-sdk';
-import type { ExpoPushMessage } from 'expo-server-sdk';
+import { NotificationKind } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { ReminderJobData } from './event-reminders.service';
 
 @Processor('event-reminders')
 export class EventRemindersProcessor extends WorkerHost {
-  private readonly expo = new Expo();
-
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {
     super();
   }
 
@@ -34,37 +35,13 @@ export class EventRemindersProcessor extends WorkerHost {
     // TODO: respect notification opt-out when a preference field is added to PrivacySettings
 
     const isHour = job.name === 'hour';
-    await this.sendPush(userId, {
+    await this.notifications.create(userId, {
+      kind: NotificationKind.EVENT_REMINDER,
       title: isHour ? 'Event starting soon' : 'Event reminder',
       body: isHour
         ? `${eventName} starts in about an hour at ${storeName}`
         : `${eventName} is today at ${storeName}`,
       data: { type: 'event_reminder', eventId, storeId },
     });
-  }
-
-  private async sendPush(
-    userId: string,
-    payload: { title: string; body: string; data?: Record<string, unknown> },
-  ) {
-    const rows = await this.prisma.pushToken.findMany({ where: { userId } });
-    const valid = rows.filter((r) => Expo.isExpoPushToken(r.token));
-    if (!valid.length) return;
-
-    const messages: ExpoPushMessage[] = valid.map((r) => ({
-      to: r.token,
-      title: payload.title,
-      body: payload.body,
-      ...(payload.data !== undefined ? { data: payload.data } : {}),
-    }));
-
-    try {
-      const chunks = this.expo.chunkPushNotifications(messages);
-      for (const chunk of chunks) {
-        await this.expo.sendPushNotificationsAsync(chunk);
-      }
-    } catch {
-      // Push failures are non-fatal
-    }
   }
 }

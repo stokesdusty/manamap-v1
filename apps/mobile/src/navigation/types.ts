@@ -8,6 +8,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Main: undefined;
   History: undefined;
+  Notifications: undefined;
   PlayerPreview: {
     profile: PublicProfile;
     sharedEvent?: SharedEventSummary | null;

@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { ConnectionItem, Game, ManaColor } from '@manamap/shared';
+import { BellButton } from '../navigation/TabNavigator';
 import { ManaPip } from '../components/ManaPip';
 import {
   useAcceptConnection,
@@ -288,6 +289,7 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <Text style={styles.title}>Connect</Text>
+        <BellButton />
       </View>
 
       {isLoading ? (

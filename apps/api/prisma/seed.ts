@@ -107,6 +107,39 @@ const BOTS = [
   },
 ];
 
+// Quest reward badges — criteria type 'quest_reward' is intentionally ignored by
+// the gamification evaluator; these are only awarded when a quest completes.
+const QUEST_REWARD_BADGES = [
+  {
+    code: 'social_butterfly',
+    name: 'Social Butterfly',
+    description: 'Met 3 new players in a single month',
+    icon: '🦋',
+    criteria: { type: 'quest_reward' },
+  },
+  {
+    code: 'wanderer',
+    name: 'Wanderer',
+    description: 'Tried a store you had never visited before',
+    icon: '🧭',
+    criteria: { type: 'quest_reward' },
+  },
+  {
+    code: 'battle_hardened',
+    name: 'Battle Hardened',
+    description: 'Played 5 confirmed games in a single month',
+    icon: '⚔️',
+    criteria: { type: 'quest_reward' },
+  },
+  {
+    code: 'true_regular',
+    name: 'True Regular',
+    description: 'Maintained a 3-week check-in streak',
+    icon: '🔥',
+    criteria: { type: 'quest_reward' },
+  },
+];
+
 const BADGES = [
   {
     code: 'first_checkin',
@@ -277,6 +310,82 @@ async function main(): Promise<void> {
       where: { code: b.code },
       update: { name: b.name, description: b.description, icon: b.icon, criteria: b.criteria },
       create: b,
+    });
+  }
+
+  console.log('Seeding quest reward badges…');
+  for (const b of QUEST_REWARD_BADGES) {
+    await prisma.badge.upsert({
+      where: { code: b.code },
+      update: { name: b.name, description: b.description, icon: b.icon, criteria: b.criteria },
+      create: b,
+    });
+  }
+
+  console.log('Seeding monthly quests…');
+  // Quests are scoped to calendar months (UTC). Add next month's quests here when
+  // rolling over. To add a new quest type: insert a row here with the new criteria
+  // JSON — no code deploy needed.
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+
+  const rewardBadges = await prisma.badge.findMany({
+    where: { code: { in: QUEST_REWARD_BADGES.map((b) => b.code) } },
+    select: { id: true, code: true },
+  });
+  const badgeIdByCode = new Map(rewardBadges.map((b) => [b.code, b.id]));
+
+  const QUESTS = [
+    {
+      code: `meet_new_players_${monthStart.toISOString().slice(0, 7)}`,
+      title: 'Meet 3 New Players',
+      description: 'Accept or send 3 new connections this month',
+      icon: '🤝',
+      criteria: { type: 'meet_new_players', count: 3 },
+      rewardBadgeCode: 'social_butterfly',
+    },
+    {
+      code: `new_store_${monthStart.toISOString().slice(0, 7)}`,
+      title: 'Try a New Store',
+      description: 'Check in to a store you have never visited before',
+      icon: '🗺️',
+      criteria: { type: 'new_store' },
+      rewardBadgeCode: 'wanderer',
+    },
+    {
+      code: `play_games_${monthStart.toISOString().slice(0, 7)}`,
+      title: 'Play 5 Games',
+      description: 'Complete 5 confirmed game logs this month',
+      icon: '⚔️',
+      criteria: { type: 'play_games', count: 5 },
+      rewardBadgeCode: 'battle_hardened',
+    },
+    {
+      code: `checkin_streak_${monthStart.toISOString().slice(0, 7)}`,
+      title: '3-Week Streak',
+      description: 'Maintain a 3-week check-in streak at any store',
+      icon: '🔥',
+      criteria: { type: 'checkin_streak', length: 3 },
+      rewardBadgeCode: 'true_regular',
+    },
+  ];
+
+  for (const q of QUESTS) {
+    const rewardBadgeId = badgeIdByCode.get(q.rewardBadgeCode) ?? null;
+    await prisma.quest.upsert({
+      where: { code: q.code },
+      update: { title: q.title, description: q.description, icon: q.icon, criteria: q.criteria, activeFrom: monthStart, activeTo: monthEnd, rewardBadgeId },
+      create: {
+        code: q.code,
+        title: q.title,
+        description: q.description,
+        icon: q.icon,
+        criteria: q.criteria,
+        activeFrom: monthStart,
+        activeTo: monthEnd,
+        ...(rewardBadgeId ? { rewardBadgeId } : {}),
+      },
     });
   }
 

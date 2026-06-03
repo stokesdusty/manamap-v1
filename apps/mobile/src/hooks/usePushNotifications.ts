@@ -41,15 +41,44 @@ export function usePushNotifications(isAuthenticated: boolean) {
     });
 
     responseSub.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      if (!navigationRef.isReady()) return;
       const data = response.notification.request.content.data as Record<string, unknown>;
-      const connectionId = data.connectionId as string | undefined;
+      const type = data.type as string | undefined;
 
-      if (!connectionId || !navigationRef.isReady()) return;
-
-      if (data.type === 'connection_request') {
-        navigationRef.navigate('Main');
-      } else if (data.type === 'connection_accepted') {
-        navigationRef.navigate('Connected', { connectionId });
+      switch (type) {
+        case 'connection_request':
+          navigationRef.navigate('Main');
+          break;
+        case 'connection_accepted': {
+          const connectionId = data.connectionId as string | undefined;
+          if (connectionId) {
+            navigationRef.navigate('Connected', { connectionId });
+          } else {
+            navigationRef.navigate('Main');
+          }
+          break;
+        }
+        case 'pod_join_request':
+        case 'pod_approved':
+        case 'lfg_join_request': {
+          const podId = data.podId as string | undefined;
+          if (podId) {
+            navigationRef.navigate('Pod', { podId });
+          } else {
+            navigationRef.navigate('Main');
+          }
+          break;
+        }
+        case 'game_confirm':
+        case 'game_disputed':
+          navigationRef.navigate('Main');
+          break;
+        case 'event_reminder':
+        case 'store_broadcast':
+          navigationRef.navigate('Main');
+          break;
+        default:
+          break;
       }
     });
 

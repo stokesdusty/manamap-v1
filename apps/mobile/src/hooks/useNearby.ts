@@ -129,6 +129,7 @@ export function useCheckin() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['discovery', 'nearby'] });
       void qc.invalidateQueries({ queryKey: ['discovery', 'suggestions'] });
+      void qc.invalidateQueries({ queryKey: ['quests'] });
     },
   });
 }

@@ -1026,6 +1026,42 @@ export const RedemptionListItemSchema = z.object({
 });
 export type RedemptionListItem = z.infer<typeof RedemptionListItemSchema>;
 
+// --- Notifications ---
+
+export const NotificationKindSchema = z.enum([
+  'CONNECT_REQUEST',
+  'CONNECT_ACCEPTED',
+  'NEARBY',
+  'POD',
+  'GAME_CONFIRM',
+  'EVENT_REMINDER',
+  'BROADCAST',
+  'QUEST',
+]);
+export type NotificationKind = z.infer<typeof NotificationKindSchema>;
+
+export const NotificationSchema = z.object({
+  id: IdSchema,
+  kind: NotificationKindSchema,
+  title: z.string(),
+  body: z.string(),
+  data: z.record(z.unknown()).nullable(),
+  readAt: TimestampSchema.nullable(),
+  createdAt: TimestampSchema,
+});
+export type Notification = z.infer<typeof NotificationSchema>;
+
+export const MarkReadBodySchema = z.object({
+  ids: z.array(IdSchema).optional(),
+});
+export type MarkReadBody = z.infer<typeof MarkReadBodySchema>;
+
+export const NotificationsPageSchema = z.object({
+  items: z.array(NotificationSchema),
+  nextCursor: TimestampSchema.nullable(),
+});
+export type NotificationsPage = z.infer<typeof NotificationsPageSchema>;
+
 // --- Partner event management ---
 
 export const FormatItemSchema = z.object({
@@ -1082,3 +1118,43 @@ export const UpdateEventSchema = z
     { message: 'endsAt must be after startsAt', path: ['endsAt'] },
   );
 export type UpdateEvent = z.infer<typeof UpdateEventSchema>;
+
+// --- Quests ---
+
+export const QuestCriteriaSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('meet_new_players'), count: z.number().int().positive() }),
+  z.object({ type: z.literal('new_store') }),
+  z.object({ type: z.literal('play_games'), count: z.number().int().positive() }),
+  z.object({ type: z.literal('checkin_streak'), length: z.number().int().positive() }),
+  z.object({ type: z.literal('unique_stores'), count: z.number().int().positive() }),
+]);
+export type QuestCriteria = z.infer<typeof QuestCriteriaSchema>;
+
+export const QuestRewardBadgeSchema = z.object({
+  id: IdSchema,
+  code: z.string(),
+  name: z.string(),
+  icon: z.string(),
+});
+export type QuestRewardBadge = z.infer<typeof QuestRewardBadgeSchema>;
+
+export const QuestSchema = z.object({
+  id: IdSchema,
+  code: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  icon: z.string(),
+  period: z.enum(['MONTHLY']),
+  activeFrom: TimestampSchema,
+  activeTo: TimestampSchema,
+  rewardBadge: QuestRewardBadgeSchema.nullable(),
+});
+export type Quest = z.infer<typeof QuestSchema>;
+
+export const ActiveQuestSchema = z.object({
+  quest: QuestSchema,
+  progress: z.number().int().nonnegative(),
+  goal: z.number().int().positive(),
+  completed: z.boolean(),
+});
+export type ActiveQuest = z.infer<typeof ActiveQuestSchema>;

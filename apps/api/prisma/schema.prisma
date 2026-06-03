@@ -109,6 +109,21 @@ enum RedemptionStatus {
   VOID
 }
 
+enum NotificationKind {
+  CONNECT_REQUEST
+  CONNECT_ACCEPTED
+  NEARBY
+  POD
+  GAME_CONFIRM
+  EVENT_REMINDER
+  BROADCAST
+  QUEST
+}
+
+enum QuestPeriod {
+  MONTHLY
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -163,6 +178,8 @@ model User {
   broadcastsSent      Broadcast[]        @relation("BroadcastsSent")
   offerRedemptions    OfferRedemption[]
   staffRedemptions    OfferRedemption[]  @relation("RedemptionStaff")
+  notifications       Notification[]
+  questProgresses     QuestProgress[]
 
   @@map("users")
 }
@@ -385,7 +402,8 @@ model Badge {
   criteria    Json
   createdAt   DateTime @default(now()) @map("created_at")
 
-  userBadges UserBadge[]
+  userBadges   UserBadge[]
+  rewardQuests Quest[]
 
   @@map("badges")
 }
@@ -575,4 +593,53 @@ model Broadcast {
 
   @@index([storeId, createdAt])
   @@map("broadcasts")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  kind      NotificationKind
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model Quest {
+  id            String      @id @default(uuid())
+  code          String      @unique
+  title         String
+  description   String?
+  icon          String      @default("🎯")
+  criteria      Json
+  period        QuestPeriod @default(MONTHLY)
+  rewardBadgeId String?     @map("reward_badge_id")
+  activeFrom    DateTime    @map("active_from")
+  activeTo      DateTime    @map("active_to")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  rewardBadge Badge?          @relation(fields: [rewardBadgeId], references: [id], onDelete: SetNull)
+  progresses  QuestProgress[]
+
+  @@map("quests")
+}
+
+model QuestProgress {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  questId     String    @map("quest_id")
+  progress    Int       @default(0)
+  completedAt DateTime? @map("completed_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questId])
+  @@map("quest_progress")
 }

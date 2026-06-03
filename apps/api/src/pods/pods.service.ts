@@ -7,13 +7,12 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import type Redis from 'ioredis';
-import { EncounterResult, EncounterSource, ModerationStatus } from '@prisma/client';
-import { Expo } from 'expo-server-sdk';
-import type { ExpoPushMessage } from 'expo-server-sdk';
+import { EncounterResult, EncounterSource, ModerationStatus, NotificationKind } from '@prisma/client';
 import type { CreatePod, PodMemberAction } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafetyService } from '../safety/safety.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const presenceKey = (userId: string) => `presence:${userId}`;
 const storeMembersKey = (storeId: string) => `store_members:${storeId}`;
@@ -105,34 +104,12 @@ function normalizeProfile(u: {
 
 @Injectable()
 export class PodsService {
-  private readonly expo = new Expo();
-
   constructor(
     @Inject(REDIS) private readonly redis: Redis,
     private readonly prisma: PrismaService,
     private readonly safety: SafetyService,
+    private readonly notifications: NotificationsService,
   ) {}
-
-  private async sendPushToUser(
-    userId: string,
-    payload: { title: string; body: string; data?: Record<string, unknown> },
-  ) {
-    const rows = await this.prisma.pushToken.findMany({ where: { userId } });
-    const valid = rows.filter((r) => Expo.isExpoPushToken(r.token));
-    if (!valid.length) return;
-    const messages: ExpoPushMessage[] = valid.map((r) => ({
-      to: r.token,
-      title: payload.title,
-      body: payload.body,
-      ...(payload.data !== undefined ? { data: payload.data } : {}),
-    }));
-    try {
-      const chunks = this.expo.chunkPushNotifications(messages);
-      for (const chunk of chunks) await this.expo.sendPushNotificationsAsync(chunk);
-    } catch {
-      // Push failures must not affect the main operation
-    }
-  }
 
   private async getPod(podId: string): Promise<PodSession | null> {
     const raw = await this.redis.get(podKey(podId));
@@ -366,7 +343,8 @@ export class PodsService {
       select: { displayName: true },
     });
 
-    void this.sendPushToUser(pod.hostId, {
+    void this.notifications.create(pod.hostId, {
+      kind: NotificationKind.POD,
       title: `${caller?.displayName ?? 'Someone'} wants to join your pod`,
       body: 'Tap to manage your pod',
       data: { type: 'pod_join_request', podId, userId: callerId },
@@ -389,7 +367,8 @@ export class PodsService {
     };
     await this.savePod(updatedPod, this.remainingSecs(pod));
 
-    void this.sendPushToUser(dto.userId, {
+    void this.notifications.create(dto.userId, {
+      kind: NotificationKind.POD,
       title: "You've been approved for a pod!",
       body: 'Tap to see your pod',
       data: { type: 'pod_approved', podId },

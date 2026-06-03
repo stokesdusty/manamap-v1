@@ -10,6 +10,7 @@ import { StoreConnector } from './connectors/store.connector';
 import { DiscordConnector } from './connectors/discord.connector';
 import { WizardsConnector } from './connectors/wizards.connector';
 import type { IEventConnector } from './connectors/event-connector.interface';
+import { QuestsService } from '../quests/quests.service';
 
 const DEFAULT_CHECKIN_RADIUS_M = 250;
 const ACCURACY_CAP_M = 150;
@@ -61,6 +62,7 @@ export class StoresService {
     private readonly gamification: GamificationService,
     private readonly eventReminders: EventRemindersService,
     private readonly safety: SafetyService,
+    private readonly quests: QuestsService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -229,6 +231,8 @@ export class StoresService {
       this.getEligibleOffers(userId, storeId),
       this.getActiveEventsNow(storeId),
     ]);
+
+    void this.quests.evaluate(userId);
 
     return {
       checkinId: checkin.id,

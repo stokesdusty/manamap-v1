@@ -45,7 +45,7 @@ Manage imported posts from social platforms
   offer codes (enter or scan), marking them used.
 
 ## 🔁 Retention
-- [ ] **Notifications center / inbox** — in-app history of connects, accepts,
+- [x] **Notifications center / inbox** — in-app history of connects, accepts,
   nearby pings, event reminders (push tokens already exist).
 - [ ] **Monthly quests** — "meet 3 new players", "try a new store" — data-driven
   like badges.

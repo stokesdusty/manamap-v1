@@ -1,5 +1,7 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { DiscoverScreen } from '../screens/DiscoverScreen';
@@ -7,10 +9,59 @@ import { StoresScreen } from '../screens/StoresScreen';
 import { ConnectScreen } from '../screens/ConnectScreen';
 import { ScanScreen } from '../screens/ScanScreen';
 import { YouScreen } from '../screens/YouScreen';
+import { useNotificationUnreadCount } from '../hooks/useNotifications';
+import { useAuth } from '../context/AuthContext';
 import { colors, radii, shadows, typography } from '../theme';
-import type { TabParamList } from './types';
+import type { TabParamList, RootStackParamList } from './types';
 
 const Tab = createBottomTabNavigator<TabParamList>();
+
+export function BellButton() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { isAuthenticated } = useAuth();
+  const { data: count } = useNotificationUnreadCount(isAuthenticated);
+  const badge = count !== undefined && count > 0;
+
+  return (
+    <Pressable
+      onPress={() => navigation.navigate('Notifications')}
+      style={bellStyles.wrap}
+      hitSlop={8}
+    >
+      <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
+      {badge && (
+        <View style={bellStyles.badge}>
+          <Text style={bellStyles.badgeText}>{count > 99 ? '99+' : count}</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+const bellStyles = StyleSheet.create({
+  wrap: {
+    marginRight: 4,
+    padding: 4,
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    minWidth: 16,
+    height: 16,
+    borderRadius: radii.full,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 9,
+    color: colors.textInverse,
+    lineHeight: 12,
+  },
+});
 
 function ScanButton({ onPress }: BottomTabBarButtonProps) {
   return (

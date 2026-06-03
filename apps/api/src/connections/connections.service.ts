@@ -5,12 +5,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ConnectionStatus, EncounterResult, EncounterSource } from '@prisma/client';
-import { Expo } from 'expo-server-sdk';
-import type { ExpoPushMessage } from 'expo-server-sdk';
+import { ConnectionStatus, EncounterResult, EncounterSource, NotificationKind } from '@prisma/client';
 import type { CreateConnection } from '@manamap/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafetyService } from '../safety/safety.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { QuestsService } from '../quests/quests.service';
 
 const PEER_SELECT = {
   id: true,
@@ -26,41 +26,12 @@ const PEER_SELECT = {
 
 @Injectable()
 export class ConnectionsService {
-  private readonly expo = new Expo();
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly safety: SafetyService,
+    private readonly notifications: NotificationsService,
+    private readonly quests: QuestsService,
   ) {}
-
-  // -------------------------------------------------------------------------
-  // Push helpers
-  // -------------------------------------------------------------------------
-
-  private async sendPushToUser(
-    userId: string,
-    payload: { title: string; body: string; data?: Record<string, unknown> },
-  ) {
-    const rows = await this.prisma.pushToken.findMany({ where: { userId } });
-    const valid = rows.filter((r) => Expo.isExpoPushToken(r.token));
-    if (!valid.length) return;
-
-    const messages: ExpoPushMessage[] = valid.map((r) => ({
-      to: r.token,
-      title: payload.title,
-      body: payload.body,
-      ...(payload.data !== undefined ? { data: payload.data } : {}),
-    }));
-
-    try {
-      const chunks = this.expo.chunkPushNotifications(messages);
-      for (const chunk of chunks) {
-        await this.expo.sendPushNotificationsAsync(chunk);
-      }
-    } catch {
-      // Push failures must not affect the main operation
-    }
-  }
 
   // -------------------------------------------------------------------------
   // Endpoints
@@ -96,7 +67,8 @@ export class ConnectionsService {
       include: { requester: { select: PEER_SELECT } },
     });
 
-    void this.sendPushToUser(dto.addresseeId, {
+    void this.notifications.create(dto.addresseeId, {
+      kind: NotificationKind.CONNECT_REQUEST,
       title: `${conn.requester.displayName} wants to connect`,
       body: dto.note ?? 'Tap to respond',
       data: { type: 'connection_request', connectionId: conn.id },
@@ -178,11 +150,15 @@ export class ConnectionsService {
       }),
     ]);
 
-    void this.sendPushToUser(conn.requesterId, {
+    void this.notifications.create(conn.requesterId, {
+      kind: NotificationKind.CONNECT_ACCEPTED,
       title: `${conn.addressee.displayName} accepted your request`,
       body: 'You are now connected!',
       data: { type: 'connection_accepted', connectionId: conn.id },
     });
+
+    void this.quests.evaluate(userId);
+    void this.quests.evaluate(conn.requesterId);
 
     return { id: updated.id, status: 'accepted' };
   }
