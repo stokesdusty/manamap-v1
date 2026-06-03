@@ -9,10 +9,6 @@ through or delete when shipped.
 > Status as of this writing: Phases 1–3 + M14 (safety) · M15 (seeding) ·
 > M16 (onboarding) · M17 (dark theme) · M18 (proximity check-in) · M19 (moderation dashboard + enforcement) · M20 (LFG) · M21 (rate limiting) · M22 (pods) · M23 (log a game + player stats) are **shipped**.
 
----
-MtG Artist Connection Logo
-Social Post Review Queue
-Manage imported posts from social platforms
 
 
 ## 🛡️ Trust & Safety
@@ -49,7 +45,7 @@ Manage imported posts from social platforms
   nearby pings, event reminders (push tokens already exist).
 - [x] **Monthly quests** — "meet 3 new players", "try a new store" — data-driven
   like badges.
-- [ ] **Friend-streaks** — reward repeatedly playing the same people, not just
+- [x] **Friend-streaks** — reward repeatedly playing the same people, not just
   visiting the same store.
 
 ## ⚙️ Platform & quality

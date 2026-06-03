@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { AuthTokens } from '@manamap/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppleService } from './apple.service';
@@ -86,11 +86,7 @@ export class AuthService {
   }
 
   async signInByEmail(email: string): Promise<AuthTokens> {
-    const user = await this.prisma.user.findFirst({
-      where: { email },
-    });
-
-    if (!user) throw new NotFoundException(`User with email ${email} not found`);
+    const user = await this.upsertUserByEmail(email, email.split('@')[0]);
     return this.tokens.issueTokens(user.id, user.email);
   }
 

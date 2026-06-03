@@ -1,0 +1,15 @@
+{
+  "rootDir": "..",
+  "testRegex": "test/.*\\.e2e-spec\\.ts$",
+  "testEnvironment": "node",
+  "transform": {
+    "^.+\\.ts$": ["ts-jest", { "tsconfig": "<rootDir>/tsconfig.e2e.json" }]
+  },
+  "moduleNameMapper": {
+    "^@manamap/shared$": "<rootDir>/../../packages/shared/src/index.ts"
+  },
+  "globalSetup": "<rootDir>/test/global-setup.js",
+  "setupFiles": ["<rootDir>/test/setup-env.ts"],
+  "testTimeout": 30000,
+  "clearMocks": true
+}
