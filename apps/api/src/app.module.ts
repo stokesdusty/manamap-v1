@@ -1,7 +1,10 @@
 import { Module, type DynamicModule } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { LoggerModule } from 'nestjs-pino';
 import { validate } from './config/config.schema';
+import type { Env } from './config/config.schema';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { AuthModule } from './auth/auth.module';
 import { ThrottleModule } from './throttle/throttle.module';
 import { ThrottleGuard } from './throttle/throttle.guard';
@@ -40,6 +43,35 @@ const conditionalModules: Array<DynamicModule | typeof DevModule> = devEnabled ?
       envFilePath: '.env',
       validate,
     }),
+    LoggerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env>) => {
+        const isDev = config.get<string>('NODE_ENV') !== 'production';
+        const level = config.get<string>('LOG_LEVEL') ?? (isDev ? 'debug' : 'info');
+        return {
+          pinoHttp: {
+            level,
+            ...(isDev
+              ? {
+                  transport: {
+                    target: 'pino-pretty',
+                    options: { colorize: true, translateTime: 'SYS:standard', ignore: 'pid,hostname' },
+                  },
+                }
+              : {}),
+            redact: {
+              paths: [
+                'req.headers.authorization',
+                'req.headers.cookie',
+                'res.headers["set-cookie"]',
+              ],
+              censor: '[REDACTED]',
+            },
+          },
+        };
+      },
+    }),
     PrismaModule,
     RedisModule,
     AuthModule,
@@ -65,6 +97,9 @@ const conditionalModules: Array<DynamicModule | typeof DevModule> = devEnabled ?
     ThrottleModule,
     ...conditionalModules,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottleGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottleGuard },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+  ],
 })
 export class AppModule {}

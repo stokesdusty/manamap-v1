@@ -82,7 +82,12 @@
       "Bash(mkdir -p c:/dev/manamap/apps/api/prisma/migrations/20260603200000_notifications)",
       "Bash(mkdir -p c:/dev/manamap/apps/api/src/notifications)",
       "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260603210000_quests\")",
-      "Bash(pnpm tsc *)"
+      "Bash(pnpm tsc *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\src\\\\common\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(xargs grep -l \"ExceptionFilter\\\\|GlobalPrefix\\\\|UseFilters\\\\|UseInterceptors\")",
+      "Bash(node -e \"const p = require\\('./package.json'\\); const keys = ['nestjs-pino','pino-http','@sentry/node','pino-pretty']; keys.forEach\\(k => { const v = p.dependencies?.[k] || p.devDependencies?.[k]; if\\(v\\) console.log\\(k, v\\); }\\)\")",
+      "Bash(mkdir -p c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\src\\\\common\\\\filters)"
     ]
   }
 }

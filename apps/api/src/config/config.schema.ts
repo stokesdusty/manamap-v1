@@ -20,6 +20,12 @@ export const envSchema = z.object({
 
   // Rate limiting — set to 'true' to disable all throttling (e2e / CI)
   THROTTLE_DISABLED: z.string().optional(),
+
+  // Logging
+  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
+
+  // Error tracking — omit to disable Sentry entirely (true no-op)
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

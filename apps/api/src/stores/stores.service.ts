@@ -1,5 +1,6 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import type { AssociateCheckinEventBody, CheckinBody } from '@manamap/shared';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { ModerationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PresenceService } from '../presence/presence.service';
@@ -37,7 +38,6 @@ type StoreDetailRow = {
 
 @Injectable()
 export class StoresService {
-  private readonly logger = new Logger(StoresService.name);
   private readonly connectors: IEventConnector[] = [
     new StoreConnector(),
     new DiscordConnector(),
@@ -57,6 +57,7 @@ export class StoresService {
   } as const;
 
   constructor(
+    @InjectPinoLogger(StoresService.name) private readonly logger: PinoLogger,
     private readonly prisma: PrismaService,
     private readonly presence: PresenceService,
     private readonly gamification: GamificationService,
@@ -206,7 +207,7 @@ export class StoresService {
     const store = rows[0];
 
     if (!store.has_geom) {
-      this.logger.warn(`Store ${storeId} has no geom — skipping proximity check`);
+      this.logger.warn({ storeId }, 'Store has no geom — skipping proximity check');
     } else if (store.within === false) {
       const distanceMeters = Math.round(Number(store.distance_m ?? 0));
       throw new HttpException(

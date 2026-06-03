@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import type { AuthTokens } from '@manamap/shared';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppleService } from './apple.service';
 import { DiscordService } from './discord.service';
@@ -7,9 +8,8 @@ import { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-
   constructor(
+    @InjectPinoLogger(AuthService.name) private readonly logger: PinoLogger,
     private readonly apple: AppleService,
     private readonly discord: DiscordService,
     private readonly tokens: TokenService,
@@ -40,13 +40,14 @@ export class AuthService {
     let profile;
     try {
       profile = await this.discord.exchangeCode(code, codeVerifier, redirectUri);
-    } catch (error: any) {
-      this.logger.error(`Discord code exchange failed: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error({ err }, 'Discord code exchange failed');
       throw error;
     }
 
     if (!profile.email) {
-      this.logger.warn(`Discord sign-in failed: Email missing for user ${profile.id}`);
+      this.logger.warn({ discordId: profile.id }, 'Discord sign-in rejected: email missing');
       throw new BadRequestException(
         'Discord account must have a verified email (enable the email scope)',
       );
