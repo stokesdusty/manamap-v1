@@ -1119,6 +1119,27 @@ export const UpdateEventSchema = z
   );
 export type UpdateEvent = z.infer<typeof UpdateEventSchema>;
 
+// --- Rivalries ---
+
+export const RivalrySchema = z.object({
+  opponentId: IdSchema,
+  displayName: z.string(),
+  pronouns: z.string().nullable(),
+  bio: z.string().nullable(),
+  avatarColors: z.array(ManaColorSchema),
+  commander: z.string().nullable(),
+  powerLevel: z.number().int().nullable(),
+  vibe: PlayerVibeSchema.nullable(),
+  formats: z.array(MtgFormatSchema),
+  gamesTogether: z.number().int().nonnegative(),
+  wins: z.number().int().nonnegative(),
+  losses: z.number().int().nonnegative(),
+  record: z.string(),
+  lastPlayedAt: TimestampSchema,
+  hot: z.boolean(),
+});
+export type Rivalry = z.infer<typeof RivalrySchema>;
+
 // --- Quests ---
 
 export const QuestCriteriaSchema = z.discriminatedUnion('type', [

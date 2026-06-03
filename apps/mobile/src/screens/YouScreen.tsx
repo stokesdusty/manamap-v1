@@ -43,7 +43,8 @@ import { useBlockedUsers, useUnblockUser } from '../hooks/useSafety';
 import { useStores } from '../hooks/useNearby';
 import { useBadges, useStreaksSummary } from '../hooks/useGamification';
 import { useQuests } from '../hooks/useQuests';
-import type { ActiveQuest } from '@manamap/shared';
+import { useRivalries } from '../hooks/useRivalries';
+import type { ActiveQuest, Rivalry } from '@manamap/shared';
 import { BellButton } from '../navigation/TabNavigator';
 
 // ---------------------------------------------------------------------------
@@ -1641,6 +1642,98 @@ const rg = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
+// RivalriesCard
+// ---------------------------------------------------------------------------
+
+function RivalryRow({ item, isLast }: { item: Rivalry; isLast: boolean }) {
+  return (
+    <View style={[rv.row, !isLast && rv.rowBorder]}>
+      <View style={rv.avatar}>
+        <Text style={rv.avatarText}>{item.displayName.charAt(0).toUpperCase()}</Text>
+      </View>
+      <View style={rv.info}>
+        <View style={rv.nameRow}>
+          <Text style={rv.name} numberOfLines={1}>{item.displayName}</Text>
+          {item.hot && <Text style={rv.flame}>🔥</Text>}
+        </View>
+        <Text style={rv.sub}>
+          {item.gamesTogether} game{item.gamesTogether !== 1 ? 's' : ''} together
+        </Text>
+      </View>
+      <View style={rv.recordBadge}>
+        <Text style={rv.recordText}>{item.record}</Text>
+      </View>
+    </View>
+  );
+}
+
+function RivalriesCard() {
+  const { data: rivalries, isLoading } = useRivalries(5);
+
+  if (isLoading || !rivalries?.length) return null;
+
+  return (
+    <View style={[section.card, { paddingHorizontal: 0, paddingVertical: spacing.lg }]}>
+      <Text style={[section.heading, { paddingHorizontal: spacing.xl }]}>Rivalries</Text>
+      {rivalries.map((r, i) => (
+        <RivalryRow key={r.opponentId} item={r} isLast={i === rivalries.length - 1} />
+      ))}
+    </View>
+  );
+}
+
+const rv = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
+  rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.full,
+    backgroundColor: colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  avatarText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.md,
+    color: colors.accent,
+  },
+  info: { flex: 1, gap: 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  name: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+    flexShrink: 1,
+  },
+  flame: { fontSize: 14 },
+  sub: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  recordBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.full,
+    flexShrink: 0,
+  },
+  recordText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+});
+
+// ---------------------------------------------------------------------------
 // YouScreen
 // ---------------------------------------------------------------------------
 
@@ -1720,6 +1813,8 @@ export function YouScreen() {
         {gameStats && <GameRecordCard stats={gameStats} />}
 
         <RecentGamesCard myId={profile.id} />
+
+        <RivalriesCard />
 
         <Pressable
           style={({ pressed }) => [styles.signOutBtn, pressed && styles.pressed]}

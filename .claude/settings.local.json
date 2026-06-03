@@ -81,7 +81,8 @@
       "Bash(Sort-Object -Unique)",
       "Bash(mkdir -p c:/dev/manamap/apps/api/prisma/migrations/20260603200000_notifications)",
       "Bash(mkdir -p c:/dev/manamap/apps/api/src/notifications)",
-      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260603210000_quests\")"
+      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260603210000_quests\")",
+      "Bash(pnpm tsc *)"
     ]
   }
 }

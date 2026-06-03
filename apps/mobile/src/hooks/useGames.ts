@@ -48,6 +48,7 @@ export function useConfirmGame() {
       void qc.invalidateQueries({ queryKey: ['games', 'me'] });
       void qc.invalidateQueries({ queryKey: ['leaderboard'] });
       void qc.invalidateQueries({ queryKey: ['quests'] });
+      void qc.invalidateQueries({ queryKey: ['rivalries'] });
     },
   });
 }

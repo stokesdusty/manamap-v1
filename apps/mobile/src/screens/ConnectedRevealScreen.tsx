@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { DeckLink, ManaColor, MtgFormat, PlayerVibe } from '@manamap/shared';
 import { ManaPip } from '../components/ManaPip';
 import { useConnectionDetail } from '../hooks/useConnections';
+import { useRivalryDetail } from '../hooks/useRivalries';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import type { RootStackScreenProps } from '../navigation/types';
 
@@ -45,6 +46,7 @@ export function ConnectedRevealScreen({
 }: RootStackScreenProps<'Connected'>) {
   const { connectionId } = route.params;
   const { data, isLoading } = useConnectionDetail(connectionId);
+  const { data: rivalry } = useRivalryDetail(data?.peer.id);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -159,6 +161,33 @@ export function ConnectedRevealScreen({
               </View>
             )}
           </View>
+
+          {/* Head-to-head */}
+          {rivalry && (
+            <View style={hth.root}>
+              <View style={hth.titleRow}>
+                <Ionicons name="game-controller-outline" size={16} color={colors.textSecondary} />
+                <Text style={hth.title}>Head-to-head</Text>
+                {rivalry.hot && <Text style={hth.flame}>🔥</Text>}
+              </View>
+              <View style={hth.statsRow}>
+                <View style={hth.stat}>
+                  <Text style={hth.statValue}>{rivalry.gamesTogether}</Text>
+                  <Text style={hth.statLabel}>Games</Text>
+                </View>
+                <View style={hth.divider} />
+                <View style={hth.stat}>
+                  <Text style={hth.statValue}>{rivalry.wins}</Text>
+                  <Text style={hth.statLabel}>Your wins</Text>
+                </View>
+                <View style={hth.divider} />
+                <View style={hth.stat}>
+                  <Text style={hth.statValue}>{rivalry.losses}</Text>
+                  <Text style={hth.statLabel}>Their wins</Text>
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Deck links */}
           {data.peer.deckLinks.length > 0 && (
@@ -408,4 +437,39 @@ const decks = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textPrimary,
   },
+});
+
+const hth = StyleSheet.create({
+  root: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    gap: spacing.md,
+    ...shadows.md,
+  },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  title: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  flame: { fontSize: 16 },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: spacing.xs,
+  },
+  stat: { flex: 1, alignItems: 'center', gap: 2 },
+  statValue: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.lg,
+    color: colors.textPrimary,
+  },
+  statLabel: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  divider: { width: 1, height: 32, backgroundColor: colors.borderLight, marginHorizontal: spacing.sm },
 });

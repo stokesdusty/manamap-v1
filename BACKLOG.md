@@ -47,7 +47,7 @@ Manage imported posts from social platforms
 ## 🔁 Retention
 - [x] **Notifications center / inbox** — in-app history of connects, accepts,
   nearby pings, event reminders (push tokens already exist).
-- [ ] **Monthly quests** — "meet 3 new players", "try a new store" — data-driven
+- [x] **Monthly quests** — "meet 3 new players", "try a new store" — data-driven
   like badges.
 - [ ] **Friend-streaks** — reward repeatedly playing the same people, not just
   visiting the same store.
