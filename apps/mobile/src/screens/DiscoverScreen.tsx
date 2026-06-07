@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Dimensions,
   FlatList,
   Modal,
   Pressable,
@@ -12,7 +13,7 @@ import {
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Defs, G, Line, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, G, Line, LinearGradient as SvgLinearGradient, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import type {
   ManaColor as SharedManaColor,
   MtgFormat,
@@ -45,19 +46,18 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { TabParamList, RootStackParamList } from '../navigation/types';
 import { useNearby, useSuggestions, useStores, type DiscoveryFilters } from '../hooks/useNearby';
 import { usePresence } from '../hooks/usePresence';
-import { useBleProximity, sortByBleProximity } from '../hooks/useBleProximity';
 import { useCrossedPathsCount } from '../hooks/useEncounters';
+import { useConnections } from '../hooks/useConnections';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import { usePrivacy, useProfile, useUpdatePrivacy } from '../hooks/useMe';
 import { BellButton } from '../navigation/TabNavigator';
 import { colors, radii, shadows, spacing, typography } from '../theme';
+import { useIdentityTheme, type IdentityTheme } from '../hooks/useIdentityTheme';
 
 type DiscoverScreenProps = CompositeScreenProps<
   BottomTabScreenProps<TabParamList, 'Discover'>,
   NativeStackScreenProps<RootStackParamList>
 >;
-
-type FilterMode = 'everyone' | 'met';
 
 // ---------------------------------------------------------------------------
 // Radar
@@ -104,44 +104,52 @@ interface RadarProps {
   players: NearbyPlayer[];
   onSelectPlayer: (p: NearbyPlayer) => void;
   selectedId: string | null;
+  theme: IdentityTheme;
 }
 
-function Radar({ players, onSelectPlayer, selectedId }: RadarProps) {
+function Radar({ players, onSelectPlayer, selectedId, theme }: RadarProps) {
+  const { accent, gradient, onAccent, soft } = theme;
   const positions = playerPositions(players.length);
+  const ringStroke = accent + '50';
 
   return (
     <View style={radar.wrap}>
       <Svg width={RADAR_SIZE} height={RADAR_SIZE}>
         <Defs>
           <RadialGradient id="bg" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={colors.accentLight} stopOpacity={0.4} />
+            <Stop offset="0%" stopColor={accent} stopOpacity={0.18} />
             <Stop offset="100%" stopColor={colors.paper} stopOpacity={0} />
           </RadialGradient>
+          <SvgLinearGradient id="centerGrad" x1="0" y1="0" x2="1" y2="1">
+            {gradient.map((c, i) => (
+              <Stop key={i} offset={`${i / Math.max(1, gradient.length - 1)}`} stopColor={c} />
+            ))}
+          </SvgLinearGradient>
         </Defs>
 
         <Circle cx={RADAR_CENTER} cy={RADAR_CENTER} r={OUTER_RADIUS + NODE_RADIUS} fill="url(#bg)" />
 
         <Circle cx={RADAR_CENTER} cy={RADAR_CENTER} r={OUTER_RADIUS}
-          stroke={colors.borderLight} strokeWidth={1} strokeDasharray="4 4" fill="none" />
+          stroke={ringStroke} strokeWidth={1} strokeDasharray="4 4" fill="none" />
         <Circle cx={RADAR_CENTER} cy={RADAR_CENTER} r={INNER_RADIUS}
-          stroke={colors.borderLight} strokeWidth={1} strokeDasharray="4 4" fill="none" />
+          stroke={ringStroke} strokeWidth={1} strokeDasharray="4 4" fill="none" />
 
         {positions.map((pos, i) => (
           <Line key={`spoke-${i}`}
             x1={RADAR_CENTER} y1={RADAR_CENTER} x2={pos.x} y2={pos.y}
-            stroke={colors.borderLight} strokeWidth={1} />
+            stroke={ringStroke} strokeWidth={1} />
         ))}
 
         {players.map((player, i) => {
           const pos = positions[i];
           const isSelected = player.id === selectedId;
           const fill = nodeColor(player);
-          const textFill = player.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+          const textFill = ['W', 'G'].includes(player.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
           return (
             <G key={player.id} onPress={() => onSelectPlayer(player)}>
               {isSelected && (
                 <Circle cx={pos.x} cy={pos.y} r={NODE_RADIUS + 4}
-                  fill={colors.accentLight} stroke={colors.accent} strokeWidth={1.5} />
+                  fill={soft} stroke={accent} strokeWidth={1.5} />
               )}
               <Circle cx={pos.x} cy={pos.y} r={NODE_RADIUS} fill={fill} />
               <SvgText x={pos.x} y={pos.y + 5} textAnchor="middle"
@@ -156,9 +164,11 @@ function Radar({ players, onSelectPlayer, selectedId }: RadarProps) {
           );
         })}
 
-        <Circle cx={RADAR_CENTER} cy={RADAR_CENTER} r={22} fill={colors.accent} />
+        {/* Identity-gradient center node with glow */}
+        <Circle cx={RADAR_CENTER} cy={RADAR_CENTER} r={30} fill={accent} opacity={0.18} />
+        <Circle cx={RADAR_CENTER} cy={RADAR_CENTER} r={22} fill="url(#centerGrad)" />
         <SvgText x={RADAR_CENTER} y={RADAR_CENTER + 5} textAnchor="middle"
-          fill={colors.textInverse} fontSize={11} fontFamily={typography.fontFamily.semiBold}>
+          fill={onAccent} fontSize={11} fontFamily={typography.fontFamily.semiBold}>
           You
         </SvgText>
       </Svg>
@@ -242,6 +252,82 @@ function StorePicker({ visible, onClose, onSelect }: StorePickerProps) {
 }
 
 // ---------------------------------------------------------------------------
+// Location banner — gradient strip showing store + player count
+// ---------------------------------------------------------------------------
+
+const LOC_BANNER_H = 68;
+
+interface LocationBannerProps {
+  storeName: string;
+  playerCount: number;
+  theme: IdentityTheme;
+}
+
+function LocationBanner({ storeName, playerCount, theme }: LocationBannerProps) {
+  const { gradient, onAccent } = theme;
+  const [bannerW, setBannerW] = useState(
+    () => Dimensions.get('window').width,
+  );
+
+  return (
+    <View
+      style={locBanner.root}
+      onLayout={(e) => setBannerW(e.nativeEvent.layout.width)}
+    >
+      <Svg style={StyleSheet.absoluteFill} width={bannerW} height={LOC_BANNER_H}>
+        <Defs>
+          <SvgLinearGradient id="locGrad" x1="0" y1="0" x2="1" y2="1">
+            {gradient.map((c, i) => (
+              <Stop
+                key={i}
+                offset={`${i / Math.max(1, gradient.length - 1)}`}
+                stopColor={c}
+              />
+            ))}
+          </SvgLinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width={bannerW} height={LOC_BANNER_H} fill="url(#locGrad)" />
+      </Svg>
+      <View style={locBanner.content}>
+        <Ionicons name="storefront-outline" size={18} color={onAccent} />
+        <View style={{ flex: 1 }}>
+          <Text style={[locBanner.name, { color: onAccent }]} numberOfLines={1}>
+            {storeName}
+          </Text>
+          <Text style={[locBanner.count, { color: onAccent + 'CC' }]}>
+            {playerCount === 0
+              ? 'No players nearby'
+              : `${playerCount} player${playerCount !== 1 ? 's' : ''} nearby`}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const locBanner = StyleSheet.create({
+  root: {
+    height: LOC_BANNER_H,
+    overflow: 'hidden',
+  },
+  content: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+  },
+  name: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+  },
+  count: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+  },
+});
+
+// ---------------------------------------------------------------------------
 // Player row
 // ---------------------------------------------------------------------------
 
@@ -272,7 +358,7 @@ interface PlayerRowProps {
 
 function PlayerRow({ player, onPress, isSelected }: PlayerRowProps) {
   const fill = nodeColor(player);
-  const textFill = player.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(player.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
 
   return (
     <Pressable
@@ -292,7 +378,7 @@ function PlayerRow({ player, onPress, isSelected }: PlayerRowProps) {
         </View>
         {player.commander ? (
           <Text style={row.sub} numberOfLines={1}>
-            {player.commander}{player.powerLevel != null ? ` · P${player.powerLevel}` : ''}
+            {player.commander}
           </Text>
         ) : null}
         {player.formats.length > 0 && (
@@ -324,7 +410,7 @@ function SuggestionCard({ suggestion, onPress }: SuggestionCardProps) {
   const fill = suggestion.avatarColors.length > 0
     ? (MANA_FILL[suggestion.avatarColors[0] as SharedManaColor] ?? colors.border)
     : colors.border;
-  const textFill = suggestion.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(suggestion.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
   const topReasons = suggestion.reasons.slice(0, 2);
 
   return (
@@ -629,7 +715,7 @@ function LFGOpenRow({ item, onJoin, joined }: LFGOpenRowProps) {
   const fill = item.avatarColors.length > 0
     ? (MANA_FILL[item.avatarColors[0] as SharedManaColor] ?? colors.border)
     : colors.border;
-  const textFill = item.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(item.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
 
   return (
     <View style={lfgSection.row}>
@@ -767,7 +853,7 @@ function PodsSection({ pods, isCheckedIn, onStartPod, onOpenPod }: PodsSectionPr
             const fill = pod.host.avatarColors.length > 0
               ? (MANA_FILL[pod.host.avatarColors[0] as SharedManaColor] ?? colors.border)
               : colors.border;
-            const textFill = pod.host.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+            const textFill = ['W', 'G'].includes(pod.host.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
             return (
               <Pressable
                 key={pod.id}
@@ -1153,7 +1239,7 @@ function PodSheet({ visible, mySession, feed, onClose, onLock, isLocking }: PodS
               const fill = item.avatarColors.length > 0
                 ? (MANA_FILL[item.avatarColors[0] as SharedManaColor] ?? colors.border)
                 : colors.border;
-              const textFill = item.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+              const textFill = ['W', 'G'].includes(item.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
               return (
                 <Pressable
                   key={item.id}
@@ -1190,7 +1276,6 @@ function PodSheet({ visible, mySession, feed, onClose, onLock, isLocking }: PodS
 export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   const { activeStore, setActiveStore } = useActiveStore();
   const [showPicker, setShowPicker] = useState(false);
-  const [filter, setFilter] = useState<FilterMode>('everyone');
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   // LFG state
@@ -1270,6 +1355,9 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   // Presence heartbeat
   usePresence();
 
+  // Identity theme
+  const identityTheme = useIdentityTheme();
+
   // Onboarding banner
   const { data: profile } = useProfile();
   const showOnboardBanner = profile != null && profile.onboardedAt == null;
@@ -1322,17 +1410,16 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   // Crossed-paths nudge
   const crossedPathsCount = useCrossedPathsCount();
 
-  // BLE proximity
-  const { rssiMap, isSupported: bleSupported } = useBleProximity(!!activeStore);
+  // Connections — used to count who among nearby players is already connected
+  const { data: connectionsData } = useConnections();
+  const connectedIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const c of connectionsData?.accepted ?? []) ids.add(c.peer.id);
+    return ids;
+  }, [connectionsData]);
 
   const allPlayers = nearby?.players ?? [];
-
-  const displayedPlayers = useMemo(() => {
-    const base = filter === 'met' ? allPlayers.filter((p) => p.metBefore) : allPlayers;
-    return bleSupported && Object.keys(rssiMap).length > 0
-      ? sortByBleProximity(base, rssiMap)
-      : base;
-  }, [allPlayers, filter, rssiMap, bleSupported]);
+  const displayedPlayers = allPlayers;
 
   const suggestions = suggestionsData?.suggestions ?? [];
 
@@ -1368,63 +1455,63 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
 
       {/* Header */}
       <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Discover</Text>
+        <Text style={styles.title}>Discover</Text>
+        <View style={styles.headerSubrow}>
           {activeStore ? (
-            <Text style={styles.storeName} numberOfLines={1}>{activeStore.name}</Text>
+            <Text style={[styles.storeName, { color: identityTheme.accent }]} numberOfLines={1}>{activeStore.name}</Text>
           ) : (
             <Text style={styles.storeHint}>No store selected</Text>
           )}
-        </View>
-        <View style={styles.headerActions}>
-          {/* Go invisible toggle */}
-          <Pressable
-            style={({ pressed }) => [
-              styles.invisibleBtn,
-              isInvisible && styles.invisibleBtnActive,
-              pressed && { opacity: 0.7 },
-            ]}
-            onPress={handleToggleInvisible}
-            accessibilityLabel={isInvisible ? 'Go visible' : 'Go invisible'}
-          >
-            <Ionicons
-              name={isInvisible ? 'eye-off' : 'eye-outline'}
-              size={15}
-              color={isInvisible ? colors.textInverse : colors.textSecondary}
-            />
-          </Pressable>
-          {activeStore && (
+          <View style={styles.headerActions}>
+            {/* Go invisible toggle */}
             <Pressable
               style={({ pressed }) => [
-                styles.filterToggleBtn,
-                filtersOpen && styles.filterToggleBtnActive,
+                styles.invisibleBtn,
+                isInvisible && styles.invisibleBtnActive,
                 pressed && { opacity: 0.7 },
               ]}
-              onPress={() => setFiltersOpen((o) => !o)}
+              onPress={handleToggleInvisible}
+              accessibilityLabel={isInvisible ? 'Go visible' : 'Go invisible'}
             >
               <Ionicons
-                name="options-outline"
+                name={isInvisible ? 'eye-off' : 'eye-outline'}
                 size={15}
-                color={filtersOpen ? colors.accent : colors.textSecondary}
+                color={isInvisible ? colors.textInverse : colors.textSecondary}
               />
-              <Text style={[styles.filterToggleText, filtersOpen && styles.filterToggleTextActive]}>
-                Filters
-              </Text>
-              {activeFilterCount > 0 && (
-                <View style={styles.filterBadge}>
-                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-                </View>
-              )}
             </Pressable>
-          )}
-          <Pressable
-            style={({ pressed }) => [styles.storeBtn, pressed && { opacity: 0.6 }]}
-            onPress={() => setShowPicker(true)}
-          >
-            <Ionicons name="storefront-outline" size={16} color={colors.accent} />
-            <Text style={styles.storeBtnText}>{activeStore ? 'Change' : 'Select store'}</Text>
-          </Pressable>
-          <BellButton />
+            {activeStore && (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.filterToggleBtn,
+                  filtersOpen && { borderColor: identityTheme.accent, backgroundColor: identityTheme.soft },
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => setFiltersOpen((o) => !o)}
+              >
+                <Ionicons
+                  name="options-outline"
+                  size={15}
+                  color={filtersOpen ? identityTheme.accent : colors.textSecondary}
+                />
+                <Text style={[styles.filterToggleText, filtersOpen && { color: identityTheme.accent }]}>
+                  Filters
+                </Text>
+                {activeFilterCount > 0 && (
+                  <View style={[styles.filterBadge, { backgroundColor: identityTheme.accent }]}>
+                    <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                  </View>
+                )}
+              </Pressable>
+            )}
+            <Pressable
+              style={({ pressed }) => [styles.storeBtn, { borderColor: identityTheme.accent }, pressed && { opacity: 0.6 }]}
+              onPress={() => setShowPicker(true)}
+            >
+              <Ionicons name="storefront-outline" size={16} color={identityTheme.accent} />
+              <Text style={[styles.storeBtnText, { color: identityTheme.accent }]}>{activeStore ? 'Change' : 'Select store'}</Text>
+            </Pressable>
+            <BellButton />
+          </View>
         </View>
       </View>
 
@@ -1464,16 +1551,23 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
             <Ionicons name="map-outline" size={48} color={colors.border} />
             <Text style={styles.emptyTitle}>Select your store to discover nearby players</Text>
             <Pressable
-              style={({ pressed }) => [styles.selectBtn, pressed && { opacity: 0.8 }]}
+              style={({ pressed }) => [styles.selectBtn, { backgroundColor: identityTheme.accent }, pressed && { opacity: 0.8 }]}
               onPress={() => setShowPicker(true)}
             >
-              <Text style={styles.selectBtnText}>Choose a store</Text>
+              <Text style={[styles.selectBtnText, { color: identityTheme.onAccent }]}>Choose a store</Text>
             </Pressable>
           </View>
         )}
 
         {activeStore && (
           <>
+            {/* Identity gradient location banner */}
+            <LocationBanner
+              storeName={activeStore.name}
+              playerCount={displayedPlayers.length}
+              theme={identityTheme}
+            />
+
             {/* LFG status bar */}
             <LFGStatusBar
               session={myLfgSession}
@@ -1501,47 +1595,27 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
                 players={displayedPlayers}
                 onSelectPlayer={handleSelectPlayer}
                 selectedId={selectedPlayerId}
+                theme={identityTheme}
               />
             )}
 
-            {/* Count + BLE */}
+            {/* Count row */}
             <View style={styles.countRow}>
               <Text style={styles.countText}>
-                {displayedPlayers.length === 0
-                  ? hasActiveFilters
-                    ? 'No players match your filters'
-                    : 'No players at this store right now'
-                  : `${displayedPlayers.length} player${displayedPlayers.length !== 1 ? 's' : ''} nearby`}
+                {(() => {
+                  if (displayedPlayers.length === 0) {
+                    return hasActiveFilters ? 'No players match your filters' : 'No players at this store right now';
+                  }
+                  const metCount = displayedPlayers.filter((p) => p.metBefore).length;
+                  const connCount = displayedPlayers.filter((p) => connectedIds.has(p.id)).length;
+                  const parts: string[] = [];
+                  if (metCount > 0) parts.push(`${metCount} met before`);
+                  if (connCount > 0) parts.push(`${connCount} connection${connCount !== 1 ? 's' : ''}`);
+                  const base = `${displayedPlayers.length} player${displayedPlayers.length !== 1 ? 's' : ''} nearby`;
+                  return parts.length > 0 ? `${base} (${parts.join(', ')})` : base;
+                })()}
               </Text>
-              {bleSupported && (
-                <View style={styles.blePip}>
-                  <Ionicons name="bluetooth" size={10} color={colors.success} />
-                  <Text style={styles.bleText}>BLE</Text>
-                </View>
-              )}
             </View>
-
-            {/* Filter toggle (everyone / met) */}
-            {displayedPlayers.length > 0 && (
-              <View style={styles.filterRow}>
-                <Pressable
-                  style={[styles.filterBtn, filter === 'everyone' && styles.filterBtnActive]}
-                  onPress={() => setFilter('everyone')}
-                >
-                  <Text style={[styles.filterText, filter === 'everyone' && styles.filterTextActive]}>
-                    Everyone
-                  </Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.filterBtn, filter === 'met' && styles.filterBtnActive]}
-                  onPress={() => setFilter('met')}
-                >
-                  <Text style={[styles.filterText, filter === 'met' && styles.filterTextActive]}>
-                    Met before
-                  </Text>
-                </Pressable>
-              </View>
-            )}
 
             {/* Player list */}
             {displayedPlayers.length > 0 && (
@@ -1561,12 +1635,6 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
                   />
                 ))}
               </View>
-            )}
-
-            {filter === 'met' && displayedPlayers.length === 0 && (
-              <Text style={styles.filterEmpty}>
-                None of the players here are in your met history yet.
-              </Text>
             )}
 
             {/* Pods forming here */}
@@ -1590,11 +1658,11 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
                 style={({ pressed }) => [styles.nudge, pressed && { opacity: 0.8 }]}
                 onPress={() => navigation.navigate('History')}
               >
-                <Ionicons name="footsteps-outline" size={14} color={colors.accent} />
-                <Text style={styles.nudgeText}>
+                <Ionicons name="footsteps-outline" size={14} color={identityTheme.accent} />
+                <Text style={[styles.nudgeText, { color: identityTheme.accent }]}>
                   {`You've crossed paths with ${crossedPathsCount} player${crossedPathsCount !== 1 ? 's' : ''} you haven't connected with`}
                 </Text>
-                <Ionicons name="chevron-forward" size={14} color={colors.accent} />
+                <Ionicons name="chevron-forward" size={14} color={identityTheme.accent} />
               </Pressable>
             )}
           </>
@@ -1641,14 +1709,18 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.paper },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
-    gap: spacing.md,
+    gap: spacing.xs,
+  },
+  headerSubrow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   title: {
     fontFamily: typography.fontFamily.bold,
@@ -1656,16 +1728,16 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   storeName: {
+    flex: 1,
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.sm,
     color: colors.accent,
-    marginTop: 1,
   },
   storeHint: {
+    flex: 1,
     fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.sm,
     color: colors.textTertiary,
-    marginTop: 1,
   },
   headerActions: {
     flexDirection: 'row',
@@ -1803,44 +1875,6 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     textAlign: 'center',
   },
-  blePip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    backgroundColor: colors.surface,
-    borderRadius: radii.full,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: colors.success,
-  },
-  bleText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: 9,
-    color: colors.success,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    marginHorizontal: spacing.xl,
-    marginVertical: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-  },
-  filterBtn: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    alignItems: 'center',
-  },
-  filterBtnActive: { backgroundColor: colors.accentLight },
-  filterText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-  },
-  filterTextActive: { color: colors.accent },
   list: {
     marginHorizontal: spacing.xl,
     marginTop: spacing.sm,
@@ -1848,14 +1882,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.surface,
     ...shadows.sm,
-  },
-  filterEmpty: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
-    textAlign: 'center',
-    paddingTop: spacing.xl,
-    paddingHorizontal: spacing.xl,
   },
   nudge: {
     flexDirection: 'row',
@@ -1916,7 +1942,7 @@ const row = StyleSheet.create({
   },
   selected: { backgroundColor: colors.accentLight },
   avatar: {
-    width: 40, height: 40, borderRadius: radii.full,
+    width: 40, height: 40, borderRadius: radii.avatar,
     alignItems: 'center', justifyContent: 'center',
   },
   avatarText: {
@@ -2057,7 +2083,7 @@ const sugg = StyleSheet.create({
     ...shadows.sm,
   },
   avatar: {
-    width: 40, height: 40, borderRadius: radii.full,
+    width: 40, height: 40, borderRadius: radii.avatar,
     alignItems: 'center', justifyContent: 'center',
     marginBottom: spacing.xs,
   },
@@ -2335,7 +2361,7 @@ const lfgSection = StyleSheet.create({
   avatar: {
     width: 38,
     height: 38,
-    borderRadius: radii.full,
+    borderRadius: radii.avatar,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2590,7 +2616,7 @@ const podsSection = StyleSheet.create({
   avatar: {
     width: 38,
     height: 38,
-    borderRadius: radii.full,
+    borderRadius: radii.avatar,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2852,7 +2878,7 @@ const pod = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: radii.full,
+    borderRadius: radii.avatar,
     alignItems: 'center',
     justifyContent: 'center',
   },

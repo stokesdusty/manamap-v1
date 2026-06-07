@@ -10,7 +10,7 @@ const PEER_SELECT = {
   avatarColors: true,
   commander: true,
   powerLevel: true,
-  vibe: true,
+  vibes: true,
   formats: true,
 } as const;
 
@@ -89,7 +89,7 @@ export class EncountersService {
             bio: peerBase.bio ?? null,
             commander: peerBase.commander ?? null,
             powerLevel: peerBase.powerLevel ?? null,
-            vibe: peerBase.vibe ?? null,
+            vibes: peerBase.vibes ?? [],
           },
           storeId: e.store?.id ?? null,
           storeName: e.store?.name ?? null,

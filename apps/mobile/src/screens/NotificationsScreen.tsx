@@ -156,7 +156,7 @@ export function NotificationsScreen({ navigation }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.topBar}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />

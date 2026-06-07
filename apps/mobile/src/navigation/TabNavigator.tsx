@@ -11,6 +11,7 @@ import { ScanScreen } from '../screens/ScanScreen';
 import { YouScreen } from '../screens/YouScreen';
 import { useNotificationUnreadCount } from '../hooks/useNotifications';
 import { useAuth } from '../context/AuthContext';
+import { useIdentityTheme } from '../hooks/useIdentityTheme';
 import { colors, radii, shadows, typography } from '../theme';
 import type { TabParamList, RootStackParamList } from './types';
 
@@ -25,28 +26,33 @@ export function BellButton() {
   return (
     <Pressable
       onPress={() => navigation.navigate('Notifications')}
-      style={bellStyles.wrap}
+      style={bellStyles.btn}
       hitSlop={8}
     >
-      <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
-      {badge && (
-        <View style={bellStyles.badge}>
-          <Text style={bellStyles.badgeText}>{count > 99 ? '99+' : count}</Text>
-        </View>
-      )}
+      <View style={bellStyles.iconWrap}>
+        <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
+        {badge && (
+          <View style={bellStyles.badge}>
+            <Text style={bellStyles.badgeText}>{count > 99 ? '99+' : count}</Text>
+          </View>
+        )}
+      </View>
     </Pressable>
   );
 }
 
 const bellStyles = StyleSheet.create({
-  wrap: {
-    marginRight: 4,
+  btn: {
     padding: 4,
+  },
+  iconWrap: {
+    width: 22,
+    height: 22,
   },
   badge: {
     position: 'absolute',
-    top: 0,
-    right: 0,
+    top: -5,
+    right: -7,
     minWidth: 16,
     height: 16,
     borderRadius: radii.full,
@@ -64,9 +70,10 @@ const bellStyles = StyleSheet.create({
 });
 
 function ScanButton({ onPress }: BottomTabBarButtonProps) {
+  const { accent } = useIdentityTheme();
   return (
     <Pressable onPress={onPress ?? undefined} style={styles.scanWrap}>
-      <View style={styles.scanPip}>
+      <View style={[styles.scanPip, { backgroundColor: accent }]}>
         <Ionicons name="scan-outline" size={24} color={colors.textInverse} />
       </View>
     </Pressable>
@@ -74,12 +81,13 @@ function ScanButton({ onPress }: BottomTabBarButtonProps) {
 }
 
 export function TabNavigator() {
+  const { accent } = useIdentityTheme();
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: colors.accent,
+        tabBarActiveTintColor: accent,
         tabBarInactiveTintColor: colors.textTertiary,
         tabBarLabelStyle: {
           fontFamily: typography.fontFamily.medium,
@@ -151,7 +159,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: radii.full,
-    backgroundColor: colors.accent,
+    // backgroundColor set dynamically via useIdentityTheme in ScanButton
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.md,

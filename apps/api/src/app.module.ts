@@ -30,6 +30,7 @@ import { RedemptionsModule } from './redemptions/redemptions.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { QuestsModule } from './quests/quests.module';
 import { RivalriesModule } from './rivalries/rivalries.module';
+import { SocialsModule } from './socials/socials.module';
 
 const devEnabled =
   process.env['NODE_ENV'] !== 'production' && process.env['DEV_TOOLS'] === 'true';
@@ -94,6 +95,7 @@ const conditionalModules: Array<DynamicModule | typeof DevModule> = devEnabled ?
     NotificationsModule,
     QuestsModule,
     RivalriesModule,
+    SocialsModule,
     ThrottleModule,
     ...conditionalModules,
   ],

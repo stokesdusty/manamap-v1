@@ -124,6 +124,24 @@ enum QuestPeriod {
   MONTHLY
 }
 
+enum SocialPlatform {
+  DISCORD
+  INSTAGRAM
+  TWITCH
+  YOUTUBE
+  X
+  TIKTOK
+  FACEBOOK
+  WEBSITE
+  PHONE
+}
+
+enum SocialVisibility {
+  PUBLIC
+  FRIENDS
+  HIDDEN
+}
+
 // ---------------------------------------------------------------------------
 // Models
 // ---------------------------------------------------------------------------
@@ -138,8 +156,10 @@ model User {
   avatarColors String[] @default([]) @map("avatar_colors")
   commander    String?
   powerLevel   Int?     @map("power_level")
-  vibe         String?
+  vibes        String[] @default([])
   formats      String[] @default([])
+  spelltable   Boolean  @default(false)
+  convokeGames Boolean  @default(false) @map("convoke_games")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
   onboardedAt  DateTime? @map("onboarded_at")
@@ -180,6 +200,7 @@ model User {
   staffRedemptions    OfferRedemption[]  @relation("RedemptionStaff")
   notifications       Notification[]
   questProgresses     QuestProgress[]
+  socialLinks         SocialLink[]
 
   @@map("users")
 }
@@ -628,6 +649,23 @@ model Quest {
   progresses  QuestProgress[]
 
   @@map("quests")
+}
+
+model SocialLink {
+  id         String           @id @default(uuid())
+  userId     String           @map("user_id")
+  platform   SocialPlatform
+  value      String
+  visibility SocialVisibility @default(PUBLIC)
+  sort       Int              @default(0)
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@index([userId])
+  @@map("social_links")
 }
 
 model QuestProgress {

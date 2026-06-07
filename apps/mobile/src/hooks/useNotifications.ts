@@ -39,7 +39,7 @@ export function useNotificationUnreadCount(enabled = true) {
       const res = await api.get<{ count: number }>('/v1/notifications/unread-count');
       return res.data.count;
     },
-    refetchInterval: 30_000,
+    refetchInterval: 15_000,
   });
 }
 

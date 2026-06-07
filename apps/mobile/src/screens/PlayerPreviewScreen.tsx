@@ -1,12 +1,16 @@
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'react-native-svg';
 import type { ManaColor, MtgFormat, PlayerVibe, ReportReason } from '@manamap/shared';
+import { Avatar } from '../components/Avatar';
 import { ManaPip } from '../components/ManaPip';
+import { SocialsCard } from '../components/SocialsCard';
 import { useSendConnectionRequest } from '../hooks/useConnections';
 import { useBlockUser, useReportUser } from '../hooks/useSafety';
 import { colors, radii, shadows, spacing, typography } from '../theme';
+import { guildName, identityGradientStops, manaAccent, readableOn } from '../theme/identity';
 import type { RootStackScreenProps } from '../navigation/types';
 
 const REPORT_REASONS: Array<{ value: ReportReason; label: string }> = [
@@ -39,6 +43,85 @@ const FORMAT_LABELS: Record<MtgFormat, string> = {
   commander: 'Commander',
   draft: 'Draft',
 };
+
+// ---------------------------------------------------------------------------
+// ProfileHero
+// ---------------------------------------------------------------------------
+
+const BANNER_H = 160;
+
+function ProfileHero({ profile }: { profile: { displayName: string; pronouns?: string | null; avatarColors: string[]; vibes?: string[]; commander?: string | null; formats: string[]; bio?: string | null } }) {
+  const avatarColors = profile.avatarColors as ManaColor[];
+  const gradient = identityGradientStops(avatarColors);
+  const accent = avatarColors.length > 0 ? manaAccent(avatarColors) : colors.accent;
+  const onAccent = readableOn(accent);
+  const guild = guildName(avatarColors);
+  const [bannerW, setBannerW] = useState(() => Dimensions.get('window').width);
+
+  return (
+    <View style={hero.root}>
+      <View style={hero.banner} onLayout={(e) => setBannerW(e.nativeEvent.layout.width)}>
+        <Svg style={StyleSheet.absoluteFill} width={bannerW} height={BANNER_H}>
+          <Defs>
+            <SvgLinearGradient id="previewHeroGrad" x1="0" y1="0" x2="1" y2="1">
+              {gradient.map((c, i) => (
+                <Stop key={i} offset={`${i / Math.max(1, gradient.length - 1)}`} stopColor={c} />
+              ))}
+            </SvgLinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width={bannerW} height={BANNER_H} fill="url(#previewHeroGrad)" />
+        </Svg>
+        <View style={hero.bannerContent}>
+          <Avatar name={profile.displayName} manaColors={avatarColors} size={64} style={hero.avatar} />
+          <Text style={[hero.displayName, { color: onAccent }]} numberOfLines={1}>
+            {profile.displayName}
+          </Text>
+          {profile.pronouns ? (
+            <Text style={[hero.pronouns, { color: onAccent + 'CC' }]}>{profile.pronouns}</Text>
+          ) : null}
+          {avatarColors.length > 0 && (
+            <View style={hero.guildChip}>
+              {avatarColors.map((c) => <ManaPip key={c} color={c} size={14} />)}
+              <Text style={[hero.guildLabel, { color: onAccent }]}>{guild}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {((profile.vibes?.length ?? 0) > 0 || profile.commander || profile.formats.length > 0 || profile.bio) && (
+        <View style={hero.meta}>
+          {(profile.vibes ?? []).length > 0 && (
+            <View style={hero.vibeRow}>
+              {(profile.vibes as PlayerVibe[]).map((v) => (
+                <View key={v} style={[hero.vibePill, { backgroundColor: accent + '22', borderColor: accent + '44' }]}>
+                  <Text style={[hero.vibeText, { color: accent }]}>{VIBE_LABELS[v]}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {profile.commander ? (
+            <View style={hero.metaRow}>
+              <Ionicons name="shield-outline" size={14} color={colors.textTertiary} />
+              <Text style={hero.metaText} numberOfLines={1}>{profile.commander}</Text>
+            </View>
+          ) : null}
+          {profile.formats.length > 0 && (
+            <View style={hero.chips}>
+              {(profile.formats as MtgFormat[]).map((f) => (
+                <View key={f} style={hero.chip}>
+                  <Text style={hero.chipText}>{FORMAT_LABELS[f]}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          {profile.bio ? (
+            <Text style={hero.bio} numberOfLines={4}>{profile.bio}</Text>
+          ) : null}
+        </View>
+      )}
+    </View>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // PlayerPreviewScreen
@@ -169,86 +252,33 @@ export function PlayerPreviewScreen({
         )}
 
         {/* Profile card */}
-        <View style={card.root}>
-          <View style={card.avatarRow}>
-            <View style={card.avatar}>
-              <Text style={card.avatarText}>
-                {profile.displayName.charAt(0).toUpperCase()}
-              </Text>
+        <ProfileHero profile={profile} />
+
+        {/* Socials — public links + teaser */}
+        {(profile.socials && profile.socials.length > 0) || (profile.socialsSummary?.friendsOnlyCount ?? 0) > 0 ? (
+          <SocialsCard
+            mode="public"
+            links={profile.socials ?? []}
+            publicCount={profile.socialsSummary?.publicCount ?? (profile.socials?.length ?? 0)}
+            friendsOnlyCount={profile.socialsSummary?.friendsOnlyCount ?? 0}
+          />
+        ) : (
+          <View style={lock.root}>
+            <View style={lock.row}>
+              <Ionicons name="lock-closed" size={16} color={colors.textTertiary} />
+              <Text style={lock.title}>Contact info</Text>
             </View>
-            {profile.avatarColors.length > 0 && (
-              <View style={card.pips}>
-                {(profile.avatarColors as ManaColor[]).map((c) => (
-                  <ManaPip key={c} color={c} size={18} />
-                ))}
-              </View>
-            )}
-          </View>
-
-          <View style={card.nameBlock}>
-            <Text style={card.displayName}>{profile.displayName}</Text>
-            {profile.pronouns ? (
-              <Text style={card.pronouns}>{profile.pronouns}</Text>
-            ) : null}
-          </View>
-
-          {profile.vibe ? (
-            <View style={card.vibePill}>
-              <Text style={card.vibeText}>
-                {VIBE_LABELS[profile.vibe as PlayerVibe]}
-              </Text>
+            <Text style={lock.sub}>Connect to unlock socials and contact details</Text>
+            <View style={lock.blurRow}>
+              <Ionicons name="logo-discord" size={16} color={colors.border} />
+              <View style={lock.bar} />
             </View>
-          ) : null}
-
-          {profile.commander ? (
-            <View style={card.commanderRow}>
-              <Ionicons name="shield-outline" size={14} color={colors.textTertiary} />
-              <Text style={card.commanderText} numberOfLines={1}>
-                {profile.commander}
-              </Text>
-              {profile.powerLevel != null && (
-                <View style={card.powerBadge}>
-                  <Text style={card.powerText}>P{profile.powerLevel}</Text>
-                </View>
-              )}
+            <View style={lock.blurRow}>
+              <Ionicons name="globe-outline" size={16} color={colors.border} />
+              <View style={[lock.bar, { width: '50%' }]} />
             </View>
-          ) : null}
-
-          {profile.formats.length > 0 && (
-            <View style={card.chips}>
-              {(profile.formats as MtgFormat[]).map((f) => (
-                <View key={f} style={card.chip}>
-                  <Text style={card.chipText}>{FORMAT_LABELS[f]}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {profile.bio ? (
-            <Text style={card.bio} numberOfLines={6}>
-              {profile.bio}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* Locked contact panel */}
-        <View style={lock.root}>
-          <View style={lock.row}>
-            <Ionicons name="lock-closed" size={16} color={colors.textTertiary} />
-            <Text style={lock.title}>Contact info</Text>
           </View>
-          <Text style={lock.sub}>Connect to unlock Discord and contact details</Text>
-
-          {/* Blurred placeholder bars */}
-          <View style={lock.blurRow}>
-            <Ionicons name="logo-discord" size={16} color={colors.border} />
-            <View style={lock.bar} />
-          </View>
-          <View style={lock.blurRow}>
-            <Ionicons name="mail-outline" size={16} color={colors.border} />
-            <View style={[lock.bar, { width: '50%' }]} />
-          </View>
-        </View>
+        )}
 
         {/* CTA */}
         {sent ? (
@@ -462,55 +492,64 @@ const styles = StyleSheet.create({
   },
 });
 
-const card = StyleSheet.create({
+const hero = StyleSheet.create({
   root: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
-    padding: spacing.xl,
-    gap: spacing.md,
+    overflow: 'hidden',
     ...shadows.md,
   },
-  avatarRow: { alignItems: 'center', gap: spacing.sm },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: radii.full,
-    backgroundColor: colors.accentLight,
+  banner: { height: BANNER_H, overflow: 'hidden' },
+  bannerContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
   },
-  avatarText: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xxxl,
-    color: colors.accent,
-  },
-  pips: { flexDirection: 'row', gap: spacing.xs },
-  nameBlock: { alignItems: 'center', gap: 2 },
+  avatar: { borderRadius: radii.xl, marginBottom: spacing.xs },
   displayName: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.xl,
-    color: colors.textPrimary,
-    textAlign: 'center',
   },
   pronouns: {
     fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
   },
-  vibePill: {
-    alignSelf: 'center',
+  guildChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.28)',
     paddingHorizontal: spacing.md,
-    paddingVertical: 3,
-    backgroundColor: colors.accentLight,
+    paddingVertical: 4,
     borderRadius: radii.full,
+    marginTop: spacing.xs,
   },
-  vibeText: {
+  guildLabel: {
     fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
-    color: colors.accent,
+    fontSize: typography.fontSize.xs,
+    marginLeft: 2,
   },
-  commanderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  commanderText: {
+  meta: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.borderLight,
+  },
+  vibeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  vibePill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+    borderWidth: 1,
+  },
+  vibeText: { fontFamily: typography.fontFamily.medium, fontSize: typography.fontSize.xs },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  metaText: {
     flex: 1,
     fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.sm,

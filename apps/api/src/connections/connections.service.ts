@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SafetyService } from '../safety/safety.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { QuestsService } from '../quests/quests.service';
+import { SocialsService } from '../socials/socials.service';
 
 const PEER_SELECT = {
   id: true,
@@ -20,8 +21,11 @@ const PEER_SELECT = {
   avatarColors: true,
   commander: true,
   powerLevel: true,
-  vibe: true,
+  vibes: true,
   formats: true,
+  spelltable: true,
+  convokeGames: true,
+  homeStore: { select: { name: true } },
 } as const;
 
 @Injectable()
@@ -31,6 +35,7 @@ export class ConnectionsService {
     private readonly safety: SafetyService,
     private readonly notifications: NotificationsService,
     private readonly quests: QuestsService,
+    private readonly socials: SocialsService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -96,7 +101,8 @@ export class ConnectionsService {
 
     for (const c of rows) {
       const isSender = c.requesterId === userId;
-      const peer = isSender ? c.addressee : c.requester;
+      const peerRaw = isSender ? c.addressee : c.requester;
+      const { homeStore, ...peerBase } = peerRaw;
       const item = {
         id: c.id,
         status: c.status.toLowerCase(),
@@ -105,7 +111,7 @@ export class ConnectionsService {
         note: c.note,
         createdAt: c.createdAt.toISOString(),
         updatedAt: c.updatedAt.toISOString(),
-        peer,
+        peer: { ...peerBase, homeStoreName: homeStore?.name ?? null },
       };
 
       if (c.status === ConnectionStatus.ACCEPTED) {
@@ -220,6 +226,10 @@ export class ConnectionsService {
       ? peerRaw.deckLinks.map((d) => ({ ...d, site: d.site.toLowerCase() }))
       : [];
 
+    const socialsData = accepted
+      ? await this.socials.visibleSocials(peerRaw.id, userId)
+      : { socials: [], publicCount: 0, friendsOnlyCount: 0 };
+
     const { identities: _i, deckLinks: _d, privacySettings: _p, ...peerBase } = peerRaw;
 
     return {
@@ -230,7 +240,16 @@ export class ConnectionsService {
       note: conn.note,
       createdAt: conn.createdAt.toISOString(),
       updatedAt: conn.updatedAt.toISOString(),
-      peer: { ...peerBase, discordHandle, deckLinks },
+      peer: {
+        ...peerBase,
+        discordHandle,
+        deckLinks,
+        socials: socialsData.socials,
+        socialsSummary: {
+          publicCount: socialsData.publicCount,
+          friendsOnlyCount: socialsData.friendsOnlyCount,
+        },
+      },
     };
   }
 }

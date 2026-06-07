@@ -65,6 +65,7 @@ export function useUpdatePrivacy() {
           showDiscord: patch.showDiscord ?? old.showDiscord,
           showDecks: patch.showDecks ?? old.showDecks,
           showMetHistory: patch.showMetHistory ?? old.showMetHistory,
+          storeMessages: patch.storeMessages ?? old.storeMessages,
         };
       });
       return { prev };

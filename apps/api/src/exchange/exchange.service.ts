@@ -4,6 +4,7 @@ import type Redis from 'ioredis';
 import { REDIS } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafetyService } from '../safety/safety.service';
+import { SocialsService } from '../socials/socials.service';
 
 const TTL_SECONDS = 60;
 
@@ -13,6 +14,7 @@ export class ExchangeService {
     @Inject(REDIS) private readonly redis: Redis,
     private readonly prisma: PrismaService,
     private readonly safety: SafetyService,
+    private readonly socials: SocialsService,
   ) {}
 
   async mintToken(userId: string): Promise<{ token: string; expiresAt: string }> {
@@ -26,9 +28,10 @@ export class ExchangeService {
     const userId = await this.redis.get(`exchange:${token}`);
     if (!userId) throw new GoneException('Token expired or invalid');
 
-    const [user, blockedIds] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, displayName: true, pronouns: true, bio: true, avatarColors: true, commander: true, powerLevel: true, vibe: true, formats: true, moderationStatus: true } }),
+    const [user, blockedIds, socialsData] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, displayName: true, pronouns: true, bio: true, avatarColors: true, commander: true, powerLevel: true, vibes: true, formats: true, moderationStatus: true } }),
       this.safety.getBlockedIds(callerId),
+      this.socials.visibleSocials(userId, callerId),
     ]);
     if (!user) throw new NotFoundException('User not found');
     if (blockedIds.has(userId)) throw new NotFoundException('User not found');
@@ -42,8 +45,13 @@ export class ExchangeService {
       avatarColors: user.avatarColors,
       commander: user.commander,
       powerLevel: user.powerLevel,
-      vibe: user.vibe,
+      vibes: user.vibes,
       formats: user.formats,
+      socials: socialsData.socials,
+      socialsSummary: {
+        publicCount: socialsData.publicCount,
+        friendsOnlyCount: socialsData.friendsOnlyCount,
+      },
     };
   }
 }

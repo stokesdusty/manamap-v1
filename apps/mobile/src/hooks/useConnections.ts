@@ -16,6 +16,7 @@ export function useConnections() {
   return useQuery<ConnectionsList>({
     queryKey: KEYS.list,
     queryFn: () => api.get<ConnectionsList>('/v1/connections').then((r) => r.data),
+    refetchInterval: 15_000,
   });
 }
 

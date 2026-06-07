@@ -85,7 +85,7 @@ function AttendeeRow({ entry }: { entry: EventAttendeeEntry }) {
   const fill = entry.avatarColors[0]
     ? ({ W: colors.mana.W, U: colors.mana.U, B: colors.mana.B, R: colors.mana.R, G: colors.mana.G }[entry.avatarColors[0]] ?? colors.border)
     : colors.border;
-  const textFill = entry.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(entry.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
   return (
     <View style={attendeeRow.root}>
       <View style={[attendeeRow.avatar, { backgroundColor: fill }]}>
@@ -234,7 +234,7 @@ function HereNowRow({ player }: { player: NearbyPlayer }) {
   const fill = player.avatarColors[0]
     ? ({ W: colors.mana.W, U: colors.mana.U, B: colors.mana.B, R: colors.mana.R, G: colors.mana.G }[player.avatarColors[0]] ?? colors.border)
     : colors.border;
-  const textFill = player.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(player.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
   return (
     <View style={hereRow.root}>
       <View style={[hereRow.avatar, { backgroundColor: fill }]}>
@@ -1643,7 +1643,7 @@ const attendeeRow = StyleSheet.create({
   avatar: {
     width: 24,
     height: 24,
-    borderRadius: radii.full,
+    borderRadius: radii.avatar,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1721,7 +1721,7 @@ const hereRow = StyleSheet.create({
   avatar: {
     width: 32,
     height: 32,
-    borderRadius: radii.full,
+    borderRadius: radii.avatar,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -55,7 +55,7 @@ function PlayerAvatar({ player, size = 36 }: { player: RosterPlayer; size?: numb
 }
 
 const avatar = StyleSheet.create({
-  root: { borderRadius: 999, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  root: { borderRadius: radii.avatar, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   text: { fontFamily: typography.fontFamily.bold },
 });
 

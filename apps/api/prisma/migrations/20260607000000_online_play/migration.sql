@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN "spelltable" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "users" ADD COLUMN "convoke_games" BOOLEAN NOT NULL DEFAULT false;

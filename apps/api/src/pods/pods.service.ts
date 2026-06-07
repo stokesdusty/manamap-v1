@@ -46,7 +46,7 @@ const PROFILE_SELECT = {
   avatarColors: true,
   commander: true,
   powerLevel: true,
-  vibe: true,
+  vibes: true,
   formats: true,
 } as const;
 
@@ -86,7 +86,7 @@ function normalizeProfile(u: {
   avatarColors: string[];
   commander: string | null;
   powerLevel: number | null;
-  vibe: string | null;
+  vibes: string[];
   formats: string[];
 }) {
   return {
@@ -97,7 +97,7 @@ function normalizeProfile(u: {
     avatarColors: u.avatarColors,
     commander: u.commander ?? null,
     powerLevel: u.powerLevel ?? null,
-    vibe: u.vibe ?? null,
+    vibes: u.vibes ?? [],
     formats: u.formats,
   };
 }
@@ -250,7 +250,7 @@ export class PodsService {
       this.prisma.user.findMany({ where: { id: { in: allUserIds } }, select: PROFILE_SELECT }),
       isHost && pod.requestIds.length > 0
         ? this.prisma.user.findMany({ where: { id: { in: pod.requestIds } }, select: PROFILE_SELECT })
-        : Promise.resolve([] as Array<{ id: string; displayName: string; pronouns: string | null; bio: string | null; avatarColors: string[]; commander: string | null; powerLevel: number | null; vibe: string | null; formats: string[] }>),
+        : Promise.resolve([] as Array<{ id: string; displayName: string; pronouns: string | null; bio: string | null; avatarColors: string[]; commander: string | null; powerLevel: number | null; vibes: string[]; formats: string[] }>),
     ]);
 
     const userMap = new Map(allUsers.map((u) => [u.id, u]));

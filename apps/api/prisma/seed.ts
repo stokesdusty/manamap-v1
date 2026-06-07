@@ -32,7 +32,7 @@ const BOTS = [
     avatarColors: ['W', 'U'],
     formats: ['commander'],
     powerLevel: 7,
-    vibe: 'casual',
+    vibes: ['casual'],
     bio: 'Bot pilot. Commander only.',
   },
   {
@@ -42,7 +42,7 @@ const BOTS = [
     avatarColors: ['R'],
     formats: ['modern'],
     powerLevel: 8,
-    vibe: 'spike',
+    vibes: ['spike'],
     bio: 'Fast mana. Faster wins.',
   },
   {
@@ -52,7 +52,7 @@ const BOTS = [
     avatarColors: ['U', 'B'],
     formats: ['pioneer'],
     powerLevel: 6,
-    vibe: 'johnny',
+    vibes: ['johnny'],
     bio: 'Combo or bust.',
   },
   {
@@ -62,7 +62,7 @@ const BOTS = [
     avatarColors: ['G', 'W'],
     formats: ['standard'],
     powerLevel: 5,
-    vibe: 'casual',
+    vibes: ['casual'],
     bio: 'Stompy beatdown.',
   },
   {
@@ -72,7 +72,7 @@ const BOTS = [
     avatarColors: ['B'],
     formats: ['legacy'],
     powerLevel: 9,
-    vibe: 'competitive',
+    vibes: ['competitive'],
     bio: 'Storm clouds incoming.',
   },
   {
@@ -82,7 +82,7 @@ const BOTS = [
     avatarColors: ['U'],
     formats: ['commander', 'modern'],
     powerLevel: 7,
-    vibe: 'vorthos',
+    vibes: ['vorthos'],
     bio: 'Thematic builds only.',
   },
   {
@@ -92,7 +92,7 @@ const BOTS = [
     avatarColors: ['R', 'G'],
     formats: ['draft'],
     powerLevel: 4,
-    vibe: 'timmy',
+    vibes: ['timmy'],
     bio: 'Big monsters, big fun.',
   },
   {
@@ -102,7 +102,7 @@ const BOTS = [
     avatarColors: ['U', 'R'],
     formats: ['commander', 'pioneer'],
     powerLevel: 6,
-    vibe: 'johnny',
+    vibes: ['johnny'],
     bio: 'Jank that somehow works.',
   },
 ];
@@ -275,7 +275,7 @@ async function main(): Promise<void> {
   for (const b of BOTS) {
     await prisma.user.upsert({
       where: { email: b.email },
-      update: { isBot: true, formats: b.formats, powerLevel: b.powerLevel, vibe: b.vibe, bio: b.bio, avatarColors: b.avatarColors },
+      update: { isBot: true, formats: b.formats, powerLevel: b.powerLevel, vibes: b.vibes, bio: b.bio, avatarColors: b.avatarColors },
       create: {
         id: b.id,
         displayName: b.displayName,
@@ -283,7 +283,7 @@ async function main(): Promise<void> {
         avatarColors: b.avatarColors,
         formats: b.formats,
         powerLevel: b.powerLevel,
-        vibe: b.vibe,
+        vibes: b.vibes,
         bio: b.bio,
         isBot: true,
         onboardedAt: new Date(),

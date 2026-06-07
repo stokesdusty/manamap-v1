@@ -4,6 +4,7 @@ import { ConnectionStatus, EncounterResult, EncounterSource, ModerationStatus } 
 import { REDIS } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafetyService } from '../safety/safety.service';
+import { SocialsService } from '../socials/socials.service';
 import { SUGGESTION_WEIGHTS, VIBE_COMPAT } from './suggestion-weights';
 
 const presenceKey = (userId: string) => `presence:${userId}`;
@@ -17,7 +18,7 @@ const PROFILE_SELECT = {
   avatarColors: true,
   commander: true,
   powerLevel: true,
-  vibe: true,
+  vibes: true,
   formats: true,
 } as const;
 
@@ -51,6 +52,7 @@ export class DiscoveryService {
     @Inject(REDIS) private readonly redis: Redis,
     private readonly prisma: PrismaService,
     private readonly safety: SafetyService,
+    private readonly socialsService: SocialsService,
   ) {}
 
   private async _getPresence(callerId: string) {
@@ -168,19 +170,26 @@ export class DiscoveryService {
       return null;
     }
 
-    let players = users
-      .filter((u) => u.privacySettings?.discoverable !== false)
-      .map(({ privacySettings: _ps, ...u }) => ({
-        ...u,
-        pronouns: u.pronouns ?? null,
-        bio: u.bio ?? null,
-        commander: u.commander ?? null,
-        powerLevel: u.powerLevel ?? null,
-        vibe: u.vibe ?? null,
-        metBefore: metBeforeSet.has(u.id),
-        lastMetStoreName: lastMetStoreByPeer.get(u.id) ?? null,
-        sharedEvent: sharedEventFor(u.id),
-      }));
+    const discoverableUsers = users.filter((u) => u.privacySettings?.discoverable !== false);
+    const socialsBatch = await this.socialsService.publicSocialsBatch(discoverableUsers.map((u) => u.id));
+
+    let players = discoverableUsers
+      .map(({ privacySettings: _ps, ...u }) => {
+        const sd = socialsBatch.get(u.id) ?? { socials: [], friendsOnlyCount: 0 };
+        return {
+          ...u,
+          pronouns: u.pronouns ?? null,
+          bio: u.bio ?? null,
+          commander: u.commander ?? null,
+          powerLevel: u.powerLevel ?? null,
+          vibes: u.vibes ?? [],
+          metBefore: metBeforeSet.has(u.id),
+          lastMetStoreName: lastMetStoreByPeer.get(u.id) ?? null,
+          sharedEvent: sharedEventFor(u.id),
+          socials: sd.socials,
+          socialsSummary: { publicCount: sd.socials.length, friendsOnlyCount: sd.friendsOnlyCount },
+        };
+      });
 
     // Write PRESENCE encounters only when caller is discoverable (invisible = no co-presence record)
     const callerDiscoverable = callerPrivacy?.discoverable !== false;
@@ -237,7 +246,7 @@ export class DiscoveryService {
       players = players.filter((p) => p.powerLevel != null && p.powerLevel <= filters.powerMax!);
     }
     if (filters?.vibe) {
-      players = players.filter((p) => p.vibe === filters.vibe);
+      players = players.filter((p) => p.vibes.includes(filters.vibe!));
     }
 
     return { storeId, storeName, players };
@@ -314,8 +323,10 @@ export class DiscoveryService {
       }
     }
 
-    const scored = peers
-      .filter((p) => p.privacySettings?.discoverable !== false && !connectedIds.has(p.id))
+    const eligiblePeers = peers.filter((p) => p.privacySettings?.discoverable !== false && !connectedIds.has(p.id));
+    const suggSocialsBatch = await this.socialsService.publicSocialsBatch(eligiblePeers.map((p) => p.id));
+
+    const scored = eligiblePeers
       .map(({ privacySettings: _ps, ...peer }) => {
         let score = 0;
         const reasons: Array<{ type: string; label: string }> = [];
@@ -366,17 +377,25 @@ export class DiscoveryService {
         }
 
         // Vibe compatibility
-        const callerVibe = callerUser.vibe as string | null;
-        const peerVibe = peer.vibe as string | null;
-        if (callerVibe && peerVibe) {
-          const compat = VIBE_COMPAT[callerVibe]?.[peerVibe] ?? 0;
-          if (compat === 1) {
+        const callerVibes = callerUser.vibes as string[];
+        const peerVibes = peer.vibes as string[];
+        if (callerVibes.length > 0 && peerVibes.length > 0) {
+          let bestCompat = 0;
+          let bestPeerVibe = '';
+          for (const cv of callerVibes) {
+            for (const pv of peerVibes) {
+              const compat = VIBE_COMPAT[cv]?.[pv] ?? 0;
+              if (compat > bestCompat) { bestCompat = compat; bestPeerVibe = pv; }
+              if (compat < 0 && bestCompat === 0) bestCompat = compat;
+            }
+          }
+          if (bestCompat === 1) {
             score += SUGGESTION_WEIGHTS.vibeCompatible;
             reasons.push({
               type: 'compatible_vibe',
-              label: `Compatible vibe (${VIBE_LABELS[peerVibe] ?? peerVibe})`,
+              label: `Compatible vibe (${VIBE_LABELS[bestPeerVibe] ?? bestPeerVibe})`,
             });
-          } else if (compat === -1) {
+          } else if (bestCompat === -1) {
             score += SUGGESTION_WEIGHTS.vibeIncompatible;
           }
         }
@@ -385,16 +404,19 @@ export class DiscoveryService {
           reasons.push({ type: 'new_connection', label: 'New player to meet' });
         }
 
+        const sd = suggSocialsBatch.get(peer.id) ?? { socials: [], friendsOnlyCount: 0 };
         return {
           ...peer,
           pronouns: peer.pronouns ?? null,
           bio: peer.bio ?? null,
           commander: peer.commander ?? null,
           powerLevel: peer.powerLevel ?? null,
-          vibe: peer.vibe ?? null,
+          vibes: peer.vibes ?? [],
           metBefore: metBeforeSet.has(peer.id),
           lastMetStoreName: lastMetStoreByPeer.get(peer.id) ?? null,
           sharedEvent: null,
+          socials: sd.socials,
+          socialsSummary: { publicCount: sd.socials.length, friendsOnlyCount: sd.friendsOnlyCount },
           score,
           reasons,
         };

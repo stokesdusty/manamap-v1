@@ -87,7 +87,13 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(xargs grep -l \"ExceptionFilter\\\\|GlobalPrefix\\\\|UseFilters\\\\|UseInterceptors\")",
       "Bash(node -e \"const p = require\\('./package.json'\\); const keys = ['nestjs-pino','pino-http','@sentry/node','pino-pretty']; keys.forEach\\(k => { const v = p.dependencies?.[k] || p.devDependencies?.[k]; if\\(v\\) console.log\\(k, v\\); }\\)\")",
-      "Bash(mkdir -p c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\src\\\\common\\\\filters)"
+      "Bash(mkdir -p c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\src\\\\common\\\\filters)",
+      "Bash(Get-ChildItem \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\\" | Select-Object -Last 5 | Select-Object Name)",
+      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260604100000_social_links\")",
+      "Bash(mkdir -p \"c:/dev/manamap/apps/api/src/socials\")",
+      "Bash(npx --prefix apps/api tsc --noEmit)",
+      "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260606120000_vibes\")",
+      "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260607000000_online_play\")"
     ]
   }
 }

@@ -50,6 +50,49 @@ export const DECK_SITE_HOSTS: Record<DeckSite, string> = {
   archidekt: 'archidekt.com',
 };
 
+// --- Social links ---
+
+export const SocialPlatformSchema = z.enum([
+  'DISCORD', 'INSTAGRAM', 'TWITCH', 'YOUTUBE', 'X', 'TIKTOK', 'FACEBOOK', 'WEBSITE', 'PHONE',
+]);
+export type SocialPlatform = z.infer<typeof SocialPlatformSchema>;
+
+export const SocialVisibilitySchema = z.enum(['PUBLIC', 'FRIENDS', 'HIDDEN']);
+export type SocialVisibility = z.infer<typeof SocialVisibilitySchema>;
+
+export const SocialLinkSchema = z.object({
+  id: IdSchema,
+  platform: SocialPlatformSchema,
+  value: z.string(),
+  visibility: SocialVisibilitySchema,
+  sort: z.number().int(),
+});
+export type SocialLink = z.infer<typeof SocialLinkSchema>;
+
+export const SocialLinkInputSchema = z.object({
+  platform: SocialPlatformSchema,
+  value: z.string().min(1).max(256),
+  visibility: SocialVisibilitySchema.optional(),
+});
+export type SocialLinkInput = z.infer<typeof SocialLinkInputSchema>;
+
+export const UpdateSocialLinkSchema = z.object({
+  value: z.string().min(1).max(256).optional(),
+  visibility: SocialVisibilitySchema.optional(),
+});
+export type UpdateSocialLink = z.infer<typeof UpdateSocialLinkSchema>;
+
+export const ReorderSocialLinksSchema = z.object({
+  order: z.array(IdSchema).min(1),
+});
+export type ReorderSocialLinks = z.infer<typeof ReorderSocialLinksSchema>;
+
+export const SocialsSummarySchema = z.object({
+  publicCount: z.number().int().nonnegative(),
+  friendsOnlyCount: z.number().int().nonnegative(),
+});
+export type SocialsSummary = z.infer<typeof SocialsSummarySchema>;
+
 // --- User ---
 
 export const UserSchema = z.object({
@@ -70,8 +113,13 @@ export const PublicProfileSchema = z.object({
   avatarColors: z.array(ManaColorSchema),
   commander: z.string().max(128).nullable(),
   powerLevel: z.number().int().min(1).max(10).nullable(),
-  vibe: PlayerVibeSchema.nullable(),
+  vibes: z.array(PlayerVibeSchema).optional(),
   formats: z.array(MtgFormatSchema),
+  homeStoreName: z.string().nullable().optional(),
+  socials: z.array(SocialLinkSchema).optional(),
+  socialsSummary: SocialsSummarySchema.optional(),
+  spelltable: z.boolean().optional(),
+  convokeGames: z.boolean().optional(),
 });
 export type PublicProfile = z.infer<typeof PublicProfileSchema>;
 
@@ -99,8 +147,10 @@ export const ProfileSchema = z.object({
   avatarColors: z.array(ManaColorSchema),
   commander: z.string().max(128).nullable(),
   powerLevel: z.number().int().min(1).max(10).nullable(),
-  vibe: PlayerVibeSchema.nullable(),
+  vibes: z.array(PlayerVibeSchema).optional(),
   formats: z.array(MtgFormatSchema),
+  spelltable: z.boolean().optional(),
+  convokeGames: z.boolean().optional(),
   createdAt: TimestampSchema,
   onboardedAt: z.string().datetime().nullable(),
 });
@@ -113,8 +163,10 @@ export const UpdateProfileSchema = z.object({
   avatarColors: z.array(ManaColorSchema).max(5).optional(),
   commander: z.string().max(128).nullable().optional(),
   powerLevel: z.number().int().min(1).max(10).nullable().optional(),
-  vibe: PlayerVibeSchema.nullable().optional(),
+  vibes: z.array(PlayerVibeSchema).optional(),
   formats: z.array(MtgFormatSchema).optional(),
+  spelltable: z.boolean().optional(),
+  convokeGames: z.boolean().optional(),
 });
 export type UpdateProfile = z.infer<typeof UpdateProfileSchema>;
 
@@ -813,7 +865,7 @@ export const OnboardingSubmitSchema = z.object({
   formats: z.array(MtgFormatSchema).min(1),
   commander: z.string().max(128).nullable().optional(),
   powerLevel: z.number().int().min(1).max(10).nullable().optional(),
-  vibe: PlayerVibeSchema.nullable().optional(),
+  vibes: z.array(PlayerVibeSchema).optional(),
   bio: z.string().max(500).nullable().optional(),
   discoverable: z.boolean().optional(),
   decks: z.array(OnboardingDeckSchema).max(10).optional(),
@@ -913,9 +965,9 @@ export type Game = z.infer<typeof GameSchema>;
 export const CreateGameSchema = z.object({
   storeId: IdSchema.optional(),
   format: MtgFormatSchema.optional(),
-  winnerId: IdSchema,
+  winnerId: z.string().min(1).max(100),
   players: z
-    .array(z.object({ userId: IdSchema, deck: z.string().max(128).optional() }))
+    .array(z.object({ userId: z.string().min(1).max(100), deck: z.string().max(128).optional() }))
     .min(2)
     .max(4),
   note: z.string().max(500).optional(),

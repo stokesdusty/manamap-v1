@@ -31,8 +31,10 @@ export class MeService {
         ...(dto.avatarColors !== undefined ? { avatarColors: dto.avatarColors } : {}),
         ...(dto.commander !== undefined ? { commander: dto.commander } : {}),
         ...(dto.powerLevel !== undefined ? { powerLevel: dto.powerLevel } : {}),
-        ...(dto.vibe !== undefined ? { vibe: dto.vibe } : {}),
+        ...(dto.vibes !== undefined ? { vibes: dto.vibes } : {}),
         ...(dto.formats !== undefined ? { formats: dto.formats } : {}),
+        ...(dto.spelltable !== undefined ? { spelltable: dto.spelltable } : {}),
+        ...(dto.convokeGames !== undefined ? { convokeGames: dto.convokeGames } : {}),
       },
     });
   }
@@ -279,7 +281,7 @@ export class MeService {
           formats: dto.formats,
           commander: dto.commander ?? null,
           powerLevel: dto.powerLevel ?? null,
-          vibe: dto.vibe ?? null,
+          vibes: dto.vibes ?? [],
           bio: dto.bio ?? null,
           ...(dto.homeStoreId !== undefined ? { homeStoreId: dto.homeStoreId } : {}),
           onboardedAt: new Date(),

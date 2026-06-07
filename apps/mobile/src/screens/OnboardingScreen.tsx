@@ -98,8 +98,7 @@ type Draft = {
   avatarColors: ManaColor[];
   formats: MtgFormat[];
   commander: string;
-  powerLevel: number | null;
-  vibe: PlayerVibe | null;
+  vibes: PlayerVibe[];
   bio: string;
   discoverable: boolean;
   decks: DeckDraft[];
@@ -111,6 +110,7 @@ type DraftAction =
   | { type: 'SET'; key: keyof Draft; value: Draft[keyof Draft] }
   | { type: 'TOGGLE_COLOR'; color: ManaColor }
   | { type: 'TOGGLE_FORMAT'; format: MtgFormat }
+  | { type: 'TOGGLE_VIBE'; vibe: PlayerVibe }
   | { type: 'ADD_DECK'; deck: DeckDraft }
   | { type: 'REMOVE_DECK'; index: number };
 
@@ -134,6 +134,13 @@ function draftReducer(state: Draft, action: DraftAction): Draft {
         formats: has ? state.formats.filter((f) => f !== action.format) : [...state.formats, action.format],
       };
     }
+    case 'TOGGLE_VIBE': {
+      const has = state.vibes.includes(action.vibe);
+      return {
+        ...state,
+        vibes: has ? state.vibes.filter((v) => v !== action.vibe) : [...state.vibes, action.vibe],
+      };
+    }
     case 'ADD_DECK':
       return { ...state, decks: [...state.decks, action.deck] };
     case 'REMOVE_DECK':
@@ -149,8 +156,7 @@ const INITIAL_DRAFT: Draft = {
   avatarColors: [],
   formats: [],
   commander: '',
-  powerLevel: null,
-  vibe: null,
+  vibes: [],
   bio: '',
   discoverable: true,
   decks: [],
@@ -184,11 +190,15 @@ function PreviewCard({ draft }: { draft: Draft }) {
             )}
           </View>
         </View>
-        {draft.vibe ? (
-          <View style={preview.vibePill}>
-            <Text style={preview.vibeText}>{VIBE_LABELS[draft.vibe]}</Text>
+        {draft.vibes.length > 0 && (
+          <View style={preview.vibeRow}>
+            {draft.vibes.map((v) => (
+              <View key={v} style={preview.vibePill}>
+                <Text style={preview.vibeText}>{VIBE_LABELS[v]}</Text>
+              </View>
+            ))}
           </View>
-        ) : null}
+        )}
       </View>
 
       {draft.formats.length > 0 && (
@@ -210,11 +220,6 @@ function PreviewCard({ draft }: { draft: Draft }) {
         <View style={preview.commanderRow}>
           <Ionicons name="shield-outline" size={12} color={colors.textTertiary} />
           <Text style={preview.commanderText} numberOfLines={1}>{draft.commander.trim()}</Text>
-          {draft.powerLevel != null && (
-            <View style={preview.powerBadge}>
-              <Text style={preview.powerText}>P{draft.powerLevel}</Text>
-            </View>
-          )}
         </View>
       ) : null}
     </View>
@@ -249,6 +254,7 @@ const preview = StyleSheet.create({
     color: colors.textTertiary,
     marginLeft: 2,
   },
+  vibeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   vibePill: {
     alignSelf: 'flex-start',
     paddingHorizontal: spacing.sm,
@@ -400,14 +406,14 @@ function Step3({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
         </View>
 
         <View style={step.field}>
-          <Text style={step.label}>Vibe <Text style={step.optional}>(optional)</Text></Text>
+          <Text style={step.label}>Vibe <Text style={step.optional}>(optional, select all that apply)</Text></Text>
           <View style={step.chips}>
             {ALL_VIBES.map((v) => {
-              const active = draft.vibe === v;
+              const active = draft.vibes.includes(v);
               return (
                 <Pressable
                   key={v}
-                  onPress={() => dispatch({ type: 'SET', key: 'vibe', value: active ? null : v })}
+                  onPress={() => dispatch({ type: 'TOGGLE_VIBE', vibe: v })}
                   style={[step.chip, active && step.chipActive]}
                 >
                   <Text style={[step.chipText, active && step.chipTextActive]}>
@@ -420,7 +426,7 @@ function Step3({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
         </View>
 
         <View style={step.field}>
-          <Text style={step.label}>Commander <Text style={step.optional}>(optional)</Text></Text>
+          <Text style={step.label}>Favorite Commander <Text style={step.optional}>(optional)</Text></Text>
           <TextInput
             style={step.input}
             value={draft.commander}
@@ -431,38 +437,6 @@ function Step3({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
           />
         </View>
 
-        <View style={step.field}>
-          <Text style={step.label}>Power level <Text style={step.optional}>(1–10, optional)</Text></Text>
-          <View style={step.stepperRow}>
-            <Pressable
-              style={[step.stepperBtn, (draft.powerLevel ?? 0) <= 1 && step.stepperBtnDisabled]}
-              onPress={() => draft.powerLevel != null && draft.powerLevel > 1 &&
-                dispatch({ type: 'SET', key: 'powerLevel', value: draft.powerLevel - 1 })}
-            >
-              <Ionicons name="remove" size={20} color={draft.powerLevel != null && draft.powerLevel > 1 ? colors.accent : colors.textTertiary} />
-            </Pressable>
-            <Text style={step.stepperValue}>
-              {draft.powerLevel != null ? draft.powerLevel : '—'}
-            </Text>
-            <Pressable
-              style={[step.stepperBtn, (draft.powerLevel ?? 11) >= 10 && step.stepperBtnDisabled]}
-              onPress={() => {
-                const cur = draft.powerLevel ?? 0;
-                if (cur < 10) dispatch({ type: 'SET', key: 'powerLevel', value: cur + 1 });
-              }}
-            >
-              <Ionicons name="add" size={20} color={(draft.powerLevel ?? 0) < 10 ? colors.accent : colors.textTertiary} />
-            </Pressable>
-            {draft.powerLevel != null && (
-              <Pressable
-                onPress={() => dispatch({ type: 'SET', key: 'powerLevel', value: null })}
-                style={step.clearPower}
-              >
-                <Text style={step.clearPowerText}>Clear</Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -718,8 +692,7 @@ export function OnboardingScreen() {
           avatarColors: draft.avatarColors,
           formats: draft.formats,
           commander: draft.commander.trim() || null,
-          powerLevel: draft.powerLevel,
-          vibe: draft.vibe,
+          vibes: draft.vibes,
           bio: draft.bio.trim() || null,
           discoverable: draft.discoverable,
           decks: draft.decks.length > 0 ? draft.decks : undefined,

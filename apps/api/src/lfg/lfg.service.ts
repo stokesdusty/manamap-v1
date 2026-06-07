@@ -36,7 +36,7 @@ const PROFILE_SELECT = {
   avatarColors: true,
   commander: true,
   powerLevel: true,
-  vibe: true,
+  vibes: true,
   formats: true,
 } as const;
 
@@ -196,7 +196,7 @@ export class LfgService {
         bio: profile.bio ?? null,
         commander: profile.commander ?? null,
         powerLevel: profile.powerLevel ?? null,
-        vibe: profile.vibe ?? null,
+        vibes: profile.vibes ?? [],
         session,
         minutesLeft,
         metBefore: metBeforeSet.has(user.id),

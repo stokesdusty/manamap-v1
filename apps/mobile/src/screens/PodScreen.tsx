@@ -132,7 +132,7 @@ function SeatRow({ members, seats }: SeatRowProps) {
       <View style={seatRow.seats}>
         {members.map((m) => {
           const fill = avatarFill(m.avatarColors);
-          const textFill = m.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+          const textFill = ['W', 'G'].includes(m.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
           return (
             <View key={m.id} style={[seatRow.avatar, { backgroundColor: fill }]}>
               <Text style={[seatRow.avatarText, { color: textFill }]}>{avatarInitial(m.displayName)}</Text>
@@ -159,7 +159,7 @@ interface CandidateRowProps {
 
 function CandidateRow({ candidate }: CandidateRowProps) {
   const fill = avatarFill(candidate.avatarColors);
-  const textFill = candidate.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(candidate.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
   return (
     <View style={cand.row}>
       <View style={[cand.avatar, { backgroundColor: fill }]}>
@@ -167,9 +167,9 @@ function CandidateRow({ candidate }: CandidateRowProps) {
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={cand.name} numberOfLines={1}>{candidate.displayName}</Text>
-        {candidate.powerLevel != null && (
+        {candidate.formats.length > 0 && (
           <Text style={cand.sub} numberOfLines={1}>
-            P{candidate.powerLevel}{candidate.formats.length > 0 ? ` · ${candidate.formats.slice(0, 2).map((f) => FORMAT_LABELS[f as MtgFormat] ?? f).join(', ')}` : ''}
+            {candidate.formats.slice(0, 2).map((f) => FORMAT_LABELS[f as MtgFormat] ?? f).join(', ')}
           </Text>
         )}
       </View>
@@ -196,7 +196,7 @@ interface RequestRowProps {
 
 function RequestRow({ requester, onApprove, onDecline, isApproving, isDeclining }: RequestRowProps) {
   const fill = avatarFill(requester.avatarColors);
-  const textFill = requester.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(requester.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
   return (
     <View style={req.row}>
       <View style={[req.avatar, { backgroundColor: fill }]}>
@@ -204,9 +204,6 @@ function RequestRow({ requester, onApprove, onDecline, isApproving, isDeclining 
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={req.name} numberOfLines={1}>{requester.displayName}</Text>
-        {requester.powerLevel != null && (
-          <Text style={req.sub} numberOfLines={1}>P{requester.powerLevel}</Text>
-        )}
       </View>
       <View style={req.actions}>
         <Pressable
@@ -429,7 +426,7 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
         <View style={s.hostRow}>
           {(() => {
             const fill = avatarFill(pod.host.avatarColors);
-            const textFill = pod.host.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+            const textFill = ['W', 'G'].includes(pod.host.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
             return (
               <>
                 <View style={[s.hostAvatar, { backgroundColor: fill }]}>
@@ -437,9 +434,6 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.hostName}>{pod.host.displayName}'s pod</Text>
-                  {pod.host.powerLevel != null && (
-                    <Text style={s.hostSub}>P{pod.host.powerLevel}</Text>
-                  )}
                 </View>
               </>
             );
@@ -745,7 +739,7 @@ const seatRow = StyleSheet.create({
   },
   seats: { flexDirection: 'row', gap: spacing.sm },
   avatar: {
-    width: 40, height: 40, borderRadius: radii.full,
+    width: 40, height: 40, borderRadius: radii.avatar,
     alignItems: 'center', justifyContent: 'center',
   },
   avatarText: {
@@ -753,7 +747,7 @@ const seatRow = StyleSheet.create({
     fontSize: typography.fontSize.lg,
   },
   emptyAvatar: {
-    width: 40, height: 40, borderRadius: radii.full,
+    width: 40, height: 40, borderRadius: radii.avatar,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1.5, borderColor: colors.border,
     borderStyle: 'dashed',
@@ -772,7 +766,7 @@ const cand = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   avatar: {
-    width: 38, height: 38, borderRadius: radii.full,
+    width: 38, height: 38, borderRadius: radii.avatar,
     alignItems: 'center', justifyContent: 'center',
   },
   avatarText: {
@@ -811,7 +805,7 @@ const req = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   avatar: {
-    width: 38, height: 38, borderRadius: radii.full,
+    width: 38, height: 38, borderRadius: radii.avatar,
     alignItems: 'center', justifyContent: 'center',
   },
   avatarText: {

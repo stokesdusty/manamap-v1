@@ -9,6 +9,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import type { ConnectionItem, Game, ManaColor } from '@manamap/shared';
 import { BellButton } from '../navigation/TabNavigator';
 import { ManaPip } from '../components/ManaPip';
@@ -68,12 +71,38 @@ function ConnectionCard({
         </View>
       )}
 
+      {item.status === 'accepted' && onPress && (
+        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+      )}
+
       <View style={row.info}>
         <Text style={row.name} numberOfLines={1}>{item.peer.displayName}</Text>
         {item.peer.commander ? (
           <Text style={row.sub} numberOfLines={1}>{item.peer.commander}</Text>
-        ) : item.peer.vibe ? (
-          <Text style={row.sub}>{item.peer.vibe}</Text>
+        ) : (item.peer.vibes ?? []).length > 0 ? (
+          <Text style={row.sub}>{(item.peer.vibes as string[]).join(' · ')}</Text>
+        ) : null}
+        {item.status === 'accepted' && item.peer.homeStoreName ? (
+          <View style={row.storeRow}>
+            <Ionicons name="storefront-outline" size={11} color={colors.textTertiary} />
+            <Text style={row.storeText} numberOfLines={1}>{item.peer.homeStoreName}</Text>
+          </View>
+        ) : null}
+        {item.status === 'accepted' && (item.peer.spelltable || item.peer.convokeGames) ? (
+          <View style={row.onlineRow}>
+            {item.peer.spelltable ? (
+              <View style={row.onlineBadge}>
+                <Ionicons name="videocam-outline" size={10} color={colors.accent} />
+                <Text style={row.onlineText}>SpellTable</Text>
+              </View>
+            ) : null}
+            {item.peer.convokeGames ? (
+              <View style={row.onlineBadge}>
+                <Ionicons name="globe-outline" size={10} color={colors.accent} />
+                <Text style={row.onlineText}>Convoke</Text>
+              </View>
+            ) : null}
+          </View>
         ) : null}
         {item.note ? <Text style={row.note} numberOfLines={1}>{item.note}</Text> : null}
       </View>
@@ -100,10 +129,6 @@ function ConnectionCard({
             )}
           </Pressable>
         </View>
-      )}
-
-      {item.status === 'accepted' && onPress && (
-        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
       )}
 
       {item.status === 'pending' && item.direction === 'sent' && (
@@ -257,15 +282,23 @@ const cr = StyleSheet.create({
 // ---------------------------------------------------------------------------
 
 export function ConnectScreen({ navigation }: ConnectScreenProps) {
+  const qc = useQueryClient();
   const { data, isLoading } = useConnections();
   const { mutate: accept, isPending: accepting, variables: acceptingId } = useAcceptConnection();
   const { mutate: decline } = useDeclineConnection();
   const { data: profile } = useProfile();
 
+  useFocusEffect(
+    useCallback(() => {
+      void qc.invalidateQueries({ queryKey: ['connections'] });
+      void qc.invalidateQueries({ queryKey: ['games', 'pending'] });
+    }, [qc]),
+  );
+
   function handleAccept(connectionId: string) {
     accept(connectionId, {
       onSuccess: (result) => {
-        navigation.navigate('Connected', { connectionId: result.id });
+        navigation.navigate('Connected', { connectionId: result.id, isNew: true });
       },
       onError: () => {
         Alert.alert('Error', 'Could not accept request. Please try again.');
@@ -360,6 +393,9 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.paper },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
@@ -417,7 +453,7 @@ const row = StyleSheet.create({
   avatar: {
     width: 44,
     height: 44,
-    borderRadius: radii.full,
+    borderRadius: radii.avatar,
     backgroundColor: colors.accentLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -446,6 +482,37 @@ const row = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  storeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 2,
+  },
+  storeText: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    flexShrink: 1,
+  },
+  onlineRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginTop: 3,
+  },
+  onlineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    backgroundColor: colors.accentLight,
+    borderRadius: radii.full,
+  },
+  onlineText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.accent,
   },
   note: {
     fontFamily: typography.fontFamily.regular,

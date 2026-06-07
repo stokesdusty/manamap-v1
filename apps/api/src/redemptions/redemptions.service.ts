@@ -133,7 +133,7 @@ export class RedemptionsService {
             avatarColors: true,
             commander: true,
             powerLevel: true,
-            vibe: true,
+            vibes: true,
             formats: true,
           },
         },

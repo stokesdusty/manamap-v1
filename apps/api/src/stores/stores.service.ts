@@ -52,7 +52,7 @@ export class StoresService {
     avatarColors: true,
     commander: true,
     powerLevel: true,
-    vibe: true,
+    vibes: true,
     formats: true,
   } as const;
 
@@ -518,7 +518,7 @@ export class StoresService {
       avatarColors: u.avatarColors,
       commander: u.commander ?? null,
       powerLevel: u.powerLevel ?? null,
-      vibe: u.vibe ?? null,
+      vibes: u.vibes ?? [],
       formats: u.formats,
       isHereNow: hereNowIds.has(u.id),
     });

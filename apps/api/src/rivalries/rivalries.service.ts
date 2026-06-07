@@ -11,7 +11,7 @@ const PROFILE_SELECT = {
   avatarColors: true,
   commander: true,
   powerLevel: true,
-  vibe: true,
+  vibes: true,
   formats: true,
 } as const;
 
@@ -62,7 +62,7 @@ export class RivalriesService {
     return map;
   }
 
-  private shape(opp: { id: string; displayName: string; pronouns: string | null; bio: string | null; avatarColors: string[]; commander: string | null; powerLevel: number | null; vibe: string | null; formats: string[] }, stats: Stats) {
+  private shape(opp: { id: string; displayName: string; pronouns: string | null; bio: string | null; avatarColors: string[]; commander: string | null; powerLevel: number | null; vibes: string[]; formats: string[] }, stats: Stats) {
     return {
       opponentId: opp.id,
       displayName: opp.displayName,
@@ -71,7 +71,7 @@ export class RivalriesService {
       avatarColors: opp.avatarColors,
       commander: opp.commander,
       powerLevel: opp.powerLevel,
-      vibe: opp.vibe,
+      vibes: opp.vibes ?? [],
       formats: opp.formats,
       gamesTogether: stats.gameIds.size,
       wins: stats.wins,

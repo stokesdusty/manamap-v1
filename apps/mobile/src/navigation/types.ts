@@ -14,7 +14,7 @@ export type RootStackParamList = {
     sharedEvent?: SharedEventSummary | null;
     lastMetStoreName?: string | null;
   };
-  Connected: { connectionId: string };
+  Connected: { connectionId: string; isNew?: boolean };
   Pod: { podId: string };
   Dev: undefined;
 };
