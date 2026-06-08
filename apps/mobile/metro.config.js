@@ -12,4 +12,8 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
+// Windows: jest-worker child process spawning fails with UNKNOWN/-4094 when
+// the OS or antivirus blocks forking. Single worker avoids the issue.
+config.maxWorkers = 1;
+
 module.exports = config;

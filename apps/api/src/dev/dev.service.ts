@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ConnectionStatus, GameStatus } from '@prisma/client';
+import { ConnectionStatus, GameStatus, NotificationKind } from '@prisma/client';
 import type Redis from 'ioredis';
 import { REDIS } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,6 +13,7 @@ import { LfgService } from '../lfg/lfg.service';
 import { PodsService } from '../pods/pods.service';
 import { ConnectionsService } from '../connections/connections.service';
 import { GamesService } from '../games/games.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { BOT_IDS } from './dev.bots';
 
 type BotRow = { id: string; displayName: string; formats: string[]; powerLevel: number | null };
@@ -27,6 +28,7 @@ export class DevService {
     private readonly pods: PodsService,
     private readonly connections: ConnectionsService,
     private readonly games: GamesService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   private async getBots(count: number, specificId?: string): Promise<BotRow[]> {
@@ -198,6 +200,99 @@ export class DevService {
       connectionId,
       gameId: game.gameId,
     };
+  }
+
+  async podForTracker(callerId: string, seats = 4) {
+    const clampedSeats = Math.min(Math.max(2, seats), 4);
+    const botCount = clampedSeats - 1;
+
+    // Resolve store: presence → home store → first store in DB
+    let storeId = await this.redis.get(`presence:${callerId}`);
+    if (!storeId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: callerId },
+        select: { homeStoreId: true },
+      });
+      storeId = user?.homeStoreId ?? null;
+    }
+    if (!storeId) {
+      const anyStore = await this.prisma.store.findFirst({ select: { id: true } });
+      if (!anyStore) throw new NotFoundException('No stores found — run db:seed first');
+      storeId = anyStore.id;
+    }
+
+    // Ensure caller is checked in (heartbeat is idempotent)
+    await this.presence.heartbeat(callerId, storeId);
+
+    // Disband any existing pod for caller to avoid already_hosting conflict
+    const existingPodId = await this.redis.get(`user_pod:${callerId}`);
+    if (existingPodId) {
+      try { await this.pods.disband(callerId, existingPodId); } catch { /* expired */ }
+    }
+
+    // Check in bots
+    const bots = await this.getBots(botCount);
+    if (!bots.length) throw new NotFoundException('No bot accounts found — run db:seed first');
+    for (const bot of bots) {
+      await this.presence.heartbeat(bot.id, storeId);
+    }
+
+    // Create pod with caller as host (commander format)
+    const pod = await this.pods.create(callerId, {
+      format: 'commander',
+      targetPower: 7,
+      tolerance: 3,
+      seats: clampedSeats,
+      where: 'Life tracker test',
+      note: 'Dev — bots pre-joined',
+    });
+
+    // Directly patch pod Redis state to add bots as full members, bypassing request flow
+    const podRaw = await this.redis.get(`pod:${pod.id}`);
+    if (podRaw) {
+      const botIds = bots.map((b) => b.id);
+      const ttl = Math.max(1, Math.ceil((new Date(pod.expiresAt).getTime() - Date.now()) / 1000));
+      const patched = {
+        ...(JSON.parse(podRaw) as Record<string, unknown>),
+        memberIds: [...pod.memberIds, ...botIds],
+        requestIds: [],
+      };
+      await this.redis.setex(`pod:${pod.id}`, ttl, JSON.stringify(patched));
+      for (const botId of botIds) {
+        await this.redis.setex(`user_pod:${botId}`, ttl, pod.id);
+      }
+    }
+
+    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { name: true } });
+
+    return {
+      podId: pod.id,
+      storeId,
+      storeName: store?.name ?? storeId,
+      memberCount: bots.length + 1,
+      format: 'commander',
+    };
+  }
+
+  async sendPlayInvite(callerId: string, platform: 'spelltable' | 'convoke') {
+    const [bot] = await this.getBots(1);
+    if (!bot) throw new NotFoundException('No bot accounts found — run db:seed first');
+
+    const roomLink =
+      platform === 'spelltable'
+        ? 'https://spelltable.wizards.com/room/dev-test-abc123'
+        : 'https://app.convoke.gg/room/dev-test-xyz789';
+
+    const platformLabel = platform === 'spelltable' ? 'SpellTable' : 'Convoke';
+
+    await this.notifications.create(callerId, {
+      kind: 'PLAY_INVITE' as NotificationKind,
+      title: `${bot.displayName} invited you to play`,
+      body: `Join on ${platformLabel}: ${roomLink}`,
+      data: { type: 'play_invite', platform, roomLink, inviterName: bot.displayName },
+    });
+
+    return { sent: true, platform, roomLink, fromBot: bot.displayName };
   }
 
   async reset(callerId: string) {

@@ -93,7 +93,14 @@
       "Bash(mkdir -p \"c:/dev/manamap/apps/api/src/socials\")",
       "Bash(npx --prefix apps/api tsc --noEmit)",
       "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260606120000_vibes\")",
-      "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260607000000_online_play\")"
+      "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260607000000_online_play\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); deps={**d.get\\('dependencies',{}\\),**d.get\\('devDependencies',{}\\)}; [print\\(k\\) for k in sorted\\(deps\\) if any\\(x in k for x in ['socket','ws','websocket','nestjs/platform','nestjs/websocket']\\)]\")",
+      "Bash(node -e \"const d=require\\('./apps/mobile/package.json'\\);const deps={...d.dependencies,...d.devDependencies};Object.keys\\(deps\\).filter\\(k=>k.includes\\('socket'\\)\\).forEach\\(k=>console.log\\(k,deps[k]\\)\\)\")",
+      "Bash(node -e \"const d=require\\('./apps/api/package.json'\\);['@nestjs/websockets','@nestjs/platform-socket.io','socket.io'].forEach\\(k=>console.log\\(k, d.dependencies[k] ?? '❌ missing'\\)\\)\")",
+      "Bash(node -e \"const d=require\\('./apps/mobile/package.json'\\);console.log\\('socket.io-client', d.dependencies['socket.io-client'] ?? '❌ missing'\\)\")",
+      "Bash(netstat -tlnp)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/v1/me)",
+      "Bash(mkdir c:/dev/manamap/apps/api/prisma/migrations/20260607100000_play_invite_notification)"
     ]
   }
 }

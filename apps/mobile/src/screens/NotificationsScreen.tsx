@@ -1,12 +1,13 @@
 import {
   ActivityIndicator,
   FlatList,
+  Linking,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, TabActions } from '@react-navigation/native';
 import { useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +41,7 @@ function kindIcon(kind: string): IoniconName {
     case 'BROADCAST': return 'megaphone-outline';
     case 'NEARBY': return 'radio-outline';
     case 'QUEST': return 'trophy-outline';
+    case 'PLAY_INVITE': return 'videocam-outline';
     default: return 'notifications-outline';
   }
 }
@@ -53,6 +55,7 @@ function deepLinkByKind(
     case 'CONNECT_REQUEST':
     case 'GAME_CONFIRM':
       navigationRef.navigate('Main');
+      navigationRef.dispatch(TabActions.jumpTo('Connections'));
       break;
     case 'CONNECT_ACCEPTED':
       if (data?.connectionId) {
@@ -66,6 +69,11 @@ function deepLinkByKind(
         navigationRef.navigate('Pod', { podId: data.podId as string });
       } else {
         navigationRef.navigate('Main');
+      }
+      break;
+    case 'PLAY_INVITE':
+      if (data?.roomLink) {
+        void Linking.openURL(data.roomLink as string);
       }
       break;
     case 'NEARBY':

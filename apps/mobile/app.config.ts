@@ -4,7 +4,7 @@ const config: ExpoConfig = {
   name: 'manamap',
   slug: 'manamap',
   version: '1.0.0',
-  orientation: 'portrait',
+  orientation: 'default',
   scheme: 'manamap',
   userInterfaceStyle: 'light',
   ios: {

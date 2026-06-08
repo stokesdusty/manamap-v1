@@ -16,7 +16,9 @@ import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ActiveEvent, EarnedBadge, EventAttendeeEntry, NearbyPlayer, StoreEvent, StorePin } from '@manamap/shared';
+import type { RootStackParamList } from '../navigation/types';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import {
   useAttendEvent,
@@ -769,12 +771,16 @@ function StoreDetailSheet({
 
 type ViewMode = 'map' | 'list';
 
-export function StoresScreen() {
+type StoresScreenProps = NativeStackScreenProps<RootStackParamList, 'StoresMap'>;
+
+export function StoresScreen({ navigation, route }: StoresScreenProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('map');
   const [searchQuery, setSearchQuery] = useState('');
   const [region, setRegion] = useState<Region>(DEFAULT_REGION);
   const [pendingRegion, setPendingRegion] = useState<Region | null>(null);
-  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(
+    route.params?.storeId ?? null,
+  );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Bbox-based pin query for the map view
@@ -818,6 +824,9 @@ export function StoresScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.headerCloseBtn} hitSlop={8}>
+          <Ionicons name="close" size={22} color={colors.textSecondary} />
+        </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Stores</Text>
           {activeStore && (
@@ -973,6 +982,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
     gap: spacing.md,
+  },
+  headerCloseBtn: {
+    padding: 2,
   },
   title: {
     fontFamily: typography.fontFamily.bold,

@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { DiscoverScreen } from '../screens/DiscoverScreen';
-import { StoresScreen } from '../screens/StoresScreen';
+import { HomeScreen } from '../screens/HomeScreen';
 import { ConnectScreen } from '../screens/ConnectScreen';
 import { ScanScreen } from '../screens/ScanScreen';
 import { YouScreen } from '../screens/YouScreen';
@@ -96,20 +96,20 @@ export function TabNavigator() {
       }}
     >
       <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="Discover"
         component={DiscoverScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="radio-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Stores"
-        component={StoresScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map-outline" size={size} color={color} />
           ),
         }}
       />
@@ -122,7 +122,7 @@ export function TabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Connect"
+        name="Connections"
         component={ConnectScreen}
         options={{
           tabBarIcon: ({ color, size }) => (

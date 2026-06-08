@@ -5,7 +5,9 @@ import { HistoryScreen } from '../screens/HistoryScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { PlayerPreviewScreen } from '../screens/PlayerPreviewScreen';
 import { PodScreen } from '../screens/PodScreen';
+import { LifeTrackerScreen } from '../screens/LifeTrackerScreen';
 import { SignInScreen } from '../screens/SignInScreen';
+import { StoresScreen } from '../screens/StoresScreen';
 import { TabNavigator } from './TabNavigator';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { usePushNotifications } from '../hooks/usePushNotifications';
@@ -33,10 +35,12 @@ export function RootNavigator() {
           <>
             <Stack.Screen name="Main" component={TabNavigator} />
             <Stack.Screen name="History" component={HistoryScreen} options={{ presentation: 'modal' }} />
+            <Stack.Screen name="StoresMap" component={StoresScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="PlayerPreview" component={PlayerPreviewScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="Connected" component={ConnectedRevealScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="Pod" component={PodScreen} options={{ presentation: 'modal' }} />
+            <Stack.Screen name="LifeTracker" component={LifeTrackerScreen} options={{ presentation: 'fullScreenModal', headerShown: false }} />
             {__DEV__ ? (
               <Stack.Screen
                 name="Dev"

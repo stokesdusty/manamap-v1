@@ -118,6 +118,7 @@ enum NotificationKind {
   EVENT_REMINDER
   BROADCAST
   QUEST
+  PLAY_INVITE
 }
 
 enum QuestPeriod {

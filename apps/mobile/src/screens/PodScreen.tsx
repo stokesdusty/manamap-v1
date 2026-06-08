@@ -341,6 +341,14 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
 
           <SeatRow members={pod.members} seats={pod.seats} />
 
+          <Pressable
+            style={({ pressed }) => [s.trackerBtn, pressed && { opacity: 0.75 }]}
+            onPress={() => navigation.navigate('LifeTracker', { podId })}
+          >
+            <Ionicons name="heart-outline" size={16} color={colors.accent} />
+            <Text style={s.trackerBtnText}>Life Tracker</Text>
+          </Pressable>
+
           {isFull && (
             <View style={s.readyBanner}>
               <Ionicons name="checkmark-circle" size={20} color={colors.success} />
@@ -445,6 +453,16 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
         <FitBadge tier={pod.fit.tier} label={pod.fit.label} />
 
         <SeatRow members={pod.members} seats={pod.seats} />
+
+        {isInPod && (
+          <Pressable
+            style={({ pressed }) => [s.trackerBtn, pressed && { opacity: 0.75 }]}
+            onPress={() => navigation.navigate('LifeTracker', { podId })}
+          >
+            <Ionicons name="heart-outline" size={16} color={colors.accent} />
+            <Text style={s.trackerBtnText}>Life Tracker</Text>
+          </Pressable>
+        )}
 
         {isInPod ? (
           <View style={s.inPodBanner}>
@@ -640,6 +658,22 @@ const s = StyleSheet.create({
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.sm,
     color: colors.textTertiary,
+  },
+  trackerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    borderColor: colors.accent + '50',
+    backgroundColor: colors.accent + '10',
+  },
+  trackerBtnText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.accent,
   },
   joinBtn: {
     backgroundColor: colors.accent,

@@ -5,11 +5,12 @@ import { LfgModule } from '../lfg/lfg.module';
 import { PodsModule } from '../pods/pods.module';
 import { ConnectionsModule } from '../connections/connections.module';
 import { GamesModule } from '../games/games.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { DevController } from './dev.controller';
 import { DevService } from './dev.service';
 
 @Module({
-  imports: [AuthModule, PresenceModule, LfgModule, PodsModule, ConnectionsModule, GamesModule],
+  imports: [AuthModule, PresenceModule, LfgModule, PodsModule, ConnectionsModule, GamesModule, NotificationsModule],
   controllers: [DevController],
   providers: [DevService],
 })

@@ -9,6 +9,7 @@ export type RootStackParamList = {
   Main: undefined;
   History: undefined;
   Notifications: undefined;
+  StoresMap: { storeId?: string } | undefined;
   PlayerPreview: {
     profile: PublicProfile;
     sharedEvent?: SharedEventSummary | null;
@@ -16,13 +17,14 @@ export type RootStackParamList = {
   };
   Connected: { connectionId: string; isNew?: boolean };
   Pod: { podId: string };
+  LifeTracker: { podId: string };
   Dev: undefined;
 };
 
 export type TabParamList = {
   Discover: undefined;
-  Stores: undefined;
-  Connect: undefined;
+  Home: undefined;
+  Connections: undefined;
   Scan: undefined;
   You: undefined;
 };

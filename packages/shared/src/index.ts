@@ -1231,3 +1231,81 @@ export const ActiveQuestSchema = z.object({
   completed: z.boolean(),
 });
 export type ActiveQuest = z.infer<typeof ActiveQuestSchema>;
+
+// --- Life Tracker ---
+
+export const TrackerCounterSchema = z.enum(['poison', 'energy', 'experience']);
+export type TrackerCounter = z.infer<typeof TrackerCounterSchema>;
+
+export const TrackerPlayerSchema = z.object({
+  userId: z.string(),
+  displayName: z.string(),
+  avatarColors: z.array(z.string()),
+  life: z.number().int(),
+  poison: z.number().int().min(0),
+  energy: z.number().int().min(0),
+  experience: z.number().int().min(0),
+  commanderDamage: z.record(z.string(), z.number().int().min(0)),
+  commanderCastCount: z.number().int().min(0),
+  isEliminated: z.boolean(),
+  hasCitysBlessing: z.boolean(),
+});
+export type TrackerPlayer = z.infer<typeof TrackerPlayerSchema>;
+
+export const TrackerStateSchema = z.object({
+  podId: z.string(),
+  format: z.string().nullable(),
+  startingLife: z.number().int().positive(),
+  turnNumber: z.number().int().min(1),
+  activePlayerId: z.string().nullable(),
+  monarchId: z.string().nullable(),
+  initiativeId: z.string().nullable(),
+  players: z.array(TrackerPlayerSchema),
+  createdAt: z.string().datetime(),
+});
+export type TrackerState = z.infer<typeof TrackerStateSchema>;
+
+export const LifeDeltaPayloadSchema = z.object({
+  targetUserId: z.string(),
+  delta: z.number().int(),
+  note: z.string().optional(),
+});
+export type LifeDeltaPayload = z.infer<typeof LifeDeltaPayloadSchema>;
+
+export const CommanderDamagePayloadSchema = z.object({
+  targetUserId: z.string(),
+  sourceUserId: z.string(),
+  delta: z.number().int(),
+});
+export type CommanderDamagePayload = z.infer<typeof CommanderDamagePayloadSchema>;
+
+export const CounterDeltaPayloadSchema = z.object({
+  targetUserId: z.string(),
+  counter: TrackerCounterSchema,
+  delta: z.number().int(),
+});
+export type CounterDeltaPayload = z.infer<typeof CounterDeltaPayloadSchema>;
+
+export const SetTokenPayloadSchema = z.object({
+  token: z.enum(['monarch', 'initiative', 'citysBlessing']),
+  userId: z.string().nullable(),
+});
+export type SetTokenPayload = z.infer<typeof SetTokenPayloadSchema>;
+
+export const EliminatePayloadSchema = z.object({
+  userId: z.string(),
+  eliminated: z.boolean(),
+});
+export type EliminatePayload = z.infer<typeof EliminatePayloadSchema>;
+
+// --- Play online invite ---
+
+export const OnlinePlatformSchema = z.enum(['spelltable', 'convoke']);
+export type OnlinePlatform = z.infer<typeof OnlinePlatformSchema>;
+
+export const PlayOnlineInviteSchema = z.object({
+  platform: OnlinePlatformSchema,
+  roomLink: z.string().min(1).max(512),
+  connectionIds: z.array(z.string().uuid()).min(1).max(10),
+});
+export type PlayOnlineInvite = z.infer<typeof PlayOnlineInviteSchema>;

@@ -31,6 +31,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { QuestsModule } from './quests/quests.module';
 import { RivalriesModule } from './rivalries/rivalries.module';
 import { SocialsModule } from './socials/socials.module';
+import { LifeTrackerModule } from './life-tracker/life-tracker.module';
+import { PlayOnlineModule } from './play-online/play-online.module';
 
 const devEnabled =
   process.env['NODE_ENV'] !== 'production' && process.env['DEV_TOOLS'] === 'true';
@@ -96,6 +98,8 @@ const conditionalModules: Array<DynamicModule | typeof DevModule> = devEnabled ?
     QuestsModule,
     RivalriesModule,
     SocialsModule,
+    LifeTrackerModule,
+    PlayOnlineModule,
     ThrottleModule,
     ...conditionalModules,
   ],

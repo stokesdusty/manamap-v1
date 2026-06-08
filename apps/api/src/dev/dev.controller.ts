@@ -23,6 +23,10 @@ const LogGameSchema = z.object({
   winnerId: z.string().optional(),
 });
 
+const PodForTrackerSchema = z.object({
+  seats: z.number().int().min(2).max(4).default(4),
+});
+
 @Controller('v1/dev')
 @UseGuards(AuthGuard)
 export class DevController {
@@ -82,6 +86,28 @@ export class DevController {
     body: z.infer<typeof StoreOptionalSchema>,
   ) {
     return this.dev.fullScene(req.user.sub, body.storeId);
+  }
+
+  @Post('pod-for-tracker')
+  @HttpCode(200)
+  podForTracker(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(PodForTrackerSchema))
+    body: z.infer<typeof PodForTrackerSchema>,
+  ) {
+    return this.dev.podForTracker(req.user.sub, body.seats);
+  }
+
+  @Post('invite-spelltable')
+  @HttpCode(200)
+  inviteSpelltable(@Req() req: AuthRequest) {
+    return this.dev.sendPlayInvite(req.user.sub, 'spelltable');
+  }
+
+  @Post('invite-convoke')
+  @HttpCode(200)
+  inviteConvoke(@Req() req: AuthRequest) {
+    return this.dev.sendPlayInvite(req.user.sub, 'convoke');
   }
 
   @Post('reset')

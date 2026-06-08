@@ -50,7 +50,7 @@ const FORMAT_LABELS: Record<MtgFormat, string> = {
 
 const BANNER_H = 160;
 
-function ProfileHero({ profile }: { profile: { displayName: string; pronouns?: string | null; avatarColors: string[]; vibes?: string[]; commander?: string | null; formats: string[]; bio?: string | null } }) {
+function ProfileHero({ profile }: { profile: { displayName: string; pronouns?: string | null; avatarColors: string[]; vibes?: string[] | undefined; commander?: string | null; formats: string[]; bio?: string | null } }) {
   const avatarColors = profile.avatarColors as ManaColor[];
   const gradient = identityGradientStops(avatarColors);
   const accent = avatarColors.length > 0 ? manaAccent(avatarColors) : colors.accent;

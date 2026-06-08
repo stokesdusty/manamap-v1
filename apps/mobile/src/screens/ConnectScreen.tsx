@@ -29,7 +29,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { TabParamList, RootStackParamList } from '../navigation/types';
 
 type ConnectScreenProps = CompositeScreenProps<
-  BottomTabScreenProps<TabParamList, 'Connect'>,
+  BottomTabScreenProps<TabParamList, 'Connections'>,
   NativeStackScreenProps<RootStackParamList>
 >;
 

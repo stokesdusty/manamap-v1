@@ -243,7 +243,7 @@ export function ConnectedRevealScreen({
               displayName={data.peer.displayName}
               pronouns={data.peer.pronouns}
               avatarColors={data.peer.avatarColors as ManaColor[]}
-              vibes={data.peer.vibes as PlayerVibe[] | undefined}
+              {...(data.peer.vibes ? { vibes: data.peer.vibes as PlayerVibe[] } : {})}
               commander={data.peer.commander}
               formats={data.peer.formats as MtgFormat[]}
               bio={data.peer.bio}

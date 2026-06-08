@@ -24,6 +24,9 @@ type ActionId =
   | 'accept-mine'
   | 'log-game-with-me'
   | 'full-scene'
+  | 'pod-for-tracker'
+  | 'invite-spelltable'
+  | 'invite-convoke'
   | 'reset';
 
 interface Action {
@@ -31,7 +34,9 @@ interface Action {
   label: string;
   desc: string;
   invalidates: string[][];
+  body?: Record<string, unknown>;
   danger?: boolean;
+  openTracker?: true;
 }
 
 const ACTIONS: Action[] = [
@@ -72,6 +77,26 @@ const ACTIONS: Action[] = [
     invalidates: [['nearby'], ['lfg', 'feed'], ['pods', 'feed'], ['connections'], ['games', 'pending']],
   },
   {
+    id: 'pod-for-tracker',
+    label: '♥ Life Tracker Pod',
+    desc: 'Create a 4-player commander pod with bots and open the life tracker',
+    invalidates: [['pods', 'feed']],
+    body: { seats: 4 },
+    openTracker: true,
+  },
+  {
+    id: 'invite-spelltable',
+    label: '🌐 SpellTable Invite',
+    desc: 'Bot sends you a play-online invite with a fake SpellTable room link',
+    invalidates: [['notifications']],
+  },
+  {
+    id: 'invite-convoke',
+    label: '📹 Convoke Invite',
+    desc: 'Bot sends you a play-online invite with a fake Convoke room link',
+    invalidates: [['notifications']],
+  },
+  {
     id: 'reset',
     label: 'Reset',
     desc: 'Clear all bot presence/LFG/pods/pending connections/pending games',
@@ -90,11 +115,17 @@ export function DevScreen({ navigation }: Props) {
       setLoading(action.id);
       setLastResult(null);
       try {
-        const { data } = await api.post<Record<string, unknown>>(`/v1/dev/${action.id}`, {});
+        const { data } = await api.post<Record<string, unknown>>(
+          `/v1/dev/${action.id}`,
+          action.body ?? {},
+        );
         for (const key of action.invalidates) {
           void qc.invalidateQueries({ queryKey: key });
         }
         setLastResult(JSON.stringify(data, null, 2));
+        if (action.openTracker && typeof data['podId'] === 'string') {
+          navigation.navigate('LifeTracker', { podId: data['podId'] });
+        }
       } catch (err: unknown) {
         const msg =
           (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -104,7 +135,7 @@ export function DevScreen({ navigation }: Props) {
         setLoading(null);
       }
     },
-    [qc],
+    [qc, navigation],
   );
 
   const confirmAndRun = useCallback(

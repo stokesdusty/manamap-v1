@@ -24,7 +24,7 @@ function dayKey(iso: string): string {
 function groupLabel(iso: string): string {
   const today = new Date().toISOString().slice(0, 10);
   const thisWeekStart = new Date(Date.now() - 6 * 86_400_000).toISOString().slice(0, 10);
-  const day = iso.slice(0, 10);
+  const day = dayKey(iso);
   if (day === today) return 'Today';
   if (day >= thisWeekStart) return 'This week';
   return 'Earlier';

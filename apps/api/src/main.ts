@@ -4,6 +4,7 @@ import type { IncomingMessage } from 'http';
 import type { Http2ServerRequest } from 'http2';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import { WsAdapter } from './ws-adapter';
 import { Logger } from 'nestjs-pino';
 import * as Sentry from '@sentry/node';
 import { AppModule } from './app.module';
@@ -44,6 +45,7 @@ async function bootstrap(): Promise<void> {
   );
 
   app.useLogger(app.get(Logger));
+  app.useWebSocketAdapter(new WsAdapter(app, env.WS_PORT));
 
   // Echo request ID back so clients can correlate errors in logs
   const fastify = app.getHttpAdapter().getInstance() as import('fastify').FastifyInstance;

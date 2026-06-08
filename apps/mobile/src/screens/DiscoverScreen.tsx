@@ -44,10 +44,11 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { TabParamList, RootStackParamList } from '../navigation/types';
-import { useNearby, useSuggestions, useStores, type DiscoveryFilters } from '../hooks/useNearby';
+import { useNearby, useSuggestions, useStores, useStoreEvents, type DiscoveryFilters } from '../hooks/useNearby';
 import { usePresence } from '../hooks/usePresence';
 import { useCrossedPathsCount } from '../hooks/useEncounters';
 import { useConnections } from '../hooks/useConnections';
+import { usePendingGames } from '../hooks/useGames';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import { usePrivacy, useProfile, useUpdatePrivacy } from '../hooks/useMe';
 import { BellButton } from '../navigation/TabNavigator';
@@ -1270,6 +1271,169 @@ function PodSheet({ visible, mySession, feed, onClose, onLock, isLocking }: PodS
 }
 
 // ---------------------------------------------------------------------------
+// FeatureCards — 2×2 hub grid always shown at top of Discover
+// ---------------------------------------------------------------------------
+
+interface FeatureCardsProps {
+  accent: string;
+  connectionsCount: number;
+  pendingRequestsCount: number;
+  pendingGamesCount: number;
+  todayEventsCount: number;
+  activeStoreName: string | null;
+  onOpenConnections: () => void;
+  onOpenStores: () => void;
+  onOpenGames: () => void;
+}
+
+function FeatureCards({
+  accent,
+  connectionsCount,
+  pendingRequestsCount,
+  pendingGamesCount,
+  todayEventsCount,
+  activeStoreName,
+  onOpenConnections,
+  onOpenStores,
+  onOpenGames,
+}: FeatureCardsProps) {
+  return (
+    <View style={fcStyles.grid}>
+      {/* Friends */}
+      <Pressable
+        style={({ pressed }) => [fcStyles.card, pressed && { opacity: 0.85 }]}
+        onPress={onOpenConnections}
+      >
+        <View style={[fcStyles.iconWrap, { backgroundColor: accent + '18' }]}>
+          <Ionicons name="people-outline" size={20} color={accent} />
+        </View>
+        <Text style={fcStyles.title}>Friends</Text>
+        <Text style={fcStyles.sub} numberOfLines={1}>
+          {connectionsCount > 0 ? `${connectionsCount} connected` : 'No connections yet'}
+        </Text>
+        {pendingRequestsCount > 0 && (
+          <View style={[fcStyles.badge, { backgroundColor: accent }]}>
+            <Text style={fcStyles.badgeText}>{pendingRequestsCount} new</Text>
+          </View>
+        )}
+        <Text style={[fcStyles.cta, { color: accent }]}>View all →</Text>
+      </Pressable>
+
+      {/* Stores */}
+      <Pressable
+        style={({ pressed }) => [fcStyles.card, pressed && { opacity: 0.85 }]}
+        onPress={onOpenStores}
+      >
+        <View style={[fcStyles.iconWrap, { backgroundColor: accent + '18' }]}>
+          <Ionicons name="map-outline" size={20} color={accent} />
+        </View>
+        <Text style={fcStyles.title}>Stores</Text>
+        <Text style={fcStyles.sub} numberOfLines={1}>
+          {activeStoreName ?? 'Find one near you'}
+        </Text>
+        <Text style={[fcStyles.cta, { color: accent }]}>See map →</Text>
+      </Pressable>
+
+      {/* Events */}
+      <Pressable
+        style={({ pressed }) => [fcStyles.card, pressed && { opacity: 0.85 }]}
+        onPress={onOpenStores}
+      >
+        <View style={[fcStyles.iconWrap, { backgroundColor: accent + '18' }]}>
+          <Ionicons name="calendar-outline" size={20} color={accent} />
+        </View>
+        <Text style={fcStyles.title}>Events</Text>
+        <Text style={fcStyles.sub}>
+          {todayEventsCount > 0
+            ? `${todayEventsCount} today`
+            : activeStoreName
+            ? 'None today'
+            : 'Select a store'}
+        </Text>
+        <Text style={[fcStyles.cta, { color: accent }]}>Browse →</Text>
+      </Pressable>
+
+      {/* Games */}
+      <Pressable
+        style={({ pressed }) => [fcStyles.card, pressed && { opacity: 0.85 }]}
+        onPress={onOpenGames}
+      >
+        <View style={[fcStyles.iconWrap, { backgroundColor: accent + '18' }]}>
+          <Ionicons name="game-controller-outline" size={20} color={accent} />
+        </View>
+        <Text style={fcStyles.title}>Games</Text>
+        <Text style={fcStyles.sub}>
+          {pendingGamesCount > 0 ? `${pendingGamesCount} to confirm` : 'Log a game'}
+        </Text>
+        {pendingGamesCount > 0 && (
+          <View style={[fcStyles.badge, { backgroundColor: colors.warning }]}>
+            <Text style={fcStyles.badgeText}>{pendingGamesCount}</Text>
+          </View>
+        )}
+        <Text style={[fcStyles.cta, { color: accent }]}>
+          {pendingGamesCount > 0 ? 'Confirm →' : 'Log game →'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const fcStyles = StyleSheet.create({
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  card: {
+    width: '48%',
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    ...shadows.sm,
+  },
+  iconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  title: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  sub: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
+  },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+    marginTop: 2,
+  },
+  badgeText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.xs,
+    color: colors.textInverse,
+  },
+  cta: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    marginTop: spacing.xs,
+  },
+});
+
+// ---------------------------------------------------------------------------
 // DiscoverScreen
 // ---------------------------------------------------------------------------
 
@@ -1418,6 +1582,14 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
     return ids;
   }, [connectionsData]);
 
+  // Feature card data
+  const { data: pendingGames = [] } = usePendingGames();
+  const { data: eventDays = [] } = useStoreEvents(activeStore?.id ?? null);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayEventsCount = eventDays.find((d) => d.date === todayStr)?.events.length ?? 0;
+  const acceptedCount = connectionsData?.accepted.length ?? 0;
+  const pendingRequestsCount = connectionsData?.incoming.length ?? 0;
+
   const allPlayers = nearby?.players ?? [];
   const displayedPlayers = allPlayers;
 
@@ -1545,11 +1717,24 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
       )}
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Empty state */}
+        {/* Feature card grid — always visible */}
+        <FeatureCards
+          accent={identityTheme.accent}
+          connectionsCount={acceptedCount}
+          pendingRequestsCount={pendingRequestsCount}
+          pendingGamesCount={pendingGames.length}
+          todayEventsCount={todayEventsCount}
+          activeStoreName={activeStore?.name ?? null}
+          onOpenConnections={() => navigation.navigate('Connections')}
+          onOpenStores={() => navigation.navigate('StoresMap')}
+          onOpenGames={() => navigation.navigate('Connections')}
+        />
+
+        {/* Empty state — shown below cards when no store selected */}
         {!activeStore && (
           <View style={styles.emptyState}>
-            <Ionicons name="map-outline" size={48} color={colors.border} />
-            <Text style={styles.emptyTitle}>Select your store to discover nearby players</Text>
+            <Ionicons name="map-outline" size={40} color={colors.border} />
+            <Text style={styles.emptyTitle}>Select your store to see nearby players</Text>
             <Pressable
               style={({ pressed }) => [styles.selectBtn, { backgroundColor: identityTheme.accent }, pressed && { opacity: 0.8 }]}
               onPress={() => setShowPicker(true)}
