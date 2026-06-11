@@ -10,6 +10,7 @@ export type RootStackParamList = {
   History: undefined;
   Notifications: undefined;
   StoresMap: { storeId?: string } | undefined;
+  Discover: undefined;
   PlayerPreview: {
     profile: PublicProfile;
     sharedEvent?: SharedEventSummary | null;
@@ -22,10 +23,10 @@ export type RootStackParamList = {
 };
 
 export type TabParamList = {
-  Discover: undefined;
   Home: undefined;
-  Connections: undefined;
+  Stores: { storeId?: string } | undefined;
   Scan: undefined;
+  Connections: undefined;
   You: undefined;
 };
 

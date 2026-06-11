@@ -5,11 +5,12 @@ import { GamificationModule } from '../gamification/gamification.module';
 import { EventRemindersModule } from '../event-reminders/event-reminders.module';
 import { SafetyModule } from '../safety/safety.module';
 import { QuestsModule } from '../quests/quests.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { StoresController } from './stores.controller';
 import { StoresService } from './stores.service';
 
 @Module({
-  imports: [AuthModule, PresenceModule, GamificationModule, EventRemindersModule, SafetyModule, QuestsModule],
+  imports: [AuthModule, PresenceModule, GamificationModule, EventRemindersModule, SafetyModule, QuestsModule, NotificationsModule],
   controllers: [StoresController],
   providers: [StoresService],
 })

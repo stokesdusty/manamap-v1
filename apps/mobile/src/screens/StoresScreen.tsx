@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Location from 'expo-location';
 import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, type Region } from 'react-native-maps';
+import MapView, { Circle, Marker, type Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ActiveEvent, EarnedBadge, EventAttendeeEntry, NearbyPlayer, StoreEvent, StorePin } from '@manamap/shared';
@@ -37,6 +37,8 @@ import QRCode from 'react-native-qrcode-svg';
 import { useLeaderboard } from '../hooks/useGamification';
 import { useClaimOffer, useRedemptionStatus, useStoreOffers, type ClaimResult } from '../hooks/useOffers';
 import { BadgeEarnedSheet } from '../components/BadgeEarnedSheet';
+import { StoreSuggestSheet } from '../components/StoreSuggestSheet';
+import { useConfirmStore } from '../hooks/useStores';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 
 // Default map region — US center, wide view
@@ -260,20 +262,24 @@ function HereNowRow({ player }: { player: NearbyPlayer }) {
 
 function StoreDetailSheet({
   storeId,
+  proposed = false,
+  confirmationCount = 0,
   onClose,
 }: {
   storeId: string | null;
+  proposed?: boolean;
+  confirmationCount?: number;
   onClose: () => void;
 }) {
   const { data: store, isLoading } = useStoreDetail(storeId);
-  const { data: eventDays = [], isLoading: eventsLoading } = useStoreEvents(storeId);
-  const { data: leaderboard } = useLeaderboard(storeId);
+  const { data: eventDays = [], isLoading: eventsLoading } = useStoreEvents(proposed ? null : storeId);
+  const { data: leaderboard } = useLeaderboard(proposed ? null : storeId);
   const { activeStore, setActiveStore } = useActiveStore();
-  const isActiveStore = activeStore?.id === storeId;
+  const isActiveStore = !proposed && activeStore?.id === storeId;
   const { data: nearby } = useNearby(isActiveStore);
   const hereNow = isActiveStore ? (nearby?.players ?? []) : [];
 
-  const { data: offers = [] } = useStoreOffers(storeId);
+  const { data: offers = [] } = useStoreOffers(proposed ? null : storeId);
   const [earnedBadges, setEarnedBadges] = useState<EarnedBadge[]>([]);
   const [eligibleOffers, setEligibleOffers] = useState<Array<{ id: string; type: string; title: string; description: string | null; terms: string | null; redemptionCode: string }>>([]);
   const [activeEvents, setActiveEvents] = useState<ActiveEvent[]>([]);
@@ -288,6 +294,39 @@ function StoreDetailSheet({
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [tooFarError, setTooFarError] = useState<{ distanceMeters: number; allowedMeters: number } | null>(null);
   const [locationError, setLocationError] = useState(false);
+
+  const [localConfirmCount, setLocalConfirmCount] = useState(confirmationCount);
+  const [alreadyConfirmed, setAlreadyConfirmed] = useState(false);
+  const { mutate: confirmStore, isPending: isConfirming } = useConfirmStore();
+
+  useEffect(() => {
+    setLocalConfirmCount(confirmationCount);
+    setAlreadyConfirmed(false);
+  }, [storeId, confirmationCount]);
+
+  async function handleConfirm() {
+    if (!storeId || alreadyConfirmed) return;
+    let lat: number | undefined;
+    let lng: number | undefined;
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        lat = pos.coords.latitude;
+        lng = pos.coords.longitude;
+      }
+    } catch { /* proceed without coordinates */ }
+
+    confirmStore(
+      { storeId, body: { ...(lat != null ? { lat, lng } : {}) } },
+      {
+        onSuccess: (data) => {
+          setLocalConfirmCount(data.confirmationCount);
+          setAlreadyConfirmed(true);
+        },
+      },
+    );
+  }
 
   const { mutate: checkin, isPending: isCheckinPending, isSuccess: checkedIn } = useCheckin();
 
@@ -420,8 +459,17 @@ function StoreDetailSheet({
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={sheet.scroll}>
             {/* Header */}
             <View style={sheet.nameRow}>
-              <Ionicons name="storefront-outline" size={22} color={colors.accent} />
+              <Ionicons
+                name="storefront-outline"
+                size={22}
+                color={proposed ? '#9CA3AF' : colors.accent}
+              />
               <Text style={sheet.name}>{store.name}</Text>
+              {proposed && (
+                <View style={sheet.proposedBadge}>
+                  <Text style={sheet.proposedBadgeText}>Proposed</Text>
+                </View>
+              )}
             </View>
 
             {/* Address */}
@@ -446,8 +494,55 @@ function StoreDetailSheet({
               </Pressable>
             )}
 
+            {/* Proposed confirmation widget */}
+            {proposed && (
+              <View style={sheet.confirmWidget}>
+                <View style={sheet.confirmWidgetHeader}>
+                  <Ionicons name="people-outline" size={16} color={colors.textSecondary} />
+                  <Text style={sheet.confirmWidgetTitle}>
+                    {localConfirmCount}/3 confirmations
+                  </Text>
+                </View>
+                <View style={sheet.confirmBarTrack}>
+                  <View
+                    style={[
+                      sheet.confirmBarFill,
+                      { width: `${Math.min((localConfirmCount / 3) * 100, 100)}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={sheet.confirmWidgetHint}>
+                  3 players confirming it will make it live on the map
+                </Text>
+                {alreadyConfirmed ? (
+                  <View style={sheet.confirmedRow}>
+                    <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                    <Text style={sheet.confirmedRowText}>You confirmed this store</Text>
+                  </View>
+                ) : (
+                  <Pressable
+                    style={({ pressed }) => [
+                      sheet.confirmBtn,
+                      (pressed || isConfirming) && { opacity: 0.8 },
+                    ]}
+                    onPress={() => void handleConfirm()}
+                    disabled={isConfirming}
+                  >
+                    {isConfirming ? (
+                      <ActivityIndicator size="small" color={colors.textInverse} />
+                    ) : (
+                      <>
+                        <Ionicons name="checkmark-circle-outline" size={16} color={colors.textInverse} />
+                        <Text style={sheet.confirmBtnText}>Confirm this is real</Text>
+                      </>
+                    )}
+                  </Pressable>
+                )}
+              </View>
+            )}
+
             {/* Active offers */}
-            {offers.length > 0 && (
+            {!proposed && offers.length > 0 && (
               <View style={sheet.offersSection}>
                 <Text style={sheet.offersSectionTitle}>Promotions</Text>
                 {offers.map((offer) => (
@@ -472,7 +567,7 @@ function StoreDetailSheet({
             )}
 
             {/* Active store badge */}
-            {isActiveStore && (
+            {!proposed && isActiveStore && (
               <View style={sheet.activeBadge}>
                 <Ionicons name="radio-outline" size={14} color={colors.success} />
                 <Text style={sheet.activeText}>You're checked in here</Text>
@@ -480,21 +575,23 @@ function StoreDetailSheet({
             )}
 
             {/* Tab bar */}
-            <View style={sheet.tabBar}>
-              {(['schedule', 'leaderboard'] as const).map((tab) => (
-                <Pressable
-                  key={tab}
-                  style={[sheet.tab, activeTab === tab && sheet.tabActive]}
-                  onPress={() => setActiveTab(tab)}
-                >
-                  <Text style={[sheet.tabText, activeTab === tab && sheet.tabTextActive]}>
-                    {tab === 'schedule' ? 'Schedule' : 'Leaderboard'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            {!proposed && (
+              <View style={sheet.tabBar}>
+                {(['schedule', 'leaderboard'] as const).map((tab) => (
+                  <Pressable
+                    key={tab}
+                    style={[sheet.tab, activeTab === tab && sheet.tabActive]}
+                    onPress={() => setActiveTab(tab)}
+                  >
+                    <Text style={[sheet.tabText, activeTab === tab && sheet.tabTextActive]}>
+                      {tab === 'schedule' ? 'Schedule' : 'Leaderboard'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
 
-            {activeTab === 'schedule' ? (
+            {!proposed && activeTab === 'schedule' && (
               eventsLoading ? (
                 <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.md }} />
               ) : eventDays.length === 0 ? (
@@ -504,13 +601,14 @@ function StoreDetailSheet({
                   <View key={day.date}>
                     <Text style={sheet.dayLabel}>{formatDateLabel(day.date)}</Text>
                     {day.events.map((evt) => (
-                      <EventRow key={evt.id} event={evt} storeId={storeId} />
+                      <EventRow key={evt.id} event={evt} storeId={storeId!} />
                     ))}
                   </View>
                 ))
               )
-            ) : (
-              /* Leaderboard tab */
+            )}
+
+            {!proposed && activeTab === 'leaderboard' && (
               leaderboard?.entries.length === 0 ? (
                 <Text style={sheet.emptyHint}>No check-ins yet — be the first!</Text>
               ) : (
@@ -544,7 +642,7 @@ function StoreDetailSheet({
             )}
 
             {/* Who's here now */}
-            {isActiveStore && (
+            {!proposed && isActiveStore && (
               <>
                 <View style={sheet.sectionHeader}>
                   <Ionicons name="people-outline" size={15} color={colors.textTertiary} />
@@ -565,7 +663,7 @@ function StoreDetailSheet({
             )}
 
             {/* Location / permission errors */}
-            {permissionDenied && (
+            {!proposed && permissionDenied && (
               <View style={sheet.alertBox}>
                 <Ionicons name="location-outline" size={16} color={colors.warning} />
                 <Text style={sheet.alertText}>Location access is needed to verify you're at the store.</Text>
@@ -574,13 +672,13 @@ function StoreDetailSheet({
                 </Pressable>
               </View>
             )}
-            {locationError && (
+            {!proposed && locationError && (
               <View style={sheet.alertBox}>
                 <Ionicons name="warning-outline" size={16} color={colors.warning} />
                 <Text style={sheet.alertText}>Couldn't get your location. Try again.</Text>
               </View>
             )}
-            {tooFarError && (
+            {!proposed && tooFarError && (
               <View style={sheet.tooFarBox}>
                 <Text style={sheet.tooFarTitle}>You're too far away</Text>
                 <Text style={sheet.tooFarBody}>
@@ -596,40 +694,42 @@ function StoreDetailSheet({
             )}
 
             {/* Check-in button */}
-            {checkedIn ? (
-              <View style={sheet.successRow}>
-                <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-                <Text style={sheet.successText}>Checked in! Discover is now active.</Text>
-              </View>
-            ) : (
-              <Pressable
-                style={({ pressed }) => [
-                  sheet.checkinBtn,
-                  isActiveStore && sheet.checkinBtnActive,
-                  (pressed || isCheckinPending || locPhase === 'acquiring') && { opacity: 0.8 },
-                ]}
-                onPress={isActiveStore ? onClose : () => void handleCheckin()}
-                disabled={isCheckinPending || locPhase === 'acquiring'}
-              >
-                {(isCheckinPending || locPhase === 'acquiring') ? (
-                  <ActivityIndicator size="small" color={colors.textInverse} />
-                ) : (
-                  <Ionicons
-                    name={isActiveStore ? 'checkmark-outline' : 'enter-outline'}
-                    size={18}
-                    color={colors.textInverse}
-                  />
-                )}
-                <Text style={sheet.checkinText}>
-                  {locPhase === 'acquiring'
-                    ? 'Getting your location…'
-                    : isCheckinPending
-                    ? 'Checking you in…'
-                    : isActiveStore
-                    ? 'Already here'
-                    : 'Check in here'}
-                </Text>
-              </Pressable>
+            {!proposed && (
+              checkedIn ? (
+                <View style={sheet.successRow}>
+                  <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                  <Text style={sheet.successText}>Checked in! Discover is now active.</Text>
+                </View>
+              ) : (
+                <Pressable
+                  style={({ pressed }) => [
+                    sheet.checkinBtn,
+                    isActiveStore && sheet.checkinBtnActive,
+                    (pressed || isCheckinPending || locPhase === 'acquiring') && { opacity: 0.8 },
+                  ]}
+                  onPress={isActiveStore ? onClose : () => void handleCheckin()}
+                  disabled={isCheckinPending || locPhase === 'acquiring'}
+                >
+                  {(isCheckinPending || locPhase === 'acquiring') ? (
+                    <ActivityIndicator size="small" color={colors.textInverse} />
+                  ) : (
+                    <Ionicons
+                      name={isActiveStore ? 'checkmark-outline' : 'enter-outline'}
+                      size={18}
+                      color={colors.textInverse}
+                    />
+                  )}
+                  <Text style={sheet.checkinText}>
+                    {locPhase === 'acquiring'
+                      ? 'Getting your location…'
+                      : isCheckinPending
+                      ? 'Checking you in…'
+                      : isActiveStore
+                      ? 'Already here'
+                      : 'Check in here'}
+                  </Text>
+                </Pressable>
+              )
             )}
           </ScrollView>
         ) : (
@@ -781,7 +881,29 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(
     route.params?.storeId ?? null,
   );
+  const [selectedPinProposed, setSelectedPinProposed] = useState(false);
+  const [selectedPinConfirmCount, setSelectedPinConfirmCount] = useState(0);
+  const [showSuggest, setShowSuggest] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const userRegion: Region = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          latitudeDelta: 0.15,
+          longitudeDelta: 0.15,
+        };
+        mapRef.current?.animateToRegion(userRegion, 600);
+        setRegion(userRegion);
+      } catch { /* stay on default region */ }
+    })();
+  }, []);
 
   // Bbox-based pin query for the map view
   const bbox = useMemo(() => regionToBbox(region), [region]);
@@ -814,6 +936,8 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
 
   const handleSelectPin = useCallback((pin: StorePin) => {
     setSelectedStoreId(pin.id);
+    setSelectedPinProposed(pin.proposed ?? false);
+    setSelectedPinConfirmCount(pin.confirmationCount ?? 0);
   }, []);
 
   const handleSelectRow = useCallback((store: { id: string }) => {
@@ -824,9 +948,11 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerCloseBtn} hitSlop={8}>
-          <Ionicons name="close" size={22} color={colors.textSecondary} />
-        </Pressable>
+        {navigation.canGoBack() && (
+          <Pressable onPress={() => navigation.goBack()} style={styles.headerCloseBtn} hitSlop={8}>
+            <Ionicons name="close" size={22} color={colors.textSecondary} />
+          </Pressable>
+        )}
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Stores</Text>
           {activeStore && (
@@ -886,10 +1012,11 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
       {viewMode === 'map' && (
         <View style={styles.mapContainer}>
           <MapView
+            ref={mapRef}
             style={styles.map}
             initialRegion={DEFAULT_REGION}
             onRegionChangeComplete={handleRegionChangeComplete}
-            showsUserLocation={false}
+            showsUserLocation
             showsMyLocationButton={false}
           >
             {pins.map((pin) => (
@@ -898,9 +1025,28 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
                 coordinate={{ latitude: pin.lat, longitude: pin.lng }}
                 title={pin.name}
                 onPress={() => handleSelectPin(pin)}
-                pinColor={activeStore?.id === pin.id ? colors.success : colors.accent}
+                pinColor={
+                  pin.proposed
+                    ? '#9CA3AF'
+                    : activeStore?.id === pin.id
+                    ? colors.success
+                    : colors.accent
+                }
               />
             ))}
+            {pins
+              .filter((p) => p.proposed && p.lat != null && p.lng != null)
+              .map((p) => (
+                <Circle
+                  key={`${p.id}-circle`}
+                  center={{ latitude: p.lat, longitude: p.lng }}
+                  radius={80}
+                  strokeColor="#9CA3AF66"
+                  strokeWidth={1.5}
+                  fillColor="transparent"
+                />
+              ))
+            }
           </MapView>
 
           {(pinsLoading || !!pendingRegion) && (
@@ -908,6 +1054,14 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
               <ActivityIndicator size="small" color={colors.accent} />
             </View>
           )}
+
+          <Pressable
+            style={({ pressed }) => [styles.suggestBtn, pressed && { opacity: 0.8 }]}
+            onPress={() => setShowSuggest(true)}
+          >
+            <Ionicons name="add" size={18} color={colors.textInverse} />
+            <Text style={styles.suggestBtnText}>Add store</Text>
+          </Pressable>
         </View>
       )}
 
@@ -961,7 +1115,18 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
 
       <StoreDetailSheet
         storeId={selectedStoreId}
-        onClose={() => setSelectedStoreId(null)}
+        proposed={selectedPinProposed}
+        confirmationCount={selectedPinConfirmCount}
+        onClose={() => {
+          setSelectedStoreId(null);
+          setSelectedPinProposed(false);
+          setSelectedPinConfirmCount(0);
+        }}
+      />
+
+      <StoreSuggestSheet
+        visible={showSuggest}
+        onClose={() => setShowSuggest(false)}
       />
     </SafeAreaView>
   );
@@ -1033,6 +1198,24 @@ const styles = StyleSheet.create({
   },
   mapContainer: { flex: 1, position: 'relative' },
   map: { flex: 1 },
+  suggestBtn: {
+    position: 'absolute',
+    bottom: spacing.lg,
+    left: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radii.full,
+    ...shadows.md,
+  },
+  suggestBtnText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textInverse,
+  },
   mapLoadingOverlay: {
     position: 'absolute',
     top: spacing.md,
@@ -1146,6 +1329,83 @@ const sheet = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: '#5865F2',
     flex: 1,
+  },
+  proposedBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    backgroundColor: '#9CA3AF22',
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: '#9CA3AF44',
+  },
+  proposedBadgeText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: '#6B7280',
+  },
+  confirmWidget: {
+    backgroundColor: colors.paper,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  confirmWidgetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  confirmWidgetTitle: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  confirmBarTrack: {
+    height: 6,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.full,
+    overflow: 'hidden',
+  },
+  confirmBarFill: {
+    height: 6,
+    backgroundColor: colors.accent,
+    borderRadius: radii.full,
+  },
+  confirmWidgetHint: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
+  },
+  confirmedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.success + '18',
+    borderRadius: radii.md,
+    alignSelf: 'flex-start',
+  },
+  confirmedRowText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.success,
+  },
+  confirmBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.accent,
+    height: 44,
+    borderRadius: radii.lg,
+    ...shadows.sm,
+  },
+  confirmBtnText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textInverse,
   },
   activeBadge: {
     flexDirection: 'row',

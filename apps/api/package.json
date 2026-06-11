@@ -16,7 +16,8 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
-    "db:seed:stores": "ts-node --transpile-only -r tsconfig-paths/register prisma/seed-stores.ts"
+    "db:seed:stores": "ts-node --transpile-only -r tsconfig-paths/register prisma/seed-stores.ts",
+    "db:seed:wpn": "ts-node --transpile-only -r tsconfig-paths/register prisma/seed-wpn.ts"
   },
   "prisma": {
     "seed": "ts-node --transpile-only -r tsconfig-paths/register prisma/seed.ts"

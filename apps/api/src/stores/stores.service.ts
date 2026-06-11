@@ -1,12 +1,13 @@
 import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import type { AssociateCheckinEventBody, CheckinBody } from '@manamap/shared';
+import type { AssociateCheckinEventBody, CheckinBody, ConfirmStore, SuggestStore } from '@manamap/shared';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { ModerationStatus } from '@prisma/client';
+import { ModerationStatus, NotificationKind, Prisma, StoreStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PresenceService } from '../presence/presence.service';
 import { GamificationService } from '../gamification/gamification.service';
 import { EventRemindersService } from '../event-reminders/event-reminders.service';
 import { SafetyService } from '../safety/safety.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { StoreConnector } from './connectors/store.connector';
 import { DiscordConnector } from './connectors/discord.connector';
 import { WizardsConnector } from './connectors/wizards.connector';
@@ -16,12 +17,24 @@ import { QuestsService } from '../quests/quests.service';
 const DEFAULT_CHECKIN_RADIUS_M = 250;
 const ACCURACY_CAP_M = 150;
 
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6_371_000;
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lng2 - lng1) * Math.PI) / 180;
+  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 // Raw row returned by the PostGIS bbox query
 type StorePinRow = {
   id: string;
   name: string;
+  status: string;
   lat: number | null;
   lng: number | null;
+  confirmation_count: number;
 };
 
 type StoreDetailRow = {
@@ -64,14 +77,15 @@ export class StoresService {
     private readonly eventReminders: EventRemindersService,
     private readonly safety: SafetyService,
     private readonly quests: QuestsService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // -------------------------------------------------------------------------
   // Store list / search
   // -------------------------------------------------------------------------
 
-  async list(opts: { bbox: string | undefined; q: string | undefined }) {
-    const { bbox, q } = opts;
+  async list(opts: { bbox: string | undefined; q: string | undefined; includeProposed?: boolean }) {
+    const { bbox, q, includeProposed = false } = opts;
 
     if (bbox) {
       // Parse "minLng,minLat,maxLng,maxLat"
@@ -81,19 +95,28 @@ export class StoresService {
       }
       const [minLng, minLat, maxLng, maxLat] = parts;
 
+      const statusFilter = includeProposed
+        ? Prisma.sql`AND status != 'REJECTED'::"StoreStatus"`
+        : Prisma.sql`AND status = 'ACTIVE'::"StoreStatus"`;
+
       // PostGIS intersection query — stores with no geom are naturally excluded
       const rows = await this.prisma.$queryRaw<StorePinRow[]>`
         SELECT
-          id,
-          name,
-          ST_Y(geom::geometry) AS lat,
-          ST_X(geom::geometry) AS lng
-        FROM stores
-        WHERE geom IS NOT NULL
+          s.id,
+          s.name,
+          s.status::text AS status,
+          ST_Y(s.geom::geometry) AS lat,
+          ST_X(s.geom::geometry) AS lng,
+          COUNT(sc.id)::int AS confirmation_count
+        FROM stores s
+        LEFT JOIN store_confirmations sc ON sc.store_id = s.id
+        WHERE s.geom IS NOT NULL
+          ${statusFilter}
           AND ST_Intersects(
-            geom,
+            s.geom,
             ST_MakeEnvelope(${minLng}, ${minLat}, ${maxLng}, ${maxLat}, 4326)::geography
           )
+        GROUP BY s.id
         LIMIT 200
       `;
 
@@ -102,30 +125,43 @@ export class StoresService {
         name: r.name,
         lat: r.lat != null ? Number(r.lat) : null,
         lng: r.lng != null ? Number(r.lng) : null,
+        proposed: r.status === 'PROPOSED',
+        confirmationCount: Number(r.confirmation_count),
       }));
     }
 
     // Text search fallback (no PostGIS needed)
-    const common = {
-      select: { id: true, name: true, city: true, state: true },
+    const statusWhere = includeProposed
+      ? { status: { not: StoreStatus.REJECTED } }
+      : { status: StoreStatus.ACTIVE };
+
+    const baseQuery = {
+      select: { id: true, name: true, city: true, state: true, status: true },
       take: 50,
       orderBy: { name: 'asc' },
     } as const;
 
-    if (q) {
-      return this.prisma.store.findMany({
-        ...common,
-        where: {
-          OR: [
-            { name: { contains: q, mode: 'insensitive' } },
-            { city: { contains: q, mode: 'insensitive' } },
-            { state: { contains: q, mode: 'insensitive' } },
-          ],
-        },
-      });
-    }
+    const stores = await this.prisma.store.findMany({
+      ...baseQuery,
+      where: q
+        ? {
+            ...statusWhere,
+            OR: [
+              { name: { contains: q, mode: 'insensitive' } },
+              { city: { contains: q, mode: 'insensitive' } },
+              { state: { contains: q, mode: 'insensitive' } },
+            ],
+          }
+        : statusWhere,
+    });
 
-    return this.prisma.store.findMany(common);
+    return stores.map((s) => ({
+      id: s.id,
+      name: s.name,
+      city: s.city,
+      state: s.state,
+      proposed: s.status === StoreStatus.PROPOSED,
+    }));
   }
 
   // -------------------------------------------------------------------------
@@ -176,6 +212,7 @@ export class StoresService {
     type StoreProxRow = {
       id: string;
       name: string;
+      status: string;
       has_geom: boolean;
       within: boolean | null;
       distance_m: number | null;
@@ -185,6 +222,7 @@ export class StoresService {
       SELECT
         id,
         name,
+        status::text AS status,
         geom IS NOT NULL AS has_geom,
         CASE WHEN geom IS NOT NULL
           THEN ST_DWithin(
@@ -205,6 +243,10 @@ export class StoresService {
 
     if (!rows.length) throw new NotFoundException('Store not found');
     const store = rows[0];
+
+    if (store.status !== 'ACTIVE') {
+      throw new NotFoundException('Store not found');
+    }
 
     if (!store.has_geom) {
       this.logger.warn({ storeId }, 'Store has no geom — skipping proximity check');
@@ -577,6 +619,127 @@ export class StoresService {
       ...streakBoard,
       winsLeaderboard: winsBoard,
     };
+  }
+
+  // -------------------------------------------------------------------------
+  // Store submissions
+  // -------------------------------------------------------------------------
+
+  async suggestStore(callerId: string, body: SuggestStore) {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentCount = await this.prisma.store.count({
+      where: { submittedById: callerId, createdAt: { gte: sevenDaysAgo } },
+    });
+    if (recentCount >= 3) {
+      throw new BadRequestException({ code: 'submission_limit_reached' });
+    }
+
+    let submitterProximity = false;
+    if (body.submitterLat != null && body.submitterLng != null) {
+      submitterProximity = haversineMeters(body.submitterLat, body.submitterLng, body.lat, body.lng) <= 500;
+    }
+
+    const store = await this.prisma.store.create({
+      data: {
+        name: body.name,
+        address: body.address ?? null,
+        city: body.city ?? null,
+        state: body.state ?? null,
+        website: body.website ?? null,
+        status: StoreStatus.PROPOSED,
+        submittedById: callerId,
+        submitterNote: body.note ?? null,
+      },
+      select: { id: true, name: true },
+    });
+
+    await this.prisma.$executeRaw`
+      UPDATE stores SET geom = ST_SetSRID(ST_MakePoint(${body.lng}, ${body.lat}), 4326)::geography
+      WHERE id = ${store.id}
+    `;
+
+    await this.prisma.storeConfirmation.create({
+      data: { storeId: store.id, userId: callerId, proximity: submitterProximity },
+    });
+
+    await this.checkAutoApprove(store.id);
+
+    return { id: store.id, name: store.name, status: 'proposed' as const, alreadyConfirmed: true };
+  }
+
+  async confirmStore(callerId: string, storeId: string, body: ConfirmStore) {
+    const store = await this.prisma.store.findUnique({
+      where: { id: storeId },
+      select: { id: true, status: true },
+    });
+    if (!store) throw new NotFoundException('Store not found');
+    if (store.status !== StoreStatus.PROPOSED) {
+      throw new BadRequestException({ code: 'store_not_proposed' });
+    }
+
+    const existing = await this.prisma.storeConfirmation.findUnique({
+      where: { storeId_userId: { storeId, userId: callerId } },
+    });
+    if (existing) {
+      const confirmationCount = await this.prisma.storeConfirmation.count({ where: { storeId } });
+      return { confirmationCount, status: store.status };
+    }
+
+    let proximity = false;
+    if (body.lat != null && body.lng != null) {
+      type ProxRow = { within: boolean };
+      const rows = await this.prisma.$queryRaw<ProxRow[]>`
+        SELECT ST_DWithin(geom, ST_SetSRID(ST_MakePoint(${body.lng}, ${body.lat}), 4326)::geography, 500) AS within
+        FROM stores WHERE id = ${storeId} AND geom IS NOT NULL
+      `;
+      if (rows.length) proximity = Boolean(rows[0].within);
+    }
+
+    await this.prisma.storeConfirmation.create({
+      data: { storeId, userId: callerId, proximity },
+    });
+
+    await this.checkAutoApprove(storeId);
+
+    const [updatedStore, confirmationCount] = await Promise.all([
+      this.prisma.store.findUnique({ where: { id: storeId }, select: { status: true } }),
+      this.prisma.storeConfirmation.count({ where: { storeId } }),
+    ]);
+
+    return {
+      confirmationCount,
+      status: updatedStore?.status ?? StoreStatus.PROPOSED,
+    };
+  }
+
+  async checkAutoApprove(storeId: string): Promise<void> {
+    const [store, total, proximityCount] = await Promise.all([
+      this.prisma.store.findUnique({
+        where: { id: storeId },
+        select: { status: true, submittedById: true, name: true },
+      }),
+      this.prisma.storeConfirmation.count({ where: { storeId } }),
+      this.prisma.storeConfirmation.count({ where: { storeId, proximity: true } }),
+    ]);
+
+    if (!store || store.status !== StoreStatus.PROPOSED) return;
+
+    const shouldApprove = (total >= 3 && proximityCount >= 1) || total >= 5;
+    if (!shouldApprove) return;
+
+    await this.prisma.store.update({
+      where: { id: storeId },
+      data: { status: StoreStatus.ACTIVE },
+    });
+
+    if (store.submittedById) {
+      await this.notifications.create(store.submittedById, {
+        kind: NotificationKind.BROADCAST,
+        title: 'Your store suggestion was approved!',
+        body: `${store.name} is now live on the map.`,
+        data: { type: 'store_approved', storeId },
+      });
+    }
   }
 
   getConnectors() {

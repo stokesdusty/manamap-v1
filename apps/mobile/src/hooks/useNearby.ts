@@ -87,7 +87,7 @@ export function useStorePins(bbox: string | null) {
     queryKey: ['stores', 'pins', bbox],
     queryFn: () =>
       api
-        .get<StorePin[]>('/v1/stores', { params: { bbox } })
+        .get<StorePin[]>('/v1/stores', { params: { bbox, includeProposed: 'true' } })
         .then((r) => r.data),
     enabled: !!bbox,
     staleTime: 60 * 1000,

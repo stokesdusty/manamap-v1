@@ -109,6 +109,12 @@ enum RedemptionStatus {
   VOID
 }
 
+enum StoreStatus {
+  PROPOSED
+  ACTIVE
+  REJECTED
+}
+
 enum NotificationKind {
   CONNECT_REQUEST
   CONNECT_ACCEPTED
@@ -202,6 +208,8 @@ model User {
   notifications       Notification[]
   questProgresses     QuestProgress[]
   socialLinks         SocialLink[]
+  submittedStores     Store[]            @relation("SubmittedStores")
+  storeConfirmations  StoreConfirmation[]
 
   @@map("users")
 }
@@ -317,24 +325,30 @@ model Store {
   timezone   String?
   website    String?
   discordUrl String?  @map("discord_url")
-  isPartner  Boolean  @default(false) @map("is_partner")
+  isPartner      Boolean     @default(false) @map("is_partner")
+  wpnId          String?     @unique @map("wpn_id")
+  status         StoreStatus @default(ACTIVE)
+  submittedById  String?     @map("submitted_by_id")
+  submitterNote  String?     @map("submitter_note")
   // geom is a PostGIS geography(Point,4326) — managed via $queryRaw / $executeRaw
   geom                 Unsupported("geography(Point,4326)")?
   checkinRadiusMeters  Int?     @map("checkin_radius_meters")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  checkins     Checkin[]
-  events       Event[]
-  encounters   Encounter[]
-  rewardOffers RewardOffer[]
-  streaks      Streak[]
-  userBadges   UserBadge[]
-  homeUsers    User[]          @relation("HomeStore")
-  ownerships   StoreOwnership[]
-  gameLogs         GameLog[]
-  broadcasts       Broadcast[]
+  checkins      Checkin[]
+  events        Event[]
+  encounters    Encounter[]
+  rewardOffers  RewardOffer[]
+  streaks       Streak[]
+  userBadges    UserBadge[]
+  homeUsers     User[]             @relation("HomeStore")
+  ownerships    StoreOwnership[]
+  gameLogs      GameLog[]
+  broadcasts    Broadcast[]
   offerRedemptions OfferRedemption[]
+  confirmations StoreConfirmation[]
+  submittedBy   User?              @relation("SubmittedStores", fields: [submittedById], references: [id], onDelete: SetNull)
 
   @@unique([name, city])
   @@map("stores")
@@ -681,4 +695,18 @@ model QuestProgress {
 
   @@unique([userId, questId])
   @@map("quest_progress")
+}
+
+model StoreConfirmation {
+  id          String   @id @default(uuid())
+  storeId     String   @map("store_id")
+  userId      String   @map("user_id")
+  proximity   Boolean  @default(false)
+  confirmedAt DateTime @default(now()) @map("confirmed_at")
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, userId])
+  @@map("store_confirmations")
 }

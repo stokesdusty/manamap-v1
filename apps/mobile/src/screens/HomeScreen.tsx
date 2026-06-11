@@ -70,6 +70,85 @@ function EventItem({ event, accent }: { event: StoreEvent; accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Compact feature cards (Friends / Stores / Events / Games)
+// ---------------------------------------------------------------------------
+
+interface HomeFeatureCardsProps {
+  accent: string;
+  connectionsCount: number;
+  pendingGamesCount: number;
+  todayEventsCount: number;
+  activeStoreName: string | null;
+  onOpenConnections: () => void;
+  onOpenStores: () => void;
+  onOpenGames: () => void;
+}
+
+function HomeFeatureCards({
+  accent,
+  connectionsCount,
+  pendingGamesCount,
+  todayEventsCount,
+  activeStoreName,
+  onOpenConnections,
+  onOpenStores,
+  onOpenGames,
+}: HomeFeatureCardsProps) {
+  return (
+    <View style={hfc.grid}>
+      <View style={hfc.row}>
+        <Pressable style={({ pressed }) => [hfc.card, pressed && { opacity: 0.85 }]} onPress={onOpenConnections}>
+          <View style={[hfc.iconWrap, { backgroundColor: accent + '18' }]}>
+            <Ionicons name="people-outline" size={16} color={accent} />
+          </View>
+          <Text style={hfc.title}>Friends</Text>
+          <Text style={hfc.sub} numberOfLines={1}>
+            {connectionsCount > 0 ? `${connectionsCount} connected` : 'No connections yet'}
+          </Text>
+        </Pressable>
+
+        <Pressable style={({ pressed }) => [hfc.card, pressed && { opacity: 0.85 }]} onPress={onOpenStores}>
+          <View style={[hfc.iconWrap, { backgroundColor: accent + '18' }]}>
+            <Ionicons name="map-outline" size={16} color={accent} />
+          </View>
+          <Text style={hfc.title}>Stores</Text>
+          <Text style={hfc.sub} numberOfLines={1}>
+            {activeStoreName ?? 'Find one near you'}
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={hfc.row}>
+        <Pressable style={({ pressed }) => [hfc.card, pressed && { opacity: 0.85 }]} onPress={onOpenStores}>
+          <View style={[hfc.iconWrap, { backgroundColor: accent + '18' }]}>
+            <Ionicons name="calendar-outline" size={16} color={accent} />
+          </View>
+          <Text style={hfc.title}>Events</Text>
+          <Text style={hfc.sub}>
+            {todayEventsCount > 0 ? `${todayEventsCount} today` : activeStoreName ? 'None today' : 'Select a store'}
+          </Text>
+        </Pressable>
+
+        <Pressable style={({ pressed }) => [hfc.card, pressed && { opacity: 0.85 }]} onPress={onOpenGames}>
+          <View style={[hfc.iconWrap, { backgroundColor: accent + '18' }]}>
+            <Ionicons name="game-controller-outline" size={16} color={accent} />
+          </View>
+          <Text style={hfc.title}>Games</Text>
+          <Text style={hfc.sub}>
+            {pendingGamesCount > 0 ? `${pendingGamesCount} to confirm` : 'Log a game'}
+          </Text>
+          {pendingGamesCount > 0 && (
+            <View style={[hfc.badge, { backgroundColor: colors.warning }]}>
+              <Text style={hfc.badgeText}>{pendingGamesCount}</Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // HomeScreen
 // ---------------------------------------------------------------------------
 
@@ -153,6 +232,18 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         </View>
 
+        {/* ── Feature cards ── */}
+        <HomeFeatureCards
+          accent={accent}
+          connectionsCount={connections?.accepted.length ?? 0}
+          pendingGamesCount={pendingGames.length}
+          todayEventsCount={todayEvents.length}
+          activeStoreName={activeStore?.name ?? null}
+          onOpenConnections={() => navigation.navigate('Connections')}
+          onOpenStores={() => navigation.navigate('Stores')}
+          onOpenGames={() => navigation.navigate('Connections')}
+        />
+
         {/* ── Store card ── */}
         {activeStore ? (
           <View style={styles.storeCard}>
@@ -211,25 +302,16 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           <View style={styles.noStoreCard}>
             {!nearestLoading && nearestStore && !dismissedNearby ? (
               <>
-                <Pressable
-                  style={styles.nearbyDismiss}
-                  onPress={() => setDismissedNearby(true)}
-                  hitSlop={8}
-                >
-                  <Ionicons name="close" size={16} color={colors.textTertiary} />
-                </Pressable>
-                <Ionicons name="location" size={32} color={accent} />
-                <Text style={styles.noStoreTitle}>Store nearby</Text>
-                <Text style={[styles.nearbyStoreName, { color: accent }]} numberOfLines={1}>
-                  {nearestStore.name}
-                </Text>
-                {nearestDistKm !== null && (
-                  <Text style={styles.noStoreHint}>
-                    {nearestDistKm < 1
-                      ? `${Math.round(nearestDistKm * 1000)} m away`
-                      : `${nearestDistKm.toFixed(1)} km away`}
+                <Ionicons name="location" size={22} color={accent} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.noStoreTitle}>Store nearby</Text>
+                  <Text style={[styles.noStoreHint, { color: accent }]} numberOfLines={1}>
+                    {nearestStore.name}
+                    {nearestDistKm !== null
+                      ? ` · ${nearestDistKm < 1 ? `${Math.round(nearestDistKm * 1000)}m` : `${nearestDistKm.toFixed(1)}km`}`
+                      : ''}
                   </Text>
-                )}
+                </View>
                 <Pressable
                   style={({ pressed }) => [
                     styles.findStoreBtn,
@@ -238,17 +320,19 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                   ]}
                   onPress={() => navigation.navigate('StoresMap', { storeId: nearestStore.id })}
                 >
-                  <Ionicons name="storefront-outline" size={16} color={onAccent} />
-                  <Text style={[styles.findStoreBtnText, { color: onAccent }]}>View Store</Text>
+                  <Text style={[styles.findStoreBtnText, { color: onAccent }]}>View →</Text>
+                </Pressable>
+                <Pressable onPress={() => setDismissedNearby(true)} hitSlop={10}>
+                  <Ionicons name="close" size={16} color={colors.textTertiary} />
                 </Pressable>
               </>
             ) : (
               <>
-                <Ionicons name="location-outline" size={32} color={colors.border} />
-                <Text style={styles.noStoreTitle}>No store selected</Text>
-                <Text style={styles.noStoreHint}>
-                  Check in at your local game store to discover nearby players and events
-                </Text>
+                <Ionicons name="location-outline" size={22} color={colors.border} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.noStoreTitle}>No store selected</Text>
+                  <Text style={styles.noStoreHint}>Check in at your local game store</Text>
+                </View>
                 <Pressable
                   style={({ pressed }) => [
                     styles.findStoreBtn,
@@ -257,8 +341,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                   ]}
                   onPress={() => navigation.navigate('StoresMap')}
                 >
-                  <Ionicons name="map-outline" size={16} color={onAccent} />
-                  <Text style={[styles.findStoreBtnText, { color: onAccent }]}>Find a Store</Text>
+                  <Text style={[styles.findStoreBtnText, { color: onAccent }]}>Find →</Text>
                 </Pressable>
               </>
             )}
@@ -537,52 +620,39 @@ const styles = StyleSheet.create({
   },
 
   noStoreCard: {
-    margin: spacing.xl,
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.xl,
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.xxxl,
-    alignItems: 'center',
-    gap: spacing.md,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.borderLight,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     ...shadows.sm,
-  },
-  nearbyDismiss: {
-    position: 'absolute',
-    top: spacing.md,
-    right: spacing.md,
-  },
-  nearbyStoreName: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-    textAlign: 'center',
   },
   noStoreTitle: {
     fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.sm,
     color: colors.textPrimary,
   },
   noStoreHint: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
     color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
+    marginTop: 2,
   },
   findStoreBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
     borderRadius: radii.full,
-    marginTop: spacing.sm,
-    ...shadows.sm,
+    flexShrink: 0,
   },
   findStoreBtnText: {
     fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.sm,
   },
 
   section: {
@@ -725,6 +795,58 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     textAlign: 'center',
     lineHeight: 20,
+  },
+});
+
+const hfc = StyleSheet.create({
+  grid: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    gap: spacing.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  card: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    ...shadows.sm,
+  },
+  iconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  title: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  sub: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
+  },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+    marginTop: 2,
+  },
+  badgeText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.xs,
+    color: colors.textInverse,
   },
 });
 

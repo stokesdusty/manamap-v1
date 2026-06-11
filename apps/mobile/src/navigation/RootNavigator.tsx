@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { ConnectedRevealScreen } from '../screens/ConnectedRevealScreen';
+import { DiscoverScreen } from '../screens/DiscoverScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { PlayerPreviewScreen } from '../screens/PlayerPreviewScreen';
@@ -36,6 +37,8 @@ export function RootNavigator() {
             <Stack.Screen name="Main" component={TabNavigator} />
             <Stack.Screen name="History" component={HistoryScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="StoresMap" component={StoresScreen} options={{ presentation: 'modal' }} />
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <Stack.Screen name="Discover" component={DiscoverScreen as any} options={{ presentation: 'modal' }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="PlayerPreview" component={PlayerPreviewScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="Connected" component={ConnectedRevealScreen} options={{ presentation: 'modal' }} />

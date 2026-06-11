@@ -306,6 +306,8 @@ export const StorePinSchema = z.object({
   name: z.string(),
   lat: z.number(),
   lng: z.number(),
+  proposed: z.boolean().optional(),
+  confirmationCount: z.number().int().nonnegative().optional(),
 });
 export type StorePin = z.infer<typeof StorePinSchema>;
 
@@ -1089,6 +1091,7 @@ export const NotificationKindSchema = z.enum([
   'EVENT_REMINDER',
   'BROADCAST',
   'QUEST',
+  'PLAY_INVITE',
 ]);
 export type NotificationKind = z.infer<typeof NotificationKindSchema>;
 
@@ -1309,3 +1312,34 @@ export const PlayOnlineInviteSchema = z.object({
   connectionIds: z.array(z.string().uuid()).min(1).max(10),
 });
 export type PlayOnlineInvite = z.infer<typeof PlayOnlineInviteSchema>;
+
+// --- Store submissions ---
+
+export const StoreStatusSchema = z.enum(['PROPOSED', 'ACTIVE', 'REJECTED']);
+export type StoreStatus = z.infer<typeof StoreStatusSchema>;
+
+export const SuggestStoreSchema = z.object({
+  name:         z.string().min(1).max(128),
+  lat:          z.number().min(-90).max(90),
+  lng:          z.number().min(-180).max(180),
+  address:      z.string().max(256).optional(),
+  city:         z.string().max(128).optional(),
+  state:        z.string().max(64).optional(),
+  website:      z.string().url().max(512).optional(),
+  submitterLat: z.number().min(-90).max(90).optional(),
+  submitterLng: z.number().min(-180).max(180).optional(),
+  note:         z.string().max(512).optional(),
+});
+export type SuggestStore = z.infer<typeof SuggestStoreSchema>;
+
+export const ConfirmStoreSchema = z.object({
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+});
+export type ConfirmStore = z.infer<typeof ConfirmStoreSchema>;
+
+export const StoreConfirmResultSchema = z.object({
+  confirmationCount: z.number().int().nonnegative(),
+  status: StoreStatusSchema,
+});
+export type StoreConfirmResult = z.infer<typeof StoreConfirmResultSchema>;

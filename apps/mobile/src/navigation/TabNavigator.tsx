@@ -4,8 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
-import { DiscoverScreen } from '../screens/DiscoverScreen';
 import { HomeScreen } from '../screens/HomeScreen';
+import { StoresScreen } from '../screens/StoresScreen';
 import { ConnectScreen } from '../screens/ConnectScreen';
 import { ScanScreen } from '../screens/ScanScreen';
 import { YouScreen } from '../screens/YouScreen';
@@ -105,11 +105,12 @@ export function TabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Discover"
-        component={DiscoverScreen}
+        name="Stores"
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        component={StoresScreen as any}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="radio-outline" size={size} color={color} />
+            <Ionicons name="map-outline" size={size} color={color} />
           ),
         }}
       />

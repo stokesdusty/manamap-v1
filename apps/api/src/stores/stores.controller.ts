@@ -13,8 +13,12 @@ import {
 import {
   AssociateCheckinEventBodySchema,
   CheckinBodySchema,
+  ConfirmStoreSchema,
+  SuggestStoreSchema,
   type AssociateCheckinEventBody,
   type CheckinBody,
+  type ConfirmStore,
+  type SuggestStore,
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
@@ -28,13 +32,36 @@ export class StoresController {
   constructor(private readonly stores: StoresService) {}
 
   @Get()
-  list(@Query('bbox') bbox: string | undefined, @Query('q') q: string | undefined) {
-    return this.stores.list({ bbox, q });
+  list(
+    @Query('bbox') bbox: string | undefined,
+    @Query('q') q: string | undefined,
+    @Query('includeProposed') includeProposed?: string,
+  ) {
+    return this.stores.list({ bbox, q, includeProposed: includeProposed === 'true' });
+  }
+
+  @Post('suggest')
+  @HttpCode(201)
+  suggestStore(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(SuggestStoreSchema)) body: SuggestStore,
+  ) {
+    return this.stores.suggestStore(req.user.sub, body);
   }
 
   @Get(':id')
   getDetail(@Param('id') id: string) {
     return this.stores.getDetail(id);
+  }
+
+  @Post(':id/confirm')
+  @HttpCode(200)
+  confirmStore(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(ConfirmStoreSchema)) body: ConfirmStore,
+  ) {
+    return this.stores.confirmStore(req.user.sub, id, body);
   }
 
   @Post(':id/checkin')

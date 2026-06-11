@@ -40,9 +40,9 @@ import {
   useLfgLock,
 } from '../hooks/useLfg';
 import { usePodFeed, useCreatePod } from '../hooks/usePods';
-import type { CompositeScreenProps } from '@react-navigation/native';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { TabParamList, RootStackParamList } from '../navigation/types';
 import { useNearby, useSuggestions, useStores, useStoreEvents, type DiscoveryFilters } from '../hooks/useNearby';
 import { usePresence } from '../hooks/usePresence';
@@ -55,10 +55,12 @@ import { BellButton } from '../navigation/TabNavigator';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import { useIdentityTheme, type IdentityTheme } from '../hooks/useIdentityTheme';
 
-type DiscoverScreenProps = CompositeScreenProps<
-  BottomTabScreenProps<TabParamList, 'Discover'>,
-  NativeStackScreenProps<RootStackParamList>
->;
+type DiscoverScreenProps = {
+  navigation: CompositeNavigationProp<
+    NativeStackNavigationProp<RootStackParamList, 'Discover'>,
+    BottomTabNavigationProp<TabParamList>
+  >;
+} & Pick<NativeStackScreenProps<RootStackParamList, 'Discover'>, 'route'>;
 
 // ---------------------------------------------------------------------------
 // Radar
