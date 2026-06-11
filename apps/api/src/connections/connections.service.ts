@@ -190,17 +190,19 @@ export class ConnectionsService {
         requester: {
           select: {
             ...PEER_SELECT,
+            name: true,
             identities: { select: { discordHandle: true } },
             deckLinks: { select: { id: true, site: true, name: true, url: true } },
-            privacySettings: { select: { showDiscord: true, showDecks: true } },
+            privacySettings: { select: { showDiscord: true, showDecks: true, shareNameWithContacts: true } },
           },
         },
         addressee: {
           select: {
             ...PEER_SELECT,
+            name: true,
             identities: { select: { discordHandle: true } },
             deckLinks: { select: { id: true, site: true, name: true, url: true } },
-            privacySettings: { select: { showDiscord: true, showDecks: true } },
+            privacySettings: { select: { showDiscord: true, showDecks: true, shareNameWithContacts: true } },
           },
         },
       },
@@ -217,6 +219,7 @@ export class ConnectionsService {
     const accepted = conn.status === ConnectionStatus.ACCEPTED;
     const showDiscord = accepted && (peerRaw.privacySettings?.showDiscord ?? true);
     const showDecks = accepted && (peerRaw.privacySettings?.showDecks ?? true);
+    const showName = accepted && (peerRaw.privacySettings?.shareNameWithContacts ?? false);
 
     const discordHandle = showDiscord
       ? (peerRaw.identities.find((i) => i.discordHandle)?.discordHandle ?? null)
@@ -230,7 +233,7 @@ export class ConnectionsService {
       ? await this.socials.visibleSocials(peerRaw.id, userId)
       : { socials: [], publicCount: 0, friendsOnlyCount: 0 };
 
-    const { identities: _i, deckLinks: _d, privacySettings: _p, ...peerBase } = peerRaw;
+    const { identities: _i, deckLinks: _d, privacySettings: _p, name: peerName, ...peerBase } = peerRaw;
 
     return {
       id: conn.id,
@@ -242,6 +245,7 @@ export class ConnectionsService {
       updatedAt: conn.updatedAt.toISOString(),
       peer: {
         ...peerBase,
+        name: showName ? (peerName ?? null) : null,
         discordHandle,
         deckLinks,
         socials: socialsData.socials,

@@ -66,6 +66,7 @@ export function useUpdatePrivacy() {
           showDecks: patch.showDecks ?? old.showDecks,
           showMetHistory: patch.showMetHistory ?? old.showMetHistory,
           storeMessages: patch.storeMessages ?? old.storeMessages,
+          shareNameWithContacts: patch.shareNameWithContacts ?? old.shareNameWithContacts,
         };
       });
       return { prev };

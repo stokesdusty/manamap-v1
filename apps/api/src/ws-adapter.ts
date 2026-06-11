@@ -1,25 +1,19 @@
-import * as http from 'http';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import type { INestApplication } from '@nestjs/common';
 import { Server, type ServerOptions } from 'socket.io';
 
 export class WsAdapter extends IoAdapter {
-  private readonly wsPort: number;
   private ioServer: Server | null = null;
 
-  constructor(app: INestApplication, wsPort: number) {
-    super(app);
-    this.wsPort = wsPort;
-  }
+  constructor(app: INestApplication) { super(app); }
 
   createIOServer(_port: number, options?: ServerOptions): Server {
     if (!this.ioServer) {
-      const httpServer = http.createServer();
-      this.ioServer = new Server(httpServer, {
-        cors: { origin: '*' },
+      this.ioServer = new Server(this.httpServer, {
+        path: '/ws/socket.io',
+        cors: { origin: process.env['CORS_ORIGIN']?.split(',') ?? [] },
         ...options,
       });
-      httpServer.listen(this.wsPort);
     }
     return this.ioServer;
   }

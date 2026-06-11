@@ -25,6 +25,7 @@ export class MeService {
     return this.prisma.user.update({
       where: { id: userId },
       data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
         ...(dto.displayName !== undefined ? { displayName: dto.displayName } : {}),
         ...(dto.pronouns !== undefined ? { pronouns: dto.pronouns } : {}),
         ...(dto.bio !== undefined ? { bio: dto.bio } : {}),
@@ -48,6 +49,7 @@ export class MeService {
         showDecks: true,
         showMetHistory: true,
         storeMessages: true,
+        shareNameWithContacts: false,
       }
     );
   }
@@ -59,6 +61,7 @@ export class MeService {
       ...(dto.showDecks !== undefined ? { showDecks: dto.showDecks } : {}),
       ...(dto.showMetHistory !== undefined ? { showMetHistory: dto.showMetHistory } : {}),
       ...(dto.storeMessages !== undefined ? { storeMessages: dto.storeMessages } : {}),
+      ...(dto.shareNameWithContacts !== undefined ? { shareNameWithContacts: dto.shareNameWithContacts } : {}),
     };
     return this.prisma.privacySettings.upsert({
       where: { userId },
@@ -70,6 +73,7 @@ export class MeService {
         showDecks: dto.showDecks ?? true,
         showMetHistory: dto.showMetHistory ?? true,
         storeMessages: dto.storeMessages ?? true,
+        shareNameWithContacts: dto.shareNameWithContacts ?? false,
       },
     });
   }
@@ -275,6 +279,7 @@ export class MeService {
       const user = await tx.user.update({
         where: { id: userId },
         data: {
+          ...(dto.name !== undefined ? { name: dto.name } : {}),
           displayName: dto.displayName,
           pronouns: dto.pronouns ?? null,
           avatarColors: dto.avatarColors,
@@ -290,13 +295,17 @@ export class MeService {
 
       await tx.privacySettings.upsert({
         where: { userId },
-        update: { discoverable: dto.discoverable ?? true },
+        update: {
+          discoverable: dto.discoverable ?? true,
+          ...(dto.shareNameWithContacts !== undefined ? { shareNameWithContacts: dto.shareNameWithContacts } : {}),
+        },
         create: {
           userId,
           discoverable: dto.discoverable ?? true,
           showDiscord: true,
           showDecks: true,
           showMetHistory: true,
+          shareNameWithContacts: dto.shareNameWithContacts ?? false,
         },
       });
 

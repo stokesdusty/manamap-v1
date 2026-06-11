@@ -93,6 +93,8 @@ function guildName(cs: ManaColor[]): string {
 type DeckDraft = { site: DeckSite; name: string; url: string };
 
 type Draft = {
+  name: string;
+  shareNameWithContacts: boolean;
   displayName: string;
   pronouns: string;
   avatarColors: ManaColor[];
@@ -151,6 +153,8 @@ function draftReducer(state: Draft, action: DraftAction): Draft {
 }
 
 const INITIAL_DRAFT: Draft = {
+  name: '',
+  shareNameWithContacts: false,
   displayName: '',
   pronouns: '',
   avatarColors: [],
@@ -308,7 +312,7 @@ function Step1({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={step.scroll} keyboardShouldPersistTaps="handled">
         <Text style={step.heading}>What should we call you?</Text>
-        <Text style={step.sub}>Your display name is how other players see you.</Text>
+        <Text style={step.sub}>Your display name is how other players see you in Magic contexts.</Text>
 
         <View style={step.field}>
           <Text style={step.label}>Display name</Text>
@@ -334,6 +338,33 @@ function Step1({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
             placeholder="e.g. they/them"
             placeholderTextColor={colors.textTertiary}
           />
+        </View>
+
+        <View style={step.field}>
+          <Text style={step.label}>Real / chosen name <Text style={step.optional}>(optional)</Text></Text>
+          <TextInput
+            style={step.input}
+            value={draft.name}
+            onChangeText={(v) => dispatch({ type: 'SET', key: 'name', value: v })}
+            maxLength={80}
+            placeholder="e.g. Alex Smith or Alex S."
+            placeholderTextColor={colors.textTertiary}
+            autoCapitalize="words"
+          />
+          {draft.name.trim().length > 0 && (
+            <View style={step.nameShareRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={step.nameShareTitle}>Share with contacts</Text>
+                <Text style={step.nameShareSub}>Your connections can see this name</Text>
+              </View>
+              <Switch
+                value={draft.shareNameWithContacts}
+                onValueChange={(v) => dispatch({ type: 'SET', key: 'shareNameWithContacts', value: v })}
+                trackColor={{ true: colors.accent, false: colors.border }}
+                thumbColor={colors.surface}
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -687,6 +718,8 @@ export function OnboardingScreen() {
     if (isLastStep) {
       submit(
         {
+          ...(draft.name.trim() ? { name: draft.name.trim() } : {}),
+          shareNameWithContacts: draft.shareNameWithContacts,
           displayName: draft.displayName.trim(),
           pronouns: draft.pronouns.trim() || null,
           avatarColors: draft.avatarColors,
@@ -1060,6 +1093,29 @@ const step = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
+  },
+  nameShareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.paper,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  nameShareTitle: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  nameShareSub: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    marginTop: 2,
   },
 });
 

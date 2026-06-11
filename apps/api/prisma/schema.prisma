@@ -156,6 +156,7 @@ enum SocialVisibility {
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
+  name         String?
   displayName  String   @map("display_name")
   avatarUrl    String?  @map("avatar_url")
   bio          String?
@@ -245,14 +246,15 @@ model RefreshToken {
 
 model PrivacySettings {
   id                String            @id @default(uuid())
-  userId            String            @unique @map("user_id")
-  profileVisibility ProfileVisibility @default(PUBLIC) @map("profile_visibility")
-  locationSharing   LocationSharing   @default(CONNECTIONS_ONLY) @map("location_sharing")
-  discoverable      Boolean           @default(true)
-  showDiscord       Boolean           @default(true) @map("show_discord")
-  showDecks         Boolean           @default(true) @map("show_decks")
-  showMetHistory    Boolean           @default(true) @map("show_met_history")
-  storeMessages     Boolean           @default(true) @map("store_messages")
+  userId                String            @unique @map("user_id")
+  profileVisibility     ProfileVisibility @default(PUBLIC) @map("profile_visibility")
+  locationSharing       LocationSharing   @default(CONNECTIONS_ONLY) @map("location_sharing")
+  discoverable          Boolean           @default(true)
+  showDiscord           Boolean           @default(true) @map("show_discord")
+  showDecks             Boolean           @default(true) @map("show_decks")
+  showMetHistory        Boolean           @default(true) @map("show_met_history")
+  storeMessages         Boolean           @default(true) @map("store_messages")
+  shareNameWithContacts Boolean           @default(false) @map("share_name_with_contacts")
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
 

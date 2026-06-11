@@ -70,7 +70,7 @@ Pre-requisites before touching infra: complete all **Pre-flight** items first, t
 #### PF-1 — Fix Socket.IO to share port 3000
 The life tracker's `WsAdapter` currently spawns its own `http.createServer()` on port 3001. Cloud platforms expose one port per service, so this will silently fail in production. Fix it to attach Socket.IO to the existing Fastify HTTP server.
 
-- [ ] **`apps/api/src/ws-adapter.ts`** — remove the `wsPort: number` constructor param and the `http.createServer()` block entirely. Change `createIOServer` to use `this.httpServer` (the raw Node.js HTTP server NestJS's `IoAdapter` base class exposes via `super(app)`) instead of creating a new one. Set `path: '/ws/socket.io'` on the Server options. Replace the hardcoded `cors: { origin: '*' }` with `cors: { origin: process.env['CORS_ORIGIN']?.split(',') ?? [] }`. Final class should look like:
+- [x] **`apps/api/src/ws-adapter.ts`** — remove the `wsPort: number` constructor param and the `http.createServer()` block entirely. Change `createIOServer` to use `this.httpServer` (the raw Node.js HTTP server NestJS's `IoAdapter` base class exposes via `super(app)`) instead of creating a new one. Set `path: '/ws/socket.io'` on the Server options. Replace the hardcoded `cors: { origin: '*' }` with `cors: { origin: process.env['CORS_ORIGIN']?.split(',') ?? [] }`. Final class should look like:
   ```ts
   import { IoAdapter } from '@nestjs/platform-socket.io';
   import type { INestApplication } from '@nestjs/common';
@@ -93,9 +93,9 @@ The life tracker's `WsAdapter` currently spawns its own `http.createServer()` on
     }
   }
   ```
-- [ ] **`apps/api/src/main.ts`** — change `new WsAdapter(app, env.WS_PORT)` to `new WsAdapter(app)`.
-- [ ] **`apps/api/src/config/config.schema.ts`** — remove the `WS_PORT` field (or make it `z.coerce.number().optional()` if you want to leave the env var harmless).
-- [ ] **`apps/mobile/src/hooks/useLifeTracker.ts`** — line 14: change `EXPO_PUBLIC_WS_URL` to `EXPO_PUBLIC_API_URL` (same host, no separate port). Line 31: add `path: '/ws/socket.io'` to the `io()` options object. Result:
+- [x] **`apps/api/src/main.ts`** — change `new WsAdapter(app, env.WS_PORT)` to `new WsAdapter(app)`.
+- [x] **`apps/api/src/config/config.schema.ts`** — remove the `WS_PORT` field (or make it `z.coerce.number().optional()` if you want to leave the env var harmless).
+- [x] **`apps/mobile/src/hooks/useLifeTracker.ts`** — line 14: change `EXPO_PUBLIC_WS_URL` to `EXPO_PUBLIC_API_URL` (same host, no separate port). Line 31: add `path: '/ws/socket.io'` to the `io()` options object. Result:
   ```ts
   const WS_URL = process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3000';
   // ...
@@ -106,11 +106,11 @@ The life tracker's `WsAdapter` currently spawns its own `http.createServer()` on
     // ...
   });
   ```
-- [ ] **Remove `EXPO_PUBLIC_WS_URL`** from any `.env` files or EAS secrets — it's no longer needed.
-- [ ] **Smoke test locally**: start API (`pnpm --filter @manamap/api dev`), open the life tracker in the simulator, confirm the Socket.IO connection connects on port 3000 via the `/ws/socket.io` path.
+- [x] **Remove `EXPO_PUBLIC_WS_URL`** from any `.env` files or EAS secrets — it's no longer needed.
+- [x] **Smoke test locally**: start API (`pnpm --filter @manamap/api dev`), open the life tracker in the simulator, confirm the Socket.IO connection connects on port 3000 via the `/ws/socket.io` path.
 
 #### PF-2 — Parameterize CORS origin
-- [ ] **`apps/api/src/main.ts`** — replace the hardcoded `origin` array with:
+- [x] **`apps/api/src/main.ts`** — replace the hardcoded `origin` array with:
   ```ts
   origin: (process.env['CORS_ORIGIN'] ?? 'http://localhost:5173,http://localhost:4173')
     .split(',')
@@ -119,14 +119,14 @@ The life tracker's `WsAdapter` currently spawns its own `http.createServer()` on
   This falls back to localhost in dev but reads the env var in production.
 
 #### PF-3 — Add a production migration script
-- [ ] **`apps/api/package.json`** — add under `"scripts"`:
+- [x] **`apps/api/package.json`** — add under `"scripts"`:
   ```json
   "db:migrate:prod": "prisma migrate deploy"
   ```
   (`migrate deploy` applies pending migrations without creating new ones and is safe in CI/production. Never run `migrate dev` against a production database.)
 
 #### PF-4 — Create `eas.json`
-- [ ] Create **`apps/mobile/eas.json`** (EAS looks for this next to `app.config.ts`):
+- [x] Create **`apps/mobile/eas.json`** (EAS looks for this next to `app.config.ts`):
   ```json
   {
     "cli": { "version": ">= 12.0.0" },
@@ -156,7 +156,7 @@ The life tracker's `WsAdapter` currently spawns its own `http.createServer()` on
 
 #### PF-5 — Enable OTA updates in app.config.ts
 OTA lets you push JS-only hotfixes during beta without submitting a new build to Apple/Google.
-- [ ] **`apps/mobile/app.config.ts`** — add two top-level fields inside the config object (same level as `name`, `slug`):
+- [x] **`apps/mobile/app.config.ts`** — add two top-level fields inside the config object (same level as `name`, `slug`):
   ```ts
   runtimeVersion: { policy: 'appVersion' },
   updates: { url: 'https://u.expo.dev/3497a3d5-7a81-4da9-89a3-5108ce4a69ee' },

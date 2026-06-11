@@ -141,6 +141,7 @@ export type ResolveTokenBody = z.infer<typeof ResolveTokenBodySchema>;
 export const ProfileSchema = z.object({
   id: IdSchema,
   email: z.string().email(),
+  name: z.string().max(80).nullable(),
   displayName: z.string().min(1).max(64),
   pronouns: z.string().max(32).nullable(),
   bio: z.string().max(500).nullable(),
@@ -157,6 +158,7 @@ export const ProfileSchema = z.object({
 export type Profile = z.infer<typeof ProfileSchema>;
 
 export const UpdateProfileSchema = z.object({
+  name: z.string().max(80).nullable().optional(),
   displayName: z.string().min(1).max(64).optional(),
   pronouns: z.string().max(32).nullable().optional(),
   bio: z.string().max(500).nullable().optional(),
@@ -178,6 +180,7 @@ export const PrivacySchema = z.object({
   showDecks: z.boolean(),
   showMetHistory: z.boolean(),
   storeMessages: z.boolean().default(true),
+  shareNameWithContacts: z.boolean().default(false),
 });
 export type Privacy = z.infer<typeof PrivacySchema>;
 
@@ -187,6 +190,7 @@ export const UpdatePrivacySchema = z.object({
   showDecks: z.boolean().optional(),
   showMetHistory: z.boolean().optional(),
   storeMessages: z.boolean().optional(),
+  shareNameWithContacts: z.boolean().optional(),
 });
 export type UpdatePrivacy = z.infer<typeof UpdatePrivacySchema>;
 
@@ -269,6 +273,7 @@ export const ConnectionsListSchema = z.object({
 export type ConnectionsList = z.infer<typeof ConnectionsListSchema>;
 
 export const ConnectedProfileSchema = PublicProfileSchema.extend({
+  name: z.string().max(80).nullable(),
   discordHandle: z.string().nullable(),
   deckLinks: z.array(DeckLinkSchema),
 });
@@ -861,6 +866,8 @@ export type LfgLockBody = z.infer<typeof LfgLockBodySchema>;
 export const OnboardingDeckSchema = CreateDeckLinkSchema;
 
 export const OnboardingSubmitSchema = z.object({
+  name: z.string().max(80).nullable().optional(),
+  shareNameWithContacts: z.boolean().optional(),
   displayName: z.string().min(1).max(64),
   pronouns: z.string().max(32).nullable().optional(),
   avatarColors: z.array(ManaColorSchema).min(1).max(5),

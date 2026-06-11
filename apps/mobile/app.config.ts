@@ -4,6 +4,8 @@ const config: ExpoConfig = {
   name: 'manamap',
   slug: 'manamap',
   version: '1.0.0',
+  runtimeVersion: { policy: 'appVersion' },
+  updates: { url: 'https://u.expo.dev/3497a3d5-7a81-4da9-89a3-5108ce4a69ee' },
   orientation: 'default',
   scheme: 'manamap',
   userInterfaceStyle: 'light',

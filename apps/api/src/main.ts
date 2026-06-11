@@ -45,7 +45,7 @@ async function bootstrap(): Promise<void> {
   );
 
   app.useLogger(app.get(Logger));
-  app.useWebSocketAdapter(new WsAdapter(app, env.WS_PORT));
+  app.useWebSocketAdapter(new WsAdapter(app));
 
   // Echo request ID back so clients can correlate errors in logs
   const fastify = app.getHttpAdapter().getInstance() as import('fastify').FastifyInstance;
@@ -57,7 +57,9 @@ async function bootstrap(): Promise<void> {
   app.setGlobalPrefix('api');
 
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:4173'],
+    origin: (process.env['CORS_ORIGIN'] ?? 'http://localhost:5173,http://localhost:4173')
+      .split(',')
+      .map((s) => s.trim()),
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,

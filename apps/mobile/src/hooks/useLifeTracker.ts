@@ -11,7 +11,7 @@ import type {
 } from '@manamap/shared';
 import { getTokens } from '../lib/storage';
 
-const WS_URL = process.env['EXPO_PUBLIC_WS_URL'] ?? 'http://localhost:3001';
+const WS_URL = process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3000';
 
 export function useLifeTracker(podId: string | null) {
   const socketRef = useRef<Socket | null>(null);
@@ -29,6 +29,7 @@ export function useLifeTracker(podId: string | null) {
       if (!tokens?.accessToken) { setIsLoading(false); return; }
 
       socket = io(`${WS_URL}/life-tracker`, {
+        path: '/ws/socket.io',
         auth: { token: tokens.accessToken },
         transports: ['websocket'],
         reconnection: true,

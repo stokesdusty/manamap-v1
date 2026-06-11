@@ -120,7 +120,8 @@
       "Bash(curl -s https://api.tabletop.wizards.com/silverbeak-griffin-service/graphql -H 'Content-Type: application/json' -H 'X-wotc-client: client:locator version:local_version platform:Unknown' -d '{\"query\":\"query getStoresByLocation\\($latitude: Float!, $longitude: Float!, $maxMeters: Int!, $pageSize: Int, $page: Int\\){ storesByLocation\\(input:{ latitude: $latitude, longitude: $longitude, maxMeters: $maxMeters, pageSize: $pageSize, page: $page }\\){ stores { id isPremium latitude longitude name postalAddress phoneNumber website emailAddress } pageInfo{ page pageSize totalResults } } }\",\"variables\":{\"latitude\":33.749,\"longitude\":-84.388,\"maxMeters\":30000,\"pageSize\":5,\"page\":1}}')",
       "Bash(curl -s https://api.tabletop.wizards.com/silverbeak-griffin-service/graphql -H 'Content-Type: application/json' -H 'X-wotc-client: client:locator version:local_version platform:Unknown' -d '{\"query\":\"query getStoresByIds\\($id: [ID!]!\\){ storesByIds\\(ids: $id\\){ emailAddress id isPremium latitude longitude name postalAddress phoneNumber website } }\",\"variables\":{\"id\":[\"10370\",\"10724\"]}}')",
       "Bash(Select-String -Path \"c:\\\\dev\\\\manamap\\\\BACKLOG.md\" -Pattern \"How we work an item\")",
-      "Bash(Select-Object LineNumber)"
+      "Bash(Select-Object LineNumber)",
+      "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260611100000_username_name\")"
     ]
   }
 }

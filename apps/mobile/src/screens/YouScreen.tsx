@@ -330,6 +330,7 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
   const isInvisible = !privacy.discoverable;
 
   const otherRows: Array<{ key: keyof Privacy; label: string; sub?: string }> = [
+    { key: 'shareNameWithContacts', label: 'Share real name', sub: 'Your connections can see your real/chosen name' },
     { key: 'showDiscord', label: 'Show Discord', sub: 'Visible to your connections' },
     { key: 'showDecks', label: 'Show decks', sub: 'Share your deck list publicly' },
     { key: 'showMetHistory', label: 'Show met history', sub: "Others can see who you've played" },
@@ -892,6 +893,7 @@ const section = StyleSheet.create({
 // ---------------------------------------------------------------------------
 
 type ProfileDraft = {
+  name: string;
   displayName: string;
   pronouns: string;
   bio: string;
@@ -905,6 +907,7 @@ type ProfileDraft = {
 
 function draftFromProfile(p: Profile): ProfileDraft {
   return {
+    name: p.name ?? '',
     displayName: p.displayName,
     pronouns: p.pronouns ?? '',
     bio: p.bio ?? '',
@@ -954,6 +957,7 @@ function EditProfileModal({
   function handleSave() {
     update(
       {
+        name: draft.name.trim() || null,
         displayName: draft.displayName.trim() || profile.displayName,
         pronouns: draft.pronouns.trim() || null,
         bio: draft.bio.trim() || null,
@@ -1018,6 +1022,19 @@ function EditProfileModal({
                 placeholder="Your name"
                 placeholderTextColor={colors.textTertiary}
               />
+            </FormField>
+
+            <FormField label="Real / chosen name (optional)">
+              <TextInput
+                style={form.input}
+                value={draft.name}
+                onChangeText={(v) => set('name', v)}
+                maxLength={80}
+                placeholder="e.g. Alex Smith or Alex S."
+                placeholderTextColor={colors.textTertiary}
+                autoCapitalize="words"
+              />
+              <Text style={form.fieldHint}>Shared only with contacts when you enable "Share real name" in Privacy</Text>
             </FormField>
 
             <FormField label="Pronouns">
@@ -1211,6 +1228,12 @@ const form = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   multiline: { height: 100, paddingTop: spacing.sm },
+  fieldHint: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    marginTop: 4,
+  },
   row: { flexDirection: 'row', gap: spacing.md },
   colorBtn: {
     borderRadius: radii.full,
