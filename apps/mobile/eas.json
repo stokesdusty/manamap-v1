@@ -13,13 +13,13 @@
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://FILL_IN_AFTER_PHASE_1.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://manamap-v1-production.up.railway.app"
       }
     },
     "production": {
       "android": { "buildType": "app-bundle" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://FILL_IN_AFTER_PHASE_1.up.railway.app"
+        "EXPO_PUBLIC_API_URL": "https://manamap-v1-production.up.railway.app"
       }
     }
   },

@@ -121,7 +121,8 @@
       "Bash(curl -s https://api.tabletop.wizards.com/silverbeak-griffin-service/graphql -H 'Content-Type: application/json' -H 'X-wotc-client: client:locator version:local_version platform:Unknown' -d '{\"query\":\"query getStoresByIds\\($id: [ID!]!\\){ storesByIds\\(ids: $id\\){ emailAddress id isPremium latitude longitude name postalAddress phoneNumber website } }\",\"variables\":{\"id\":[\"10370\",\"10724\"]}}')",
       "Bash(Select-String -Path \"c:\\\\dev\\\\manamap\\\\BACKLOG.md\" -Pattern \"How we work an item\")",
       "Bash(Select-Object LineNumber)",
-      "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260611100000_username_name\")"
+      "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260611100000_username_name\")",
+      "Bash(git -C c:\\\\dev\\\\manamap ls-files apps/api/.env apps/api/.env.local)"
     ]
   }
 }
