@@ -171,21 +171,21 @@ OTA lets you push JS-only hotfixes during beta without submitting a new build to
 
 Railway hosts all three backend pieces (Postgres, Redis, Node.js API) in one dashboard with a shared private network.
 
-1. [ ] Sign up at **railway.app** → "New Project".
-2. [ ] **Provision Postgres**: click "+ New" → "Database" → "PostgreSQL". Wait for it to spin up (< 1 min). Click it → "Connect" tab → copy the `DATABASE_URL` (connection string starting with `postgresql://`).
-3. [ ] **Enable PostGIS** — this must happen before running Prisma migrations or they will fail on the `geography` column. Click the Postgres service → "Connect" tab → "Query" (or "Database Shell"). Run:
+1. [x] Sign up at **railway.app** → "New Project".
+2. [x] **Provision Postgres**: click "+ New" → "Database" → "PostgreSQL". Wait for it to spin up (< 1 min). Click it → "Connect" tab → copy the `DATABASE_URL` (connection string starting with `postgresql://`).
+3. [x] **Enable PostGIS** — this must happen before running Prisma migrations or they will fail on the `geography` column. Click the Postgres service → "Connect" tab → "Query" (or "Database Shell"). Run:
    ```sql
    CREATE EXTENSION IF NOT EXISTS postgis;
    CREATE EXTENSION IF NOT EXISTS postgis_topology;
    ```
    Confirm with `SELECT PostGIS_version();` — should return a version string.
-4. [ ] **Provision Redis**: click "+ New" → "Database" → "Redis". Copy the `REDIS_URL` from its "Connect" tab. (Note: Railway Redis is a standard Redis process. Do NOT substitute Upstash — it breaks BullMQ's blocking commands used by event reminders and gamification queues.)
-5. [ ] **Add API service**: click "+ New" → "GitHub Repo" → select `manamap` → pick the `main` branch.
-6. [ ] In the API service settings → **Build & Deploy**:
+4. [x] **Provision Redis**: click "+ New" → "Database" → "Redis". Copy the `REDIS_URL` from its "Connect" tab. (Note: Railway Redis is a standard Redis process. Do NOT substitute Upstash — it breaks BullMQ's blocking commands used by event reminders and gamification queues.)
+5. [x] **Add API service**: click "+ New" → "GitHub Repo" → select `manamap` → pick the `main` branch.
+6. [x] In the API service settings → **Build & Deploy**:
    - **Root Directory**: leave blank (repo root)
    - **Build Command**: `pnpm install --frozen-lockfile && pnpm --filter @manamap/api build`
    - **Start Command**: `cd apps/api && npx prisma migrate deploy && node dist/main`
-7. [ ] In the API service → **Variables** tab, add every env var below (click "New Variable" for each):
+7. [x] In the API service → **Variables** tab, add every env var below (click "New Variable" for each):
 
    | Variable | Value |
    |---|---|
@@ -200,22 +200,22 @@ Railway hosts all three backend pieces (Postgres, Redis, Node.js API) in one das
    | `CORS_ORIGIN` | leave blank for now — fill in after 1B |
    | `DEV_TOOLS` | do not set this at all — absence is the gate |
 
-8. [ ] Click "Deploy" on the API service. Watch the deploy logs. The first deploy will run `prisma migrate deploy` which applies all migrations to the fresh Postgres DB. It should finish with "Listening on 0.0.0.0:3000".
-9. [ ] In the API service → "Settings" → "Networking" → "Generate Domain". Copy the public URL (e.g. `https://manamap-api-production.up.railway.app`). This is your `EXPO_PUBLIC_API_URL`.
-10. [ ] Smoke test: `curl https://YOUR-RAILWAY-URL.up.railway.app/api/v1/stores` — should return `[]` or a store list (not a 500 or connection error).
+8. [x] Click "Deploy" on the API service. Watch the deploy logs. The first deploy will run `prisma migrate deploy` which applies all migrations to the fresh Postgres DB. It should finish with "Listening on 0.0.0.0:3000".
+9. [x] In the API service → "Settings" → "Networking" → "Generate Domain". Copy the public URL (e.g. `https://manamap-api-production.up.railway.app`). This is your `EXPO_PUBLIC_API_URL`.
+10. [x] Smoke test: `curl https://YOUR-RAILWAY-URL.up.railway.app/api/v1/stores` — should return `[]` or a store list (not a 500 or connection error).
 
 #### 1B — Vercel: Admin portal
 
-1. [ ] Go to **vercel.com** → "Add New Project" → "Import Git Repository" → select `manamap`.
-2. [ ] In project config:
+1. [x] Go to **vercel.com** → "Add New Project" → "Import Git Repository" → select `manamap`.
+2. [x] In project config:
    - **Framework Preset**: Vite (Vercel auto-detects it)
    - **Root Directory**: `apps/admin`
-3. [ ] Add environment variables:
+3. [x] Add environment variables:
    - `VITE_API_URL` = `https://YOUR-RAILWAY-URL.up.railway.app/api`
    - `VITE_DISCORD_CLIENT_ID` = `1510362228526809199`
-4. [ ] Click "Deploy". Copy the Vercel URL (e.g. `https://manamap-admin.vercel.app`).
-5. [ ] **Back in Railway** → API service → Variables → set `CORS_ORIGIN` = `https://manamap-admin.vercel.app` (exact URL, no trailing slash). Redeploy the API service for the change to take effect.
-6. [ ] **Discord Developer Portal** (discord.com/developers/applications → your app → OAuth2 → Redirects): add `https://manamap-admin.vercel.app/auth/callback`. Save.
+4. [x] Click "Deploy". Copy the Vercel URL (e.g. `https://manamap-admin.vercel.app`).
+5. [x] **Back in Railway** → API service → Variables → set `CORS_ORIGIN` = `https://manamap-admin.vercel.app` (exact URL, no trailing slash). Redeploy the API service for the change to take effect.
+6. [x] **Discord Developer Portal** (discord.com/developers/applications → your app → OAuth2 → Redirects): add `https://manamap-admin.vercel.app/auth/callback`. Save.
 7. [ ] **Also back in Vercel** → Settings → Environment Variables: add `VITE_DISCORD_REDIRECT_URI` = `https://manamap-admin.vercel.app/auth/callback`. Trigger a redeploy (Vercel → Deployments → "..." → Redeploy).
 8. [ ] Open the admin portal URL in a browser → click Login → complete Discord OAuth → confirm you land on `/stores` without errors.
 
