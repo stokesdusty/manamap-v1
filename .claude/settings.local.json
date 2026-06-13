@@ -41,7 +41,16 @@
       "Bash(emulator -list-avds)",
       "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260530240000_gamification\")",
       "Bash(pnpm approve-builds *)",
-      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260530260000_partner_program\")"
+      "Bash(mkdir -p \"c:/dev/manamap/apps/api/prisma/migrations/20260530260000_partner_program\")",
+      "Bash(brew --version)",
+      "Bash(brew services *)",
+      "Bash(sudo xcodebuild -license accept)",
+      "Bash(docker exec *)",
+      "Bash(lsof -iTCP:5432 -sTCP:LISTEN)",
+      "Bash(xcode-select -p)",
+      "Bash(xcodebuild -version)",
+      "Bash(pod --version)",
+      "Bash(ipconfig getifaddr *)"
     ]
   }
 }

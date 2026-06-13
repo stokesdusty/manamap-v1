@@ -7,6 +7,7 @@ import { AuthGuard, type AccessTokenPayload } from '../auth.guard';
 const VALID_PAYLOAD: AccessTokenPayload = {
   sub: 'user-uuid',
   email: 'test@example.com',
+  role: 'USER',
   iat: 1000000000,
   exp: 9999999999,
 };

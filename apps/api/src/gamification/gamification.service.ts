@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import type Redis from 'ioredis';
@@ -30,8 +30,6 @@ const STREAK_WINDOW_DAYS = 8;
 
 @Injectable()
 export class GamificationService {
-  private readonly logger = new Logger(GamificationService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     @Inject(REDIS) private readonly redis: Redis,

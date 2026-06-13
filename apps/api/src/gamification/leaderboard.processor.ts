@@ -1,12 +1,9 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { GamificationService } from './gamification.service';
 
 @Processor('gamification')
 export class LeaderboardProcessor extends WorkerHost {
-  private readonly logger = new Logger(LeaderboardProcessor.name);
-
   constructor(private readonly gamification: GamificationService) {
     super();
   }
