@@ -64,7 +64,7 @@ export function ManaPip({
 
 const styles = StyleSheet.create({
   letterWrap: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill as object,
     alignItems: 'center',
     justifyContent: 'center',
   },

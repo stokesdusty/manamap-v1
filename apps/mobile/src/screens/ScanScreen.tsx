@@ -304,7 +304,7 @@ const scanPane = StyleSheet.create({
     color: colors.textInverse,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill as object,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -318,7 +318,7 @@ const scanPane = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   resolving: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill as object,
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',

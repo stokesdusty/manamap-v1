@@ -310,34 +310,34 @@ eas build --platform all --profile preview
 
 **Reference**: [Expo GitHub Issue #35413](https://github.com/expo/expo/issues/35413) — track here for the exact SDK version that ships Xcode 26 support.
 
-1. [ ] **Confirm latest stable Expo SDK** — check [expo.dev/changelog](https://expo.dev/changelog) or run `npm view expo dist-tags` to find the current stable version (likely SDK 53 or 54). Confirm release notes say it builds with Xcode 26.
+1. [x] **Confirm latest stable Expo SDK** — check [expo.dev/changelog](https://expo.dev/changelog) or run `npm view expo dist-tags` to find the current stable version (likely SDK 53 or 54). Confirm release notes say it builds with Xcode 26.
 
-2. [ ] **Upgrade expo and all peer deps**:
+2. [x] **Upgrade expo and all peer deps**:
    ```bash
    cd apps/mobile
    npx expo install expo@latest --fix
    ```
    This upgrades `expo` and resolves all Expo-owned peer packages (`expo-camera`, `expo-notifications`, etc.) to their compatible versions for the new SDK.
 
-3. [ ] **Review migration guide** — read the [Expo SDK upgrade walkthrough](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/) for every SDK version skipped. Key areas to check:
+3. [x] **Review migration guide** — read the [Expo SDK upgrade walkthrough](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/) for every SDK version skipped. Key areas to check:
    - **`expo-camera`** — `patch-expo-camera.js` was written specifically for `expo-camera@15.x` (SDK 52). The new version likely has a different `CameraViewLegacy.swift` or drops it entirely. Check if the patch is still needed.
    - **`expo-auth-session`** — PKCE flow breaking changes between major SDK versions.
    - **`expo-secure-store`** — check for storage migration requirements.
    - **`expo-notifications`** — API surface changes occasionally.
    - **`react-native-ble-plx`** — may need a version bump for the new RN version bundled with the new SDK.
 
-4. [ ] **Update or remove `patch-expo-camera.js`**:
+4. [x] **Update or remove `patch-expo-camera.js`**:
    - After `pnpm install`, check the new `expo-camera` source: `find node_modules -path "*/expo-camera/ios/Legacy/CameraViewLegacy.swift"`
    - If the file no longer exists or no longer references `EXBarCodeScannerInterface`, delete `apps/mobile/scripts/patch-expo-camera.js` and remove the `"postinstall"` line from `apps/mobile/package.json`.
    - If it still exists and still has the bad references, re-verify the patch script still applies cleanly.
 
-5. [ ] **TypeScript check**:
+5. [x] **TypeScript check**:
    ```bash
    pnpm --filter @manamap/mobile typecheck
    ```
    Fix any type errors from changed APIs.
 
-6. [ ] **Update EAS build image** — in `apps/mobile/eas.json`, add to the `production` iOS config:
+6. [x] **Update EAS build image** — in `apps/mobile/eas.json`, add to the `production` iOS config:
    ```json
    "production": {
      "ios": { "image": "latest" },

@@ -3,6 +3,7 @@
   "compilerOptions": {
     "jsx": "react-native",
     "lib": ["ESNext"],
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@manamap/shared": ["../../packages/shared/src/index.ts"]

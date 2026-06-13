@@ -425,7 +425,7 @@ const pp = StyleSheet.create({
   activeBorder: { borderColor: colors.accent + '80', borderWidth: 2 },
   eliminated: { opacity: 0.55 },
   eliminatedOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill as object,
     borderRadius: radii.md,
     backgroundColor: colors.error + '15',
   },

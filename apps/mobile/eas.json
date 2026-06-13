@@ -18,6 +18,7 @@
       }
     },
     "production": {
+      "ios": { "image": "latest" },
       "android": { "buildType": "app-bundle" },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://manamap-v1-production.up.railway.app",

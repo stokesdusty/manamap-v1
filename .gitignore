@@ -7,3 +7,5 @@ dist/
 *.log
 .turbo/
 .DS_Store
+.expo/
+**/.xcode.env.local

@@ -30,6 +30,8 @@ const config: ExpoConfig = {
   },
   plugins: [
     'expo-dev-client',
+    'expo-font',
+    'expo-splash-screen',
     'expo-secure-store',
     'expo-apple-authentication',
     ['expo-build-properties', { ios: { newArchEnabled: false }, android: { newArchEnabled: false } }],

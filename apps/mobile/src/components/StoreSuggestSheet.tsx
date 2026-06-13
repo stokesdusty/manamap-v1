@@ -287,7 +287,7 @@ const s = StyleSheet.create({
     flex: 1,
   },
   mapOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill as object,
     backgroundColor: colors.paper + 'CC',
     alignItems: 'center',
     justifyContent: 'center',
