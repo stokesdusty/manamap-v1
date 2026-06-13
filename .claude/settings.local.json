@@ -122,7 +122,9 @@
       "Bash(Select-String -Path \"c:\\\\dev\\\\manamap\\\\BACKLOG.md\" -Pattern \"How we work an item\")",
       "Bash(Select-Object LineNumber)",
       "Bash(mkdir \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\\\\20260611100000_username_name\")",
-      "Bash(git -C c:\\\\dev\\\\manamap ls-files apps/api/.env apps/api/.env.local)"
+      "Bash(git -C c:\\\\dev\\\\manamap ls-files apps/api/.env apps/api/.env.local)",
+      "Bash(node -e ' *)",
+      "Bash(find /c/dev/manamap -path \"*/expo-camera/ios/Legacy/CameraViewLegacy.swift\" 2>/dev/null || find /c/Users/NoUse -path \"*/expo-camera/ios/Legacy/CameraViewLegacy.swift\" 2>/dev/null | head -5)"
     ]
   }
 }

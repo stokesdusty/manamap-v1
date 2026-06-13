@@ -17,6 +17,7 @@ const config: ExpoConfig = {
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
         '$(PRODUCT_NAME) uses your location to confirm you\'re at the store before checking in.',
+      ITSAppUsesNonExemptEncryption: false
     },
   },
   android: {

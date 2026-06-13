@@ -217,10 +217,10 @@ Railway hosts all three backend pieces (Postgres, Redis, Node.js API) in one das
 5. [x] **Back in Railway** → API service → Variables → set `CORS_ORIGIN` = `https://manamap-admin.vercel.app` (exact URL, no trailing slash). Redeploy the API service for the change to take effect.
 6. [x] **Discord Developer Portal** (discord.com/developers/applications → your app → OAuth2 → Redirects): add `https://manamap-admin.vercel.app/auth/callback`. Save.
 7. [ ] **Also back in Vercel** → Settings → Environment Variables: add `VITE_DISCORD_REDIRECT_URI` = `https://manamap-admin.vercel.app/auth/callback`. Trigger a redeploy (Vercel → Deployments → "..." → Redeploy).
-8. [ ] Open the admin portal URL in a browser → click Login → complete Discord OAuth → confirm you land on `/stores` without errors.
+8. [x] Open the admin portal URL in a browser → click Login → complete Discord OAuth → confirm you land on `/stores` without errors.
 
 #### 1C — Seed production DB
-- [ ] From your local machine (requires the production `DATABASE_URL` set temporarily as an env var or via a Railway CLI shell):
+- [x] From your local machine (requires the production `DATABASE_URL` set temporarily as an env var or via a Railway CLI shell):
   ```bash
   # Set DATABASE_URL to the Railway Postgres connection string
   $env:DATABASE_URL = "postgresql://..." # (Windows PowerShell)
@@ -235,24 +235,24 @@ Railway hosts all three backend pieces (Postgres, Redis, Node.js API) in one das
 Work items 2A and 2C in parallel (both are registration steps with waiting periods).
 
 #### 2A — Apple Developer Program (start immediately — up to 48 hrs)
-1. [ ] Go to **developer.apple.com/programs/enroll** and sign in with your Apple ID.
-2. [ ] Select "Individual" enrollment (unless you have a company entity).
-3. [ ] Pay the $99/year fee. You get an email confirmation, usually within minutes, but full activation can take up to 48 hours if Apple does additional ID verification.
-4. [ ] Once activated, go to **appstoreconnect.apple.com** → "Apps" → "+" → "New App":
+1. [x] Go to **developer.apple.com/programs/enroll** and sign in with your Apple ID.
+2. [x] Select "Individual" enrollment (unless you have a company entity).
+3. [x] Pay the $99/year fee. You get an email confirmation, usually within minutes, but full activation can take up to 48 hours if Apple does additional ID verification.
+4. [x] Once activated, go to **appstoreconnect.apple.com** → "Apps" → "+" → "New App":
    - Platform: iOS
    - Name: `ManaMap`
    - Primary Language: English
    - Bundle ID: `com.manamap.app` (select from the dropdown — Apple auto-creates it from your Developer account)
    - SKU: `manamap` (internal, never shown to users)
-5. [ ] In the App record → "App Information" → scroll to "App Capabilities": enable **Push Notifications** and **Sign In with Apple**.
-6. [ ] Create an **APNs Auth Key** (needed by EAS to send push notifications):
+5. [x] In the App record → "App Information" → scroll to "App Capabilities": enable **Push Notifications** and **Sign In with Apple**.
+6. [x] Create an **APNs Auth Key** (needed by EAS to send push notifications):
    - Go to **developer.apple.com** → "Certificates, Identifiers & Profiles" → "Keys" → "+" 
    - Name: `ManaMap APNs`, check "Apple Push Notifications service (APNs)"
    - Click "Continue" → "Register" → **Download the `.p8` file now** (you can only download it once)
    - Note the **Key ID** (10-char string shown on the key detail page) and your **Team ID** (top-right of developer.apple.com under your name)
 
 #### 2B — Google Play Console
-1. [ ] Go to **play.google.com/console** → "Create account" → pay the $25 one-time fee.
+1. [x] Go to **play.google.com/console** → "Create account" → pay the $25 one-time fee.
 2. [ ] "Create app" → App name: `ManaMap` → Default language: English → App / Game: App → Free / Paid: Free → accept policies.
 3. [ ] In Google Play Console → left sidebar → "Testing" → "Internal testing" → "Create new release". Leave it open — you'll upload the AAB here in Phase 3.
 
@@ -269,15 +269,15 @@ Work items 2A and 2C in parallel (both are registration steps with waiting perio
 #### 2D — EAS credentials setup
 Run these from the `apps/mobile/` directory. EAS walks you through each step interactively.
 
-1. [ ] Install EAS CLI if not already: `npm install -g eas-cli`
-2. [ ] Log in: `eas login` (uses your Expo account — create one at expo.dev if needed)
-3. [ ] **iOS credentials** — certificates + provisioning profile:
+1. [x] Install EAS CLI if not already: `npm install -g eas-cli`
+2. [xeas] Log in: `eas login` (uses your Expo account — create one at expo.dev if needed)
+3. [x] **iOS credentials** — certificates + provisioning profile:
    ```bash
    cd apps/mobile
    eas credentials --platform ios
    ```
    Choose "Build Credentials" → "Set up a new build credential" → let EAS generate the distribution certificate and provisioning profile automatically (requires your Apple Developer account credentials when prompted).
-4. [ ] **iOS push notifications** — upload the APNs key from 2A:
+4. [x] **iOS push notifications** — upload the APNs key from 2A:
    ```bash
    eas credentials --platform ios
    ```
@@ -289,7 +289,7 @@ Run these from the `apps/mobile/` directory. EAS walks you through each step int
    Choose "Build Credentials" → let EAS generate and store the keystore (keep the backup — you need the same keystore for every future release of this app).
 
 #### 2E — Fill in Railway URL in eas.json
-- [ ] Now that you have the Railway URL from Phase 1A step 9, open `apps/mobile/eas.json` and replace both `FILL_IN_AFTER_PHASE_1` placeholders with the actual Railway URL.
+- [x] Now that you have the Railway URL from Phase 1A step 9, open `apps/mobile/eas.json` and replace both `FILL_IN_AFTER_PHASE_1` placeholders with the actual Railway URL.
 
 #### 2F — First preview build
 From `apps/mobile/`:
@@ -301,6 +301,70 @@ eas build --platform all --profile preview
 - [ ] **iOS**: install by opening the EAS link in Safari on your test device. Your Apple ID must be in the provisioning profile's test devices (EAS adds it if you used automatic provisioning).
 - [ ] **Android**: download the APK from the EAS link and install it directly on a device (enable "Install from unknown sources" on the device if prompted).
 - [ ] Test the critical path: Discord login → onboarding → store check-in → push notification opt-in prompt appears → life tracker Socket.IO connects (pod screen). Fix any API URL or CORS errors before submitting to stores.
+
+---
+
+### Phase 2G — Expo SDK Upgrade ⛔ BLOCKER for App Store submission
+
+**Why**: Apple enforced the iOS 26 SDK requirement on April 28, 2026 (no grace period — already in effect). All new App Store uploads must be built with Xcode 26 / iOS 26 SDK or they are hard-rejected with ITMS-90725. Expo SDK 52 builds with Xcode 16 (iOS 18.2 SDK). This phase must complete before any production build can be submitted.
+
+**Reference**: [Expo GitHub Issue #35413](https://github.com/expo/expo/issues/35413) — track here for the exact SDK version that ships Xcode 26 support.
+
+1. [ ] **Confirm latest stable Expo SDK** — check [expo.dev/changelog](https://expo.dev/changelog) or run `npm view expo dist-tags` to find the current stable version (likely SDK 53 or 54). Confirm release notes say it builds with Xcode 26.
+
+2. [ ] **Upgrade expo and all peer deps**:
+   ```bash
+   cd apps/mobile
+   npx expo install expo@latest --fix
+   ```
+   This upgrades `expo` and resolves all Expo-owned peer packages (`expo-camera`, `expo-notifications`, etc.) to their compatible versions for the new SDK.
+
+3. [ ] **Review migration guide** — read the [Expo SDK upgrade walkthrough](https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/) for every SDK version skipped. Key areas to check:
+   - **`expo-camera`** — `patch-expo-camera.js` was written specifically for `expo-camera@15.x` (SDK 52). The new version likely has a different `CameraViewLegacy.swift` or drops it entirely. Check if the patch is still needed.
+   - **`expo-auth-session`** — PKCE flow breaking changes between major SDK versions.
+   - **`expo-secure-store`** — check for storage migration requirements.
+   - **`expo-notifications`** — API surface changes occasionally.
+   - **`react-native-ble-plx`** — may need a version bump for the new RN version bundled with the new SDK.
+
+4. [ ] **Update or remove `patch-expo-camera.js`**:
+   - After `pnpm install`, check the new `expo-camera` source: `find node_modules -path "*/expo-camera/ios/Legacy/CameraViewLegacy.swift"`
+   - If the file no longer exists or no longer references `EXBarCodeScannerInterface`, delete `apps/mobile/scripts/patch-expo-camera.js` and remove the `"postinstall"` line from `apps/mobile/package.json`.
+   - If it still exists and still has the bad references, re-verify the patch script still applies cleanly.
+
+5. [ ] **TypeScript check**:
+   ```bash
+   pnpm --filter @manamap/mobile typecheck
+   ```
+   Fix any type errors from changed APIs.
+
+6. [ ] **Update EAS build image** — in `apps/mobile/eas.json`, add to the `production` iOS config:
+   ```json
+   "production": {
+     "ios": { "image": "latest" },
+     "android": { "buildType": "app-bundle" },
+     ...
+   }
+   ```
+   `"latest"` tracks the most recent stable Xcode on EAS. Check [EAS build infrastructure docs](https://docs.expo.dev/build-reference/infrastructure/) for the exact image name if you want to pin it (e.g. `"macos-15-x-xcode-26-x"`).
+
+7. [ ] **Smoke-test on device** — run a dev build and manually verify:
+   - Discord OAuth (PKCE flow)
+   - Apple Sign In
+   - Camera / QR scan
+   - Location permission prompt
+   - Push notification opt-in
+   - Life tracker Socket.IO connection
+
+8. [ ] **Production EAS build**:
+   ```bash
+   cd apps/mobile
+   eas build --profile production --platform ios --clear-cache
+   ```
+
+9. [ ] **Submit** — once the build completes, confirm it passes the iOS 26 SDK check:
+   ```bash
+   eas submit --profile production --platform ios --latest
+   ```
 
 ---
 

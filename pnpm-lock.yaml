@@ -290,6 +290,9 @@ importers:
         specifier: ^4.8.3
         version: 4.8.3
     devDependencies:
+      '@expo/config-plugins':
+        specifier: ~9.0.17
+        version: 9.0.17
       '@types/react':
         specifier: ~18.3.12
         version: 18.3.29
