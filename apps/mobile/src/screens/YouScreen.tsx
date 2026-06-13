@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -14,13 +15,25 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/types';
+import { LogGameSheet } from '../components/LogGameSheet';
+import { SocialsCard } from '../components/SocialsCard';
+import { useMyGameStats, useMyGames } from '../hooks/useGames';
+import type { Game, GameStats } from '@manamap/shared';
+import type { BlockedUser } from '@manamap/shared';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { DeckSite, ManaColor, MtgFormat, PlayerVibe, Privacy, Profile } from '@manamap/shared';
 import { DECK_SITE_HOSTS } from '@manamap/shared';
 import { useAuth } from '../context/AuthContext';
+import { Avatar } from '../components/Avatar';
 import { ManaPip } from '../components/ManaPip';
 import { colors, radii, shadows, spacing, typography } from '../theme';
+import { guildName } from '../theme/identity';
+import { useIdentityTheme } from '../hooks/useIdentityTheme';
 import {
   useCreateDeck,
   useDecks,
@@ -32,8 +45,13 @@ import {
   useUpdatePrivacy,
   useUpdateProfile,
 } from '../hooks/useMe';
+import { useBlockedUsers, useUnblockUser } from '../hooks/useSafety';
 import { useStores } from '../hooks/useNearby';
 import { useBadges, useStreaksSummary } from '../hooks/useGamification';
+import { useQuests } from '../hooks/useQuests';
+import { useRivalries } from '../hooks/useRivalries';
+import type { ActiveQuest, Rivalry } from '@manamap/shared';
+import { BellButton } from '../navigation/TabNavigator';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -69,80 +87,107 @@ const SITE_LABELS: Record<DeckSite, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// ProfileCard
+// IdentityHero — replaces ProfileCard
 // ---------------------------------------------------------------------------
 
-function ProfileCard({
-  profile,
-  onEdit,
-}: {
-  profile: Profile;
-  onEdit: () => void;
-}) {
-  return (
-    <View style={card.root}>
-      <View style={card.header}>
-        <View style={card.avatarWrap}>
-          <View style={card.avatar}>
-            <Text style={card.avatarText}>
-              {profile.displayName.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          {profile.avatarColors.length > 0 && (
-            <View style={card.pips}>
-              {profile.avatarColors.map((c) => (
-                <ManaPip key={c} color={c} size={16} />
-              ))}
-            </View>
-          )}
-        </View>
+const BANNER_H = 160;
 
-        <View style={card.nameBlock}>
-          <Text style={card.displayName} numberOfLines={1}>
+function IdentityHero({ profile, onEdit }: { profile: Profile; onEdit: () => void }) {
+  const { gradient, onAccent, accent, soft, ink } = useIdentityTheme();
+  const avatarColors = profile.avatarColors as ManaColor[];
+  const [bannerW, setBannerW] = useState(
+    () => Dimensions.get('window').width - spacing.xl * 2,
+  );
+
+  return (
+    <View style={hero.root}>
+      {/* Gradient banner containing avatar / name / guild chip */}
+      <View
+        style={hero.banner}
+        onLayout={(e) => setBannerW(e.nativeEvent.layout.width)}
+      >
+        <Svg style={StyleSheet.absoluteFill} width={bannerW} height={BANNER_H}>
+          <Defs>
+            <SvgLinearGradient id="heroGrad" x1="0" y1="0" x2="1" y2="1">
+              {gradient.map((c, i) => (
+                <Stop
+                  key={i}
+                  offset={`${i / Math.max(1, gradient.length - 1)}`}
+                  stopColor={c}
+                />
+              ))}
+            </SvgLinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width={bannerW} height={BANNER_H} fill="url(#heroGrad)" />
+        </Svg>
+
+        <View style={hero.bannerContent}>
+          <Avatar
+            name={profile.displayName}
+            manaColors={avatarColors}
+            size={64}
+            style={hero.avatar}
+          />
+          <Text style={[hero.displayName, { color: onAccent }]} numberOfLines={1}>
             {profile.displayName}
           </Text>
           {profile.pronouns ? (
-            <Text style={card.pronouns}>{profile.pronouns}</Text>
+            <Text style={[hero.pronouns, { color: onAccent + 'CC' }]}>
+              {profile.pronouns}
+            </Text>
           ) : null}
-          {profile.vibe ? (
-            <View style={card.vibePill}>
-              <Text style={card.vibeText}>{VIBE_LABELS[profile.vibe as PlayerVibe]}</Text>
+          {avatarColors.length > 0 && (
+            <View style={hero.guildChip}>
+              {avatarColors.map((c) => (
+                <ManaPip key={c} color={c} size={14} />
+              ))}
+              <Text style={[hero.guildLabel, { color: onAccent }]}>
+                {guildName(avatarColors)}
+              </Text>
             </View>
-          ) : null}
+          )}
         </View>
+      </View>
 
-        <Pressable style={({ pressed }) => [card.editBtn, pressed && { opacity: 0.6 }]} onPress={onEdit}>
-          <Ionicons name="pencil-outline" size={16} color={colors.accent} />
-          <Text style={card.editText}>Edit</Text>
+      {/* Actions row on surface background */}
+      <View style={hero.actions}>
+        {(profile.vibes as PlayerVibe[] | undefined ?? []).map((v) => (
+          <View key={v} style={[hero.vibePill, { backgroundColor: soft }]}>
+            <Text style={[hero.vibeText, { color: ink }]}>{VIBE_LABELS[v]}</Text>
+          </View>
+        ))}
+        <View style={{ flex: 1 }} />
+        <Pressable
+          style={({ pressed }) => [hero.editBtn, pressed && { opacity: 0.6 }]}
+          onPress={onEdit}
+        >
+          <Ionicons name="pencil-outline" size={16} color={accent} />
+          <Text style={[hero.editText, { color: accent }]}>Edit</Text>
         </Pressable>
       </View>
 
+      {/* Profile details (commander / formats / bio) */}
       {profile.commander ? (
-        <View style={card.row}>
+        <View style={hero.row}>
           <Ionicons name="shield-outline" size={14} color={colors.textTertiary} />
-          <Text style={card.rowText} numberOfLines={1}>
+          <Text style={hero.rowText} numberOfLines={1}>
             {profile.commander}
           </Text>
-          {profile.powerLevel != null && (
-            <View style={card.powerBadge}>
-              <Text style={card.powerText}>P{profile.powerLevel}</Text>
-            </View>
-          )}
         </View>
       ) : null}
 
       {profile.formats.length > 0 && (
-        <View style={card.chips}>
+        <View style={hero.chips}>
           {profile.formats.map((f) => (
-            <View key={f} style={card.chip}>
-              <Text style={card.chipText}>{FORMAT_LABELS[f as MtgFormat]}</Text>
+            <View key={f} style={hero.chip}>
+              <Text style={hero.chipText}>{FORMAT_LABELS[f as MtgFormat]}</Text>
             </View>
           ))}
         </View>
       )}
 
       {profile.bio ? (
-        <Text style={card.bio} numberOfLines={4}>
+        <Text style={hero.bio} numberOfLines={4}>
           {profile.bio}
         </Text>
       ) : null}
@@ -150,63 +195,87 @@ function ProfileCard({
   );
 }
 
-const card = StyleSheet.create({
+const hero = StyleSheet.create({
   root: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
     marginHorizontal: spacing.xl,
     marginTop: spacing.lg,
-    padding: spacing.xl,
-    gap: spacing.md,
+    overflow: 'hidden',
+    gap: 0,
     ...shadows.md,
   },
-  header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  avatarWrap: { alignItems: 'center', gap: spacing.xs },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.full,
-    backgroundColor: colors.accentLight,
+  banner: {
+    height: BANNER_H,
+    overflow: 'hidden',
+    borderTopLeftRadius: radii.lg,
+    borderTopRightRadius: radii.lg,
+  },
+  bannerContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
   },
-  avatarText: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xl,
-    color: colors.accent,
+  avatar: {
+    borderRadius: radii.xl,
+    marginBottom: spacing.xs,
   },
-  pips: { flexDirection: 'row', gap: 2 },
-  nameBlock: { flex: 1, gap: 2 },
   displayName: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.lg,
-    color: colors.textPrimary,
+    fontSize: typography.fontSize.xl,
   },
   pronouns: {
     fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+  },
+  guildChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radii.full,
+    marginTop: spacing.xs,
+  },
+  guildLabel: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    marginLeft: 2,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
   },
   vibePill: {
-    alignSelf: 'flex-start',
-    marginTop: 2,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    backgroundColor: colors.accentLight,
+    paddingVertical: 3,
     borderRadius: radii.full,
   },
   vibeText: {
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.xs,
-    color: colors.accent,
   },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingTop: 2 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   editText: {
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.sm,
-    color: colors.accent,
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
   rowText: {
     flex: 1,
     fontFamily: typography.fontFamily.regular,
@@ -224,7 +293,13 @@ const card = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textSecondary,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.md,
+  },
   chip: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
@@ -241,6 +316,8 @@ const card = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
     lineHeight: 20,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.md,
   },
 });
 
@@ -250,9 +327,10 @@ const card = StyleSheet.create({
 
 function PrivacyCard({ privacy }: { privacy: Privacy }) {
   const { mutate } = useUpdatePrivacy();
+  const isInvisible = !privacy.discoverable;
 
-  const rows: Array<{ key: keyof Privacy; label: string; sub?: string }> = [
-    { key: 'discoverable', label: 'Discoverable', sub: 'Appear in nearby player search' },
+  const otherRows: Array<{ key: keyof Privacy; label: string; sub?: string }> = [
+    { key: 'shareNameWithContacts', label: 'Share real name', sub: 'Your connections can see your real/chosen name' },
     { key: 'showDiscord', label: 'Show Discord', sub: 'Visible to your connections' },
     { key: 'showDecks', label: 'Show decks', sub: 'Share your deck list publicly' },
     { key: 'showMetHistory', label: 'Show met history', sub: "Others can see who you've played" },
@@ -261,8 +339,35 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
   return (
     <View style={section.card}>
       <Text style={section.heading}>Privacy</Text>
-      {rows.map((row, i) => (
-        <View key={row.key} style={[section.privacyRow, i < rows.length - 1 && section.rowBorder]}>
+
+      {/* Prominent Go Invisible toggle */}
+      <Pressable
+        style={[section.invisibleRow, isInvisible && section.invisibleRowActive]}
+        onPress={() => mutate({ discoverable: isInvisible })}
+      >
+        <Ionicons
+          name={isInvisible ? 'eye-off' : 'eye-outline'}
+          size={20}
+          color={isInvisible ? colors.textInverse : colors.textSecondary}
+        />
+        <View style={section.privacyLabel}>
+          <Text style={[section.privacyTitle, isInvisible && { color: colors.textInverse }]}>
+            {isInvisible ? 'Invisible' : 'Visible'}
+          </Text>
+          <Text style={[section.privacySub, isInvisible && { color: colors.textInverse, opacity: 0.8 }]}>
+            {isInvisible ? "You're hidden from nearby search" : 'You appear in nearby player search'}
+          </Text>
+        </View>
+        <Switch
+          value={!isInvisible}
+          onValueChange={(val) => mutate({ discoverable: val })}
+          trackColor={{ true: colors.success, false: colors.border }}
+          thumbColor={colors.surface}
+        />
+      </Pressable>
+
+      {otherRows.map((row, i) => (
+        <View key={row.key} style={[section.privacyRow, i < otherRows.length - 1 && section.rowBorder]}>
           <View style={section.privacyLabel}>
             <Text style={section.privacyTitle}>{row.label}</Text>
             {row.sub ? <Text style={section.privacySub}>{row.sub}</Text> : null}
@@ -273,6 +378,47 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
             trackColor={{ true: colors.accent, false: colors.border }}
             thumbColor={colors.surface}
           />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// BlockedPlayersCard
+// ---------------------------------------------------------------------------
+
+function BlockedPlayersCard() {
+  const { data: blocked = [], isLoading } = useBlockedUsers();
+  const { mutate: unblockUser } = useUnblockUser();
+
+  function confirmUnblock(item: BlockedUser) {
+    Alert.alert('Unblock player', `Unblock ${item.displayName}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Unblock', onPress: () => unblockUser(item.userId) },
+    ]);
+  }
+
+  if (!isLoading && blocked.length === 0) return null;
+
+  return (
+    <View style={section.card}>
+      <Text style={section.heading}>Blocked players</Text>
+
+      {isLoading && <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.sm }} />}
+
+      {blocked.map((item) => (
+        <View key={item.id} style={section.blockedRow}>
+          <View style={section.blockedAvatar}>
+            <Text style={section.blockedAvatarText}>{item.displayName.charAt(0).toUpperCase()}</Text>
+          </View>
+          <Text style={section.blockedName} numberOfLines={1}>{item.displayName}</Text>
+          <Pressable
+            style={({ pressed }) => [section.unblockBtn, pressed && { opacity: 0.6 }]}
+            onPress={() => confirmUnblock(item)}
+          >
+            <Text style={section.unblockText}>Unblock</Text>
+          </Pressable>
         </View>
       ))}
     </View>
@@ -580,6 +726,22 @@ const section = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.accent,
   },
+  invisibleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.surface,
+    marginBottom: spacing.sm,
+  },
+  invisibleRowActive: {
+    backgroundColor: colors.textSecondary,
+    borderColor: colors.textSecondary,
+  },
   privacyRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -632,6 +794,45 @@ const section = StyleSheet.create({
     color: colors.textTertiary,
   },
   deleteBtn: { padding: spacing.xs },
+  blockedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  blockedAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.full,
+    backgroundColor: colors.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  blockedAvatarText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
+  },
+  blockedName: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  unblockBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  unblockText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.accent,
+  },
   storeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   storeTitle: {
     fontFamily: typography.fontFamily.medium,
@@ -692,26 +893,30 @@ const section = StyleSheet.create({
 // ---------------------------------------------------------------------------
 
 type ProfileDraft = {
+  name: string;
   displayName: string;
   pronouns: string;
   bio: string;
   avatarColors: ManaColor[];
   commander: string;
-  powerLevel: string;
-  vibe: PlayerVibe | '';
+  vibes: PlayerVibe[];
   formats: MtgFormat[];
+  spelltable: boolean;
+  convokeGames: boolean;
 };
 
 function draftFromProfile(p: Profile): ProfileDraft {
   return {
+    name: p.name ?? '',
     displayName: p.displayName,
     pronouns: p.pronouns ?? '',
     bio: p.bio ?? '',
     avatarColors: p.avatarColors as ManaColor[],
     commander: p.commander ?? '',
-    powerLevel: p.powerLevel != null ? String(p.powerLevel) : '',
-    vibe: (p.vibe as PlayerVibe) ?? '',
+    vibes: (p.vibes as PlayerVibe[]) ?? [],
     formats: p.formats as MtgFormat[],
+    spelltable: p.spelltable ?? false,
+    convokeGames: p.convokeGames ?? false,
   };
 }
 
@@ -750,17 +955,18 @@ function EditProfileModal({
   }
 
   function handleSave() {
-    const level = parseInt(draft.powerLevel, 10);
     update(
       {
+        name: draft.name.trim() || null,
         displayName: draft.displayName.trim() || profile.displayName,
         pronouns: draft.pronouns.trim() || null,
         bio: draft.bio.trim() || null,
         avatarColors: draft.avatarColors,
         commander: draft.commander.trim() || null,
-        powerLevel: Number.isInteger(level) && level >= 1 && level <= 10 ? level : null,
-        vibe: draft.vibe || null,
+        vibes: draft.vibes,
         formats: draft.formats,
+        spelltable: draft.spelltable,
+        convokeGames: draft.convokeGames,
       },
       { onSuccess: onClose },
     );
@@ -818,6 +1024,19 @@ function EditProfileModal({
               />
             </FormField>
 
+            <FormField label="Real / chosen name (optional)">
+              <TextInput
+                style={form.input}
+                value={draft.name}
+                onChangeText={(v) => set('name', v)}
+                maxLength={80}
+                placeholder="e.g. Alex Smith or Alex S."
+                placeholderTextColor={colors.textTertiary}
+                autoCapitalize="words"
+              />
+              <Text style={form.fieldHint}>Shared only with contacts when you enable "Share real name" in Privacy</Text>
+            </FormField>
+
             <FormField label="Pronouns">
               <TextInput
                 style={form.input}
@@ -860,7 +1079,7 @@ function EditProfileModal({
               </View>
             </FormField>
 
-            <FormField label="Commander">
+            <FormField label="Favorite Commander">
               <TextInput
                 style={form.input}
                 value={draft.commander}
@@ -871,26 +1090,14 @@ function EditProfileModal({
               />
             </FormField>
 
-            <FormField label="Power level (1–10)">
-              <TextInput
-                style={[form.input, { width: 80 }]}
-                value={draft.powerLevel}
-                onChangeText={(v) => set('powerLevel', v.replace(/\D/g, '').slice(0, 2))}
-                keyboardType="number-pad"
-                maxLength={2}
-                placeholder="—"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </FormField>
-
-            <FormField label="Vibe">
+            <FormField label="Vibe (select all that apply)">
               <View style={form.chips}>
                 {ALL_VIBES.map((v) => {
-                  const active = draft.vibe === v;
+                  const active = draft.vibes.includes(v);
                   return (
                     <Pressable
                       key={v}
-                      onPress={() => set('vibe', active ? '' : v)}
+                      onPress={() => set('vibes', active ? draft.vibes.filter((x) => x !== v) : [...draft.vibes, v])}
                       style={[form.chip, active && form.chipActive]}
                     >
                       <Text style={[form.chipText, active && form.chipTextActive]}>
@@ -918,6 +1125,33 @@ function EditProfileModal({
                     </Pressable>
                   );
                 })}
+              </View>
+            </FormField>
+
+            <FormField label="Online play">
+              <View style={form.toggleRow}>
+                <View style={form.toggleLabel}>
+                  <Text style={form.toggleTitle}>SpellTable</Text>
+                  <Text style={form.toggleSub}>Open to online Commander games</Text>
+                </View>
+                <Switch
+                  value={draft.spelltable}
+                  onValueChange={(v) => set('spelltable', v)}
+                  trackColor={{ true: colors.accent, false: colors.border }}
+                  thumbColor={colors.surface}
+                />
+              </View>
+              <View style={[form.toggleRow, { marginTop: spacing.sm }]}>
+                <View style={form.toggleLabel}>
+                  <Text style={form.toggleTitle}>Convoke.games</Text>
+                  <Text style={form.toggleSub}>Open to Convoke online matches</Text>
+                </View>
+                <Switch
+                  value={draft.convokeGames}
+                  onValueChange={(v) => set('convokeGames', v)}
+                  trackColor={{ true: colors.accent, false: colors.border }}
+                  thumbColor={colors.surface}
+                />
               </View>
             </FormField>
           </ScrollView>
@@ -994,6 +1228,12 @@ const form = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   multiline: { height: 100, paddingTop: spacing.sm },
+  fieldHint: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    marginTop: 4,
+  },
   row: { flexDirection: 'row', gap: spacing.md },
   colorBtn: {
     borderRadius: radii.full,
@@ -1018,6 +1258,23 @@ const form = StyleSheet.create({
     color: colors.textSecondary,
   },
   chipTextActive: { color: colors.accent, fontFamily: typography.fontFamily.medium },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
+  },
+  toggleLabel: { flex: 1, gap: 2 },
+  toggleTitle: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  toggleSub: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -1182,6 +1439,459 @@ const addDeck = StyleSheet.create({
 });
 
 // ---------------------------------------------------------------------------
+// QuestsCard
+// ---------------------------------------------------------------------------
+
+function QuestRow({ item }: { item: ActiveQuest }) {
+  const { accent } = useIdentityTheme();
+  const { quest, progress, goal, completed } = item;
+  const pct = Math.min(progress / goal, 1);
+
+  return (
+    <View style={qc.row}>
+      <Text style={qc.icon}>{quest.icon}</Text>
+      <View style={qc.body}>
+        <View style={qc.titleRow}>
+          <Text style={qc.title} numberOfLines={1}>{quest.title}</Text>
+          {completed ? (
+            <View style={qc.donePill}>
+              <Text style={qc.doneText}>DONE</Text>
+            </View>
+          ) : (
+            <Text style={qc.count}>{progress}/{goal}</Text>
+          )}
+        </View>
+        {quest.description ? (
+          <Text style={qc.sub} numberOfLines={1}>{quest.description}</Text>
+        ) : null}
+        <View style={qc.barBg}>
+          <View style={[qc.barFill, { width: `${Math.round(pct * 100)}%` as `${number}%`, backgroundColor: completed ? colors.success : accent }]} />
+        </View>
+        {quest.rewardBadge ? (
+          <Text style={qc.reward} numberOfLines={1}>
+            Reward: {quest.rewardBadge.icon} {quest.rewardBadge.name}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+function QuestsCard() {
+  const { data: quests, isLoading } = useQuests();
+
+  if (isLoading) {
+    return (
+      <View style={section.card}>
+        <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (!quests?.length) return null;
+
+  const done = quests.filter((q) => q.completed).length;
+
+  return (
+    <View style={section.card}>
+      <View style={section.cardHeader}>
+        <Text style={section.heading}>This month's quests</Text>
+        <Text style={qc.summary}>{done}/{quests.length} done</Text>
+      </View>
+      {quests.map((q, i) => (
+        <View key={q.quest.id} style={i > 0 ? qc.divider : undefined}>
+          <QuestRow item={q} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const qc = StyleSheet.create({
+  row: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.sm },
+  icon: { fontSize: 28, lineHeight: 36, marginTop: 2 },
+  body: { flex: 1, gap: spacing.xs },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  title: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  sub: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  count: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    flexShrink: 0,
+  },
+  donePill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    backgroundColor: colors.success + '25',
+    borderRadius: radii.full,
+    flexShrink: 0,
+  },
+  doneText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.xs,
+    color: colors.success,
+    letterSpacing: 0.5,
+  },
+  barBg: {
+    height: 5,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.full,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: 5,
+    borderRadius: radii.full,
+  },
+  reward: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  summary: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  divider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.borderLight,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// GameRecordCard
+// ---------------------------------------------------------------------------
+
+function WinRateStat({ winRate }: { winRate: number }) {
+  const { gradient, onAccent } = useIdentityTheme();
+  const [w, setW] = useState(0);
+  const [h, setH] = useState(0);
+
+  return (
+    <View
+      style={[gr.stat, gr.winRateStat]}
+      onLayout={(e) => {
+        setW(e.nativeEvent.layout.width);
+        setH(e.nativeEvent.layout.height);
+      }}
+    >
+      {w > 0 && h > 0 && (
+        <Svg style={StyleSheet.absoluteFill} width={w} height={h}>
+          <Defs>
+            <SvgLinearGradient id="wrGrad" x1="0" y1="0" x2="1" y2="1">
+              {gradient.map((c, i) => (
+                <Stop
+                  key={i}
+                  offset={`${i / Math.max(1, gradient.length - 1)}`}
+                  stopColor={c}
+                />
+              ))}
+            </SvgLinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width={w} height={h} rx={radii.md} ry={radii.md} fill="url(#wrGrad)" />
+        </Svg>
+      )}
+      <Text style={[gr.statValue, { color: onAccent }]}>{Math.round(winRate * 100)}%</Text>
+      <Text style={[gr.statLabel, { color: onAccent + 'CC' }]}>Win rate</Text>
+    </View>
+  );
+}
+
+function GameRecordCard({ stats }: { stats: GameStats }) {
+  const { accent } = useIdentityTheme();
+  if (stats.games === 0) return null;
+
+  return (
+    <View style={[section.card, { paddingHorizontal: 0, paddingVertical: spacing.lg }]}>
+      <Text style={[section.heading, { paddingHorizontal: spacing.xl }]}>Game record</Text>
+
+      <View style={gr.statsRow}>
+        <View style={gr.stat}>
+          <Text style={gr.statValue}>{stats.wins}W</Text>
+          <Text style={gr.statLabel}>Wins</Text>
+        </View>
+        <View style={gr.statDivider} />
+        <View style={gr.stat}>
+          <Text style={gr.statValue}>{stats.losses}L</Text>
+          <Text style={gr.statLabel}>Losses</Text>
+        </View>
+        <View style={gr.statDivider} />
+        <WinRateStat winRate={stats.winRate} />
+      </View>
+
+      {stats.byDeck.length > 0 && (
+        <View style={{ paddingHorizontal: spacing.xl, gap: spacing.sm }}>
+          <Text style={[section.heading, { fontSize: typography.fontSize.sm, marginTop: spacing.xs }]}>By deck</Text>
+          {stats.byDeck.slice(0, 5).map((d) => {
+            const total = d.wins + d.losses;
+            const pct = total > 0 ? d.wins / total : 0;
+            return (
+              <View key={d.deck} style={gr.deckRow}>
+                <Text style={gr.deckName} numberOfLines={1}>{d.deck}</Text>
+                <View style={gr.barBg}>
+                  <View style={[gr.barFill, { width: `${Math.round(pct * 100)}%` as `${number}%`, backgroundColor: accent }]} />
+                </View>
+                <Text style={gr.deckRecord}>{d.wins}–{d.losses}</Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
+const gr = StyleSheet.create({
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
+  stat: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: spacing.sm },
+  winRateStat: {
+    borderRadius: radii.md,
+    overflow: 'hidden',
+    paddingVertical: spacing.md,
+  },
+  statValue: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.lg,
+    color: colors.textPrimary,
+  },
+  statLabel: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  statDivider: { width: 1, height: 32, backgroundColor: colors.borderLight, marginHorizontal: spacing.sm },
+  deckRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  deckName: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  barBg: {
+    width: 80,
+    height: 6,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.full,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: 6,
+    borderRadius: radii.full,
+  },
+  deckRecord: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    width: 36,
+    textAlign: 'right',
+  },
+});
+
+// ---------------------------------------------------------------------------
+// RecentGamesCard
+// ---------------------------------------------------------------------------
+
+function gameResultLabel(game: Game, myId: string): { label: string; color: string } {
+  if (game.winnerId === myId) return { label: 'W', color: colors.success };
+  return { label: 'L', color: colors.error };
+}
+
+function RecentGamesCard({ myId }: { myId: string }) {
+  const { data: games = [], isLoading } = useMyGames(8);
+
+  if (isLoading) {
+    return (
+      <View style={section.card}>
+        <Text style={section.heading}>Recent games</Text>
+        <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.sm }} />
+      </View>
+    );
+  }
+
+  if (games.length === 0) return null;
+
+  return (
+    <View style={section.card}>
+      <Text style={section.heading}>Recent games</Text>
+      {games.map((game, i) => {
+        const { label, color } = gameResultLabel(game, myId);
+        const opponents = game.players.filter((p) => p.userId !== myId);
+        const myPlayer = game.players.find((p) => p.userId === myId);
+        return (
+          <View
+            key={game.id}
+            style={[rg.row, i < games.length - 1 && rg.rowBorder]}
+          >
+            <View style={[rg.result, { backgroundColor: color + '20' }]}>
+              <Text style={[rg.resultText, { color }]}>{label}</Text>
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={rg.opponents} numberOfLines={1}>
+                vs {opponents.map((p) => p.displayName).join(', ')}
+              </Text>
+              {myPlayer?.deck ? (
+                <Text style={rg.deck} numberOfLines={1}>{myPlayer.deck}</Text>
+              ) : null}
+            </View>
+            <Text style={rg.date}>
+              {new Date(game.confirmedAt ?? game.createdAt).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const rg = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  result: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  resultText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.sm,
+  },
+  opponents: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textPrimary,
+  },
+  deck: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  date: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    flexShrink: 0,
+  },
+});
+
+// ---------------------------------------------------------------------------
+// RivalriesCard
+// ---------------------------------------------------------------------------
+
+function RivalryRow({ item, isLast }: { item: Rivalry; isLast: boolean }) {
+  return (
+    <View style={[rv.row, !isLast && rv.rowBorder]}>
+      <View style={rv.avatar}>
+        <Text style={rv.avatarText}>{item.displayName.charAt(0).toUpperCase()}</Text>
+      </View>
+      <View style={rv.info}>
+        <View style={rv.nameRow}>
+          <Text style={rv.name} numberOfLines={1}>{item.displayName}</Text>
+          {item.hot && <Text style={rv.flame}>🔥</Text>}
+        </View>
+        <Text style={rv.sub}>
+          {item.gamesTogether} game{item.gamesTogether !== 1 ? 's' : ''} together
+        </Text>
+      </View>
+      <View style={rv.recordBadge}>
+        <Text style={rv.recordText}>{item.record}</Text>
+      </View>
+    </View>
+  );
+}
+
+function RivalriesCard() {
+  const { data: rivalries, isLoading } = useRivalries(5);
+
+  if (isLoading || !rivalries?.length) return null;
+
+  return (
+    <View style={[section.card, { paddingHorizontal: 0, paddingVertical: spacing.lg }]}>
+      <Text style={[section.heading, { paddingHorizontal: spacing.xl }]}>Rivalries</Text>
+      {rivalries.map((r, i) => (
+        <RivalryRow key={r.opponentId} item={r} isLast={i === rivalries.length - 1} />
+      ))}
+    </View>
+  );
+}
+
+const rv = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
+  rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.avatar,
+    backgroundColor: colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  avatarText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.md,
+    color: colors.accent,
+  },
+  info: { flex: 1, gap: 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  name: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+    flexShrink: 1,
+  },
+  flame: { fontSize: 14 },
+  sub: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  recordBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.full,
+    flexShrink: 0,
+  },
+  recordText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+});
+
+// ---------------------------------------------------------------------------
 // YouScreen
 // ---------------------------------------------------------------------------
 
@@ -1189,13 +1899,17 @@ export function YouScreen() {
   const { signOut } = useAuth();
   const { data: profile, isLoading: profileLoading, error: profileError } = useProfile();
   const { data: privacy, isLoading: privacyLoading } = usePrivacy();
+  const { data: gameStats } = useMyGameStats();
+  const { accent, soft } = useIdentityTheme();
   const [editOpen, setEditOpen] = useState(false);
+  const [logGameOpen, setLogGameOpen] = useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   if (profileLoading) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.accent} />
+          <ActivityIndicator size="large" color={accent} />
         </View>
       </SafeAreaView>
     );
@@ -1214,14 +1928,30 @@ export function YouScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Text style={styles.title}>You</Text>
+        <Pressable
+          onLongPress={__DEV__ ? () => navigation.navigate('Dev') : undefined}
+          delayLongPress={800}
+        >
+          <Text style={styles.title}>You</Text>
+        </Pressable>
+        <BellButton />
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <ProfileCard profile={profile} onEdit={() => setEditOpen(true)} />
+        <IdentityHero profile={profile} onEdit={() => setEditOpen(true)} />
+
+        <SocialsCard mode="owner" />
+
+        <Pressable
+          style={({ pressed }) => [styles.logGameBtn, { borderColor: accent + '60', backgroundColor: soft }, pressed && { opacity: 0.8 }]}
+          onPress={() => setLogGameOpen(true)}
+        >
+          <Ionicons name="game-controller-outline" size={18} color={accent} />
+          <Text style={[styles.logGameText, { color: accent }]}>Log game result</Text>
+        </Pressable>
 
         {privacyLoading ? (
           <View style={[section.card, { alignItems: 'center' }]}>
@@ -1231,11 +1961,21 @@ export function YouScreen() {
           <PrivacyCard privacy={privacy} />
         ) : null}
 
+        <BlockedPlayersCard />
+
         <DecksCard />
 
         <HomeStoreRow />
 
         <RewardsCard />
+
+        <QuestsCard />
+
+        {gameStats && <GameRecordCard stats={gameStats} />}
+
+        <RecentGamesCard myId={profile.id} />
+
+        <RivalriesCard />
 
         <Pressable
           style={({ pressed }) => [styles.signOutBtn, pressed && styles.pressed]}
@@ -1250,6 +1990,11 @@ export function YouScreen() {
         profile={profile}
         onClose={() => setEditOpen(false)}
       />
+
+      <LogGameSheet
+        visible={logGameOpen}
+        onClose={() => setLogGameOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -1258,6 +2003,9 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.paper },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
@@ -1290,5 +2038,20 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.md,
     color: colors.textSecondary,
+  },
+  logGameBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.md,
+    height: 44,
+    borderRadius: radii.md,
+    borderWidth: 1,
+  },
+  logGameText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
   },
 });

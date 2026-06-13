@@ -1,83 +1,147 @@
-# manamap
+# ManaMap
 
-pnpm + Turborepo monorepo.
+A social + location app for Magic: The Gathering players. Check in to local game stores, track streaks and badges, discover nearby players, form pods, log games, and get reminders for upcoming events.
 
-## Workspaces
+## Monorepo structure
 
-| Package | Description |
-|---------|-------------|
-| `apps/mobile` | Mobile app (not yet scaffolded) |
-| `apps/api` | API server (not yet scaffolded) |
-| `packages/shared` | Shared Zod schemas + inferred TypeScript types |
+```
+apps/
+  api/      — NestJS + Fastify REST API (TypeScript, port 3000)
+  mobile/   — Expo React Native app (TypeScript)
+  admin/    — Vite + React partner portal for store owners (TypeScript, port 5173)
+packages/
+  shared/   — Zod schemas shared between API and mobile
+```
+
+Package manager: **pnpm workspaces**. Run all commands from the repo root.
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) >= 20
-- [pnpm](https://pnpm.io/) >= 9 — `npm install -g pnpm`
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- Node 20+
+- pnpm 9+
+- PostgreSQL 15 with PostGIS (`localhost:5432`, db `manamap`)
+- Redis (`localhost:6379`)
 
 ## Setup
 
 ```bash
-# 1. Install dependencies
 pnpm install
 
-# 2. Copy env file
-cp .env.example .env
+# Copy and fill in env files
+cp apps/api/.env.example apps/api/.env
+cp apps/admin/.env.example apps/admin/.env.local
 
-# 3. Start backing services (Postgres 16 + PostGIS, Redis 7)
-docker compose up -d
-
-# 4. Verify services are healthy
-docker compose ps
+# Run migrations, generate Prisma client, seed stores + badges + bot accounts
+pnpm --filter @manamap/api db:migrate
+pnpm --filter @manamap/api db:seed
 ```
 
-## Development
+## Running locally
 
 ```bash
-pnpm dev          # run all dev scripts in parallel
-pnpm typecheck    # type-check all workspaces (builds shared first)
-pnpm lint         # ESLint across all workspaces
-pnpm build        # compile all packages
-pnpm format       # Prettier across the repo
+# API (terminal 1)
+pnpm --filter @manamap/api dev          # http://localhost:3000
+
+# Mobile (terminal 2) — requires Expo dev client on device/emulator
+pnpm --filter @manamap/mobile dev
+
+# Admin portal (terminal 3)
+pnpm --filter @manamap/admin dev        # http://localhost:5173
 ```
 
-### Filtering to a single workspace
+## API
+
+All routes are prefixed `/api/v1/`. Auth via Discord OAuth → JWT access + refresh tokens.
+
+| Module | Key routes |
+|---|---|
+| auth | POST /v1/auth/discord, POST /v1/auth/refresh |
+| me | GET/PATCH /v1/me, /v1/me/privacy, /v1/me/decks, /v1/me/streaks, /v1/me/stats |
+| stores | GET /v1/stores, /v1/stores/:id, POST checkin, GET events + leaderboard + offers, POST/DELETE attend |
+| discovery | GET /v1/discovery/nearby, /v1/discovery/suggestions |
+| presence | POST /v1/presence/heartbeat, GET /v1/presence/stores |
+| lfg | CRUD /v1/lfg — "open to play now" sessions (Redis-only, ephemeral) |
+| pods | Invite-based play pods (Redis-only, ephemeral) |
+| games | POST /v1/games — log results; confirm/dispute |
+| connections | Player friend requests |
+| safety | Blocks + reports |
+| partner | Store claim + offer management (PARTNER role) |
+| admin-moderation | Report queue + actions (ADMIN role) |
+| gamification | BullMQ worker — badges and streaks after check-in |
+| event-reminders | BullMQ worker — morning-of + T-60min RSVP push reminders |
+
+## Database
+
+PostgreSQL 15 + PostGIS. ORM: Prisma.
 
 ```bash
-pnpm --filter @manamap/api typecheck
-pnpm --filter @manamap/shared build
+pnpm --filter @manamap/api db:migrate   # prisma migrate dev
+pnpm --filter @manamap/api db:seed      # seed formats, stores, badges, bot accounts
+pnpm --filter @manamap/api db:studio    # Prisma Studio on :5555
 ```
 
-## Services
+Store data is in `apps/api/prisma/data/stores.json` — 25 real MTG LGS across Seattle and Portland. Stores are upserted on `(name, city)` so re-seeding is safe.
 
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| PostgreSQL (PostGIS) | `localhost:5432` | see `.env` |
-| Redis | `localhost:6379` | — |
+## Mobile
 
-The PostGIS extension is automatically enabled by the `postgis/postgis` image.
+Expo SDK 52 bare workflow. Screens: Discover, Stores, History, You, Connect, Pod.
 
-## Packages
+Features: Discord PKCE login · BLE proximity · check-in with PostGIS gating · event RSVP + push reminders · LFG/pods · game logging.
 
-### `@manamap/shared`
+## Admin portal
 
-Exports Zod schemas and their inferred TypeScript types. Both apps declare a
-`workspace:*` dependency on this package so they share a single source of truth.
+Partner-facing: claim stores, manage reward offers (FIRST_VISIT / STREAK), view check-in analytics. Admins see a moderation queue for reports.
 
-```ts
-import { UserSchema, PlaceSchema } from '@manamap/shared';
-import type { User, Place, Coordinates } from '@manamap/shared';
+Discord redirect URI to add: `http://localhost:5173/auth/callback`
+
+## Dev harness
+
+Populate all screens with believable bot activity during development.
+
+1. Set `DEV_TOOLS=true` in `apps/api/.env` and restart the API.
+2. Long-press the **"You"** tab title (800 ms) in the mobile app to open the Dev panel.
+
+Eight bot accounts are seeded by `db:seed`: `bot_wren`, `bot_sol`, `bot_kira`, `bot_dune`, `bot_ash`, `bot_nyx`, `bot_tarn`, `bot_vex`.
+
+API endpoints: `POST /api/v1/dev/populate-store|host-pod|request-me|accept-mine|log-game-with-me|full-scene|reset`
+
+## Environment variables
+
+### `apps/api/.env`
+
+```
+DATABASE_URL=postgresql://manamap:manamap@localhost:5432/manamap
+REDIS_URL=redis://localhost:6379
+API_PORT=3000
+API_HOST=localhost
+JWT_SECRET=<secret>
+DISCORD_CLIENT_ID=<id>
+DISCORD_CLIENT_SECRET=<secret>
+DISCORD_REDIRECT_URI=manamap://auth/discord
+DEV_TOOLS=true          # optional — enables /v1/dev/* routes
+THROTTLE_DISABLED=true  # optional — disables rate limiting (CI/e2e)
+```
+
+### `apps/admin/.env.local`
+
+```
+VITE_DISCORD_CLIENT_ID=<id>
+VITE_API_URL=http://localhost:3000/api
 ```
 
 ## Tech stack
 
-| Tool | Purpose |
-|------|---------|
-| [pnpm workspaces](https://pnpm.io/workspaces) | Monorepo package manager |
-| [Turborepo](https://turbo.build/) | Task orchestration + caching |
-| [TypeScript 5](https://www.typescriptlang.org/) | Strict mode throughout |
-| [Zod](https://zod.dev/) | Runtime validation + type inference |
-| [ESLint 8](https://eslint.org/) + [Prettier](https://prettier.io/) | Linting + formatting |
-| [PostGIS 3 / Postgres 16](https://postgis.net/) | Geospatial database |
-| [Redis 7](https://redis.io/) | Cache / pub-sub |
+| Layer | Technology |
+|---|---|
+| API | NestJS + Fastify |
+| Database | PostgreSQL 15 + PostGIS |
+| ORM | Prisma |
+| Cache / presence / LFG | Redis |
+| Queue | BullMQ (gamification + event-reminders) |
+| Push notifications | Expo Push (expo-server-sdk) |
+| Mobile | Expo React Native SDK 52 |
+| Mobile state | TanStack Query v5 |
+| Admin portal | Vite + React + React Router v6 |
+| Auth | Discord OAuth2 + JWT |
+| Schema validation | Zod (shared between API and mobile) |
+| Monorepo | pnpm workspaces |

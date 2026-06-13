@@ -14,6 +14,11 @@ import {
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
+import { Throttle } from '../throttle/throttle.decorator';
+import {
+  THROTTLE_CONNECTIONS_LIMIT,
+  THROTTLE_CONNECTIONS_TTL,
+} from '../throttle/throttle.constants';
 import { ConnectionsService } from './connections.service';
 
 type AuthRequest = { user: AccessTokenPayload };
@@ -25,6 +30,7 @@ export class ConnectionsController {
 
   @Post()
   @HttpCode(201)
+  @Throttle({ name: 'connections', limit: THROTTLE_CONNECTIONS_LIMIT, ttl: THROTTLE_CONNECTIONS_TTL })
   sendRequest(
     @Req() req: AuthRequest,
     @Body(new ZodValidationPipe(CreateConnectionSchema)) body: CreateConnection,

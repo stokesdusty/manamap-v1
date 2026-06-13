@@ -1,49 +1,60 @@
+// manamap — DUSK dark theme, green accent. Drop-in replacement for
+// apps/mobile/src/theme/colors.ts. Same keys as the light theme so every
+// screen that reads tokens goes dark with no per-component edits.
+// Mana identity colors are intentionally unchanged (theme-independent).
+
 export const colors = {
-  // Soft paper — warm off-white backgrounds
-  paper: '#F7F3EE',
-  surface: '#FFFFFF',
-  surfaceWarm: '#FBF8F4',
-  borderLight: '#EAE4DC',
-  border: '#CFC8BC',
+  // Dusk surfaces — deep plum-charcoal (prototype --bg / --surface)
+  paper: '#191420',
+  surface: '#241E2E',
+  surfaceWarm: '#2B2436',
+  borderLight: '#332B40',
+  border: '#463C56',
 
-  // Text
-  textPrimary: '#1C1917',
-  textSecondary: '#78716C',
-  textTertiary: '#A8A09A',
-  textInverse: '#FFFFFF',
+  // Text on dark (prototype --ink / --ink-2 / --muted)
+  textPrimary: '#F3ECF6',
+  textSecondary: '#C4B9CF',
+  textTertiary: '#8E839B',
+  textInverse: '#FFFFFF', // used on the accent button + tinted avatars
 
-  // Accent — warm amber
-  accent: '#A16207',
-  accentLight: '#FEF3C7',
+  // Accent — green (prototype #5AA452). accentInk reads on accentLight;
+  // accentLight is a subtle tint on the dark surface.
+  accent: '#5AA452',
+  accentInk: '#A3C7A1',
+  accentLight: '#2C3133',
 
-  // WUBRG mana pip fills
+  // Chip surface (prototype --chip-bg / --chip-fg)
+  chipBg: '#322A3E',
+  chipFg: '#C4B9CF',
+
+  // WUBRG mana pip fills — unchanged across themes (prototype MANA.fill)
   mana: {
-    W: '#F0E6C8',
-    U: '#1A6FA8',
-    B: '#2D2D2D',
-    R: '#D4281E',
-    G: '#1A7A3C',
-    C: '#BDBDBD',
-    M: '#C9A227',
+    W: '#F2E6BE', U: '#4FA9E6', B: '#574F5E', R: '#F0705B', G: '#5FB97E',
+    C: '#B8AEA0', M: '#E6C36A',
   },
-
-  // Mana pip border accents
+  manaLight: {
+    W: '#F5ECCC', U: '#76BCEC', B: '#7C7681', R: '#F38F7F', G: '#82C89A',
+    C: '#C8C0B5', M: '#ECD08B',
+  },
+  manaDark: {
+    W: '#D0C6A3', U: '#4491C6', B: '#4B4451', R: '#CE604E', G: '#529F6C',
+    C: '#9E968A', M: '#C6A85B',
+  },
   manaBorder: {
-    W: '#C8B87A',
-    U: '#0A4A78',
-    B: '#1A1A1A',
-    R: '#8B1A14',
-    G: '#0A4A22',
-    C: '#7A7A7A',
-    M: '#8B6914',
+    W: '#E4D199', U: '#3F97D6', B: '#6B6276', R: '#E25E4A', G: '#4FA96E',
+    C: '#A89E90', M: '#C9A227',
+  },
+  manaLetter: {
+    W: '#6E5E27', U: '#FFFFFF', B: '#FFFFFF', R: '#FFFFFF', G: '#FFFFFF',
+    C: '#3A3340', M: '#6E5A1E',
   },
 
-  // Status
-  success: '#16A34A',
-  error: '#DC2626',
-  warning: '#D97706',
+  // Status — brightened for dark backgrounds
+  success: '#4ED07F',
+  error: '#F06A66',
+  warning: '#E0992E',
 
-  overlay: 'rgba(28, 25, 23, 0.5)',
+  overlay: 'rgba(8, 5, 12, 0.6)',
 } as const;
 
 export type ManaColor = keyof typeof colors.mana;

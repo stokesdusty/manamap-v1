@@ -1,6 +1,7 @@
-import { Injectable, Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import type { Env } from '../config/config.schema';
 
 // Cached JWKS fetcher — re-fetches only when a new kid is encountered or after 5 min cooldown
@@ -15,9 +16,10 @@ export interface ApplePayload {
 
 @Injectable()
 export class AppleService {
-  private readonly logger = new Logger(AppleService.name);
-
-  constructor(private readonly config: ConfigService<Env>) {}
+  constructor(
+    @InjectPinoLogger(AppleService.name) private readonly logger: PinoLogger,
+    private readonly config: ConfigService<Env>,
+  ) {}
 
   async verify(identityToken: string): Promise<ApplePayload> {
     const clientId = this.config.get<string>('APPLE_CLIENT_ID');
@@ -39,7 +41,7 @@ export class AppleService {
         email: typeof payload['email'] === 'string' ? payload['email'] : undefined,
       };
     } catch (err) {
-      this.logger.warn('Apple token verification failed', err instanceof Error ? err.message : err);
+      this.logger.warn({ err: err instanceof Error ? err : new Error(String(err)) }, 'Apple token verification failed');
       throw new UnauthorizedException('Invalid Apple identity token');
     }
   }

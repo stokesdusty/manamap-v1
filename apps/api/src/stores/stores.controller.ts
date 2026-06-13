@@ -1,5 +1,7 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -8,6 +10,17 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import {
+  AssociateCheckinEventBodySchema,
+  CheckinBodySchema,
+  ConfirmStoreSchema,
+  SuggestStoreSchema,
+  type AssociateCheckinEventBody,
+  type CheckinBody,
+  type ConfirmStore,
+  type SuggestStore,
+} from '@manamap/shared';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { StoresService } from './stores.service';
 
@@ -19,8 +32,21 @@ export class StoresController {
   constructor(private readonly stores: StoresService) {}
 
   @Get()
-  list(@Query('bbox') bbox: string | undefined, @Query('q') q: string | undefined) {
-    return this.stores.list({ bbox, q });
+  list(
+    @Query('bbox') bbox: string | undefined,
+    @Query('q') q: string | undefined,
+    @Query('includeProposed') includeProposed?: string,
+  ) {
+    return this.stores.list({ bbox, q, includeProposed: includeProposed === 'true' });
+  }
+
+  @Post('suggest')
+  @HttpCode(201)
+  suggestStore(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(SuggestStoreSchema)) body: SuggestStore,
+  ) {
+    return this.stores.suggestStore(req.user.sub, body);
   }
 
   @Get(':id')
@@ -28,10 +54,24 @@ export class StoresController {
     return this.stores.getDetail(id);
   }
 
+  @Post(':id/confirm')
+  @HttpCode(200)
+  confirmStore(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(ConfirmStoreSchema)) body: ConfirmStore,
+  ) {
+    return this.stores.confirmStore(req.user.sub, id, body);
+  }
+
   @Post(':id/checkin')
   @HttpCode(200)
-  checkin(@Req() req: AuthRequest, @Param('id') id: string) {
-    return this.stores.checkin(req.user.sub, id);
+  checkin(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(CheckinBodySchema)) body: CheckinBody,
+  ) {
+    return this.stores.checkin(req.user.sub, id, body);
   }
 
   @Get(':id/events')
@@ -57,5 +97,35 @@ export class StoresController {
     @Param('eventId') eventId: string,
   ) {
     return this.stores.attendEvent(req.user.sub, id, eventId);
+  }
+
+  @Delete(':id/events/:eventId/attend')
+  @HttpCode(200)
+  unattendEvent(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Param('eventId') eventId: string,
+  ) {
+    return this.stores.unattendEvent(req.user.sub, id, eventId);
+  }
+
+  @Post(':id/checkin/:checkinId/event')
+  @HttpCode(200)
+  associateCheckinEvent(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Param('checkinId') checkinId: string,
+    @Body(new ZodValidationPipe(AssociateCheckinEventBodySchema)) body: AssociateCheckinEventBody,
+  ) {
+    return this.stores.associateCheckinEvent(req.user.sub, id, checkinId, body);
+  }
+
+  @Get(':id/events/:eventId/attendance')
+  getEventAttendance(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Param('eventId') eventId: string,
+  ) {
+    return this.stores.getEventAttendance(req.user.sub, id, eventId);
   }
 }

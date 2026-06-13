@@ -5,6 +5,11 @@ import {
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
+import { Throttle } from '../throttle/throttle.decorator';
+import {
+  THROTTLE_EXCHANGE_LIMIT,
+  THROTTLE_EXCHANGE_TTL,
+} from '../throttle/throttle.constants';
 import { ExchangeService } from './exchange.service';
 
 type AuthRequest = { user: AccessTokenPayload };
@@ -16,13 +21,18 @@ export class ExchangeController {
   @Post('token')
   @HttpCode(200)
   @UseGuards(AuthGuard)
+  @Throttle({ name: 'exchange', limit: THROTTLE_EXCHANGE_LIMIT, ttl: THROTTLE_EXCHANGE_TTL })
   mintToken(@Req() req: AuthRequest) {
     return this.exchange.mintToken(req.user.sub);
   }
 
   @Post('resolve')
   @HttpCode(200)
-  resolveToken(@Body(new ZodValidationPipe(ResolveTokenBodySchema)) body: ResolveTokenBody) {
-    return this.exchange.resolveToken(body.token);
+  @UseGuards(AuthGuard)
+  resolveToken(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(ResolveTokenBodySchema)) body: ResolveTokenBody,
+  ) {
+    return this.exchange.resolveToken(req.user.sub, body.token);
   }
 }

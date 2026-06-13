@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { DeckSite, Prisma } from '@prisma/client';
+import { DeckSite } from '@prisma/client';
 import {
   DECK_SITE_HOSTS,
   type CreateDeckLink,
+  type OnboardingSubmit,
   type SetHomeStore,
   type UpdateDeckLink,
   type UpdatePrivacy,
@@ -24,14 +25,17 @@ export class MeService {
     return this.prisma.user.update({
       where: { id: userId },
       data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
         ...(dto.displayName !== undefined ? { displayName: dto.displayName } : {}),
         ...(dto.pronouns !== undefined ? { pronouns: dto.pronouns } : {}),
         ...(dto.bio !== undefined ? { bio: dto.bio } : {}),
         ...(dto.avatarColors !== undefined ? { avatarColors: dto.avatarColors } : {}),
         ...(dto.commander !== undefined ? { commander: dto.commander } : {}),
         ...(dto.powerLevel !== undefined ? { powerLevel: dto.powerLevel } : {}),
-        ...(dto.vibe !== undefined ? { vibe: dto.vibe } : {}),
+        ...(dto.vibes !== undefined ? { vibes: dto.vibes } : {}),
         ...(dto.formats !== undefined ? { formats: dto.formats } : {}),
+        ...(dto.spelltable !== undefined ? { spelltable: dto.spelltable } : {}),
+        ...(dto.convokeGames !== undefined ? { convokeGames: dto.convokeGames } : {}),
       },
     });
   }
@@ -44,6 +48,8 @@ export class MeService {
         showDiscord: true,
         showDecks: true,
         showMetHistory: true,
+        storeMessages: true,
+        shareNameWithContacts: false,
       }
     );
   }
@@ -54,6 +60,8 @@ export class MeService {
       ...(dto.showDiscord !== undefined ? { showDiscord: dto.showDiscord } : {}),
       ...(dto.showDecks !== undefined ? { showDecks: dto.showDecks } : {}),
       ...(dto.showMetHistory !== undefined ? { showMetHistory: dto.showMetHistory } : {}),
+      ...(dto.storeMessages !== undefined ? { storeMessages: dto.storeMessages } : {}),
+      ...(dto.shareNameWithContacts !== undefined ? { shareNameWithContacts: dto.shareNameWithContacts } : {}),
     };
     return this.prisma.privacySettings.upsert({
       where: { userId },
@@ -64,6 +72,8 @@ export class MeService {
         showDiscord: dto.showDiscord ?? true,
         showDecks: dto.showDecks ?? true,
         showMetHistory: dto.showMetHistory ?? true,
+        storeMessages: dto.storeMessages ?? true,
+        shareNameWithContacts: dto.shareNameWithContacts ?? false,
       },
     });
   }
@@ -146,7 +156,7 @@ export class MeService {
         CASE WHEN geom IS NOT NULL THEN ST_Y(geom::geometry) ELSE NULL END AS lat,
         CASE WHEN geom IS NOT NULL THEN ST_X(geom::geometry) ELSE NULL END AS lng
       FROM stores
-      WHERE id = ${Prisma.sql`${user.homeStoreId}::uuid`}
+      WHERE id = ${user.homeStoreId}
     `;
 
     if (!rows.length) return { store: null };
@@ -190,6 +200,58 @@ export class MeService {
     };
   }
 
+  async getGameStats(userId: string) {
+    const games = await this.prisma.gameLog.findMany({
+      where: {
+        status: 'CONFIRMED',
+        players: { some: { userId } },
+      },
+      select: {
+        winnerId: true,
+        players: {
+          where: { userId },
+          select: { deck: true },
+        },
+      },
+    });
+
+    let wins = 0;
+    let losses = 0;
+    const deckMap = new Map<string, { wins: number; losses: number }>();
+
+    for (const game of games) {
+      const isWin = game.winnerId === userId;
+      if (isWin) wins++;
+      else losses++;
+
+      const deck = game.players[0]?.deck;
+      if (deck) {
+        const stats = deckMap.get(deck) ?? { wins: 0, losses: 0 };
+        if (isWin) stats.wins++;
+        else stats.losses++;
+        deckMap.set(deck, stats);
+      }
+    }
+
+    const total = wins + losses;
+    const byDeck = Array.from(deckMap.entries())
+      .map(([deck, stats]) => ({
+        deck,
+        wins: stats.wins,
+        losses: stats.losses,
+        rate: stats.wins + stats.losses > 0 ? stats.wins / (stats.wins + stats.losses) : 0,
+      }))
+      .sort((a, b) => b.wins + b.losses - (a.wins + a.losses));
+
+    return {
+      games: total,
+      wins,
+      losses,
+      winRate: total > 0 ? wins / total : 0,
+      byDeck,
+    };
+  }
+
   async setHomeStore(userId: string, dto: SetHomeStore) {
     if (dto.storeId) {
       const exists = await this.prisma.store.findUnique({ where: { id: dto.storeId }, select: { id: true } });
@@ -202,5 +264,64 @@ export class MeService {
     });
 
     return { storeId: dto.storeId };
+  }
+
+  async submitOnboarding(userId: string, dto: OnboardingSubmit) {
+    if (dto.homeStoreId) {
+      const store = await this.prisma.store.findUnique({
+        where: { id: dto.homeStoreId },
+        select: { id: true },
+      });
+      if (!store) throw new NotFoundException('Store not found');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: userId },
+        data: {
+          ...(dto.name !== undefined ? { name: dto.name } : {}),
+          displayName: dto.displayName,
+          pronouns: dto.pronouns ?? null,
+          avatarColors: dto.avatarColors,
+          formats: dto.formats,
+          commander: dto.commander ?? null,
+          powerLevel: dto.powerLevel ?? null,
+          vibes: dto.vibes ?? [],
+          bio: dto.bio ?? null,
+          ...(dto.homeStoreId !== undefined ? { homeStoreId: dto.homeStoreId } : {}),
+          onboardedAt: new Date(),
+        },
+      });
+
+      await tx.privacySettings.upsert({
+        where: { userId },
+        update: {
+          discoverable: dto.discoverable ?? true,
+          ...(dto.shareNameWithContacts !== undefined ? { shareNameWithContacts: dto.shareNameWithContacts } : {}),
+        },
+        create: {
+          userId,
+          discoverable: dto.discoverable ?? true,
+          showDiscord: true,
+          showDecks: true,
+          showMetHistory: true,
+          shareNameWithContacts: dto.shareNameWithContacts ?? false,
+        },
+      });
+
+      if (dto.decks?.length) {
+        await tx.deckLink.createMany({
+          data: dto.decks.map((d) => ({
+            userId,
+            site: d.site.toUpperCase() as DeckSite,
+            name: d.name,
+            url: d.url,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      return user;
+    });
   }
 }

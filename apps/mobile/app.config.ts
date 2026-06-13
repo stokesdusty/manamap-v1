@@ -4,7 +4,9 @@ const config: ExpoConfig = {
   name: 'manamap',
   slug: 'manamap',
   version: '1.0.0',
-  orientation: 'portrait',
+  runtimeVersion: { policy: 'appVersion' },
+  updates: { url: 'https://u.expo.dev/3497a3d5-7a81-4da9-89a3-5108ce4a69ee' },
+  orientation: 'default',
   scheme: 'manamap',
   userInterfaceStyle: 'light',
   ios: {
@@ -14,7 +16,8 @@ const config: ExpoConfig = {
     // react-native-maps uses Apple Maps on iOS by default — no API key required
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
-        '$(PRODUCT_NAME) can show your location on the store map to help you find nearby venues.',
+        '$(PRODUCT_NAME) uses your location to confirm you\'re at the store before checking in.',
+      ITSAppUsesNonExemptEncryption: false
     },
   },
   android: {
@@ -37,6 +40,13 @@ const config: ExpoConfig = {
     [
       'expo-notifications',
       { androidMode: 'default' },
+    ],
+    [
+      'expo-location',
+      {
+        locationWhenInUsePermission:
+          '$(PRODUCT_NAME) uses your location to confirm you\'re at the store before checking in.',
+      },
     ],
   ],
   extra: {

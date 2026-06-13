@@ -1,14 +1,29 @@
-import { ActivityIndicator, Clipboard, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Dimensions,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'react-native-svg';
 import type { DeckLink, ManaColor, MtgFormat, PlayerVibe } from '@manamap/shared';
+import { Avatar } from '../components/Avatar';
 import { ManaPip } from '../components/ManaPip';
+import { SocialsCard } from '../components/SocialsCard';
 import { useConnectionDetail } from '../hooks/useConnections';
+import { useRivalryDetail } from '../hooks/useRivalries';
 import { colors, radii, shadows, spacing, typography } from '../theme';
+import { guildName, identityGradientStops, manaAccent, readableOn } from '../theme/identity';
 import type { RootStackScreenProps } from '../navigation/types';
 
 // ---------------------------------------------------------------------------
-// Helpers (shared with PlayerPreviewScreen)
+// Helpers
 // ---------------------------------------------------------------------------
 
 const VIBE_LABELS: Record<PlayerVibe, string> = {
@@ -36,6 +51,127 @@ const DECK_SITE_LABELS: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// PeerHero — identity-gradient banner matching YouScreen's IdentityHero
+// ---------------------------------------------------------------------------
+
+const BANNER_H = 160;
+
+interface PeerHeroProps {
+  displayName: string;
+  pronouns?: string | null;
+  avatarColors: ManaColor[];
+  vibes?: PlayerVibe[];
+  commander?: string | null;
+  formats: MtgFormat[];
+  bio?: string | null;
+}
+
+function PeerHero({
+  displayName,
+  pronouns,
+  avatarColors,
+  vibes,
+  commander,
+  formats,
+  bio,
+}: PeerHeroProps) {
+  const gradient = identityGradientStops(avatarColors);
+  const accent = avatarColors.length > 0 ? manaAccent(avatarColors) : colors.accent;
+  const onAccent = readableOn(accent);
+  const guild = guildName(avatarColors);
+
+  const [bannerW, setBannerW] = useState(
+    () => Dimensions.get('window').width,
+  );
+
+  return (
+    <View style={hero.root}>
+      {/* Gradient banner: avatar + name + pronouns + guild */}
+      <View
+        style={hero.banner}
+        onLayout={(e) => setBannerW(e.nativeEvent.layout.width)}
+      >
+        <Svg style={StyleSheet.absoluteFill} width={bannerW} height={BANNER_H}>
+          <Defs>
+            <SvgLinearGradient id="peerHeroGrad" x1="0" y1="0" x2="1" y2="1">
+              {gradient.map((c, i) => (
+                <Stop
+                  key={i}
+                  offset={`${i / Math.max(1, gradient.length - 1)}`}
+                  stopColor={c}
+                />
+              ))}
+            </SvgLinearGradient>
+          </Defs>
+          <Rect x="0" y="0" width={bannerW} height={BANNER_H} fill="url(#peerHeroGrad)" />
+        </Svg>
+
+        <View style={hero.bannerContent}>
+          <Avatar
+            name={displayName}
+            manaColors={avatarColors}
+            size={64}
+            style={hero.avatar}
+          />
+          <Text style={[hero.displayName, { color: onAccent }]} numberOfLines={1}>
+            {displayName}
+          </Text>
+          {pronouns ? (
+            <Text style={[hero.pronouns, { color: onAccent + 'CC' }]}>
+              {pronouns}
+            </Text>
+          ) : null}
+          {avatarColors.length > 0 && (
+            <View style={hero.guildChip}>
+              {avatarColors.map((c) => (
+                <ManaPip key={c} color={c} size={14} />
+              ))}
+              <Text style={[hero.guildLabel, { color: onAccent }]}>{guild}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Metadata strip below banner */}
+      {((vibes?.length ?? 0) > 0 || commander || formats.length > 0 || bio) && (
+        <View style={hero.meta}>
+          {(vibes ?? []).length > 0 && (
+            <View style={hero.vibeRow}>
+              {(vibes as PlayerVibe[]).map((v) => (
+                <View key={v} style={[hero.vibePill, { backgroundColor: accent + '22', borderColor: accent + '44' }]}>
+                  <Text style={[hero.vibeText, { color: accent }]}>{VIBE_LABELS[v]}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {commander ? (
+            <View style={hero.metaRow}>
+              <Ionicons name="shield-outline" size={14} color={colors.textTertiary} />
+              <Text style={hero.metaText} numberOfLines={1}>{commander}</Text>
+            </View>
+          ) : null}
+
+          {formats.length > 0 && (
+            <View style={hero.chips}>
+              {formats.map((f) => (
+                <View key={f} style={hero.chip}>
+                  <Text style={hero.chipText}>{FORMAT_LABELS[f]}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {bio ? (
+            <Text style={hero.bio} numberOfLines={4}>{bio}</Text>
+          ) : null}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // ConnectedRevealScreen
 // ---------------------------------------------------------------------------
 
@@ -43,150 +179,134 @@ export function ConnectedRevealScreen({
   navigation,
   route,
 }: RootStackScreenProps<'Connected'>) {
-  const { connectionId } = route.params;
+  const { connectionId, isNew } = route.params;
   const { data, isLoading } = useConnectionDetail(connectionId);
+  const { data: rivalry } = useRivalryDetail(data?.peer.id);
+  const [showBanner, setShowBanner] = useState(isNew === true);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Gradient-style header */}
-      <View style={header.root}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [header.closeBtn, pressed && { opacity: 0.5 }]}
-          hitSlop={8}
-        >
-          <Ionicons name="close" size={24} color={colors.textInverse} />
-        </Pressable>
+      {/* Connected! celebration banner — only on first visit */}
+      {showBanner && (
+        <View style={connBanner.root}>
+          <Pressable
+            onPress={() => setShowBanner(false)}
+            style={({ pressed }) => [connBanner.closeBtn, pressed && { opacity: 0.5 }]}
+            hitSlop={8}
+          >
+            <Ionicons name="close" size={22} color={colors.textInverse} />
+          </Pressable>
 
-        <View style={header.badge}>
-          <Ionicons name="checkmark-circle" size={32} color={colors.textInverse} />
-          <Text style={header.title}>Connected!</Text>
-        </View>
-
-        {data && (
-          <View style={header.avatarRow}>
-            <View style={[header.avatar, header.avatarLeft]}>
-              <Text style={header.avatarText}>
-                {data.peer.displayName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-            <View style={header.heartWrap}>
-              <Ionicons name="heart" size={20} color={colors.surface} />
-            </View>
-            <View style={[header.avatar, header.avatarRight]}>
-              <Text style={header.avatarText}>?</Text>
-            </View>
+          <View style={connBanner.badge}>
+            <Ionicons name="checkmark-circle" size={24} color={colors.textInverse} />
+            <Text style={connBanner.title}>Connected!</Text>
           </View>
-        )}
-      </View>
+
+          {data && (
+            <View style={connBanner.avatarRow}>
+              <View style={[connBanner.avatar, connBanner.avatarLeft]}>
+                <Text style={connBanner.avatarText}>
+                  {data.peer.displayName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={connBanner.heartWrap}>
+                <Ionicons name="heart" size={14} color={colors.surface} />
+              </View>
+              <View style={[connBanner.avatar, connBanner.avatarRight]}>
+                <Text style={connBanner.avatarText}>?</Text>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
 
       {isLoading || !data ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          {/* Profile card */}
-          <View style={card.root}>
-            <View style={card.nameRow}>
-              <Text style={card.displayName}>{data.peer.displayName}</Text>
-              {data.peer.pronouns ? (
-                <Text style={card.pronouns}>{data.peer.pronouns}</Text>
-              ) : null}
-            </View>
+        <>
+          {/* Dismiss row — chevron above the name */}
+          <View style={styles.dismissRow}>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={({ pressed }) => [styles.dismissBtn, pressed && { opacity: 0.5 }]}
+              hitSlop={12}
+            >
+              <Ionicons name="chevron-down" size={26} color={colors.textTertiary} />
+            </Pressable>
+          </View>
 
-            {data.peer.avatarColors.length > 0 && (
-              <View style={card.pips}>
-                {(data.peer.avatarColors as ManaColor[]).map((c) => (
-                  <ManaPip key={c} color={c} size={18} />
+          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            {/* Identity hero */}
+            <PeerHero
+              displayName={data.peer.displayName}
+              pronouns={data.peer.pronouns}
+              avatarColors={data.peer.avatarColors as ManaColor[]}
+              {...(data.peer.vibes ? { vibes: data.peer.vibes as PlayerVibe[] } : {})}
+              commander={data.peer.commander}
+              formats={data.peer.formats as MtgFormat[]}
+              bio={data.peer.bio}
+            />
+
+            {/* Head-to-head */}
+            {rivalry && (
+              <View style={hth.root}>
+                <View style={hth.titleRow}>
+                  <Ionicons name="game-controller-outline" size={16} color={colors.textSecondary} />
+                  <Text style={hth.title}>Head-to-head</Text>
+                  {rivalry.hot && <Text style={hth.flame}>🔥</Text>}
+                </View>
+                <View style={hth.statsRow}>
+                  <View style={hth.stat}>
+                    <Text style={hth.statValue}>{rivalry.gamesTogether}</Text>
+                    <Text style={hth.statLabel}>Games</Text>
+                  </View>
+                  <View style={hth.divider} />
+                  <View style={hth.stat}>
+                    <Text style={hth.statValue}>{rivalry.wins}</Text>
+                    <Text style={hth.statLabel}>Your wins</Text>
+                  </View>
+                  <View style={hth.divider} />
+                  <View style={hth.stat}>
+                    <Text style={hth.statValue}>{rivalry.losses}</Text>
+                    <Text style={hth.statLabel}>Their wins</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* Socials — friend-gated */}
+            {data.peer.socials && (data.peer.socials.length > 0 || (data.peer.socialsSummary?.friendsOnlyCount ?? 0) > 0) && (
+              <SocialsCard
+                mode="friend"
+                links={data.peer.socials}
+                publicCount={data.peer.socialsSummary?.publicCount ?? data.peer.socials.length}
+                friendsOnlyCount={data.peer.socialsSummary?.friendsOnlyCount ?? 0}
+              />
+            )}
+
+            {/* Deck links */}
+            {data.peer.deckLinks.length > 0 && (
+              <View style={decks.root}>
+                <Text style={decks.heading}>Decks</Text>
+                {(data.peer.deckLinks as DeckLink[]).map((deck) => (
+                  <Pressable
+                    key={deck.id}
+                    style={({ pressed }) => [decks.row, pressed && { opacity: 0.7 }]}
+                    onPress={() => void Linking.openURL(deck.url)}
+                  >
+                    <View style={decks.siteTag}>
+                      <Text style={decks.siteText}>{DECK_SITE_LABELS[deck.site] ?? deck.site}</Text>
+                    </View>
+                    <Text style={decks.name} numberOfLines={1}>{deck.name}</Text>
+                    <Ionicons name="open-outline" size={16} color={colors.textTertiary} />
+                  </Pressable>
                 ))}
               </View>
             )}
-
-            {data.peer.vibe ? (
-              <View style={card.vibePill}>
-                <Text style={card.vibeText}>{VIBE_LABELS[data.peer.vibe as PlayerVibe]}</Text>
-              </View>
-            ) : null}
-
-            {data.peer.commander ? (
-              <View style={card.commanderRow}>
-                <Ionicons name="shield-outline" size={14} color={colors.textTertiary} />
-                <Text style={card.commanderText} numberOfLines={1}>{data.peer.commander}</Text>
-                {data.peer.powerLevel != null && (
-                  <View style={card.powerBadge}>
-                    <Text style={card.powerText}>P{data.peer.powerLevel}</Text>
-                  </View>
-                )}
-              </View>
-            ) : null}
-
-            {data.peer.formats.length > 0 && (
-              <View style={card.chips}>
-                {(data.peer.formats as MtgFormat[]).map((f) => (
-                  <View key={f} style={card.chip}>
-                    <Text style={card.chipText}>{FORMAT_LABELS[f]}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {data.peer.bio ? (
-              <Text style={card.bio} numberOfLines={4}>{data.peer.bio}</Text>
-            ) : null}
-          </View>
-
-          {/* Contact panel — now unlocked */}
-          <View style={contact.root}>
-            <View style={contact.titleRow}>
-              <Ionicons name="lock-open-outline" size={16} color={colors.success} />
-              <Text style={contact.title}>Contact info</Text>
-            </View>
-
-            {data.peer.discordHandle ? (
-              <Pressable
-                style={({ pressed }) => [contact.row, pressed && { opacity: 0.7 }]}
-                onPress={() => Clipboard.setString(data.peer.discordHandle!)}
-              >
-                <Ionicons name="logo-discord" size={20} color="#5865F2" />
-                <Text style={contact.value}>{data.peer.discordHandle}</Text>
-                <Ionicons name="copy-outline" size={16} color={colors.textTertiary} />
-              </Pressable>
-            ) : (
-              <View style={contact.row}>
-                <Ionicons name="logo-discord" size={20} color={colors.border} />
-                <Text style={contact.empty}>Discord not shared</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Deck links */}
-          {data.peer.deckLinks.length > 0 && (
-            <View style={decks.root}>
-              <Text style={decks.heading}>Decks</Text>
-              {(data.peer.deckLinks as DeckLink[]).map((deck) => (
-                <Pressable
-                  key={deck.id}
-                  style={({ pressed }) => [decks.row, pressed && { opacity: 0.7 }]}
-                  onPress={() => void Linking.openURL(deck.url)}
-                >
-                  <View style={decks.siteTag}>
-                    <Text style={decks.siteText}>{DECK_SITE_LABELS[deck.site] ?? deck.site}</Text>
-                  </View>
-                  <Text style={decks.name} numberOfLines={1}>{deck.name}</Text>
-                  <Ionicons name="open-outline" size={16} color={colors.textTertiary} />
-                </Pressable>
-              ))}
-            </View>
-          )}
-
-          <Pressable
-            style={({ pressed }) => [styles.doneBtn, pressed && { opacity: 0.8 }]}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.doneBtnText}>Done</Text>
-          </Pressable>
-        </ScrollView>
+          </ScrollView>
+        </>
       )}
     </SafeAreaView>
   );
@@ -199,65 +319,57 @@ export function ConnectedRevealScreen({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.paper },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxxl },
-  doneBtn: {
-    backgroundColor: colors.accent,
-    height: 52,
-    borderRadius: radii.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-    ...shadows.md,
+  scroll: { gap: spacing.lg, paddingBottom: spacing.xxxl },
+  dismissRow: {
+    alignItems: 'flex-end',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
   },
-  doneBtnText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-    color: colors.textInverse,
-  },
+  dismissBtn: {},
 });
 
-const header = StyleSheet.create({
+const connBanner = StyleSheet.create({
   root: {
     backgroundColor: colors.accent,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
-    paddingBottom: spacing.xxl,
-    gap: spacing.md,
+    paddingBottom: spacing.lg,
+    gap: spacing.sm,
   },
   closeBtn: { alignSelf: 'flex-end', padding: 4 },
   badge: { alignItems: 'center', gap: spacing.xs },
   title: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xxl,
+    fontSize: typography.fontSize.lg,
     color: colors.textInverse,
   },
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.sm,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: radii.full,
+    width: 48,
+    height: 48,
+    borderRadius: radii.avatar,
     backgroundColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.5)',
   },
-  avatarLeft: { marginRight: -8, zIndex: 1 },
-  avatarRight: { marginLeft: -8 },
+  avatarLeft: { marginRight: -6, zIndex: 1 },
+  avatarRight: { marginLeft: -6 },
   avatarText: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xl,
+    fontSize: typography.fontSize.md,
     color: colors.textInverse,
   },
   heartWrap: {
     zIndex: 2,
-    width: 32,
-    height: 32,
+    width: 26,
+    height: 26,
     borderRadius: radii.full,
     backgroundColor: colors.accent,
     alignItems: 'center',
@@ -267,41 +379,71 @@ const header = StyleSheet.create({
   },
 });
 
-const card = StyleSheet.create({
+const hero = StyleSheet.create({
   root: {
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
-    gap: spacing.sm,
-    ...shadows.md,
+    overflow: 'hidden',
   },
-  nameRow: { alignItems: 'center', gap: 2 },
+  banner: {
+    height: BANNER_H,
+    overflow: 'hidden',
+  },
+  bannerContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+  },
+  avatar: {
+    borderRadius: radii.xl,
+    marginBottom: spacing.xs,
+  },
   displayName: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.xl,
-    color: colors.textPrimary,
-    textAlign: 'center',
   },
   pronouns: {
     fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
   },
-  pips: { flexDirection: 'row', gap: spacing.xs, justifyContent: 'center' },
-  vibePill: {
-    alignSelf: 'center',
+  guildChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.28)',
     paddingHorizontal: spacing.md,
-    paddingVertical: 3,
-    backgroundColor: colors.accentLight,
+    paddingVertical: 4,
     borderRadius: radii.full,
+    marginTop: spacing.xs,
+  },
+  guildLabel: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    marginLeft: 2,
+  },
+  meta: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.borderLight,
+  },
+  vibeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  vibePill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+    borderWidth: 1,
   },
   vibeText: {
     fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
-    color: colors.accent,
+    fontSize: typography.fontSize.xs,
   },
-  commanderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  commanderText: {
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  metaText: {
     flex: 1,
     fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.sm,
@@ -338,43 +480,11 @@ const card = StyleSheet.create({
   },
 });
 
-const contact = StyleSheet.create({
-  root: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
-    gap: spacing.md,
-    ...shadows.md,
-  },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  title: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-    color: colors.success,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  value: {
-    flex: 1,
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
-    color: colors.textPrimary,
-  },
-  empty: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
-  },
-});
-
 const decks = StyleSheet.create({
   root: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
+    marginHorizontal: spacing.xl,
     padding: spacing.xl,
     gap: spacing.sm,
     ...shadows.md,
@@ -408,4 +518,40 @@ const decks = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textPrimary,
   },
+});
+
+const hth = StyleSheet.create({
+  root: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    marginHorizontal: spacing.xl,
+    padding: spacing.xl,
+    gap: spacing.md,
+    ...shadows.md,
+  },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  title: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  flame: { fontSize: 16 },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: spacing.xs,
+  },
+  stat: { flex: 1, alignItems: 'center', gap: 2 },
+  statValue: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.lg,
+    color: colors.textPrimary,
+  },
+  statLabel: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  divider: { width: 1, height: 32, backgroundColor: colors.borderLight, marginHorizontal: spacing.sm },
 });

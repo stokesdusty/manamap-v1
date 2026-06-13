@@ -1,6 +1,7 @@
-import { Injectable, Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import type { Env } from '../config/config.schema';
 
 interface DiscordTokenResponse {
@@ -18,9 +19,10 @@ export interface DiscordProfile {
 
 @Injectable()
 export class DiscordService {
-  private readonly logger = new Logger(DiscordService.name);
-
-  constructor(private readonly config: ConfigService<Env>) {}
+  constructor(
+    @InjectPinoLogger(DiscordService.name) private readonly logger: PinoLogger,
+    private readonly config: ConfigService<Env>,
+  ) {}
 
   async exchangeCode(code: string, codeVerifier?: string, redirectUri?: string): Promise<DiscordProfile> {
     const clientId = this.config.get<string>('DISCORD_CLIENT_ID');
@@ -54,7 +56,7 @@ export class DiscordService {
 
       return profileRes.data;
     } catch (err) {
-      this.logger.warn('Discord OAuth failed', err instanceof Error ? err.message : err);
+      this.logger.warn({ err: err instanceof Error ? err : new Error(String(err)) }, 'Discord OAuth failed');
       throw new UnauthorizedException('Discord OAuth failed — invalid or expired code');
     }
   }

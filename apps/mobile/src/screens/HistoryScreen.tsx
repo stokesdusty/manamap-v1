@@ -24,7 +24,7 @@ function dayKey(iso: string): string {
 function groupLabel(iso: string): string {
   const today = new Date().toISOString().slice(0, 10);
   const thisWeekStart = new Date(Date.now() - 6 * 86_400_000).toISOString().slice(0, 10);
-  const day = iso.slice(0, 10);
+  const day = dayKey(iso);
   if (day === today) return 'Today';
   if (day >= thisWeekStart) return 'This week';
   return 'Earlier';
@@ -67,16 +67,16 @@ const MANA_COLORS: Record<ManaColor, string> = {
   G: colors.mana.G,
 };
 
-function EncounterCard({ item }: { item: EncounterItem }) {
+function EncounterCard({ item, onPress }: { item: EncounterItem; onPress: () => void }) {
   const src = SOURCE_CONFIG[item.source] ?? SOURCE_CONFIG.GAME;
   const fill =
     item.peer.avatarColors.length > 0
       ? (MANA_COLORS[item.peer.avatarColors[0] as ManaColor] ?? colors.border)
       : colors.border;
-  const textFill = item.peer.avatarColors[0] === 'W' ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(item.peer.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
 
   return (
-    <View style={card.root}>
+    <Pressable style={({ pressed }) => [card.root, pressed && { opacity: 0.75 }]} onPress={onPress}>
       {/* Avatar */}
       <View style={[card.avatar, { backgroundColor: fill }]}>
         <Text style={[card.avatarText, { color: textFill }]}>
@@ -107,7 +107,7 @@ function EncounterCard({ item }: { item: EncounterItem }) {
 
       {/* Timestamp */}
       <Text style={card.time}>{relativeDate(item.createdAt)}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -120,9 +120,19 @@ export function HistoryScreen({ navigation }: RootStackScreenProps<'History'>) {
   const encounters = data?.encounters ?? [];
   const crossedPathsCount = data?.crossedPathsCount ?? 0;
 
-  // Group encounters into date sections
-  const sectionMap = new Map<string, EncounterItem[]>();
+  // Deduplicate: one entry per peer, most recent encounter wins
+  const seen = new Set<string>();
+  const unique: EncounterItem[] = [];
   for (const e of encounters) {
+    if (!seen.has(e.peer.id)) {
+      seen.add(e.peer.id);
+      unique.push(e);
+    }
+  }
+
+  // Group by date section
+  const sectionMap = new Map<string, EncounterItem[]>();
+  for (const e of unique) {
     const label = groupLabel(e.createdAt);
     if (!sectionMap.has(label)) sectionMap.set(label, []);
     sectionMap.get(label)!.push(e);
@@ -162,7 +172,7 @@ export function HistoryScreen({ navigation }: RootStackScreenProps<'History'>) {
         <View style={styles.center}>
           <ActivityIndicator color={colors.accent} />
         </View>
-      ) : encounters.length === 0 ? (
+      ) : unique.length === 0 ? (
         <View style={styles.empty}>
           <Ionicons name="time-outline" size={48} color={colors.border} />
           <Text style={styles.emptyTitle}>No history yet</Text>
@@ -173,13 +183,23 @@ export function HistoryScreen({ navigation }: RootStackScreenProps<'History'>) {
       ) : (
         <SectionList
           sections={sections}
-          keyExtractor={(item) => item.id + dayKey(item.createdAt)}
+          keyExtractor={(item) => item.peer.id}
           contentContainerStyle={styles.list}
           stickySectionHeadersEnabled={false}
           renderSectionHeader={({ section }) => (
             <Text style={styles.sectionLabel}>{section.title}</Text>
           )}
-          renderItem={({ item }) => <EncounterCard item={item} />}
+          renderItem={({ item }) => (
+            <EncounterCard
+              item={item}
+              onPress={() =>
+                navigation.navigate('PlayerPreview', {
+                  profile: item.peer,
+                  lastMetStoreName: item.storeName ?? null,
+                })
+              }
+            />
+          )}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -278,7 +298,7 @@ const card = StyleSheet.create({
   avatar: {
     width: 44,
     height: 44,
-    borderRadius: radii.full,
+    borderRadius: radii.avatar,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,

@@ -5,11 +5,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ConnectionStatus, EncounterResult, EncounterSource } from '@prisma/client';
-import { Expo } from 'expo-server-sdk';
-import type { ExpoPushMessage } from 'expo-server-sdk';
+import { ConnectionStatus, EncounterResult, EncounterSource, NotificationKind } from '@prisma/client';
 import type { CreateConnection } from '@manamap/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { QuestsService } from '../quests/quests.service';
+import { SocialsService } from '../socials/socials.service';
 
 const PEER_SELECT = {
   id: true,
@@ -19,44 +21,22 @@ const PEER_SELECT = {
   avatarColors: true,
   commander: true,
   powerLevel: true,
-  vibe: true,
+  vibes: true,
   formats: true,
+  spelltable: true,
+  convokeGames: true,
+  homeStore: { select: { name: true } },
 } as const;
 
 @Injectable()
 export class ConnectionsService {
-  private readonly expo = new Expo();
-
-  constructor(private readonly prisma: PrismaService) {}
-
-  // -------------------------------------------------------------------------
-  // Push helpers
-  // -------------------------------------------------------------------------
-
-  private async sendPushToUser(
-    userId: string,
-    payload: { title: string; body: string; data?: Record<string, unknown> },
-  ) {
-    const rows = await this.prisma.pushToken.findMany({ where: { userId } });
-    const valid = rows.filter((r) => Expo.isExpoPushToken(r.token));
-    if (!valid.length) return;
-
-    const messages: ExpoPushMessage[] = valid.map((r) => ({
-      to: r.token,
-      title: payload.title,
-      body: payload.body,
-      ...(payload.data !== undefined ? { data: payload.data } : {}),
-    }));
-
-    try {
-      const chunks = this.expo.chunkPushNotifications(messages);
-      for (const chunk of chunks) {
-        await this.expo.sendPushNotificationsAsync(chunk);
-      }
-    } catch {
-      // Push failures must not affect the main operation
-    }
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly safety: SafetyService,
+    private readonly notifications: NotificationsService,
+    private readonly quests: QuestsService,
+    private readonly socials: SocialsService,
+  ) {}
 
   // -------------------------------------------------------------------------
   // Endpoints
@@ -65,6 +45,11 @@ export class ConnectionsService {
   async sendRequest(requesterId: string, dto: CreateConnection) {
     if (requesterId === dto.addresseeId) {
       throw new BadRequestException('Cannot connect with yourself');
+    }
+
+    const blockedIds = await this.safety.getBlockedIds(requesterId);
+    if (blockedIds.has(dto.addresseeId)) {
+      throw new ForbiddenException('Cannot connect with this user');
     }
 
     const existing = await this.prisma.connection.findFirst({
@@ -87,7 +72,8 @@ export class ConnectionsService {
       include: { requester: { select: PEER_SELECT } },
     });
 
-    void this.sendPushToUser(dto.addresseeId, {
+    void this.notifications.create(dto.addresseeId, {
+      kind: NotificationKind.CONNECT_REQUEST,
       title: `${conn.requester.displayName} wants to connect`,
       body: dto.note ?? 'Tap to respond',
       data: { type: 'connection_request', connectionId: conn.id },
@@ -115,7 +101,8 @@ export class ConnectionsService {
 
     for (const c of rows) {
       const isSender = c.requesterId === userId;
-      const peer = isSender ? c.addressee : c.requester;
+      const peerRaw = isSender ? c.addressee : c.requester;
+      const { homeStore, ...peerBase } = peerRaw;
       const item = {
         id: c.id,
         status: c.status.toLowerCase(),
@@ -124,7 +111,7 @@ export class ConnectionsService {
         note: c.note,
         createdAt: c.createdAt.toISOString(),
         updatedAt: c.updatedAt.toISOString(),
-        peer,
+        peer: { ...peerBase, homeStoreName: homeStore?.name ?? null },
       };
 
       if (c.status === ConnectionStatus.ACCEPTED) {
@@ -169,11 +156,15 @@ export class ConnectionsService {
       }),
     ]);
 
-    void this.sendPushToUser(conn.requesterId, {
+    void this.notifications.create(conn.requesterId, {
+      kind: NotificationKind.CONNECT_ACCEPTED,
       title: `${conn.addressee.displayName} accepted your request`,
       body: 'You are now connected!',
       data: { type: 'connection_accepted', connectionId: conn.id },
     });
+
+    void this.quests.evaluate(userId);
+    void this.quests.evaluate(conn.requesterId);
 
     return { id: updated.id, status: 'accepted' };
   }
@@ -199,17 +190,19 @@ export class ConnectionsService {
         requester: {
           select: {
             ...PEER_SELECT,
+            name: true,
             identities: { select: { discordHandle: true } },
             deckLinks: { select: { id: true, site: true, name: true, url: true } },
-            privacySettings: { select: { showDiscord: true, showDecks: true } },
+            privacySettings: { select: { showDiscord: true, showDecks: true, shareNameWithContacts: true } },
           },
         },
         addressee: {
           select: {
             ...PEER_SELECT,
+            name: true,
             identities: { select: { discordHandle: true } },
             deckLinks: { select: { id: true, site: true, name: true, url: true } },
-            privacySettings: { select: { showDiscord: true, showDecks: true } },
+            privacySettings: { select: { showDiscord: true, showDecks: true, shareNameWithContacts: true } },
           },
         },
       },
@@ -226,6 +219,7 @@ export class ConnectionsService {
     const accepted = conn.status === ConnectionStatus.ACCEPTED;
     const showDiscord = accepted && (peerRaw.privacySettings?.showDiscord ?? true);
     const showDecks = accepted && (peerRaw.privacySettings?.showDecks ?? true);
+    const showName = accepted && (peerRaw.privacySettings?.shareNameWithContacts ?? false);
 
     const discordHandle = showDiscord
       ? (peerRaw.identities.find((i) => i.discordHandle)?.discordHandle ?? null)
@@ -235,7 +229,11 @@ export class ConnectionsService {
       ? peerRaw.deckLinks.map((d) => ({ ...d, site: d.site.toLowerCase() }))
       : [];
 
-    const { identities: _i, deckLinks: _d, privacySettings: _p, ...peerBase } = peerRaw;
+    const socialsData = accepted
+      ? await this.socials.visibleSocials(peerRaw.id, userId)
+      : { socials: [], publicCount: 0, friendsOnlyCount: 0 };
+
+    const { identities: _i, deckLinks: _d, privacySettings: _p, name: peerName, ...peerBase } = peerRaw;
 
     return {
       id: conn.id,
@@ -245,7 +243,17 @@ export class ConnectionsService {
       note: conn.note,
       createdAt: conn.createdAt.toISOString(),
       updatedAt: conn.updatedAt.toISOString(),
-      peer: { ...peerBase, discordHandle, deckLinks },
+      peer: {
+        ...peerBase,
+        name: showName ? (peerName ?? null) : null,
+        discordHandle,
+        deckLinks,
+        socials: socialsData.socials,
+        socialsSummary: {
+          publicCount: socialsData.publicCount,
+          friendsOnlyCount: socialsData.friendsOnlyCount,
+        },
+      },
     };
   }
 }

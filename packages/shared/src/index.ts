@@ -50,6 +50,49 @@ export const DECK_SITE_HOSTS: Record<DeckSite, string> = {
   archidekt: 'archidekt.com',
 };
 
+// --- Social links ---
+
+export const SocialPlatformSchema = z.enum([
+  'DISCORD', 'INSTAGRAM', 'TWITCH', 'YOUTUBE', 'X', 'TIKTOK', 'FACEBOOK', 'WEBSITE', 'PHONE',
+]);
+export type SocialPlatform = z.infer<typeof SocialPlatformSchema>;
+
+export const SocialVisibilitySchema = z.enum(['PUBLIC', 'FRIENDS', 'HIDDEN']);
+export type SocialVisibility = z.infer<typeof SocialVisibilitySchema>;
+
+export const SocialLinkSchema = z.object({
+  id: IdSchema,
+  platform: SocialPlatformSchema,
+  value: z.string(),
+  visibility: SocialVisibilitySchema,
+  sort: z.number().int(),
+});
+export type SocialLink = z.infer<typeof SocialLinkSchema>;
+
+export const SocialLinkInputSchema = z.object({
+  platform: SocialPlatformSchema,
+  value: z.string().min(1).max(256),
+  visibility: SocialVisibilitySchema.optional(),
+});
+export type SocialLinkInput = z.infer<typeof SocialLinkInputSchema>;
+
+export const UpdateSocialLinkSchema = z.object({
+  value: z.string().min(1).max(256).optional(),
+  visibility: SocialVisibilitySchema.optional(),
+});
+export type UpdateSocialLink = z.infer<typeof UpdateSocialLinkSchema>;
+
+export const ReorderSocialLinksSchema = z.object({
+  order: z.array(IdSchema).min(1),
+});
+export type ReorderSocialLinks = z.infer<typeof ReorderSocialLinksSchema>;
+
+export const SocialsSummarySchema = z.object({
+  publicCount: z.number().int().nonnegative(),
+  friendsOnlyCount: z.number().int().nonnegative(),
+});
+export type SocialsSummary = z.infer<typeof SocialsSummarySchema>;
+
 // --- User ---
 
 export const UserSchema = z.object({
@@ -70,8 +113,13 @@ export const PublicProfileSchema = z.object({
   avatarColors: z.array(ManaColorSchema),
   commander: z.string().max(128).nullable(),
   powerLevel: z.number().int().min(1).max(10).nullable(),
-  vibe: PlayerVibeSchema.nullable(),
+  vibes: z.array(PlayerVibeSchema).optional(),
   formats: z.array(MtgFormatSchema),
+  homeStoreName: z.string().nullable().optional(),
+  socials: z.array(SocialLinkSchema).optional(),
+  socialsSummary: SocialsSummarySchema.optional(),
+  spelltable: z.boolean().optional(),
+  convokeGames: z.boolean().optional(),
 });
 export type PublicProfile = z.infer<typeof PublicProfileSchema>;
 
@@ -93,27 +141,34 @@ export type ResolveTokenBody = z.infer<typeof ResolveTokenBodySchema>;
 export const ProfileSchema = z.object({
   id: IdSchema,
   email: z.string().email(),
+  name: z.string().max(80).nullable(),
   displayName: z.string().min(1).max(64),
   pronouns: z.string().max(32).nullable(),
   bio: z.string().max(500).nullable(),
   avatarColors: z.array(ManaColorSchema),
   commander: z.string().max(128).nullable(),
   powerLevel: z.number().int().min(1).max(10).nullable(),
-  vibe: PlayerVibeSchema.nullable(),
+  vibes: z.array(PlayerVibeSchema).optional(),
   formats: z.array(MtgFormatSchema),
+  spelltable: z.boolean().optional(),
+  convokeGames: z.boolean().optional(),
   createdAt: TimestampSchema,
+  onboardedAt: z.string().datetime().nullable(),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
 
 export const UpdateProfileSchema = z.object({
+  name: z.string().max(80).nullable().optional(),
   displayName: z.string().min(1).max(64).optional(),
   pronouns: z.string().max(32).nullable().optional(),
   bio: z.string().max(500).nullable().optional(),
   avatarColors: z.array(ManaColorSchema).max(5).optional(),
   commander: z.string().max(128).nullable().optional(),
   powerLevel: z.number().int().min(1).max(10).nullable().optional(),
-  vibe: PlayerVibeSchema.nullable().optional(),
+  vibes: z.array(PlayerVibeSchema).optional(),
   formats: z.array(MtgFormatSchema).optional(),
+  spelltable: z.boolean().optional(),
+  convokeGames: z.boolean().optional(),
 });
 export type UpdateProfile = z.infer<typeof UpdateProfileSchema>;
 
@@ -124,6 +179,8 @@ export const PrivacySchema = z.object({
   showDiscord: z.boolean(),
   showDecks: z.boolean(),
   showMetHistory: z.boolean(),
+  storeMessages: z.boolean().default(true),
+  shareNameWithContacts: z.boolean().default(false),
 });
 export type Privacy = z.infer<typeof PrivacySchema>;
 
@@ -132,6 +189,8 @@ export const UpdatePrivacySchema = z.object({
   showDiscord: z.boolean().optional(),
   showDecks: z.boolean().optional(),
   showMetHistory: z.boolean().optional(),
+  storeMessages: z.boolean().optional(),
+  shareNameWithContacts: z.boolean().optional(),
 });
 export type UpdatePrivacy = z.infer<typeof UpdatePrivacySchema>;
 
@@ -214,6 +273,7 @@ export const ConnectionsListSchema = z.object({
 export type ConnectionsList = z.infer<typeof ConnectionsListSchema>;
 
 export const ConnectedProfileSchema = PublicProfileSchema.extend({
+  name: z.string().max(80).nullable(),
   discordHandle: z.string().nullable(),
   deckLinks: z.array(DeckLinkSchema),
 });
@@ -251,6 +311,8 @@ export const StorePinSchema = z.object({
   name: z.string(),
   lat: z.number(),
   lng: z.number(),
+  proposed: z.boolean().optional(),
+  confirmationCount: z.number().int().nonnegative().optional(),
 });
 export type StorePin = z.infer<typeof StorePinSchema>;
 
@@ -306,6 +368,17 @@ export const LeaderboardEntrySchema = z.object({
 });
 export type LeaderboardEntry = z.infer<typeof LeaderboardEntrySchema>;
 
+export const WinsLeaderboardEntrySchema = z.object({
+  rank: z.number().int().positive(),
+  userId: IdSchema,
+  displayName: z.string(),
+  avatarUrl: z.string().nullable(),
+  avatarColors: z.array(z.string()),
+  wins: z.number().int().nonnegative(),
+  isMe: z.boolean(),
+});
+export type WinsLeaderboardEntry = z.infer<typeof WinsLeaderboardEntrySchema>;
+
 export const LeaderboardResponseSchema = z.object({
   entries: z.array(LeaderboardEntrySchema),
   myEntry: z.object({
@@ -313,8 +386,23 @@ export const LeaderboardResponseSchema = z.object({
     currentStreak: z.number().int().nonnegative(),
     totalCheckins: z.number().int().nonnegative(),
   }).nullable(),
+  winsLeaderboard: z.object({
+    entries: z.array(WinsLeaderboardEntrySchema),
+    myEntry: z.object({
+      rank: z.number().int().positive(),
+      wins: z.number().int().nonnegative(),
+    }).nullable(),
+  }).optional(),
 });
 export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
+
+export const ActiveEventSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  startsAt: TimestampSchema,
+  formatName: z.string().nullable(),
+});
+export type ActiveEvent = z.infer<typeof ActiveEventSchema>;
 
 export const CheckinResultSchema = z.object({
   checkinId: IdSchema,
@@ -332,8 +420,16 @@ export const CheckinResultSchema = z.object({
     terms: z.string().nullable(),
     redemptionCode: z.string(),
   })),
+  activeEvents: z.array(ActiveEventSchema),
 });
 export type CheckinResult = z.infer<typeof CheckinResultSchema>;
+
+export const CheckinBodySchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  accuracy: z.number().nonnegative().optional(),
+});
+export type CheckinBody = z.infer<typeof CheckinBodySchema>;
 
 export const SetHomeStoreSchema = z.object({
   storeId: IdSchema.nullable(),
@@ -372,8 +468,26 @@ export const StoreEventSchema = z.object({
   formatSlug: z.string().nullable(),
   attendeeCount: z.number().int().nonnegative(),
   isAttending: z.boolean(),
+  hereNowCount: z.number().int().nonnegative(),
 });
 export type StoreEvent = z.infer<typeof StoreEventSchema>;
+
+export const AssociateCheckinEventBodySchema = z.object({
+  eventId: IdSchema,
+});
+export type AssociateCheckinEventBody = z.infer<typeof AssociateCheckinEventBodySchema>;
+
+export const EventAttendeeEntrySchema = PublicProfileSchema.extend({
+  isHereNow: z.boolean(),
+});
+export type EventAttendeeEntry = z.infer<typeof EventAttendeeEntrySchema>;
+
+export const EventAttendanceResponseSchema = z.object({
+  hereNow: z.array(EventAttendeeEntrySchema),
+  rsvpd: z.array(EventAttendeeEntrySchema),
+  hereNowCount: z.number().int().nonnegative(),
+});
+export type EventAttendanceResponse = z.infer<typeof EventAttendanceResponseSchema>;
 
 export const StoreEventsDaySchema = z.object({
   date: z.string(),
@@ -389,6 +503,12 @@ export const AttendEventResponseSchema = z.object({
   eventName: z.string(),
 });
 export type AttendEventResponse = z.infer<typeof AttendEventResponseSchema>;
+
+export const UnattendEventResponseSchema = z.object({
+  eventId: IdSchema,
+  eventName: z.string(),
+});
+export type UnattendEventResponse = z.infer<typeof UnattendEventResponseSchema>;
 
 // --- Encounters ---
 
@@ -433,6 +553,46 @@ export const NearbyResponseSchema = z.object({
   players: z.array(NearbyPlayerSchema),
 });
 export type NearbyResponse = z.infer<typeof NearbyResponseSchema>;
+
+// --- Advanced discovery ---
+
+export const NearbyFiltersSchema = z.object({
+  format: MtgFormatSchema.optional(),
+  colors: z.string().optional(), // comma-separated WUBRG, e.g. "W,U"
+  powerMin: z.coerce.number().int().min(1).max(10).optional(),
+  powerMax: z.coerce.number().int().min(1).max(10).optional(),
+  vibe: PlayerVibeSchema.optional(),
+});
+export type NearbyFilters = z.infer<typeof NearbyFiltersSchema>;
+
+export const MatchReasonTypeSchema = z.enum([
+  'shared_format',
+  'similar_power',
+  'color_overlap',
+  'positive_encounter',
+  'compatible_vibe',
+  'new_connection',
+]);
+export type MatchReasonType = z.infer<typeof MatchReasonTypeSchema>;
+
+export const MatchReasonSchema = z.object({
+  type: MatchReasonTypeSchema,
+  label: z.string(),
+});
+export type MatchReason = z.infer<typeof MatchReasonSchema>;
+
+export const SuggestionSchema = NearbyPlayerSchema.extend({
+  score: z.number(),
+  reasons: z.array(MatchReasonSchema),
+});
+export type Suggestion = z.infer<typeof SuggestionSchema>;
+
+export const SuggestionsResponseSchema = z.object({
+  storeId: IdSchema.nullable(),
+  storeName: z.string().nullable(),
+  suggestions: z.array(SuggestionSchema),
+});
+export type SuggestionsResponse = z.infer<typeof SuggestionsResponseSchema>;
 
 // --- Place ---
 
@@ -554,6 +714,38 @@ export const UpdateStoreProfileSchema = z.object({
 });
 export type UpdateStoreProfile = z.infer<typeof UpdateStoreProfileSchema>;
 
+// --- Safety ---
+
+export const ReportReasonSchema = z.enum([
+  'HARASSMENT',
+  'SPAM',
+  'FAKE_PROFILE',
+  'INAPPROPRIATE',
+  'OTHER',
+]);
+export type ReportReason = z.infer<typeof ReportReasonSchema>;
+
+export const BlockBodySchema = z.object({
+  userId: IdSchema,
+});
+export type BlockBody = z.infer<typeof BlockBodySchema>;
+
+export const ReportBodySchema = z.object({
+  userId: IdSchema,
+  reason: ReportReasonSchema,
+  detail: z.string().max(1000).optional(),
+  context: z.string().max(256).optional(),
+});
+export type ReportBody = z.infer<typeof ReportBodySchema>;
+
+export const BlockedUserSchema = z.object({
+  id: z.string(),
+  userId: IdSchema,
+  displayName: z.string(),
+  avatarColors: z.array(z.string()),
+});
+export type BlockedUser = z.infer<typeof BlockedUserSchema>;
+
 export const PartnerAnalyticsSchema = z.object({
   totalCheckins: z.number().int(),
   checkinsThisWeek: z.number().int(),
@@ -562,3 +754,599 @@ export const PartnerAnalyticsSchema = z.object({
   activeOffers: z.number().int(),
 });
 export type PartnerAnalytics = z.infer<typeof PartnerAnalyticsSchema>;
+
+// --- Moderation ---
+
+export const ModerationStatusSchema = z.enum(['ACTIVE', 'SUSPENDED', 'BANNED']);
+export type ModerationStatus = z.infer<typeof ModerationStatusSchema>;
+
+export const ModerationActionTypeSchema = z.enum(['DISMISS', 'WARN', 'SUSPEND', 'BAN']);
+export type ModerationActionType = z.infer<typeof ModerationActionTypeSchema>;
+
+export const ModerationUserSummarySchema = z.object({
+  id: IdSchema,
+  displayName: z.string(),
+  handle: z.string().nullable(),
+  avatarColors: z.array(z.string()),
+  moderationStatus: ModerationStatusSchema,
+  priorReports: z.number().int().nonnegative(),
+  priorActions: z.number().int().nonnegative(),
+});
+export type ModerationUserSummary = z.infer<typeof ModerationUserSummarySchema>;
+
+export const ModerationReportSchema = z.object({
+  id: IdSchema,
+  reason: ReportReasonSchema,
+  context: z.string().nullable(),
+  createdAt: TimestampSchema,
+  status: z.enum(['OPEN', 'REVIEWED', 'ACTIONED']),
+  resolvedAt: TimestampSchema.nullable(),
+  resolutionNote: z.string().nullable(),
+  reported: ModerationUserSummarySchema,
+});
+export type ModerationReport = z.infer<typeof ModerationReportSchema>;
+
+export const ModerationSignalSchema = z.object({
+  type: z.enum(['open_report', 'prior_action']),
+  label: z.string(),
+  createdAt: TimestampSchema,
+});
+export type ModerationSignal = z.infer<typeof ModerationSignalSchema>;
+
+export const ModerationDetailSchema = ModerationReportSchema.extend({
+  detail: z.string().nullable(),
+  signals: z.array(ModerationSignalSchema),
+});
+export type ModerationDetail = z.infer<typeof ModerationDetailSchema>;
+
+export const ResolveReportSchema = z.object({
+  action: ModerationActionTypeSchema,
+  note: z.string().max(1000).optional(),
+  suspendDays: z.number().int().min(1).max(365).optional(),
+});
+export type ResolveReport = z.infer<typeof ResolveReportSchema>;
+
+export const ModerationStatsSchema = z.object({
+  open: z.number().int().nonnegative(),
+  repeatOffenders: z.number().int().nonnegative(),
+  reviewed: z.number().int().nonnegative(),
+  actionedAllTime: z.number().int().nonnegative(),
+});
+export type ModerationStats = z.infer<typeof ModerationStatsSchema>;
+
+// --- LFG ---
+
+export const LfgDurationSchema = z.union([z.literal(30), z.literal(60), z.literal(120)]);
+export type LfgDuration = z.infer<typeof LfgDurationSchema>;
+
+export const LfgSessionSchema = z.object({
+  storeId: IdSchema,
+  format: MtgFormatSchema.nullable(),
+  power: z.number().int().min(1).max(10),
+  seats: z.number().int().min(1).max(3),
+  durationMins: LfgDurationSchema,
+  note: z.string().max(140).nullable(),
+  createdAt: TimestampSchema,
+  expiresAt: TimestampSchema,
+});
+export type LfgSession = z.infer<typeof LfgSessionSchema>;
+
+export const CreateLfgSchema = z.object({
+  format: MtgFormatSchema.nullable().optional(),
+  power: z.number().int().min(1).max(10),
+  seats: z.number().int().min(1).max(3),
+  durationMins: LfgDurationSchema,
+  note: z.string().max(140).nullable().optional(),
+});
+export type CreateLfg = z.infer<typeof CreateLfgSchema>;
+
+export const UpdateLfgSchema = z.object({
+  format: MtgFormatSchema.nullable().optional(),
+  power: z.number().int().min(1).max(10).optional(),
+  seats: z.number().int().min(1).max(3).optional(),
+  durationMins: LfgDurationSchema.optional(),
+  note: z.string().max(140).nullable().optional(),
+});
+export type UpdateLfg = z.infer<typeof UpdateLfgSchema>;
+
+export const LfgFeedItemSchema = PublicProfileSchema.extend({
+  session: LfgSessionSchema,
+  minutesLeft: z.number().int(),
+  metBefore: z.boolean(),
+});
+export type LfgFeedItem = z.infer<typeof LfgFeedItemSchema>;
+
+export const LfgLockBodySchema = z.object({
+  memberIds: z.array(IdSchema).min(1).max(3),
+});
+export type LfgLockBody = z.infer<typeof LfgLockBodySchema>;
+
+// --- Onboarding ---
+
+export const OnboardingDeckSchema = CreateDeckLinkSchema;
+
+export const OnboardingSubmitSchema = z.object({
+  name: z.string().max(80).nullable().optional(),
+  shareNameWithContacts: z.boolean().optional(),
+  displayName: z.string().min(1).max(64),
+  pronouns: z.string().max(32).nullable().optional(),
+  avatarColors: z.array(ManaColorSchema).min(1).max(5),
+  formats: z.array(MtgFormatSchema).min(1),
+  commander: z.string().max(128).nullable().optional(),
+  powerLevel: z.number().int().min(1).max(10).nullable().optional(),
+  vibes: z.array(PlayerVibeSchema).optional(),
+  bio: z.string().max(500).nullable().optional(),
+  discoverable: z.boolean().optional(),
+  decks: z.array(OnboardingDeckSchema).max(10).optional(),
+  homeStoreId: IdSchema.optional(),
+});
+export type OnboardingSubmit = z.infer<typeof OnboardingSubmitSchema>;
+
+// --- Pods ---
+
+export const PodToleranceSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+export type PodTolerance = z.infer<typeof PodToleranceSchema>;
+
+export const PodFitTierSchema = z.enum(['great', 'close', 'off']);
+export type PodFitTier = z.infer<typeof PodFitTierSchema>;
+
+export const PodFitSchema = z.object({
+  tier: PodFitTierSchema,
+  label: z.string(),
+});
+export type PodFit = z.infer<typeof PodFitSchema>;
+
+export const CreatePodSchema = z.object({
+  format: MtgFormatSchema.nullable().optional(),
+  targetPower: z.number().int().min(1).max(10),
+  tolerance: PodToleranceSchema,
+  seats: z.number().int().min(2).max(4),
+  where: z.string().min(1).max(40),
+  note: z.string().max(140).nullable().optional(),
+});
+export type CreatePod = z.infer<typeof CreatePodSchema>;
+
+export const PodFeedItemSchema = z.object({
+  id: IdSchema,
+  hostId: IdSchema,
+  storeId: IdSchema,
+  format: MtgFormatSchema.nullable(),
+  targetPower: z.number().int().min(1).max(10),
+  tolerance: PodToleranceSchema,
+  seats: z.number().int().min(2).max(4),
+  seatsOpen: z.number().int().min(0),
+  where: z.string().max(40),
+  note: z.string().max(140).nullable(),
+  host: PublicProfileSchema,
+  fit: PodFitSchema,
+  createdAt: TimestampSchema,
+  expiresAt: TimestampSchema,
+});
+export type PodFeedItem = z.infer<typeof PodFeedItemSchema>;
+
+export const PodCandidateSchema = PublicProfileSchema.extend({
+  fit: PodFitSchema,
+});
+export type PodCandidate = z.infer<typeof PodCandidateSchema>;
+
+export const PodDetailSchema = PodFeedItemSchema.extend({
+  members: z.array(PublicProfileSchema),
+  requests: z.array(PublicProfileSchema),
+  candidates: z.array(PodCandidateSchema),
+  hasRequested: z.boolean(),
+});
+export type PodDetail = z.infer<typeof PodDetailSchema>;
+
+export const PodMemberActionSchema = z.object({
+  userId: IdSchema,
+});
+export type PodMemberAction = z.infer<typeof PodMemberActionSchema>;
+
+// --- Games ---
+
+export const GameStatusSchema = z.enum(['PENDING', 'CONFIRMED', 'DISPUTED']);
+export type GameStatus = z.infer<typeof GameStatusSchema>;
+
+export const GamePlayerSchema = z.object({
+  userId: IdSchema,
+  displayName: z.string(),
+  avatarColors: z.array(z.string()),
+  deck: z.string().nullable(),
+  confirmed: z.boolean(),
+});
+export type GamePlayer = z.infer<typeof GamePlayerSchema>;
+
+export const GameSchema = z.object({
+  id: IdSchema,
+  status: GameStatusSchema,
+  storeId: IdSchema.nullable(),
+  storeName: z.string().nullable(),
+  format: z.string().nullable(),
+  winnerId: IdSchema,
+  winnerName: z.string(),
+  note: z.string().nullable(),
+  players: z.array(GamePlayerSchema),
+  createdAt: TimestampSchema,
+  confirmedAt: TimestampSchema.nullable(),
+});
+export type Game = z.infer<typeof GameSchema>;
+
+export const CreateGameSchema = z.object({
+  storeId: IdSchema.optional(),
+  format: MtgFormatSchema.optional(),
+  winnerId: z.string().min(1).max(100),
+  players: z
+    .array(z.object({ userId: z.string().min(1).max(100), deck: z.string().max(128).optional() }))
+    .min(2)
+    .max(4),
+  note: z.string().max(500).optional(),
+});
+export type CreateGame = z.infer<typeof CreateGameSchema>;
+
+export const DeckStatSchema = z.object({
+  deck: z.string(),
+  wins: z.number().int().nonnegative(),
+  losses: z.number().int().nonnegative(),
+  rate: z.number().min(0).max(1),
+});
+export type DeckStat = z.infer<typeof DeckStatSchema>;
+
+export const GameStatsSchema = z.object({
+  games: z.number().int().nonnegative(),
+  wins: z.number().int().nonnegative(),
+  losses: z.number().int().nonnegative(),
+  winRate: z.number().min(0).max(1),
+  byDeck: z.array(DeckStatSchema),
+});
+export type GameStats = z.infer<typeof GameStatsSchema>;
+
+// --- Broadcast ---
+
+export const BroadcastAudienceSchema = z.enum([
+  'CHECKED_IN_NOW',
+  'TODAY',
+  'EVENT_RSVPS',
+  'RECENT_30D',
+]);
+export type BroadcastAudience = z.infer<typeof BroadcastAudienceSchema>;
+
+export const SendBroadcastSchema = z.object({
+  audience: BroadcastAudienceSchema,
+  title: z.string().min(1).max(40),
+  body: z.string().min(1).max(140),
+  eventId: z.string().optional(),
+});
+export type SendBroadcast = z.infer<typeof SendBroadcastSchema>;
+
+export const BroadcastSchema = z.object({
+  id: z.string(),
+  audience: BroadcastAudienceSchema,
+  title: z.string(),
+  body: z.string(),
+  eventId: z.string().nullable(),
+  recipientCount: z.number(),
+  createdAt: z.string(),
+});
+export type Broadcast = z.infer<typeof BroadcastSchema>;
+
+export const AudienceCountsSchema = z.object({
+  CHECKED_IN_NOW: z.number(),
+  TODAY: z.number(),
+  EVENT_RSVPS: z.object({
+    count: z.number(),
+    eventId: z.string().nullable(),
+    eventName: z.string().nullable(),
+  }),
+  RECENT_30D: z.number(),
+});
+export type AudienceCounts = z.infer<typeof AudienceCountsSchema>;
+
+// --- Offer redemptions ---
+
+export const RedemptionStatusSchema = z.enum(['PENDING', 'REDEEMED', 'VOID']);
+export type RedemptionStatus = z.infer<typeof RedemptionStatusSchema>;
+
+export const ClaimOfferResponseSchema = z.object({
+  code: z.string().length(8),
+  offerId: IdSchema,
+  offerTitle: z.string(),
+  status: RedemptionStatusSchema,
+});
+export type ClaimOfferResponse = z.infer<typeof ClaimOfferResponseSchema>;
+
+export const RedeemCodeSchema = z.object({
+  code: z.string().length(8),
+});
+export type RedeemCode = z.infer<typeof RedeemCodeSchema>;
+
+export const RedemptionResultSchema = z.object({
+  id: IdSchema,
+  code: z.string().length(8),
+  status: RedemptionStatusSchema,
+  offer: z.object({ id: IdSchema, title: z.string(), type: OfferTypeSchema }),
+  player: PublicProfileSchema,
+  qualifyingReason: z.string(),
+  createdAt: TimestampSchema,
+  redeemedAt: TimestampSchema.nullable(),
+});
+export type RedemptionResult = z.infer<typeof RedemptionResultSchema>;
+
+export const RedemptionListItemSchema = z.object({
+  id: IdSchema,
+  code: z.string(),
+  status: RedemptionStatusSchema,
+  offerTitle: z.string(),
+  offerType: OfferTypeSchema,
+  player: z.object({
+    id: IdSchema,
+    displayName: z.string(),
+    avatarColors: z.array(z.string()),
+  }),
+  createdAt: TimestampSchema,
+  redeemedAt: TimestampSchema.nullable(),
+});
+export type RedemptionListItem = z.infer<typeof RedemptionListItemSchema>;
+
+// --- Notifications ---
+
+export const NotificationKindSchema = z.enum([
+  'CONNECT_REQUEST',
+  'CONNECT_ACCEPTED',
+  'NEARBY',
+  'POD',
+  'GAME_CONFIRM',
+  'EVENT_REMINDER',
+  'BROADCAST',
+  'QUEST',
+  'PLAY_INVITE',
+]);
+export type NotificationKind = z.infer<typeof NotificationKindSchema>;
+
+export const NotificationSchema = z.object({
+  id: IdSchema,
+  kind: NotificationKindSchema,
+  title: z.string(),
+  body: z.string(),
+  data: z.record(z.unknown()).nullable(),
+  readAt: TimestampSchema.nullable(),
+  createdAt: TimestampSchema,
+});
+export type Notification = z.infer<typeof NotificationSchema>;
+
+export const MarkReadBodySchema = z.object({
+  ids: z.array(IdSchema).optional(),
+});
+export type MarkReadBody = z.infer<typeof MarkReadBodySchema>;
+
+export const NotificationsPageSchema = z.object({
+  items: z.array(NotificationSchema),
+  nextCursor: TimestampSchema.nullable(),
+});
+export type NotificationsPage = z.infer<typeof NotificationsPageSchema>;
+
+// --- Partner event management ---
+
+export const FormatItemSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  slug: z.string(),
+});
+export type FormatItem = z.infer<typeof FormatItemSchema>;
+
+export const PartnerEventSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  source: EventSourceSchema,
+  description: z.string().nullable(),
+  formatId: z.string().nullable(),
+  formatName: z.string().nullable(),
+  startsAt: TimestampSchema,
+  endsAt: TimestampSchema.nullable(),
+  eventChannelUrl: z.string().nullable(),
+  attendeeCount: z.number().int().nonnegative(),
+  createdAt: TimestampSchema,
+});
+export type PartnerEvent = z.infer<typeof PartnerEventSchema>;
+
+export const CreateEventSchema = z
+  .object({
+    name: z.string().min(1).max(256),
+    formatId: z.string().uuid().optional(),
+    description: z.string().max(2000).optional(),
+    startsAt: z.string().datetime(),
+    endsAt: z.string().datetime().optional(),
+    eventChannelUrl: z.string().url().optional(),
+  })
+  .refine((d) => !d.endsAt || new Date(d.endsAt) > new Date(d.startsAt), {
+    message: 'endsAt must be after startsAt',
+    path: ['endsAt'],
+  });
+export type CreateEvent = z.infer<typeof CreateEventSchema>;
+
+export const UpdateEventSchema = z
+  .object({
+    name: z.string().min(1).max(256).optional(),
+    formatId: z.string().uuid().nullable().optional(),
+    description: z.string().max(2000).nullable().optional(),
+    startsAt: z.string().datetime().optional(),
+    endsAt: z.string().datetime().nullable().optional(),
+    eventChannelUrl: z.string().url().nullable().optional(),
+  })
+  .refine(
+    (d) => {
+      if (d.startsAt && d.endsAt) return new Date(d.endsAt) > new Date(d.startsAt);
+      return true;
+    },
+    { message: 'endsAt must be after startsAt', path: ['endsAt'] },
+  );
+export type UpdateEvent = z.infer<typeof UpdateEventSchema>;
+
+// --- Rivalries ---
+
+export const RivalrySchema = z.object({
+  opponentId: IdSchema,
+  displayName: z.string(),
+  pronouns: z.string().nullable(),
+  bio: z.string().nullable(),
+  avatarColors: z.array(ManaColorSchema),
+  commander: z.string().nullable(),
+  powerLevel: z.number().int().nullable(),
+  vibe: PlayerVibeSchema.nullable(),
+  formats: z.array(MtgFormatSchema),
+  gamesTogether: z.number().int().nonnegative(),
+  wins: z.number().int().nonnegative(),
+  losses: z.number().int().nonnegative(),
+  record: z.string(),
+  lastPlayedAt: TimestampSchema,
+  hot: z.boolean(),
+});
+export type Rivalry = z.infer<typeof RivalrySchema>;
+
+// --- Quests ---
+
+export const QuestCriteriaSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('meet_new_players'), count: z.number().int().positive() }),
+  z.object({ type: z.literal('new_store') }),
+  z.object({ type: z.literal('play_games'), count: z.number().int().positive() }),
+  z.object({ type: z.literal('checkin_streak'), length: z.number().int().positive() }),
+  z.object({ type: z.literal('unique_stores'), count: z.number().int().positive() }),
+]);
+export type QuestCriteria = z.infer<typeof QuestCriteriaSchema>;
+
+export const QuestRewardBadgeSchema = z.object({
+  id: IdSchema,
+  code: z.string(),
+  name: z.string(),
+  icon: z.string(),
+});
+export type QuestRewardBadge = z.infer<typeof QuestRewardBadgeSchema>;
+
+export const QuestSchema = z.object({
+  id: IdSchema,
+  code: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  icon: z.string(),
+  period: z.enum(['MONTHLY']),
+  activeFrom: TimestampSchema,
+  activeTo: TimestampSchema,
+  rewardBadge: QuestRewardBadgeSchema.nullable(),
+});
+export type Quest = z.infer<typeof QuestSchema>;
+
+export const ActiveQuestSchema = z.object({
+  quest: QuestSchema,
+  progress: z.number().int().nonnegative(),
+  goal: z.number().int().positive(),
+  completed: z.boolean(),
+});
+export type ActiveQuest = z.infer<typeof ActiveQuestSchema>;
+
+// --- Life Tracker ---
+
+export const TrackerCounterSchema = z.enum(['poison', 'energy', 'experience']);
+export type TrackerCounter = z.infer<typeof TrackerCounterSchema>;
+
+export const TrackerPlayerSchema = z.object({
+  userId: z.string(),
+  displayName: z.string(),
+  avatarColors: z.array(z.string()),
+  life: z.number().int(),
+  poison: z.number().int().min(0),
+  energy: z.number().int().min(0),
+  experience: z.number().int().min(0),
+  commanderDamage: z.record(z.string(), z.number().int().min(0)),
+  commanderCastCount: z.number().int().min(0),
+  isEliminated: z.boolean(),
+  hasCitysBlessing: z.boolean(),
+});
+export type TrackerPlayer = z.infer<typeof TrackerPlayerSchema>;
+
+export const TrackerStateSchema = z.object({
+  podId: z.string(),
+  format: z.string().nullable(),
+  startingLife: z.number().int().positive(),
+  turnNumber: z.number().int().min(1),
+  activePlayerId: z.string().nullable(),
+  monarchId: z.string().nullable(),
+  initiativeId: z.string().nullable(),
+  players: z.array(TrackerPlayerSchema),
+  createdAt: z.string().datetime(),
+});
+export type TrackerState = z.infer<typeof TrackerStateSchema>;
+
+export const LifeDeltaPayloadSchema = z.object({
+  targetUserId: z.string(),
+  delta: z.number().int(),
+  note: z.string().optional(),
+});
+export type LifeDeltaPayload = z.infer<typeof LifeDeltaPayloadSchema>;
+
+export const CommanderDamagePayloadSchema = z.object({
+  targetUserId: z.string(),
+  sourceUserId: z.string(),
+  delta: z.number().int(),
+});
+export type CommanderDamagePayload = z.infer<typeof CommanderDamagePayloadSchema>;
+
+export const CounterDeltaPayloadSchema = z.object({
+  targetUserId: z.string(),
+  counter: TrackerCounterSchema,
+  delta: z.number().int(),
+});
+export type CounterDeltaPayload = z.infer<typeof CounterDeltaPayloadSchema>;
+
+export const SetTokenPayloadSchema = z.object({
+  token: z.enum(['monarch', 'initiative', 'citysBlessing']),
+  userId: z.string().nullable(),
+});
+export type SetTokenPayload = z.infer<typeof SetTokenPayloadSchema>;
+
+export const EliminatePayloadSchema = z.object({
+  userId: z.string(),
+  eliminated: z.boolean(),
+});
+export type EliminatePayload = z.infer<typeof EliminatePayloadSchema>;
+
+// --- Play online invite ---
+
+export const OnlinePlatformSchema = z.enum(['spelltable', 'convoke']);
+export type OnlinePlatform = z.infer<typeof OnlinePlatformSchema>;
+
+export const PlayOnlineInviteSchema = z.object({
+  platform: OnlinePlatformSchema,
+  roomLink: z.string().min(1).max(512),
+  connectionIds: z.array(z.string().uuid()).min(1).max(10),
+});
+export type PlayOnlineInvite = z.infer<typeof PlayOnlineInviteSchema>;
+
+// --- Store submissions ---
+
+export const StoreStatusSchema = z.enum(['PROPOSED', 'ACTIVE', 'REJECTED']);
+export type StoreStatus = z.infer<typeof StoreStatusSchema>;
+
+export const SuggestStoreSchema = z.object({
+  name:         z.string().min(1).max(128),
+  lat:          z.number().min(-90).max(90),
+  lng:          z.number().min(-180).max(180),
+  address:      z.string().max(256).optional(),
+  city:         z.string().max(128).optional(),
+  state:        z.string().max(64).optional(),
+  website:      z.string().url().max(512).optional(),
+  submitterLat: z.number().min(-90).max(90).optional(),
+  submitterLng: z.number().min(-180).max(180).optional(),
+  note:         z.string().max(512).optional(),
+});
+export type SuggestStore = z.infer<typeof SuggestStoreSchema>;
+
+export const ConfirmStoreSchema = z.object({
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+});
+export type ConfirmStore = z.infer<typeof ConfirmStoreSchema>;
+
+export const StoreConfirmResultSchema = z.object({
+  confirmationCount: z.number().int().nonnegative(),
+  status: StoreStatusSchema,
+});
+export type StoreConfirmResult = z.infer<typeof StoreConfirmResultSchema>;

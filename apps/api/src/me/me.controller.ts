@@ -12,12 +12,14 @@ import {
 } from '@nestjs/common';
 import {
   CreateDeckLinkSchema,
+  OnboardingSubmitSchema,
   RegisterPushTokenSchema,
   SetHomeStoreSchema,
   UpdateDeckLinkSchema,
   UpdatePrivacySchema,
   UpdateProfileSchema,
   type CreateDeckLink,
+  type OnboardingSubmit,
   type RegisterPushToken,
   type SetHomeStore,
   type UpdateDeckLink,
@@ -124,5 +126,19 @@ export class MeController {
     @Body(new ZodValidationPipe(SetHomeStoreSchema)) body: SetHomeStore,
   ) {
     return this.me.setHomeStore(req.user.sub, body);
+  }
+
+  @Post('onboarding')
+  @HttpCode(200)
+  submitOnboarding(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(OnboardingSubmitSchema)) body: OnboardingSubmit,
+  ) {
+    return this.me.submitOnboarding(req.user.sub, body);
+  }
+
+  @Get('stats')
+  getGameStats(@Req() req: AuthRequest) {
+    return this.me.getGameStats(req.user.sub);
   }
 }

@@ -1,0 +1,274 @@
+// Launch markets: Seattle metro (WA) + Portland metro (OR/WA border)
+// All stores are well-known MTG local game stores with curated coordinates.
+//
+// To add a new city: append store objects with the correct city/state/zip/lat/lng.
+// Timezone for WA and OR: "America/Los_Angeles"
+//
+// Future: replace with automated Google Places importer keyed on WPN store locator.
+[
+  {
+    "name": "Mox Boarding House",
+    "address": "5105 Leary Ave NW",
+    "city": "Seattle",
+    "state": "WA",
+    "zip": "98107",
+    "lat": 47.6665,
+    "lng": -122.3756,
+    "timezone": "America/Los_Angeles",
+    "website": "https://www.moxboardinghouse.com"
+  },
+  {
+    "name": "Card Kingdom",
+    "address": "6006 Roosevelt Way NE",
+    "city": "Seattle",
+    "state": "WA",
+    "zip": "98115",
+    "lat": 47.6729,
+    "lng": -122.3175,
+    "timezone": "America/Los_Angeles",
+    "website": "https://www.cardkingdom.com"
+  },
+  {
+    "name": "Gamma Ray Games",
+    "address": "209 1st Ave S",
+    "city": "Seattle",
+    "state": "WA",
+    "zip": "98104",
+    "lat": 47.5997,
+    "lng": -122.3334,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Phoenix Comics & Games",
+    "address": "2440 NE 65th St",
+    "city": "Seattle",
+    "state": "WA",
+    "zip": "98115",
+    "lat": 47.6762,
+    "lng": -122.3059,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Home Test",
+    "address": "Home",
+    "city": "Federal Way",
+    "state": "WA",
+    "zip": "98003",
+    "lat": 47.29903743304852,
+    "lng": -122.37379358064209,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Mox Boarding House",
+    "address": "14300 NE 20th St",
+    "city": "Bellevue",
+    "state": "WA",
+    "zip": "98007",
+    "lat": 47.6186,
+    "lng": -122.1726,
+    "timezone": "America/Los_Angeles",
+    "website": "https://www.moxboardinghouse.com"
+  },
+  {
+    "name": "Tabletop Adventures",
+    "address": "7325 166th Ave NE",
+    "city": "Redmond",
+    "state": "WA",
+    "zip": "98052",
+    "lat": 47.6740,
+    "lng": -122.1122,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Dice Age Games",
+    "address": "14301 1st Ave S",
+    "city": "Burien",
+    "state": "WA",
+    "zip": "98168",
+    "lat": 47.4768,
+    "lng": -122.3475,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "All-Star Cards",
+    "address": "31240 Pacific Hwy S",
+    "city": "Federal Way",
+    "state": "WA",
+    "zip": "98003",
+    "lat": 47.3144,
+    "lng": -122.3038,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Amazing Stories",
+    "address": "7 S Tacoma Way",
+    "city": "Tacoma",
+    "state": "WA",
+    "zip": "98402",
+    "lat": 47.2529,
+    "lng": -122.4443,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "The Wandering Dragon",
+    "address": "215 River Rd #104",
+    "city": "Puyallup",
+    "state": "WA",
+    "zip": "98371",
+    "lat": 47.1981,
+    "lng": -122.2928,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "The Game Matrix",
+    "address": "11927 Pacific Hwy SW",
+    "city": "Lakewood",
+    "state": "WA",
+    "zip": "98499",
+    "lat": 47.1728,
+    "lng": -122.4743,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Critical Hit Games",
+    "address": "3123 Hewitt Ave",
+    "city": "Everett",
+    "state": "WA",
+    "zip": "98201",
+    "lat": 47.9824,
+    "lng": -122.2104,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Cascade Cards & Games",
+    "address": "100 E Holly St",
+    "city": "Bellingham",
+    "state": "WA",
+    "zip": "98225",
+    "lat": 48.7490,
+    "lng": -122.4769,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Guardian Games",
+    "address": "345 SE Taylor St",
+    "city": "Portland",
+    "state": "OR",
+    "zip": "97214",
+    "lat": 45.5167,
+    "lng": -122.6602,
+    "timezone": "America/Los_Angeles",
+    "website": "https://www.ggportland.com"
+  },
+  {
+    "name": "Cloud Cap Games",
+    "address": "1226 SE Lexington St",
+    "city": "Portland",
+    "state": "OR",
+    "zip": "97202",
+    "lat": 45.4912,
+    "lng": -122.6401,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Portland Game Store",
+    "address": "3721 SE Division St",
+    "city": "Portland",
+    "state": "OR",
+    "zip": "97202",
+    "lat": 45.5048,
+    "lng": -122.6298,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Vigilante Gaming",
+    "address": "2605 SE Clinton St",
+    "city": "Portland",
+    "state": "OR",
+    "zip": "97202",
+    "lat": 45.5022,
+    "lng": -122.6414,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Gatekeeper Games",
+    "address": "2204 NW Raleigh St",
+    "city": "Portland",
+    "state": "OR",
+    "zip": "97210",
+    "lat": 45.5334,
+    "lng": -122.6905,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Excalibur Comics & Crafts",
+    "address": "2444 SE Hawthorne Blvd",
+    "city": "Portland",
+    "state": "OR",
+    "zip": "97214",
+    "lat": 45.5122,
+    "lng": -122.6502,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Things From Another World",
+    "address": "2916 NE Broadway",
+    "city": "Portland",
+    "state": "OR",
+    "zip": "97232",
+    "lat": 45.5375,
+    "lng": -122.6245,
+    "timezone": "America/Los_Angeles",
+    "website": "https://www.tfaw.com"
+  },
+  {
+    "name": "Next to None Games",
+    "address": "4030 NE Halsey St",
+    "city": "Portland",
+    "state": "OR",
+    "zip": "97232",
+    "lat": 45.5237,
+    "lng": -122.6490,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Rainy Day Games",
+    "address": "18120 SW TV Hwy",
+    "city": "Aloha",
+    "state": "OR",
+    "zip": "97078",
+    "lat": 45.5054,
+    "lng": -122.8774,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "My Local Games",
+    "address": "2335 NE Cornell Rd",
+    "city": "Hillsboro",
+    "state": "OR",
+    "zip": "97124",
+    "lat": 45.5340,
+    "lng": -122.9625,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Tabletop Kingdom",
+    "address": "3800 SW Cedar Hills Blvd",
+    "city": "Beaverton",
+    "state": "OR",
+    "zip": "97005",
+    "lat": 45.4888,
+    "lng": -122.8049,
+    "timezone": "America/Los_Angeles"
+  },
+  {
+    "name": "Ground Zero Games",
+    "address": "7819 NE 6th Ave",
+    "city": "Vancouver",
+    "state": "WA",
+    "zip": "98665",
+    "lat": 45.6697,
+    "lng": -122.6471,
+    "timezone": "America/Los_Angeles"
+  }
+]

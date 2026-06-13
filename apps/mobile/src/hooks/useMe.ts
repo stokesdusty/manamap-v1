@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateDeckLink,
   DeckLink,
+  OnboardingSubmit,
   Privacy,
   Profile,
   SetHomeStore,
@@ -21,10 +22,11 @@ const KEYS = {
 
 // --- Profile ---
 
-export function useProfile() {
+export function useProfile(opts?: { enabled?: boolean }) {
   return useQuery<Profile>({
     queryKey: KEYS.profile,
     queryFn: () => api.get<Profile>('/v1/me').then((r) => r.data),
+    enabled: opts?.enabled !== false,
   });
 }
 
@@ -63,6 +65,8 @@ export function useUpdatePrivacy() {
           showDiscord: patch.showDiscord ?? old.showDiscord,
           showDecks: patch.showDecks ?? old.showDecks,
           showMetHistory: patch.showMetHistory ?? old.showMetHistory,
+          storeMessages: patch.storeMessages ?? old.storeMessages,
+          shareNameWithContacts: patch.shareNameWithContacts ?? old.shareNameWithContacts,
         };
       });
       return { prev };
@@ -127,5 +131,18 @@ export function useSetHomeStore() {
     mutationFn: (body: SetHomeStore) =>
       api.patch<{ storeId: string | null }>('/v1/me/home-store', body).then((r) => r.data),
     onSuccess: () => void qc.invalidateQueries({ queryKey: KEYS.homeStore }),
+  });
+}
+
+// --- Onboarding ---
+
+export function useSubmitOnboarding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: OnboardingSubmit) =>
+      api.post<Profile>('/v1/me/onboarding', body).then((r) => r.data),
+    onSuccess: (updated) => {
+      qc.setQueryData<Profile>(KEYS.profile, updated);
+    },
   });
 }

@@ -10,7 +10,8 @@ export type BadgeCriteria =
   | { type: 'store_total'; count: number }
   | { type: 'global_total'; count: number }
   | { type: 'streak'; length: number }
-  | { type: 'unique_stores'; count: number };
+  | { type: 'unique_stores'; count: number }
+  | { type: 'quest_reward' };
 
 export interface EarnedBadge {
   id: string;
@@ -137,6 +138,9 @@ export class GamificationService {
           break;
         case 'unique_stores':
           qualifies = uniqueStoreCount >= criteria.count;
+          break;
+        case 'quest_reward':
+          qualifies = false;
           break;
       }
 
@@ -276,6 +280,104 @@ export class GamificationService {
         currentStreak: myStats?.currentStreak ?? 0,
         totalCheckins: myStats?.totalCheckins ?? 0,
       };
+    }
+
+    return { entries, myEntry };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Games-won leaderboard
+  // ---------------------------------------------------------------------------
+
+  async refreshWinsLeaderboard(storeId: string): Promise<void> {
+    const wins = await this.prisma.gameLog.groupBy({
+      by: ['winnerId'],
+      where: { storeId, status: 'CONFIRMED' },
+      _count: { winnerId: true },
+    });
+
+    if (!wins.length) return;
+
+    const pipeline = this.redis.pipeline();
+    for (const w of wins) {
+      pipeline.zadd(`leaderboard:${storeId}:wins`, w._count.winnerId, w.winnerId);
+    }
+    pipeline.expire(`leaderboard:${storeId}:wins`, 86_400);
+    await pipeline.exec();
+  }
+
+  async getWinsLeaderboard(callerId: string, storeId: string): Promise<{
+    entries: Array<{
+      rank: number;
+      userId: string;
+      displayName: string;
+      avatarUrl: string | null;
+      avatarColors: string[];
+      wins: number;
+      isMe: boolean;
+    }>;
+    myEntry: { rank: number; wins: number } | null;
+  }> {
+    const redisEntries = await this.redis.zrevrange(`leaderboard:${storeId}:wins`, 0, 49, 'WITHSCORES');
+
+    let rankedUserIds: Array<{ userId: string; score: number }> = [];
+    if (redisEntries.length > 0) {
+      for (let i = 0; i < redisEntries.length; i += 2) {
+        rankedUserIds.push({ userId: redisEntries[i], score: Number(redisEntries[i + 1]) });
+      }
+    } else {
+      const dbWins = await this.prisma.gameLog.groupBy({
+        by: ['winnerId'],
+        where: { storeId, status: 'CONFIRMED' },
+        _count: { winnerId: true },
+        orderBy: { _count: { winnerId: 'desc' } },
+        take: 50,
+      });
+      rankedUserIds = dbWins.map((r) => ({ userId: r.winnerId, score: r._count.winnerId }));
+    }
+
+    if (!rankedUserIds.length) return { entries: [], myEntry: null };
+
+    const userIds = rankedUserIds.map((r) => r.userId);
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        displayName: true,
+        avatarUrl: true,
+        avatarColors: true,
+        privacySettings: { select: { discoverable: true } },
+      },
+    });
+
+    const visibleMap = new Map(
+      users
+        .filter((u) => u.id === callerId || (u.privacySettings?.discoverable ?? true))
+        .map((u) => [u.id, u]),
+    );
+
+    const entries: Array<{ rank: number; userId: string; displayName: string; avatarUrl: string | null; avatarColors: string[]; wins: number; isMe: boolean }> = [];
+    let rank = 0;
+    for (const { userId, score } of rankedUserIds) {
+      const user = visibleMap.get(userId);
+      if (!user) continue;
+      rank++;
+      entries.push({
+        rank,
+        userId: user.id,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+        avatarColors: user.avatarColors,
+        wins: score,
+        isMe: userId === callerId,
+      });
+      if (entries.length >= 20) break;
+    }
+
+    let myEntry: { rank: number; wins: number } | null = null;
+    const myRankIndex = rankedUserIds.findIndex((r) => r.userId === callerId);
+    if (myRankIndex >= 0) {
+      myEntry = { rank: myRankIndex + 1, wins: rankedUserIds[myRankIndex].score };
     }
 
     return { entries, myEntry };

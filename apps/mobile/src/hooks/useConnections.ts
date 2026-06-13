@@ -16,6 +16,7 @@ export function useConnections() {
   return useQuery<ConnectionsList>({
     queryKey: KEYS.list,
     queryFn: () => api.get<ConnectionsList>('/v1/connections').then((r) => r.data),
+    refetchInterval: 15_000,
   });
 }
 
@@ -62,6 +63,7 @@ export function useAcceptConnection() {
     onSuccess: (_data, connectionId) => {
       void qc.invalidateQueries({ queryKey: KEYS.list });
       void qc.invalidateQueries({ queryKey: KEYS.detail(connectionId) });
+      void qc.invalidateQueries({ queryKey: ['quests'] });
     },
   });
 }

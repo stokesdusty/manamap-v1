@@ -5,21 +5,28 @@ import type { PublicProfile, SharedEventSummary } from '@manamap/shared';
 
 export type RootStackParamList = {
   SignIn: undefined;
+  Onboarding: undefined;
   Main: undefined;
   History: undefined;
+  Notifications: undefined;
+  StoresMap: { storeId?: string } | undefined;
+  Discover: undefined;
   PlayerPreview: {
     profile: PublicProfile;
     sharedEvent?: SharedEventSummary | null;
     lastMetStoreName?: string | null;
   };
-  Connected: { connectionId: string };
+  Connected: { connectionId: string; isNew?: boolean };
+  Pod: { podId: string };
+  LifeTracker: { podId: string };
+  Dev: undefined;
 };
 
 export type TabParamList = {
-  Discover: undefined;
-  Stores: undefined;
-  Connect: undefined;
+  Home: undefined;
+  Stores: { storeId?: string } | undefined;
   Scan: undefined;
+  Connections: undefined;
   You: undefined;
 };
 

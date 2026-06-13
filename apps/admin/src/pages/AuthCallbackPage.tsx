@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -6,14 +6,14 @@ import { api } from '../api/client';
 export function AuthCallbackPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const ran = useRef(false);
 
   useEffect(() => {
-    if (ran.current) return;
-    ran.current = true;
-
     const code = new URLSearchParams(window.location.search).get('code');
     if (!code) { navigate('/login'); return; }
+
+    const key = `discord_exchanged_${code}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
 
     api.post('/v1/auth/discord', {
       code,
