@@ -3,6 +3,13 @@ import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { PublicProfile, SharedEventSummary } from '@manamap/shared';
 
+export type PodFormPlayer = {
+  id: string;
+  displayName: string;
+  avatarColors: string[];
+  isGuest: boolean;
+};
+
 export type RootStackParamList = {
   SignIn: undefined;
   Onboarding: undefined;
@@ -18,7 +25,7 @@ export type RootStackParamList = {
   };
   Connected: { connectionId: string; isNew?: boolean };
   Pod: { podId: string };
-  LifeTracker: { podId: string };
+  LifeTracker: { podId?: string; initialPlayers?: PodFormPlayer[] };
   Dev: undefined;
 };
 

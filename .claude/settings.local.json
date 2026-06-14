@@ -53,7 +53,11 @@
       "Bash(pnpm store *)",
       "Bash(psql \"postgresql://manamap:manamap@localhost:5432/manamap\" -c \"\\\\dt users\")",
       "Bash(Get-ChildItem \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\")",
-      "Bash(Select-Object -Last 5 -ExpandProperty Name)"
+      "Bash(Select-Object -Last 5 -ExpandProperty Name)",
+      "Bash(cat > *)",
+      "Bash(cat)",
+      "Bash(python3 /tmp/write_podform.py)",
+      "Bash(npx --prefix apps/mobile tsc -p apps/mobile/tsconfig.json --noEmit)"
     ]
   }
 }

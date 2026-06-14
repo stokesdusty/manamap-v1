@@ -115,7 +115,7 @@ function BannerPill({ children }) {
 }
 
 // ── Quick action tiles (2 × 2) ────────────────────────────
-function QuickActions({ lfg, requests, nearbyCount, onTab, onLogGame, onGoOpen }) {
+function QuickActions({ lfg, requests, nearbyCount, onTab, onLogGame, onGoOpen, onFormPod }) {
   const tiles = [
     {
       icon: 'sparkle',
@@ -148,8 +148,29 @@ function QuickActions({ lfg, requests, nearbyCount, onTab, onLogGame, onGoOpen }
   ];
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '16px 16px 0' }}>
-      {tiles.map((tile, i) => <ActionTile key={i} {...tile} />)}
+    <div style={{ padding: '16px 16px 0' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {tiles.map((tile, i) => <ActionTile key={i} {...tile} />)}
+      </div>
+      <button onClick={onFormPod} style={{
+        marginTop: 10, width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+        background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-lg)',
+        padding: '14px 16px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+        boxShadow: 'var(--shadow-card)', WebkitTapHighlightColor: 'transparent',
+      }}>
+        <span style={{
+          width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+          background: 'color-mix(in srgb, var(--brand) 12%, var(--surface))',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <_HI name="swords" size={22} color="color-mix(in srgb, var(--brand) 72%, var(--ink))" stroke={2.2} />
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.01em' }}>Form a Pod</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginTop: 3 }}>Build your table, start a game</div>
+        </div>
+        <_HI name="chevR" size={18} color="var(--muted)" />
+      </button>
     </div>
   );
 }
@@ -339,7 +360,7 @@ function ProgressSection({ stats, quests, onHistory }) {
 }
 
 // ── HomeScreen ────────────────────────────────────────────
-function HomeScreen({ me, connections, requests, pendingGames, games, quests, pods, lfg, notifUnread, onTab, onLogGame, onBell, onOpenStores, onOpenHistory }) {
+function HomeScreen({ me, connections, requests, pendingGames, games, quests, pods, lfg, notifUnread, onTab, onLogGame, onBell, onOpenStores, onOpenHistory, onFormPod }) {
   const stats = window.gameStats ? window.gameStats(games) : { wins: 0, losses: 0, winRate: 0 };
   const activeQuests = (quests ?? []).filter(q => !q.done);
   const todayEvents = _MMH.TODAY_EVENTS ?? [];
@@ -354,6 +375,7 @@ function HomeScreen({ me, connections, requests, pendingGames, games, quests, po
       <QuickActions
         lfg={lfg} requests={requests} nearbyCount={nearbyCount}
         onTab={onTab} onLogGame={onLogGame} onGoOpen={lfg.onGoOpen}
+        onFormPod={onFormPod}
       />
       <AttentionSection requests={requests} pendingGames={pendingGames} onTab={onTab} />
       {todayEvents.length > 0 && (

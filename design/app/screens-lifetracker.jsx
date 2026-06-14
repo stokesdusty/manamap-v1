@@ -1,5 +1,5 @@
 // manamap — Life Tracker (M37). Exports LifeTrackerScreen.
-const { useState, useRef, useCallback } = React;
+const { useState, useRef, useCallback, useEffect } = React;
 const { manaGradient: _LTmg, manaAccent: _LTma, Icon: _LTI } = window;
 const _LTMM = window.MM;
 
@@ -159,9 +159,102 @@ function PlayerPanel({ player, allPlayers, isFlipped, compact, isActive, onLifeD
     : <div style={{ flex: 1, display: 'flex' }}>{panel}</div>;
 }
 
+// ── FirstPlayerPicker ────────────────────────────────────
+function FirstPlayerPicker({ players, onConfirm }) {
+  const [highlightIdx, setHighlightIdx] = useState(0);
+  const [picked, setPicked] = useState(null);
+
+  useEffect(() => {
+    const winner = Math.floor(Math.random() * players.length);
+    const totalSteps = 20 + Math.floor(Math.random() * 8);
+    let step = 0;
+    let currentIdx = 0;
+    let timer;
+
+    function tick() {
+      step++;
+      currentIdx = (currentIdx + 1) % players.length;
+      setHighlightIdx(currentIdx);
+      if (step < totalSteps) {
+        const t = step / totalSteps;
+        timer = setTimeout(tick, 55 + t * t * 445);
+      } else {
+        const dist = ((winner - currentIdx) % players.length + players.length) % players.length;
+        if (dist === 0) {
+          timer = setTimeout(() => setPicked(winner), 500);
+        } else {
+          let s = 0;
+          function settle() {
+            s++;
+            currentIdx = (currentIdx + 1) % players.length;
+            setHighlightIdx(currentIdx);
+            if (s < dist) {
+              timer = setTimeout(settle, 480 + s * 70);
+            } else {
+              timer = setTimeout(() => setPicked(winner), 520);
+            }
+          }
+          timer = setTimeout(settle, 480);
+        }
+      }
+    }
+    timer = setTimeout(tick, 80);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '28px 20px 24px', background: 'var(--bg)' }}>
+      <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ fontSize: 22, fontWeight: 850, color: 'var(--ink)', letterSpacing: '-0.025em' }}>
+          {picked !== null ? `${players[picked].name} goes first!` : 'Who goes first?'}
+        </div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--muted)', marginTop: 6 }}>
+          {picked !== null ? 'Ready to play — tap below to begin.' : '🎲 Rolling the dice…'}
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+        {players.map((p, i) => {
+          const isHighlit = i === highlightIdx;
+          const isPicked = picked === i;
+          const accent = _LTma(p.colors || []);
+          return (
+            <div key={p.id} style={{
+              display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
+              borderRadius: 16,
+              border: `${isPicked ? 2.5 : isHighlit ? 2 : 1.5}px solid ${isPicked ? accent : isHighlit ? 'var(--brand)' : 'var(--line)'}`,
+              background: isPicked ? accent + '18' : isHighlit ? 'var(--brand-soft)' : 'var(--surface)',
+              transform: isPicked ? 'scale(1.025)' : 'scale(1)',
+              transition: 'background .1s ease, border-color .1s ease, transform .2s ease',
+              boxShadow: isPicked ? '0 4px 18px var(--brand-shadow)' : 'none',
+            }}>
+              <div style={{ width: 11, height: 11, borderRadius: 999, background: _LTmg(p.colors || []), flexShrink: 0 }} />
+              <span style={{ flex: 1, fontSize: 17, fontWeight: 800, letterSpacing: '-0.01em',
+                color: isPicked ? accent : isHighlit ? 'var(--brand-ink)' : 'var(--ink)' }}>
+                {p.name}
+              </span>
+              {isPicked && <span style={{ fontSize: 18 }}>🎲</span>}
+            </div>
+          );
+        })}
+      </div>
+
+      {picked !== null && (
+        <button onClick={() => onConfirm(picked)} style={{
+          width: '100%', height: 54, background: 'var(--brand)', color: 'var(--on-brand)',
+          border: 'none', borderRadius: 'var(--r-lg)', cursor: 'pointer', fontFamily: 'inherit',
+          fontSize: 16, fontWeight: 800, marginTop: 24,
+          boxShadow: '0 6px 20px var(--brand-shadow)',
+          animation: 'mm-fade-in .3s ease',
+        }}>Let's play!</button>
+      )}
+    </div>
+  );
+}
+
 // ── SetupSheet ─────────────────────────────────────────────
-function SetupSheet({ onStart, onClose }) {
-  const [count, setCount] = useState(4);
+function SetupSheet({ onStart, onClose, initialPlayers }) {
+  const [count, setCount] = useState(initialPlayers ? initialPlayers.length : 4);
   const [life, setLife] = useState(40);
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -169,26 +262,43 @@ function SetupSheet({ onStart, onClose }) {
       <div style={{ width: '100%', background: 'var(--surface)', borderRadius: 22,
         padding: '22px 20px', boxShadow: 'var(--shadow-card)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-          <div style={{ fontSize: 20, fontWeight: 850, color: 'var(--ink)', letterSpacing: '-0.02em' }}>Start Life Tracker</div>
+          <div style={{ fontSize: 20, fontWeight: 850, color: 'var(--ink)', letterSpacing: '-0.02em' }}>
+            {initialPlayers ? 'Confirm Starting Life' : 'Start Life Tracker'}
+          </div>
           <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--muted)', padding: 4 }}>
             <_LTI name="x" size={20} color="var(--muted)" />
           </button>
         </div>
 
-        {/* Player count */}
-        <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--muted)', marginBottom: 8 }}>Players</div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-          {[2, 3, 4].map(n => (
-            <button key={n} onClick={() => setCount(n)} style={{
-              flex: 1, height: 44, border: `1.5px solid ${count === n ? 'var(--brand)' : 'var(--line)'}`,
-              background: count === n ? 'var(--brand-soft)' : 'var(--surface)', cursor: 'pointer',
-              fontFamily: 'inherit', fontSize: 17, fontWeight: 800, borderRadius: 12,
-              color: count === n ? 'var(--brand-ink)' : 'var(--ink-2)',
-            }}>{n}</button>
-          ))}
-        </div>
+        {initialPlayers ? (
+          <>
+            <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--muted)', marginBottom: 10 }}>Pod · {initialPlayers.length} players</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 20 }}>
+              {initialPlayers.map(p => (
+                <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'var(--chip-bg)', borderRadius: 10 }}>
+                  <div style={{ width: 9, height: 9, borderRadius: 999, background: _LTmg(p.colors || []), flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 14.5, fontWeight: 750, color: 'var(--ink)' }}>{p.name}</span>
+                  {p.isGuest && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)' }}>Guest</span>}
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--muted)', marginBottom: 8 }}>Players</div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+              {[2, 3, 4].map(n => (
+                <button key={n} onClick={() => setCount(n)} style={{
+                  flex: 1, height: 44, border: `1.5px solid ${count === n ? 'var(--brand)' : 'var(--line)'}`,
+                  background: count === n ? 'var(--brand-soft)' : 'var(--surface)', cursor: 'pointer',
+                  fontFamily: 'inherit', fontSize: 17, fontWeight: 800, borderRadius: 12,
+                  color: count === n ? 'var(--brand-ink)' : 'var(--ink-2)',
+                }}>{n}</button>
+              ))}
+            </div>
+          </>
+        )}
 
-        {/* Starting life */}
         <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--muted)', marginBottom: 8 }}>Starting life</div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 22 }}>
           {[20, 40].map(n => (
@@ -205,7 +315,7 @@ function SetupSheet({ onStart, onClose }) {
           width: '100%', height: 52, background: 'var(--brand)', color: 'var(--on-brand)',
           border: 'none', borderRadius: 'var(--r-lg)', cursor: 'pointer', fontFamily: 'inherit',
           fontSize: 16, fontWeight: 800, boxShadow: '0 6px 20px var(--brand-shadow)',
-        }}>Start — {life} life</button>
+        }}>Continue →</button>
       </div>
     </div>
   );
@@ -259,8 +369,8 @@ function GameBar({ turn, players, activeIdx, canUndo, onUndo, onNextTurn, onRese
 }
 
 // ── LifeTrackerScreen ─────────────────────────────────────
-function LifeTrackerScreen({ onClose }) {
-  const [started, setStarted] = useState(false);
+function LifeTrackerScreen({ onClose, initialPlayers }) {
+  const [phase, setPhase] = useState('setup'); // 'setup' | 'picking' | 'playing'
   const [players, setPlayers] = useState([]);
   const [startingLife, setStartingLife] = useState(40);
   const [turn, setTurn] = useState(1);
@@ -281,8 +391,15 @@ function LifeTrackerScreen({ onClose }) {
 
   function start(count, life) {
     setStartingLife(life);
-    setPlayers(mkPlayers(count, life));
-    setStarted(true);
+    const pls = initialPlayers
+      ? initialPlayers.map(p => ({ ...p, life, poison: 0, energy: 0, experience: 0, commanderDamage: {}, isEliminated: false, commanderCastCount: 0 }))
+      : mkPlayers(count, life);
+    setPlayers(pls);
+    setPhase('picking');
+  }
+  function beginGame(firstIdx) {
+    setActiveIdx(firstIdx);
+    setPhase('playing');
   }
 
   const count = players.length;
@@ -300,7 +417,7 @@ function LifeTrackerScreen({ onClose }) {
   );
 
   let grid = null;
-  if (started && players.length >= 2) {
+  if (players.length >= 2) {
     const [me, p1, p2, p3] = players;
     if (count === 2) {
       grid = (
@@ -339,17 +456,20 @@ function LifeTrackerScreen({ onClose }) {
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg)', position: 'relative' }}>
-      {!started ? (
+      {phase === 'setup' && (
         <>
-          {/* Minimal top bar */}
           <div style={{ paddingTop: 54, paddingLeft: 14, paddingBottom: 8, flexShrink: 0 }}>
             <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: 'var(--brand)', fontFamily: 'inherit', fontSize: 16, fontWeight: 700 }}>
               <_LTI name="chevL" size={20} color="var(--brand)" stroke={2.5} /> Back
             </button>
           </div>
-          <SetupSheet onStart={start} onClose={onClose} />
+          <SetupSheet onStart={start} onClose={onClose} initialPlayers={initialPlayers} />
         </>
-      ) : (
+      )}
+      {phase === 'picking' && (
+        <FirstPlayerPicker players={players} onConfirm={beginGame} />
+      )}
+      {phase === 'playing' && (
         <>
           <GameBar turn={turn} players={players} activeIdx={activeIdx}
             canUndo={history.length > 0} onUndo={undo} onNextTurn={nextTurn} onReset={reset} onClose={onClose} />

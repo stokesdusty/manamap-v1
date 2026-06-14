@@ -32,7 +32,12 @@ export class EventRemindersProcessor extends WorkerHost {
     const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });
     if (!event) return;
 
-    // TODO: respect notification opt-out when a preference field is added to PrivacySettings
+    // Respect notification opt-out (defaults to true when no row exists)
+    const privacy = await this.prisma.privacySettings.findUnique({
+      where: { userId },
+      select: { eventReminders: true },
+    });
+    if (privacy?.eventReminders === false) return;
 
     const isHour = job.name === 'hour';
     await this.notifications.create(userId, {

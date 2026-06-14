@@ -335,6 +335,7 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
     { key: 'showDiscord', label: 'Show Discord', sub: 'Visible to your connections' },
     { key: 'showDecks', label: 'Show decks', sub: 'Share your deck list publicly' },
     { key: 'showMetHistory', label: 'Show met history', sub: "Others can see who you've played" },
+    { key: 'eventReminders', label: 'Event reminders', sub: 'Push notifications before events you RSVP to' },
   ];
 
   return (

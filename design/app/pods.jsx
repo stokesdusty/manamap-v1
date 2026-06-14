@@ -333,7 +333,10 @@ function PodScreen({ pod, isHost, me, onToast, onClose, onLogResult, onLifeTrack
       {full && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
           {onLogResult ? <_PB variant="primary" full icon="check" onClick={onLogResult}>Log result when you\u2019re done</_PB> : null}
-          {onLifeTracker ? <_PB variant="ghost" full icon="swords" onClick={onLifeTracker}>Life Tracker</_PB> : null}
+          {onLifeTracker ? <_PB variant="ghost" full icon="swords" onClick={() => {
+            const podPlayers = seated.map(id => resolve(id, me)).filter(Boolean);
+            onLifeTracker(podPlayers.length >= 2 ? podPlayers : null);
+          }}>Life Tracker</_PB> : null}
           <_PB variant="ghost" full icon="discord" onClick={() => onToast('Pod thread opened')}>Message the pod</_PB>
           <_PB variant="ghost" full onClick={onClose}>Done</_PB>
         </div>
@@ -353,4 +356,181 @@ function _podPill(on) {
 const _podInput = { width: '100%', boxSizing: 'border-box', padding: '13px 15px', fontSize: 15, fontFamily: 'inherit', fontWeight: 600,
   color: 'var(--ink)', background: 'var(--surface)', border: '1.5px solid var(--line)', borderRadius: 'var(--r-md)', outline: 'none', marginBottom: 20 };
 
-Object.assign(window, { PodsSection, PodCreateSheet, PodScreen, podFit });
+// ── Pod Form Sheet (streamlined one-tap pod formation) ──
+function PodPlayerChip({ player, isMe, onRemove }) {
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--brand-soft)', border: '1.5px solid var(--brand)', borderRadius: 999, padding: '5px 10px 5px 6px', flexShrink: 0 }}>
+      <_PAv player={player} size={26} />
+      <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--brand-ink)', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {isMe ? 'You' : (player.name || '').split(' ')[0]}
+      </span>
+      {onRemove && (
+        <button onClick={e => { e.stopPropagation(); onRemove(); }} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '0 0 0 2px', display: 'flex', alignItems: 'center', lineHeight: 1 }}>
+          <_PI name="x" size={13} color="var(--brand-ink)" stroke={2.5} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+const _GUEST_COLORS = [['R'], ['U'], ['G'], ['W'], ['B'], ['R', 'G'], ['U', 'B']];
+let _guestIdx = 0;
+
+function PodFormSheet({ me, connections, onStartGame, onClose }) {
+  const [selected, setSelected] = _pus(['me']);
+  const [guests, setGuests] = _pus([]);
+  const [guestInput, setGuestInput] = _pus('');
+  const [search, setSearch] = _pus('');
+
+  const connPlayers = (connections || []).map(c => _MMp.byId(c.playerId)).filter(Boolean);
+  const filtered = connPlayers.filter(p =>
+    !search.trim() ||
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    (p.handle || '').toLowerCase().includes(search.toLowerCase())
+  );
+
+  const allAvailable = [me, ...connPlayers, ...guests];
+  const podPlayers = selected.map(id => allAvailable.find(p => p && p.id === id)).filter(Boolean);
+  const isFull = podPlayers.length >= 4;
+  const canStart = podPlayers.length >= 2;
+
+  const toggle = (id) => setSelected(s => {
+    if (s.includes(id)) return s.filter(x => x !== id);
+    if (s.length >= 4) return s;
+    return [...s, id];
+  });
+
+  const addGuest = () => {
+    const name = guestInput.trim();
+    if (!name || isFull) return;
+    const id = 'guest-' + Date.now();
+    const colors = _GUEST_COLORS[_guestIdx % _GUEST_COLORS.length];
+    _guestIdx++;
+    const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    setGuests(gs => [...gs, { id, name, initials, colors, isGuest: true }]);
+    setSelected(s => [...s, id]);
+    setGuestInput('');
+  };
+
+  const removePlayer = (player) => {
+    if (player.isGuest) setGuests(gs => gs.filter(g => g.id !== player.id));
+    setSelected(s => s.filter(x => x !== player.id));
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', maxHeight: '92vh' }}>
+      {/* header */}
+      <div style={{ padding: '6px 20px 0', flexShrink: 0 }}>
+        <div style={{ width: 40, height: 5, borderRadius: 999, background: 'var(--line-strong)', margin: '0 auto 16px' }} />
+        <div style={{ fontSize: 22, fontWeight: 850, letterSpacing: '-0.025em', color: 'var(--ink)' }}>Form a Pod</div>
+        <div style={{ fontSize: 14, color: 'var(--ink-2)', fontWeight: 600, marginTop: 4, marginBottom: 14, lineHeight: 1.45 }}>
+          Add from your contacts or invite a guest.
+        </div>
+        {/* roster strip */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', minHeight: 38, alignItems: 'center', paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
+          {podPlayers.map(p => (
+            <PodPlayerChip key={p.id} player={p} isMe={p.id === 'me'}
+              onRemove={p.id === 'me' ? null : () => removePlayer(p)}
+            />
+          ))}
+          {!canStart && (
+            <span style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>Add at least one more player</span>
+          )}
+          {isFull && canStart && (
+            <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600, marginLeft: 4 }}>Pod full · 4 max</span>
+          )}
+        </div>
+      </div>
+
+      {/* scrollable body */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px 0' }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search contacts…"
+          style={_podInput}
+          onFocus={e => e.target.style.borderColor = 'var(--brand)'}
+          onBlur={e => e.target.style.borderColor = 'var(--line)'} />
+
+        {connPlayers.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '10px 0 8px', fontSize: 13.5, color: 'var(--muted)', fontWeight: 600 }}>No contacts yet — add a guest below</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '10px 0 8px', fontSize: 13.5, color: 'var(--muted)', fontWeight: 600 }}>No match for "{search}"</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {filtered.map((p, i) => {
+              const isIn = selected.includes(p.id);
+              const disabled = isFull && !isIn;
+              return (
+                <button key={p.id} onClick={() => toggle(p.id)} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left',
+                  padding: '11px 0', borderTop: i > 0 ? '1px solid var(--line)' : 'none',
+                  background: 'none', border: 'none', cursor: disabled ? 'default' : 'pointer',
+                  fontFamily: 'inherit', WebkitTapHighlightColor: 'transparent', opacity: disabled ? 0.4 : 1,
+                }}>
+                  <_PAv player={p} size={42} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{p.name}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginTop: 1 }}>
+                      {p.handle || (p.formats || []).slice(0, 2).join(' · ')}
+                    </div>
+                  </div>
+                  <div style={{
+                    width: 26, height: 26, borderRadius: 999, flexShrink: 0,
+                    border: `2px solid ${isIn ? 'var(--brand)' : 'var(--line)'}`,
+                    background: isIn ? 'var(--brand)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .12s',
+                  }}>
+                    {isIn && <_PI name="check" size={13} color="var(--on-brand)" stroke={2.8} />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Add guest */}
+        <div style={{ marginTop: 20, paddingBottom: 8 }}>
+          <_PodLabel>Add a non-user</_PodLabel>
+          <div style={{ display: 'flex', gap: 9 }}>
+            <input value={guestInput} onChange={e => setGuestInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addGuest(); } }}
+              placeholder="Player name…" maxLength={30}
+              style={{ ..._podInput, flex: 1, marginBottom: 0 }}
+              onFocus={e => e.target.style.borderColor = 'var(--brand)'}
+              onBlur={e => e.target.style.borderColor = 'var(--line)'} />
+            <button onClick={addGuest} disabled={!guestInput.trim() || isFull} style={{
+              flexShrink: 0, height: 50, padding: '0 18px', border: 'none',
+              cursor: guestInput.trim() && !isFull ? 'pointer' : 'default',
+              background: guestInput.trim() && !isFull ? 'var(--brand)' : 'var(--chip-bg)',
+              color: guestInput.trim() && !isFull ? 'var(--on-brand)' : 'var(--muted)',
+              borderRadius: 'var(--r-btn)', fontFamily: 'inherit', fontSize: 14, fontWeight: 750, transition: 'all .14s',
+            }}>Add</button>
+          </div>
+          {guests.map(g => (
+            <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, padding: '9px 12px', background: 'var(--chip-bg)', borderRadius: 12 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--brand)', flexShrink: 0 }} />
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 750, color: 'var(--ink)' }}>{g.name}</span>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--muted)', background: 'var(--line-strong)', padding: '2px 8px', borderRadius: 999 }}>Guest</span>
+              <button onClick={() => removePlayer(g)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+                <_PI name="x" size={15} color="var(--muted)" stroke={2.2} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div style={{ padding: '14px 20px 28px', flexShrink: 0 }}>
+        <button onClick={() => canStart && onStartGame(podPlayers)} disabled={!canStart} style={{
+          width: '100%', height: 54, border: 'none', cursor: canStart ? 'pointer' : 'default',
+          background: canStart ? 'var(--brand)' : 'var(--chip-bg)',
+          color: canStart ? 'var(--on-brand)' : 'var(--muted)',
+          borderRadius: 'var(--r-lg)', fontFamily: 'inherit', fontSize: 16, fontWeight: 800,
+          boxShadow: canStart ? '0 6px 20px var(--brand-shadow)' : 'none', transition: 'all .15s',
+        }}>
+          {canStart ? `Start Game · ${podPlayers.length} players →` : 'Add at least 2 players'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { PodsSection, PodCreateSheet, PodScreen, podFit, PodFormSheet });

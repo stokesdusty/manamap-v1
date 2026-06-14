@@ -9,14 +9,14 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { TrackerPlayer, TrackerState, TrackerCounter } from '@manamap/shared';
 import { useLifeTracker } from '../hooks/useLifeTracker';
 import { useProfile } from '../hooks/useMe';
-import type { RootStackParamList } from '../navigation/types';
+import type { PodFormPlayer, RootStackParamList } from '../navigation/types';
 import { colors, radii, spacing, typography } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LifeTracker'>;
@@ -368,26 +368,24 @@ function PlayerPanel({
       {/* Counters */}
       <CounterRow player={player} compact={compact} onDelta={onCounterDelta} />
 
-      {/* Commander damage row */}
-      {hasCmdDamage && (
-        <Pressable style={pp.cmdRow} onPress={() => setCmdSheetOpen(true)}>
-          <Text style={[pp.cmdLabel, compact && pp.cmdLabelCompact]}>
-            CMD {cmdTotal > 0 ? `${cmdTotal}` : '—'}
-          </Text>
-          {!compact && Object.entries(player.commanderDamage).map(([srcId, dmg]) => {
-            const src = allPlayers.find((p) => p.userId === srcId);
-            if (!src) return null;
-            const srcFill = playerColor(src.avatarColors);
-            return (
-              <View key={srcId} style={pp.cmdChip}>
-                <View style={[pp.cmdDot, { backgroundColor: srcFill }]} />
-                <Text style={[pp.cmdChipText, dmg >= 18 && pp.cmdChipDanger]}>{dmg}</Text>
-              </View>
-            );
-          })}
-          <Ionicons name="chevron-forward" size={12} color={colors.textTertiary} />
-        </Pressable>
-      )}
+      {/* Commander damage row — always visible so the first hit can be recorded */}
+      <Pressable style={pp.cmdRow} onPress={() => setCmdSheetOpen(true)}>
+        <Text style={[pp.cmdLabel, compact && pp.cmdLabelCompact, hasCmdDamage && pp.cmdLabelActive]}>
+          CMD {cmdTotal > 0 ? `${cmdTotal}` : '+'}
+        </Text>
+        {!compact && Object.entries(player.commanderDamage).map(([srcId, dmg]) => {
+          const src = allPlayers.find((p) => p.userId === srcId);
+          if (!src) return null;
+          const srcFill = playerColor(src.avatarColors);
+          return (
+            <View key={srcId} style={pp.cmdChip}>
+              <View style={[pp.cmdDot, { backgroundColor: srcFill }]} />
+              <Text style={[pp.cmdChipText, dmg >= 18 && pp.cmdChipDanger]}>{dmg}</Text>
+            </View>
+          );
+        })}
+        <Ionicons name="chevron-forward" size={12} color={colors.textTertiary} />
+      </Pressable>
 
       {/* Eliminated overlay */}
       {player.isEliminated && <View style={pp.eliminatedOverlay} pointerEvents="none" />}
@@ -502,6 +500,7 @@ const pp = StyleSheet.create({
     marginRight: spacing.xs,
   },
   cmdLabelCompact: { fontSize: 10 },
+  cmdLabelActive: { color: colors.error },
   cmdChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   cmdDot: { width: 8, height: 8, borderRadius: 4 },
   cmdChipText: {
@@ -789,12 +788,369 @@ const ss = StyleSheet.create({
 type PanelProps = Omit<Parameters<typeof PlayerPanel>[0], never>;
 
 // ---------------------------------------------------------------------------
+// LocalLifeTracker — offline pod tracker (Form a Pod flow)
+// ---------------------------------------------------------------------------
+
+function toTrackerPlayers(players: PodFormPlayer[], life: number): TrackerPlayer[] {
+  return players.map((p) => ({
+    userId: p.id,
+    displayName: p.displayName,
+    avatarColors: p.avatarColors,
+    life,
+    poison: 0,
+    energy: 0,
+    experience: 0,
+    commanderDamage: {},
+    commanderCastCount: 0,
+    isEliminated: false,
+    hasCitysBlessing: false,
+  }));
+}
+
+function LocalSetupSheet({
+  players,
+  onStart,
+  onClose,
+}: {
+  players: PodFormPlayer[];
+  onStart: (life: number) => void;
+  onClose: () => void;
+}) {
+  const [life, setLife] = useState(40);
+  return (
+    <View style={ss.container}>
+      <View style={ss.card}>
+        <View style={ss.header}>
+          <Text style={ss.title}>Confirm Starting Life</Text>
+          <Pressable onPress={onClose} hitSlop={8}>
+            <Ionicons name="close" size={20} color={colors.textSecondary} />
+          </Pressable>
+        </View>
+        <Text style={[ss.label, lss.sectionLabel]}>Pod · {players.length} players</Text>
+        <View style={lss.playerList}>
+          {players.map((p) => (
+            <View key={p.id} style={lss.playerRow}>
+              <View style={[lss.dot, { backgroundColor: playerColor(p.avatarColors) }]} />
+              <Text style={lss.playerName} numberOfLines={1}>{p.displayName}</Text>
+              {p.isGuest && <Text style={lss.guestTag}>Guest</Text>}
+            </View>
+          ))}
+        </View>
+        <Text style={ss.label}>Starting life total</Text>
+        <View style={ss.presets}>
+          {[20, 40].map((n) => (
+            <Pressable key={n} style={[ss.preset, life === n && ss.presetActive]} onPress={() => setLife(n)}>
+              <Text style={[ss.presetText, life === n && ss.presetTextActive]}>{n}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Pressable style={ss.startBtn} onPress={() => onStart(life)}>
+          <Text style={ss.startBtnText}>Continue →</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const lss = StyleSheet.create({
+  sectionLabel: { marginBottom: 8 },
+  playerList: { marginBottom: 20, gap: 6 },
+  playerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.chipBg, borderRadius: radii.md },
+  dot: { width: 9, height: 9, borderRadius: 5, flexShrink: 0 },
+  playerName: { flex: 1, fontFamily: typography.fontFamily.semiBold, fontSize: 14.5, color: colors.textPrimary },
+  guestTag: { fontFamily: typography.fontFamily.semiBold, fontSize: 11, color: colors.textTertiary },
+});
+
+function FirstPlayerPicker({
+  players,
+  onConfirm,
+}: {
+  players: TrackerPlayer[];
+  onConfirm: (idx: number) => void;
+}) {
+  const [highlightIdx, setHighlightIdx] = useState(0);
+  const [pickedIdx, setPickedIdx] = useState<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const winner = Math.floor(Math.random() * players.length);
+    const totalSteps = 20 + Math.floor(Math.random() * 8);
+    let step = 0;
+    let currentIdx = 0;
+
+    const tick = () => {
+      step++;
+      currentIdx = (currentIdx + 1) % players.length;
+      setHighlightIdx(currentIdx);
+      if (step < totalSteps) {
+        const t = step / totalSteps;
+        timerRef.current = setTimeout(tick, 55 + t * t * 445);
+      } else {
+        const dist = ((winner - currentIdx) % players.length + players.length) % players.length;
+        if (dist === 0) {
+          timerRef.current = setTimeout(() => setPickedIdx(winner), 500);
+        } else {
+          let s = 0;
+          const settle = () => {
+            s++;
+            currentIdx = (currentIdx + 1) % players.length;
+            setHighlightIdx(currentIdx);
+            if (s < dist) {
+              timerRef.current = setTimeout(settle, 480 + s * 70);
+            } else {
+              timerRef.current = setTimeout(() => setPickedIdx(winner), 520);
+            }
+          };
+          timerRef.current = setTimeout(settle, 480);
+        }
+      }
+    };
+    timerRef.current = setTimeout(tick, 80);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <View style={fpp.container}>
+      <View style={fpp.top}>
+        <Text style={fpp.title}>
+          {pickedIdx !== null ? `${players[pickedIdx]?.displayName} goes first!` : 'Who goes first?'}
+        </Text>
+        <Text style={fpp.sub}>
+          {pickedIdx !== null ? 'Tap below to begin.' : '🎲 Rolling the dice…'}
+        </Text>
+      </View>
+      <View style={fpp.list}>
+        {players.map((p, i) => {
+          const isHighlit = i === highlightIdx;
+          const isPicked = pickedIdx === i;
+          const fill = playerColor(p.avatarColors);
+          return (
+            <View key={p.userId} style={[
+              fpp.row,
+              isPicked && { backgroundColor: fill + '18', borderColor: fill, borderWidth: 2.5, transform: [{ scale: 1.025 }] },
+              !isPicked && isHighlit && fpp.rowHighlit,
+            ]}>
+              <View style={[fpp.dot, { backgroundColor: fill }]} />
+              <Text style={[fpp.name, isPicked && { color: fill }, !isPicked && isHighlit && fpp.nameHighlit]}>
+                {p.displayName}
+              </Text>
+              {isPicked && <Text style={fpp.dice}>🎲</Text>}
+            </View>
+          );
+        })}
+      </View>
+      {pickedIdx !== null && (
+        <Pressable style={fpp.letsPlay} onPress={() => onConfirm(pickedIdx)}>
+          <Text style={fpp.letsPlayText}>Let's play!</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+const fpp = StyleSheet.create({
+  container: { flex: 1, paddingHorizontal: 20, paddingTop: 28, paddingBottom: 24, backgroundColor: colors.paper },
+  top: { alignItems: 'center', marginBottom: 28 },
+  title: { fontFamily: typography.fontFamily.bold, fontSize: 22, color: colors.textPrimary, letterSpacing: -0.5, textAlign: 'center' },
+  sub: { fontFamily: typography.fontFamily.semiBold, fontSize: 14, color: colors.textSecondary, marginTop: 6 },
+  list: { flex: 1, gap: 10 },
+  row: {
+    flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 14,
+    borderRadius: 16, borderWidth: 1.5, borderColor: colors.borderLight,
+    backgroundColor: colors.surface,
+  },
+  rowHighlit: { backgroundColor: colors.accent + '18', borderColor: colors.accent, borderWidth: 2 },
+  dot: { width: 11, height: 11, borderRadius: 6, flexShrink: 0 },
+  name: { flex: 1, fontFamily: typography.fontFamily.bold, fontSize: 17, color: colors.textPrimary, letterSpacing: -0.15 },
+  nameHighlit: { color: colors.accent },
+  dice: { fontSize: 18 },
+  letsPlay: {
+    marginTop: 24, height: 54, backgroundColor: colors.accent, borderRadius: radii.lg,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: colors.accent, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+  },
+  letsPlayText: { fontFamily: typography.fontFamily.bold, fontSize: 16, color: colors.textInverse },
+});
+
+function LocalLifeTracker({
+  initialPlayers,
+  onClose,
+}: {
+  initialPlayers: PodFormPlayer[];
+  onClose: () => void;
+}) {
+  const [phase, setPhase] = useState<'setup' | 'picking' | 'playing'>('setup');
+  const [startingLife, setStartingLife] = useState(40);
+  const [localPlayers, setLocalPlayers] = useState<TrackerPlayer[]>([]);
+  const [turnNumber, setTurnNumber] = useState(1);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [history, setHistory] = useState<TrackerPlayer[][]>([]);
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
+  const applyUpdate = (updater: (ps: TrackerPlayer[]) => TrackerPlayer[]) => {
+    setHistory((h) => [...h.slice(-19), localPlayers]);
+    setLocalPlayers(updater);
+  };
+
+  const handleStart = (life: number) => {
+    setStartingLife(life);
+    setLocalPlayers(toTrackerPlayers(initialPlayers, life));
+    setPhase('picking');
+  };
+
+  const handlePicked = (idx: number) => {
+    setActiveIdx(idx);
+    setPhase('playing');
+  };
+
+  const handleConfirmReset = useCallback(() => {
+    Alert.alert('Reset game?', 'All life totals will return to starting values.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Reset',
+        style: 'destructive',
+        onPress: () => {
+          setHistory([]);
+          setLocalPlayers(toTrackerPlayers(initialPlayers, startingLife));
+          setTurnNumber(1);
+          setActiveIdx(0);
+        },
+      },
+    ]);
+  }, [initialPlayers, startingLife]);
+
+  if (phase === 'setup') {
+    return (
+      <SafeAreaView style={s.safe}>
+        <LocalSetupSheet players={initialPlayers} onStart={handleStart} onClose={onClose} />
+      </SafeAreaView>
+    );
+  }
+
+  if (phase === 'picking') {
+    return (
+      <SafeAreaView style={s.safe}>
+        <FirstPlayerPicker players={localPlayers} onConfirm={handlePicked} />
+      </SafeAreaView>
+    );
+  }
+
+  // playing phase
+  const count = localPlayers.length;
+  const syntheticState: TrackerState = {
+    podId: 'local',
+    format: null,
+    startingLife,
+    turnNumber,
+    activePlayerId: localPlayers[activeIdx]?.userId ?? null,
+    monarchId: null,
+    initiativeId: null,
+    players: localPlayers,
+    createdAt: new Date().toISOString(),
+  };
+
+  const makeLocalProps = (player: TrackerPlayer): Omit<PanelProps, 'isFlipped' | 'compact'> => ({
+    player,
+    allPlayers: localPlayers,
+    isActiveTurn: player.userId === syntheticState.activePlayerId,
+    onLifeDelta: (delta) =>
+      applyUpdate((ps) => ps.map((p) => p.userId === player.userId ? { ...p, life: p.life + delta } : p)),
+    onCommanderDamage: (srcId, delta) =>
+      applyUpdate((ps) => ps.map((p) => p.userId === player.userId
+        ? { ...p, commanderDamage: { ...p.commanderDamage, [srcId]: Math.max(0, (p.commanderDamage[srcId] ?? 0) + delta) } }
+        : p)),
+    onCounterDelta: (counter, delta) =>
+      applyUpdate((ps) => ps.map((p) => p.userId === player.userId ? { ...p, [counter]: Math.max(0, p[counter] + delta) } : p)),
+    onEliminateToggle: () =>
+      applyUpdate((ps) => ps.map((p) => p.userId === player.userId ? { ...p, isEliminated: !p.isEliminated } : p)),
+  });
+
+  const renderLocalPanel = (player: TrackerPlayer, isFlipped: boolean, compact: boolean) => (
+    <PlayerPanel key={player.userId} {...makeLocalProps(player)} isFlipped={isFlipped} compact={compact} />
+  );
+
+  let grid: React.ReactNode;
+  if (count === 1) {
+    grid = <View style={{ flex: 1 }}>{renderLocalPanel(localPlayers[0]!, false, false)}</View>;
+  } else if (count === 2) {
+    const self = localPlayers[0]!;
+    const other = localPlayers[1]!;
+    grid = isLandscape ? (
+      <View style={{ flex: 1, flexDirection: 'row' }}>
+        {renderLocalPanel(other, true, false)}
+        {renderLocalPanel(self, false, false)}
+      </View>
+    ) : (
+      <View style={{ flex: 1 }}>
+        {renderLocalPanel(other, true, false)}
+        {renderLocalPanel(self, false, false)}
+      </View>
+    );
+  } else if (count === 3) {
+    const self = localPlayers[0]!;
+    const others = localPlayers.slice(1);
+    grid = isLandscape ? (
+      <View style={{ flex: 1, flexDirection: 'row' }}>
+        <View style={{ flex: 1 }}>{others.map((p) => renderLocalPanel(p, true, false))}</View>
+        {renderLocalPanel(self, false, false)}
+      </View>
+    ) : (
+      <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, flexDirection: 'row' }}>{others.map((p) => renderLocalPanel(p, true, false))}</View>
+        {renderLocalPanel(self, false, false)}
+      </View>
+    );
+  } else {
+    const [self, p1, p2, p3] = localPlayers as [TrackerPlayer, TrackerPlayer, TrackerPlayer, TrackerPlayer];
+    grid = (
+      <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          {renderLocalPanel(p1, true, true)}
+          {renderLocalPanel(p2, true, true)}
+        </View>
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          {renderLocalPanel(p3, false, true)}
+          {renderLocalPanel(self, false, true)}
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[s.safe, { backgroundColor: colors.paper }]}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <GameBar
+          state={syntheticState}
+          allPlayers={localPlayers}
+          canUndo={history.length > 0}
+          onUndo={() => {
+            if (!history.length) return;
+            setLocalPlayers(history[history.length - 1]!);
+            setHistory((h) => h.slice(0, -1));
+          }}
+          onNextTurn={() => {
+            setTurnNumber((t) => t + 1);
+            setActiveIdx((i) => (i + 1) % localPlayers.length);
+          }}
+          onReset={handleConfirmReset}
+          onClose={onClose}
+        />
+        <>{grid}</>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // LifeTrackerScreen
 // ---------------------------------------------------------------------------
 
 export function LifeTrackerScreen({ route, navigation }: Props) {
-  const { podId } = route.params;
-  const { state, isConnected: _conn, isLoading, actions } = useLifeTracker(podId);
+  const { podId, initialPlayers } = route.params;
+  const { state, isConnected: _conn, isLoading, actions } = useLifeTracker(
+    initialPlayers ? null : (podId ?? null),
+  );
   const { data: profile } = useProfile();
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
@@ -807,6 +1163,11 @@ export function LifeTrackerScreen({ route, navigation }: Props) {
   }, [actions]);
 
   const selfId = profile?.id ?? '';
+
+  // Local (offline) mode: launched from "Form a Pod" with pre-selected players.
+  if (initialPlayers) {
+    return <LocalLifeTracker initialPlayers={initialPlayers} onClose={() => navigation.goBack()} />;
+  }
 
   if (isLoading) {
     return (

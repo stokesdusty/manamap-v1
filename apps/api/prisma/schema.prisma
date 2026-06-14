@@ -256,6 +256,7 @@ model PrivacySettings {
   showMetHistory        Boolean           @default(true) @map("show_met_history")
   storeMessages         Boolean           @default(true) @map("store_messages")
   shareNameWithContacts Boolean           @default(false) @map("share_name_with_contacts")
+  eventReminders        Boolean           @default(true) @map("event_reminders")
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
 

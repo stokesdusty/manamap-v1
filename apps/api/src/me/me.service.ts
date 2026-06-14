@@ -50,6 +50,7 @@ export class MeService {
         showMetHistory: true,
         storeMessages: true,
         shareNameWithContacts: false,
+        eventReminders: true,
       }
     );
   }
@@ -62,6 +63,7 @@ export class MeService {
       ...(dto.showMetHistory !== undefined ? { showMetHistory: dto.showMetHistory } : {}),
       ...(dto.storeMessages !== undefined ? { storeMessages: dto.storeMessages } : {}),
       ...(dto.shareNameWithContacts !== undefined ? { shareNameWithContacts: dto.shareNameWithContacts } : {}),
+      ...(dto.eventReminders !== undefined ? { eventReminders: dto.eventReminders } : {}),
     };
     return this.prisma.privacySettings.upsert({
       where: { userId },
@@ -74,6 +76,7 @@ export class MeService {
         showMetHistory: dto.showMetHistory ?? true,
         storeMessages: dto.storeMessages ?? true,
         shareNameWithContacts: dto.shareNameWithContacts ?? false,
+        eventReminders: dto.eventReminders ?? true,
       },
     });
   }

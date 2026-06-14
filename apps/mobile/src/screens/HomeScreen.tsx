@@ -27,6 +27,7 @@ import { useQuests } from '../hooks/useQuests';
 import { useLfgMe } from '../hooks/useLfg';
 import { useNotificationUnreadCount } from '../hooks/useNotifications';
 import { LogGameSheet } from '../components/LogGameSheet';
+import { PodFormSheet } from '../components/PodFormSheet';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 
 type HomeScreenProps = CompositeScreenProps<
@@ -133,6 +134,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
   const { data: bellCount = 0 } = useNotificationUnreadCount(isAuthenticated);
 
   const [showLogGame, setShowLogGame] = useState(false);
+  const [showPodForm, setShowPodForm] = useState(false);
   const [bannerW, setBannerW] = useState(() => Dimensions.get('window').width);
   const [bannerH, setBannerH] = useState(175);
 
@@ -281,6 +283,21 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         </View>
 
+        {/* ── Form a Pod row ── */}
+        <Pressable
+          style={({ pressed }) => [styles.podRow, pressed && { opacity: 0.75 }]}
+          onPress={() => setShowPodForm(true)}
+        >
+          <View style={[styles.podIcon, { backgroundColor: accent + '1E' }]}>
+            <Ionicons name="people" size={22} color={accent} />
+          </View>
+          <View style={styles.podText}>
+            <Text style={styles.podLabel}>Form a Pod</Text>
+            <Text style={styles.podSub}>Build your table, start a game</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+        </Pressable>
+
         {/* ── Needs attention ── */}
         {attentionCount > 0 && (
           <View style={styles.section}>
@@ -403,6 +420,18 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         onClose={() => setShowLogGame(false)}
         onSuccess={() => setShowLogGame(false)}
         {...(activeStore?.id !== undefined ? { storeId: activeStore.id } : {})}
+      />
+
+      <PodFormSheet
+        visible={showPodForm}
+        myProfile={{
+          id: profile?.id ?? 'me',
+          displayName: profile?.displayName ?? 'You',
+          avatarColors: profile?.avatarColors ?? [],
+        }}
+        connections={connections}
+        onStartGame={(players) => navigation.navigate('LifeTracker', { initialPlayers: players })}
+        onClose={() => setShowPodForm(false)}
       />
     </SafeAreaView>
   );
@@ -539,6 +568,43 @@ const styles = StyleSheet.create({
   qaRow: {
     flexDirection: 'row',
     gap: 10,
+  },
+
+  // Form a Pod row
+  podRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginHorizontal: 16,
+    marginTop: 10,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    padding: 14,
+    paddingHorizontal: 16,
+    ...shadows.sm,
+  },
+  podIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  podText: { flex: 1, minWidth: 0 },
+  podLabel: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14.5,
+    color: colors.textPrimary,
+    letterSpacing: -0.15,
+  },
+  podSub: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 3,
   },
 
   // Sections

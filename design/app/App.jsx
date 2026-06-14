@@ -2,19 +2,19 @@
 const {
   Icon, IOSDevice, DiscoverScreen, QRSheet, PreviewScreen, ConnectedScreen, ConnectionDetailScreen,
   ConnectScreen, ProfileScreen, OnboardingFlow, LFGComposer, PodSheet,
-  PodsSection, PodCreateSheet, PodScreen,
+  PodsSection, PodCreateSheet, PodScreen, PodFormSheet,
   gameStats, GameStatsStrip, RecentGames, ConfirmGamesSection, LogGameFlow,
   NotificationsInbox, QuestsCard, FriendStreaks,
   manaAccent, manaAccent2, identityGradient, readableOn, comboName,
   useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakColor, TweakSelect,
-  HomeScreen, WalkthroughOverlay, StoresScreen, HistoryScreen, LifeTrackerScreen,
-  PlayOnlineSheet,
+  HomeScreen, GuidedTour, StoresScreen, HistoryScreen, LifeTrackerScreen,
+  PlayOnlineSheet, IntroSlides,
 } = window;
 const MM = window.MM;
 const { useState, useRef, useEffect, useCallback } = React;
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "startView": "onboarding",
+  "startView": "intro",
   "cardStyle": "profile",
   "theme": "dusk",
   "accentMode": "identity",
@@ -40,12 +40,15 @@ function App() {
   const [connections, setConnections] = useState(MM.CONNECTIONS);
   const [sentSet, setSentSet] = useState(() => new Set());
   const [privacy, setPrivacy] = useState(MM.ME.privacy);
-  const [view, setView] = useState(() => (TWEAK_DEFAULTS.startView === 'app' ? 'app' : 'onboarding'));
-  const [walkthrough, setWalkthrough] = useState(false);
+  const [view, setView] = useState(() => TWEAK_DEFAULTS.startView === 'app' ? 'app' : TWEAK_DEFAULTS.startView === 'onboarding' ? 'onboarding' : 'intro');
+  const [tourActive, setTourActive] = useState(false);
   const scrollRef = useRef(null);
 
   // let the Tweak drive which view shows (replay onboarding on demand)
-  useEffect(() => { setView(t.startView === 'app' ? 'app' : 'onboarding'); }, [t.startView]);
+  useEffect(() => {
+    if (t.startView === 'tour') { setView('app'); setTourActive(true); }
+    else setView(t.startView === 'app' ? 'app' : t.startView === 'onboarding' ? 'onboarding' : 'intro');
+  }, [t.startView]);
 
   // fit device to viewport
   const [scale, setScale] = useState(1);
@@ -66,6 +69,7 @@ function App() {
   // Pods
   const [pods, setPods] = useState(MM.PODS);
   const [podCreate, setPodCreate] = useState(false);
+  const [podFormOpen, setPodFormOpen] = useState(false);
 
   // Games
   const [games, setGames] = useState(MM.GAMES);
@@ -112,6 +116,7 @@ function App() {
   // Pod handlers
   const openPod = (pod) => push({ type: 'pod', pod, isHost: pod.hostId === 'me' });
   const createPod = (pod) => { setPods(ps => [pod, ...ps.filter(p => p.id !== 'mine')]); setPodCreate(false); push({ type: 'pod', pod, isHost: true }); flash('Pod created'); };
+  const startPodGame = (players) => { setPodFormOpen(false); push({ type: 'lifetracker', players }); };
 
   // Game handlers
   const submitGame = (g) => { setGames(gs => [{ id: 'g-' + Date.now(), when: 'Just now', ...g }, ...gs]); setLogSheet(null); flash('Game logged — players notified to confirm'); };
@@ -191,6 +196,7 @@ function App() {
           onBell={() => setInbox(true)}
           onOpenStores={(id) => push({ type: 'stores', storeId: id || null })}
           onOpenHistory={() => push({ type: 'history' })}
+          onFormPod={() => setPodFormOpen(true)}
         />}
         {tab === 'discover' && <DiscoverScreen players={MM.PLAYERS} me={me} onOpen={p => push({ type: 'preview', player: p })} sentSet={sentSet} onShowCode={() => setQr(true)} lfg={{
           open: lfgOpen, session: lfgSession, sessions: MM.LFG,
@@ -214,10 +220,10 @@ function App() {
             {top.type === 'preview' && <PreviewScreen p={top.player} variant={variant} sent={sentSet.has(top.player.id)} onSend={sendRequest} />}
             {top.type === 'connected' && <ConnectedScreen p={top.player} onViewProfile={() => setStack(s => [...s.slice(0, -1), { type: 'connDetail', player: top.player, meta: { metAt: 'Dragon’s Den', when: 'Just now' } }])} onDone={() => { clearStack(); setTab('connect'); }} />}
             {top.type === 'connDetail' && <ConnectionDetailScreen p={top.player} variant={variant} meta={top.meta} />}
-            {top.type === 'pod' && <PodScreen pod={top.pod} isHost={top.isHost} me={me} onToast={flash} onClose={pop} onLogResult={() => setLogSheet({ pod: top.pod })} onLifeTracker={() => push({ type: 'lifetracker' })} />}
+            {top.type === 'pod' && <PodScreen pod={top.pod} isHost={top.isHost} me={me} onToast={flash} onClose={pop} onLogResult={() => setLogSheet({ pod: top.pod })} onLifeTracker={(players) => push({ type: 'lifetracker', players: players || null })} />}
             {top.type === 'stores' && <StoresScreen onClose={pop} initialStoreId={top.storeId || null} />}
             {top.type === 'history' && <HistoryScreen onClose={pop} onDiscover={() => { clearStack(); setTab('discover'); }} onOpenPlayer={(p) => { pop(); setTimeout(() => push({ type: 'preview', player: MM.byId(p.id) || p }), 80); }} />}
-            {top.type === 'lifetracker' && <LifeTrackerScreen onClose={pop} />}
+            {top.type === 'lifetracker' && <LifeTrackerScreen onClose={pop} initialPlayers={top.players || null} />}
           </div>
         </div>
       )}
@@ -243,6 +249,17 @@ function App() {
           <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: 'var(--bg)', borderRadius: '28px 28px 0 0',
             paddingBottom: 30, maxHeight: '92%', overflow: 'auto', boxShadow: '0 -8px 40px rgba(0,0,0,0.2)' }}>
             <LFGComposer initial={lfgSheet === 'edit' ? lfgSession : null} onPublish={publishLfg} onClose={() => setLfgSheet(null)} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Pod form sheet (one-tap formation) ── */}
+      {podFormOpen && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 95 }}>
+          <div onClick={() => setPodFormOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(20,14,10,0.4)' }} />
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: 'var(--bg)', borderRadius: '28px 28px 0 0',
+            maxHeight: '92%', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 -8px 40px rgba(0,0,0,0.2)' }}>
+            <PodFormSheet me={me} connections={connections} onStartGame={startPodGame} onClose={() => setPodFormOpen(false)} />
           </div>
         </div>
       )}
@@ -312,9 +329,20 @@ function App() {
         </div>
       )}
 
-      {/* ── Walkthrough (first-login tour, after onboarding) ── */}
-      {walkthrough && (
-        <WalkthroughOverlay onDone={() => setWalkthrough(false)} />
+      {/* ── Intro slides (pre-onboarding feature tour) ── */}
+      {view === 'intro' && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 120, display: 'flex', flexDirection: 'column' }}>
+          <IntroSlides onDone={() => { setView('onboarding'); setTweak('startView', 'onboarding'); }} />
+        </div>
+      )}
+
+      {/* ── Guided tour (fires after first sign-in) ── */}
+      {tourActive && (
+        <GuidedTour
+          onDone={() => { setTourActive(false); setTweak('startView', 'app'); }}
+          onTab={(t) => { clearStack(); setTab(t); }}
+          onScan={() => setQr(true)}
+        />
       )}
 
       {/* ── Onboarding (first-run overlay within the device) ── */}
@@ -322,7 +350,7 @@ function App() {
         <div style={{ position: 'absolute', inset: 0, zIndex: 120, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
           <OnboardingFlow
             me={me}
-            onFinish={(draft) => { if (draft && draft.colors && draft.colors.length) setMeColors(draft.colors); setTweak('startView', 'app'); setView('app'); setTab('home'); if (scrollRef.current) scrollRef.current.scrollTop = 0; setTimeout(() => setWalkthrough(true), 420); }}
+            onFinish={(draft) => { if (draft && draft.colors && draft.colors.length) setMeColors(draft.colors); setTweak('startView', 'app'); setView('app'); setTab('home'); if (scrollRef.current) scrollRef.current.scrollTop = 0; }}
             onSkip={() => { setTweak('startView', 'app'); setView('app'); }}
           />
         </div>
@@ -344,7 +372,7 @@ function App() {
       <TweaksPanel>
         <TweakSection label="Flow" />
         <TweakRadio label="Start on" value={t.startView} options={[
-          { value: 'onboarding', label: 'Onboarding' }, { value: 'app', label: 'App' },
+          { value: 'intro', label: 'Intro' }, { value: 'onboarding', label: 'Onboarding' }, { value: 'tour', label: 'Tour' }, { value: 'app', label: 'App' },
         ]} onChange={v => setTweak('startView', v)} />
         <TweakSection label="Player card" />
         <TweakRadio label="Card style" value={t.cardStyle} options={[

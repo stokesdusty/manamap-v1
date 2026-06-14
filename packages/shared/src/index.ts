@@ -181,6 +181,7 @@ export const PrivacySchema = z.object({
   showMetHistory: z.boolean(),
   storeMessages: z.boolean().default(true),
   shareNameWithContacts: z.boolean().default(false),
+  eventReminders: z.boolean().default(true),
 });
 export type Privacy = z.infer<typeof PrivacySchema>;
 
@@ -191,6 +192,7 @@ export const UpdatePrivacySchema = z.object({
   showMetHistory: z.boolean().optional(),
   storeMessages: z.boolean().optional(),
   shareNameWithContacts: z.boolean().optional(),
+  eventReminders: z.boolean().optional(),
 });
 export type UpdatePrivacy = z.infer<typeof UpdatePrivacySchema>;
 

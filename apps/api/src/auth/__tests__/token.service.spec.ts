@@ -8,6 +8,9 @@ const MOCK_USER = { id: 'user-uuid', email: 'test@example.com' };
 
 function makePrismaMock() {
   return {
+    user: {
+      findUnique: jest.fn(),
+    },
     refreshToken: {
       create: jest.fn(),
       findFirst: jest.fn(),
@@ -42,12 +45,15 @@ describe('TokenService', () => {
   // ---------------------------------------------------------------------------
 
   describe('issueTokens', () => {
-    beforeEach(() => prisma.refreshToken.create.mockResolvedValue({}));
+    beforeEach(() => {
+      prisma.user.findUnique.mockResolvedValue({ role: 'USER' });
+      prisma.refreshToken.create.mockResolvedValue({});
+    });
 
     it('returns a signed access token', async () => {
       const result = await service.issueTokens(MOCK_USER.id, MOCK_USER.email);
       expect(result.accessToken).toBe('signed.access.token');
-      expect(jwtService.sign).toHaveBeenCalledWith({ sub: MOCK_USER.id, email: MOCK_USER.email });
+      expect(jwtService.sign).toHaveBeenCalledWith({ sub: MOCK_USER.id, email: MOCK_USER.email, role: 'USER' });
     });
 
     it('returns a 64-char hex refresh token (32 random bytes)', async () => {
@@ -82,6 +88,7 @@ describe('TokenService', () => {
 
   describe('rotate', () => {
     it('issues fresh tokens when the raw token matches a live record', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: 'USER' });
       prisma.refreshToken.findFirst.mockResolvedValue({
         id: 'rt-id',
         userId: MOCK_USER.id,
@@ -97,6 +104,7 @@ describe('TokenService', () => {
     });
 
     it('revokes the old token before issuing new ones', async () => {
+      prisma.user.findUnique.mockResolvedValue({ role: 'USER' });
       prisma.refreshToken.findFirst.mockResolvedValue({
         id: 'rt-id',
         userId: MOCK_USER.id,
