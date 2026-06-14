@@ -104,11 +104,11 @@ function NotifRow({ id, kind, title, body, readAt, createdAt, data: _data, onPre
       style={({ pressed }) => [styles.row, unread && styles.rowUnread, pressed && { opacity: 0.75 }]}
       onPress={() => onPress(id)}
     >
-      <View style={[styles.iconTile, unread && styles.iconTileUnread]}>
-        <Ionicons name={kindIcon(kind)} size={20} color={unread ? colors.accent : colors.textSecondary} />
+      <View style={styles.iconTile}>
+        <Ionicons name={kindIcon(kind)} size={21} color={colors.accentInk} />
       </View>
       <View style={styles.rowContent}>
-        <Text style={[styles.rowTitle, unread && styles.rowTitleUnread]} numberOfLines={1}>
+        <Text style={styles.rowTitle} numberOfLines={1}>
           {title}
         </Text>
         <Text style={styles.rowBody} numberOfLines={2}>{body}</Text>
@@ -167,12 +167,12 @@ export function NotificationsScreen({ navigation }: Props) {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.topBar}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </Pressable>
         <Text style={styles.screenTitle}>Notifications</Text>
         {newItems.length > 0 ? (
           <Pressable onPress={handleMarkAll} style={styles.markAllBtn}>
-            <Text style={styles.markAllText}>Mark all read</Text>
+            <Text style={styles.markAllText}>Mark read</Text>
           </Pressable>
         ) : (
           <View style={styles.markAllBtn} />
@@ -196,8 +196,9 @@ export function NotificationsScreen({ navigation }: Props) {
             if (item.type === 'empty') {
               return (
                 <View style={styles.emptyWrap}>
-                  <Ionicons name="notifications-off-outline" size={40} color={colors.textTertiary} />
-                  <Text style={styles.emptyText}>{item.label}</Text>
+                  <Ionicons name="notifications-outline" size={40} color={colors.textTertiary} />
+                  <Text style={styles.emptyHeading}>You're all caught up</Text>
+                  <Text style={styles.emptySubtext}>Connects, games, and store news land here.</Text>
                 </View>
               );
             }
@@ -260,7 +261,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   markAllText: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.sm,
     color: colors.accent,
   },
@@ -274,78 +275,82 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
+    fontSize: 11.5,
+    color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.63,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
     paddingBottom: spacing.xs,
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    alignItems: 'flex-start',
+    padding: 13,
     backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
-    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: radii.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    gap: spacing.md,
   },
   rowUnread: {
     backgroundColor: colors.accentLight,
   },
   iconTile: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceWarm,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: colors.chipBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconTileUnread: {
-    backgroundColor: colors.accentLight,
-  },
   rowContent: {
     flex: 1,
-    gap: 2,
   },
   rowTitle: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-  },
-  rowTitleUnread: {
     fontFamily: typography.fontFamily.bold,
+    fontSize: 14.5,
     color: colors.textPrimary,
   },
   rowBody: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 13.5,
     color: colors.textSecondary,
+    marginTop: 3,
   },
   rowTime: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 12,
     color: colors.textTertiary,
-    marginTop: 2,
+    marginTop: 5,
   },
   unreadDot: {
-    width: 8,
-    height: 8,
+    width: 9,
+    height: 9,
     borderRadius: radii.full,
     backgroundColor: colors.accent,
+    marginTop: 3,
   },
   emptyWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.xxl,
+    paddingVertical: 60,
+    paddingHorizontal: spacing.xl,
     gap: spacing.sm,
   },
-  emptyText: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
+  emptyHeading: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 13.5,
     color: colors.textTertiary,
+    textAlign: 'center',
   },
   footer: {
     paddingVertical: spacing.md,

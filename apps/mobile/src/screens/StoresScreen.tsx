@@ -1153,7 +1153,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xxl,
+    fontSize: 22,
+    letterSpacing: -0.55,
     color: colors.textPrimary,
   },
   activeStoreName: {
@@ -1192,8 +1193,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14.5,
     color: colors.textPrimary,
   },
   mapContainer: { flex: 1, position: 'relative' },
@@ -1247,8 +1248,9 @@ const styles = StyleSheet.create({
   },
   listRowActive: { backgroundColor: colors.accentLight + '44' },
   listRowName: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
+    letterSpacing: -0.15,
     color: colors.textPrimary,
   },
   listRowSub: {
@@ -1300,6 +1302,7 @@ const sheet = StyleSheet.create({
   name: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.xl,
+    letterSpacing: -0.4,
     color: colors.textPrimary,
     flex: 1,
   },
@@ -1432,15 +1435,16 @@ const sheet = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   sectionTitle: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
     color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.63,
   },
   dayLabel: {
-    fontFamily: typography.fontFamily.semiBold,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.sm,
+    letterSpacing: -0.15,
     color: colors.textSecondary,
     marginTop: spacing.md,
     marginBottom: spacing.xs,
@@ -1470,7 +1474,7 @@ const sheet = StyleSheet.create({
   },
   checkinBtnActive: { backgroundColor: colors.textTertiary },
   checkinText: {
-    fontFamily: typography.fontFamily.semiBold,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
     color: colors.textInverse,
   },
@@ -1564,7 +1568,7 @@ const sheet = StyleSheet.create({
   },
   tabActive: { backgroundColor: colors.surface, ...shadows.sm },
   tabText: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.sm,
     color: colors.textTertiary,
   },
@@ -1600,8 +1604,8 @@ const sheet = StyleSheet.create({
   },
   lbName: {
     flex: 1,
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14,
     color: colors.textPrimary,
   },
   lbStats: { alignItems: 'flex-end', gap: 2 },
@@ -1617,11 +1621,11 @@ const sheet = StyleSheet.create({
   },
   offersSection: { gap: spacing.sm, marginBottom: spacing.md },
   offersSectionTitle: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
+    color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.63,
   },
   offerChip: {
     flexDirection: 'row',
@@ -1797,8 +1801,8 @@ const evtRow = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14,
     color: colors.textPrimary,
   },
   time: {
@@ -1925,7 +1929,7 @@ const attendeeRow = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.xs,
     color: colors.textPrimary,
   },
@@ -2003,8 +2007,8 @@ const hereRow = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14,
     color: colors.textPrimary,
   },
   metBadge: {

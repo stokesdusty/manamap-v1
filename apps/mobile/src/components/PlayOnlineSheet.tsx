@@ -278,16 +278,17 @@ const sh = StyleSheet.create({
   },
   topTitle: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.md,
+    fontSize: 19,
+    letterSpacing: -0.38,
     color: colors.textPrimary,
   },
   scroll: { padding: spacing.xl, gap: spacing.sm, paddingBottom: 120 },
   label: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11,
     color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.63,
     marginBottom: spacing.xs,
   },
 
@@ -309,7 +310,7 @@ const sh = StyleSheet.create({
     backgroundColor: colors.accent + '10',
   },
   platformBtnText: {
-    fontFamily: typography.fontFamily.semiBold,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
   },
@@ -345,8 +346,9 @@ const sh = StyleSheet.create({
   },
   connectionName: {
     flex: 1,
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
+    letterSpacing: -0.15,
     color: colors.textPrimary,
   },
   checkbox: {
@@ -394,7 +396,7 @@ const sh = StyleSheet.create({
   },
   sendBtnDisabled: { opacity: 0.4 },
   sendBtnText: {
-    fontFamily: typography.fontFamily.semiBold,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
     color: colors.textInverse,
   },

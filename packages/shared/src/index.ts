@@ -53,7 +53,7 @@ export const DECK_SITE_HOSTS: Record<DeckSite, string> = {
 // --- Social links ---
 
 export const SocialPlatformSchema = z.enum([
-  'DISCORD', 'INSTAGRAM', 'TWITCH', 'YOUTUBE', 'X', 'TIKTOK', 'FACEBOOK', 'WEBSITE', 'PHONE',
+  'DISCORD', 'INSTAGRAM', 'TWITCH', 'YOUTUBE', 'X', 'TIKTOK', 'FACEBOOK', 'WEBSITE', 'PHONE', 'EMAIL',
 ]);
 export type SocialPlatform = z.infer<typeof SocialPlatformSchema>;
 

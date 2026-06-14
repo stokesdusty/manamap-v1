@@ -156,15 +156,23 @@ export function HistoryScreen({ navigation }: RootStackScreenProps<'History'>) {
         <View style={{ width: 36 }} />
       </View>
 
-      {/* Crossed-paths summary */}
+      {/* Crossed-paths nudge */}
       {crossedPathsCount > 0 && (
         <View style={styles.nudge}>
-          <Ionicons name="footsteps-outline" size={16} color={colors.accent} />
-          <Text style={styles.nudgeText}>
-            You've crossed paths with{' '}
-            <Text style={styles.nudgeCount}>{crossedPathsCount}</Text>
-            {` player${crossedPathsCount !== 1 ? 's' : ''} you haven't connected with yet`}
-          </Text>
+          <Ionicons name="radio-outline" size={18} color={colors.accentInk} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.nudgeText}>
+              You've crossed paths with{' '}
+              <Text style={styles.nudgeCount}>{crossedPathsCount}</Text>
+              {` player${crossedPathsCount !== 1 ? 's' : ''} you haven't connected with yet`}
+            </Text>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              style={({ pressed }) => [{ marginTop: 6 }, pressed && { opacity: 0.6 }]}
+            >
+              <Text style={styles.nudgeAction}>See nearby players ›</Text>
+            </Pressable>
+          </View>
         </View>
       )}
 
@@ -174,7 +182,9 @@ export function HistoryScreen({ navigation }: RootStackScreenProps<'History'>) {
         </View>
       ) : unique.length === 0 ? (
         <View style={styles.empty}>
-          <Ionicons name="time-outline" size={48} color={colors.border} />
+          <View style={styles.emptyWell}>
+            <Ionicons name="time-outline" size={28} color={colors.textTertiary} />
+          </View>
           <Text style={styles.emptyTitle}>No history yet</Text>
           <Text style={styles.emptyHint}>
             Players you meet at stores or connect with will appear here
@@ -225,31 +235,37 @@ const styles = StyleSheet.create({
   backBtn: { width: 36, alignItems: 'flex-start' },
   title: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xl,
+    fontSize: 19,
+    letterSpacing: -0.38,
     color: colors.textPrimary,
   },
   nudge: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.sm,
-    margin: spacing.xl,
-    marginBottom: spacing.md,
-    padding: spacing.md,
+    gap: 10,
+    marginHorizontal: spacing.lg,
+    marginTop: 12,
+    marginBottom: 4,
+    padding: 13,
     backgroundColor: colors.accentLight,
-    borderRadius: radii.lg,
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.accent + '30',
+    borderColor: colors.accent + '38',
   },
   nudgeText: {
-    flex: 1,
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 13.5,
+    color: colors.textPrimary,
     lineHeight: 20,
   },
   nudgeCount: {
     fontFamily: typography.fontFamily.bold,
-    color: colors.accent,
+    color: colors.accentInk,
+  },
+  nudgeAction: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.sm,
+    color: colors.accentInk,
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: {
@@ -259,28 +275,37 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.xl,
   },
+  emptyWell: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: colors.chipBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   emptyTitle: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 17,
+    letterSpacing: -0.25,
+    color: colors.textPrimary,
   },
   emptyHint: {
-    fontFamily: typography.fontFamily.regular,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.sm,
     color: colors.textTertiary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 21,
   },
   list: { paddingBottom: spacing.xxxl },
   sectionLabel: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
     color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xs,
+    letterSpacing: 0.63,
+    paddingHorizontal: spacing.lg,
+    paddingTop: 14,
+    paddingBottom: 6,
   },
 });
 
@@ -289,8 +314,8 @@ const card = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 11,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.borderLight,
     backgroundColor: colors.surface,
@@ -309,8 +334,9 @@ const card = StyleSheet.create({
   },
   info: { flex: 1, gap: 3 },
   name: {
-    fontFamily: typography.fontFamily.semiBold,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
+    letterSpacing: -0.15,
     color: colors.textPrimary,
   },
   metaRow: {

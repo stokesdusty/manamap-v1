@@ -141,6 +141,7 @@ enum SocialPlatform {
   FACEBOOK
   WEBSITE
   PHONE
+  EMAIL
 }
 
 enum SocialVisibility {

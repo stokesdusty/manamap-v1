@@ -36,15 +36,15 @@ const MANA_FILL: Record<string, string> = {
 };
 
 const FIT_COLORS: Record<PodFitTier, string> = {
-  great: colors.success,
-  close: colors.accent,
-  off: colors.textTertiary,
+  great: colors.accent,
+  close: colors.warning,
+  off: colors.error,
 };
 
 const FIT_BG: Record<PodFitTier, string> = {
-  great: colors.success + '20',
-  close: colors.accentLight,
-  off: colors.borderLight,
+  great: colors.accentLight,
+  close: colors.warning + '29',
+  off: colors.error + '26',
 };
 
 function avatarInitial(name: string) {
@@ -56,7 +56,7 @@ function avatarFill(avatarColors: string[]): string {
 }
 
 // ---------------------------------------------------------------------------
-// FitBadge
+// FitBadge — compact inline pill (used in candidate / request rows)
 // ---------------------------------------------------------------------------
 
 interface FitBadgeProps {
@@ -65,20 +65,90 @@ interface FitBadgeProps {
 }
 
 function FitBadge({ tier, label }: FitBadgeProps) {
-  const tierLabel = tier === 'great' ? 'Great fit' : tier === 'close' ? 'Close fit' : 'Off range';
   return (
     <View style={[fitBadge.wrap, { backgroundColor: FIT_BG[tier] }]}>
       <View style={[fitBadge.dot, { backgroundColor: FIT_COLORS[tier] }]} />
+      <Text style={[fitBadge.text, { color: FIT_COLORS[tier] }]}>{label}</Text>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FitBanner — detailed banner with reason text (joiner view)
+// ---------------------------------------------------------------------------
+
+function FitBanner({ tier, label }: FitBadgeProps) {
+  const title =
+    tier === 'great' ? "You're a great fit" :
+    tier === 'close' ? "You're close on power" :
+    'Heads up on fit';
+  return (
+    <View style={[fitBanner.wrap, { backgroundColor: FIT_BG[tier] }]}>
+      <View style={[fitBanner.dot, { backgroundColor: FIT_COLORS[tier] }]} />
       <View style={{ flex: 1 }}>
-        <Text style={[fitBadge.tier, { color: FIT_COLORS[tier] }]}>{tierLabel}</Text>
-        <Text style={fitBadge.label} numberOfLines={1}>{label}</Text>
+        <Text style={[fitBanner.title, { color: FIT_COLORS[tier] }]}>{title}</Text>
+        <Text style={fitBanner.reason}>{label}</Text>
       </View>
     </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// PodInfoCard
+// StatusBanner — top-of-scroll pod state indicator
+// ---------------------------------------------------------------------------
+
+interface StatusBannerProps {
+  full: boolean;
+  seats: number;
+  need: number;
+  podName: string;
+}
+
+function StatusBanner({ full, seats, need, podName }: StatusBannerProps) {
+  if (full) {
+    return (
+      <View style={banner.full}>
+        <View style={banner.iconWell}>
+          <Ionicons name="checkmark" size={22} color={colors.textInverse} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={banner.fullTitle}>Pod ready!</Text>
+          <Text style={banner.fullSub}>All {seats} seats filled — go play.</Text>
+        </View>
+      </View>
+    );
+  }
+  return (
+    <View style={banner.forming}>
+      <View style={banner.dot} />
+      <Text style={banner.formingName} numberOfLines={1}>{podName}</Text>
+      <View style={banner.needPill}>
+        <Text style={banner.needText}>Need {need} more</Text>
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WhereCard
+// ---------------------------------------------------------------------------
+
+function WhereCard({ where }: { where: string }) {
+  return (
+    <View style={whereCard.wrap}>
+      <View style={whereCard.icon}>
+        <Ionicons name="location-outline" size={19} color={colors.accentInk} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={whereCard.label}>Where to meet</Text>
+        <Text style={whereCard.place}>{where}</Text>
+      </View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PodInfoCard — format + power chip row
 // ---------------------------------------------------------------------------
 
 interface PodInfoCardProps {
@@ -87,61 +157,55 @@ interface PodInfoCardProps {
 
 function PodInfoCard({ pod }: PodInfoCardProps) {
   return (
-    <View style={info.card}>
-      <View style={info.row}>
-        {pod.format && (
-          <View style={info.chip}>
-            <Text style={info.chipText}>{FORMAT_LABELS[pod.format as MtgFormat] ?? pod.format}</Text>
-          </View>
-        )}
+    <View style={info.row}>
+      {pod.format && (
         <View style={info.chip}>
-          <Text style={info.chipText}>P{pod.targetPower}±{pod.tolerance}</Text>
+          <Text style={info.chipText}>{FORMAT_LABELS[pod.format as MtgFormat] ?? pod.format}</Text>
         </View>
-        <View style={info.chip}>
-          <Text style={info.chipText}>{pod.seats} seats</Text>
-        </View>
-        <View style={[info.chip, info.openChip]}>
-          <Text style={[info.chipText, info.openChipText]}>{pod.seatsOpen} open</Text>
-        </View>
+      )}
+      <View style={info.chip}>
+        <Text style={info.chipText}>Power {pod.targetPower}±{pod.tolerance}</Text>
       </View>
-      <View style={info.whereRow}>
-        <Ionicons name="location-outline" size={13} color={colors.textTertiary} />
-        <Text style={info.whereText} numberOfLines={2}>{pod.where}</Text>
-      </View>
-      {pod.note ? (
-        <Text style={info.note} numberOfLines={2}>{pod.note}</Text>
-      ) : null}
     </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// SeatRow
+// SeatRow — card-per-seat with role label
 // ---------------------------------------------------------------------------
 
 interface SeatRowProps {
   members: PodDetail['members'];
   seats: number;
+  hostId?: string;
+  myId?: string;
 }
 
-function SeatRow({ members, seats }: SeatRowProps) {
+function SeatRow({ members, seats, hostId, myId }: SeatRowProps) {
   const empty = seats - members.length;
   return (
-    <View style={seatRow.wrap}>
+    <View style={{ gap: spacing.sm }}>
       <Text style={seatRow.label}>Seats</Text>
-      <View style={seatRow.seats}>
+      <View style={seatRow.row}>
         {members.map((m) => {
           const fill = avatarFill(m.avatarColors);
           const textFill = ['W', 'G'].includes(m.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
+          const role = m.id === hostId ? 'Host' : m.id === myId ? 'You' : m.displayName.split(' ')[0];
           return (
-            <View key={m.id} style={[seatRow.avatar, { backgroundColor: fill }]}>
-              <Text style={[seatRow.avatarText, { color: textFill }]}>{avatarInitial(m.displayName)}</Text>
+            <View key={m.id} style={seatRow.card}>
+              <View style={[seatRow.avatar, { backgroundColor: fill }]}>
+                <Text style={[seatRow.avatarText, { color: textFill }]}>{avatarInitial(m.displayName)}</Text>
+              </View>
+              <Text style={seatRow.seatName} numberOfLines={1}>{role}</Text>
             </View>
           );
         })}
         {Array.from({ length: empty }).map((_, i) => (
-          <View key={`empty-${i}`} style={seatRow.emptyAvatar}>
-            <Ionicons name="person-outline" size={14} color={colors.border} />
+          <View key={`empty-${i}`} style={seatRow.emptyCard}>
+            <View style={seatRow.emptyCircle}>
+              <Ionicons name="add-outline" size={18} color={colors.textTertiary} />
+            </View>
+            <Text style={seatRow.openText}>Open</Text>
           </View>
         ))}
       </View>
@@ -161,22 +225,13 @@ function CandidateRow({ candidate }: CandidateRowProps) {
   const fill = avatarFill(candidate.avatarColors);
   const textFill = ['W', 'G'].includes(candidate.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
   return (
-    <View style={cand.row}>
+    <View style={cand.card}>
       <View style={[cand.avatar, { backgroundColor: fill }]}>
         <Text style={[cand.avatarText, { color: textFill }]}>{avatarInitial(candidate.displayName)}</Text>
       </View>
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, gap: spacing.xs }}>
         <Text style={cand.name} numberOfLines={1}>{candidate.displayName}</Text>
-        {candidate.formats.length > 0 && (
-          <Text style={cand.sub} numberOfLines={1}>
-            {candidate.formats.slice(0, 2).map((f) => FORMAT_LABELS[f as MtgFormat] ?? f).join(', ')}
-          </Text>
-        )}
-      </View>
-      <View style={[cand.fitBadge, { backgroundColor: FIT_BG[candidate.fit.tier] }]}>
-        <Text style={[cand.fitText, { color: FIT_COLORS[candidate.fit.tier] }]}>
-          {candidate.fit.tier === 'great' ? 'Great' : candidate.fit.tier === 'close' ? 'Close' : 'Off'}
-        </Text>
+        <FitBadge tier={candidate.fit.tier} label={candidate.fit.label} />
       </View>
     </View>
   );
@@ -198,11 +253,11 @@ function RequestRow({ requester, onApprove, onDecline, isApproving, isDeclining 
   const fill = avatarFill(requester.avatarColors);
   const textFill = ['W', 'G'].includes(requester.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
   return (
-    <View style={req.row}>
-      <View style={[req.avatar, { backgroundColor: fill }]}>
-        <Text style={[req.avatarText, { color: textFill }]}>{avatarInitial(requester.displayName)}</Text>
-      </View>
-      <View style={{ flex: 1, gap: 2 }}>
+    <View style={req.card}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <View style={[req.avatar, { backgroundColor: fill }]}>
+          <Text style={[req.avatarText, { color: textFill }]}>{avatarInitial(requester.displayName)}</Text>
+        </View>
         <Text style={req.name} numberOfLines={1}>{requester.displayName}</Text>
       </View>
       <View style={req.actions}>
@@ -213,7 +268,7 @@ function RequestRow({ requester, onApprove, onDecline, isApproving, isDeclining 
         >
           {isDeclining
             ? <ActivityIndicator size="small" color={colors.error} />
-            : <Ionicons name="close" size={16} color={colors.error} />}
+            : <Text style={req.declineText}>Decline</Text>}
         </Pressable>
         <Pressable
           style={({ pressed }) => [req.approveBtn, pressed && { opacity: 0.6 }]}
@@ -222,7 +277,7 @@ function RequestRow({ requester, onApprove, onDecline, isApproving, isDeclining 
         >
           {isApproving
             ? <ActivityIndicator size="small" color={colors.textInverse} />
-            : <Ionicons name="checkmark" size={16} color={colors.textInverse} />}
+            : <Text style={req.approveText}>Approve</Text>}
         </Pressable>
       </View>
     </View>
@@ -256,7 +311,6 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
   };
 
   const handleLock = () => {
-    // Capture members before pod is disbanded from Redis
     const members: RosterPlayer[] = (pod?.members ?? []).map((m: PublicProfile) => ({
       userId: m.id,
       displayName: m.displayName,
@@ -302,6 +356,7 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
   }
 
   const isFull = pod.seatsOpen === 0;
+  const need = pod.seats - pod.members.length;
 
   // ---------------------------------------------------------------------------
   // HOST view
@@ -337,22 +392,22 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
         </View>
 
         <ScrollView contentContainerStyle={s.scroll}>
+          <StatusBanner full={isFull} seats={pod.seats} need={need} podName="Your pod" />
+
           <PodInfoCard pod={pod} />
 
-          <SeatRow members={pod.members} seats={pod.seats} />
+          <WhereCard where={pod.where} />
 
-          <Pressable
-            style={({ pressed }) => [s.trackerBtn, pressed && { opacity: 0.75 }]}
-            onPress={() => navigation.navigate('LifeTracker', { podId })}
-          >
-            <Ionicons name="heart-outline" size={16} color={colors.accent} />
-            <Text style={s.trackerBtnText}>Life Tracker</Text>
-          </Pressable>
+          <SeatRow members={pod.members} seats={pod.seats} hostId={pod.hostId} {...(profile?.id !== undefined ? { myId: profile.id } : {})} />
 
-          {isFull && (
-            <View style={s.readyBanner}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-              <Text style={s.readyText}>Pod Ready!</Text>
+          {pod.note ? (
+            <View style={s.noteBox}>
+              <Text style={s.noteText}>"{pod.note}"</Text>
+            </View>
+          ) : null}
+
+          {isFull ? (
+            <View style={s.fullActions}>
               <Pressable
                 style={({ pressed }) => [s.lockBtn, pressed && { opacity: 0.75 }]}
                 onPress={handleLock}
@@ -360,15 +415,30 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
               >
                 {lock.isPending
                   ? <ActivityIndicator size="small" color={colors.textInverse} />
-                  : <Text style={s.lockBtnText}>Lock it in</Text>}
+                  : <Text style={s.lockBtnText}>Lock it in & log game</Text>}
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [s.trackerBtn, pressed && { opacity: 0.75 }]}
+                onPress={() => navigation.navigate('LifeTracker', { podId })}
+              >
+                <Ionicons name="heart-outline" size={16} color={colors.accent} />
+                <Text style={s.trackerBtnText}>Life Tracker</Text>
               </Pressable>
             </View>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [s.trackerBtn, pressed && { opacity: 0.75 }]}
+              onPress={() => navigation.navigate('LifeTracker', { podId })}
+            >
+              <Ionicons name="heart-outline" size={16} color={colors.accent} />
+              <Text style={s.trackerBtnText}>Life Tracker</Text>
+            </Pressable>
           )}
 
           {pod.requests.length > 0 && (
             <View style={s.section}>
               <Text style={s.sectionLabel}>Join requests</Text>
-              <View style={s.card}>
+              <View style={{ gap: spacing.sm }}>
                 {pod.requests.map((r) => (
                   <RequestRow
                     key={r.id}
@@ -386,7 +456,7 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
           {pod.candidates.length > 0 && (
             <View style={s.section}>
               <Text style={s.sectionLabel}>Invite players here</Text>
-              <View style={s.card}>
+              <View style={{ gap: spacing.sm }}>
                 {pod.candidates.map((c) => (
                   <CandidateRow key={c.id} candidate={c} />
                 ))}
@@ -409,6 +479,7 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
   // ---------------------------------------------------------------------------
 
   const hasRequested = hasSentRequest || pod.hasRequested;
+  const podName = `${pod.host.displayName}'s pod`;
 
   return (
     <SafeAreaView style={s.safe}>
@@ -431,28 +502,21 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
       </View>
 
       <ScrollView contentContainerStyle={s.scroll}>
-        <View style={s.hostRow}>
-          {(() => {
-            const fill = avatarFill(pod.host.avatarColors);
-            const textFill = ['W', 'G'].includes(pod.host.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
-            return (
-              <>
-                <View style={[s.hostAvatar, { backgroundColor: fill }]}>
-                  <Text style={[s.hostAvatarText, { color: textFill }]}>{avatarInitial(pod.host.displayName)}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.hostName}>{pod.host.displayName}'s pod</Text>
-                </View>
-              </>
-            );
-          })()}
-        </View>
+        <StatusBanner full={isFull} seats={pod.seats} need={need} podName={podName} />
 
         <PodInfoCard pod={pod} />
 
-        <FitBadge tier={pod.fit.tier} label={pod.fit.label} />
+        <WhereCard where={pod.where} />
 
-        <SeatRow members={pod.members} seats={pod.seats} />
+        <SeatRow members={pod.members} seats={pod.seats} hostId={pod.hostId} {...(profile?.id !== undefined ? { myId: profile.id } : {})} />
+
+        {pod.note ? (
+          <View style={s.noteBox}>
+            <Text style={s.noteText}>"{pod.note}"</Text>
+          </View>
+        ) : null}
+
+        <FitBanner tier={pod.fit.tier} label={pod.fit.label} />
 
         {isInPod && (
           <Pressable
@@ -466,18 +530,18 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
 
         {isInPod ? (
           <View style={s.inPodBanner}>
-            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+            <Ionicons name="checkmark-circle" size={20} color={colors.accent} />
             <Text style={s.inPodText}>You're in this pod!</Text>
           </View>
         ) : hasRequested ? (
           <View style={s.sentBanner}>
-            <Ionicons name="time-outline" size={18} color={colors.accent} />
+            <Ionicons name="checkmark" size={18} color={colors.accent} />
             <Text style={s.sentText}>Request sent — waiting for the host</Text>
           </View>
         ) : isFull ? (
           <View style={s.fullBanner}>
             <Ionicons name="lock-closed-outline" size={16} color={colors.textTertiary} />
-            <Text style={s.fullText}>Pod is full</Text>
+            <Text style={s.fullText}>This pod is full.</Text>
           </View>
         ) : (
           <Pressable
@@ -536,75 +600,25 @@ const s = StyleSheet.create({
     fontSize: typography.fontSize.md,
     color: colors.textSecondary,
   },
-  hostRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.xs,
+  noteBox: {
+    backgroundColor: colors.chipBg,
+    borderRadius: radii.md,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
   },
-  hostAvatar: {
-    width: 44, height: 44, borderRadius: radii.full,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  hostAvatarText: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xl,
-  },
-  hostName: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-    color: colors.textPrimary,
-  },
-  hostSub: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
+  noteText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 13.5,
     color: colors.textSecondary,
-    marginTop: 1,
-  },
-  readyBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.success + '18',
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.success + '50',
-    padding: spacing.md,
-  },
-  readyText: {
-    flex: 1,
-    fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.md,
-    color: colors.success,
-  },
-  lockBtn: {
-    backgroundColor: colors.success,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.full,
-    minWidth: 90,
-    alignItems: 'center',
-  },
-  lockBtnText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
-    color: colors.textInverse,
+    lineHeight: 20,
   },
   section: { gap: spacing.sm },
   sectionLabel: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
     color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  card: {
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    ...shadows.sm,
+    letterSpacing: 0.63,
   },
   emptyHint: {
     fontFamily: typography.fontFamily.regular,
@@ -613,22 +627,36 @@ const s = StyleSheet.create({
     textAlign: 'center',
     paddingTop: spacing.md,
   },
-  inPodBanner: {
+  fullActions: { gap: spacing.sm },
+  lockBtn: {
+    backgroundColor: colors.accent,
+    paddingVertical: spacing.md,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    ...shadows.md,
+  },
+  lockBtnText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.md,
+    color: colors.textInverse,
+  },
+  trackerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.success + '18',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.success + '50',
-    padding: spacing.md,
+    borderWidth: 1.5,
+    borderColor: colors.accent + '50',
+    backgroundColor: colors.accent + '10',
   },
-  inPodText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-    color: colors.success,
+  trackerBtnText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.sm,
+    color: colors.accent,
   },
-  sentBanner: {
+  inPodBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -638,10 +666,26 @@ const s = StyleSheet.create({
     borderColor: colors.accent + '40',
     padding: spacing.md,
   },
-  sentText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
+  inPodText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
     color: colors.accent,
+  },
+  sentBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    borderColor: colors.borderLight,
+    padding: spacing.lg,
+  },
+  sentText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
   },
   fullBanner: {
     flexDirection: 'row',
@@ -659,22 +703,6 @@ const s = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textTertiary,
   },
-  trackerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    borderRadius: radii.lg,
-    borderWidth: 1.5,
-    borderColor: colors.accent + '50',
-    backgroundColor: colors.accent + '10',
-  },
-  trackerBtnText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
-    color: colors.accent,
-  },
   joinBtn: {
     backgroundColor: colors.accent,
     paddingVertical: spacing.md,
@@ -683,9 +711,116 @@ const s = StyleSheet.create({
     ...shadows.md,
   },
   joinBtnText: {
-    fontFamily: typography.fontFamily.semiBold,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
     color: colors.textInverse,
+  },
+});
+
+const banner = StyleSheet.create({
+  full: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.accent,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    ...shadows.md,
+  },
+  iconWell: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  fullTitle: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 17,
+    color: colors.textInverse,
+    letterSpacing: -0.17,
+  },
+  fullSub: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 1,
+  },
+  forming: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    ...shadows.sm,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: radii.full,
+    backgroundColor: colors.accent,
+    flexShrink: 0,
+  },
+  formingName: {
+    flex: 1,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 15.5,
+    color: colors.textPrimary,
+    letterSpacing: -0.16,
+  },
+  needPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    backgroundColor: colors.accentLight,
+    borderRadius: radii.full,
+  },
+  needText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 13,
+    color: colors.accentInk,
+  },
+});
+
+const whereCard = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    ...shadows.sm,
+  },
+  icon: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    backgroundColor: colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  label: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.44,
+  },
+  place: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 15,
+    color: colors.textPrimary,
+    marginTop: 1,
   },
 });
 
@@ -693,179 +828,216 @@ const fitBadge = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  dot: { width: 6, height: 6, borderRadius: radii.full },
+  text: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12,
+  },
+});
+
+const fitBanner = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radii.lg,
+    borderRadius: radii.md,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
   },
-  dot: { width: 8, height: 8, borderRadius: radii.full },
-  tier: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: radii.full,
+    marginTop: 5,
+    flexShrink: 0,
   },
-  label: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
+  title: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14.5,
+  },
+  reason: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 13,
     color: colors.textSecondary,
-    marginTop: 1,
+    marginTop: 2,
   },
 });
 
 const info = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    padding: spacing.md,
-    gap: spacing.sm,
-    ...shadows.sm,
-  },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingHorizontal: 11,
+    paddingVertical: 4,
     backgroundColor: colors.chipBg,
     borderRadius: radii.full,
   },
   chipText: {
     fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
+    fontSize: 12.5,
     color: colors.chipFg,
   },
-  openChip: { backgroundColor: colors.accent + '18' },
-  openChipText: { color: colors.accent },
-  whereRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  whereText: {
-    flex: 1,
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
-    color: colors.textPrimary,
-  },
-  note: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-    fontStyle: 'italic',
-  },
+  openChip: { backgroundColor: colors.accentLight },
+  openChipText: { color: colors.accentInk },
 });
 
 const seatRow = StyleSheet.create({
-  wrap: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    padding: spacing.md,
-    gap: spacing.sm,
-    ...shadows.sm,
-  },
   label: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
     color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.63,
   },
-  seats: { flexDirection: 'row', gap: spacing.sm },
+  row: { flexDirection: 'row', gap: spacing.sm },
+  card: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: radii.md,
+    paddingTop: 11,
+    paddingBottom: 9,
+    paddingHorizontal: 4,
+    gap: 6,
+  },
   avatar: {
-    width: 40, height: 40, borderRadius: radii.avatar,
-    alignItems: 'center', justifyContent: 'center',
+    width: 38,
+    height: 38,
+    borderRadius: radii.avatar,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarText: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.lg,
   },
-  emptyAvatar: {
-    width: 40, height: 40, borderRadius: radii.avatar,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, borderColor: colors.border,
+  seatName: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  emptyCard: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 78,
+    borderWidth: 1.5,
+    borderColor: colors.border,
     borderStyle: 'dashed',
-    backgroundColor: colors.surfaceWarm,
+    borderRadius: radii.md,
+    paddingTop: 11,
+    paddingBottom: 9,
+    paddingHorizontal: 4,
+    gap: 6,
+  },
+  emptyCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.full,
+    backgroundColor: colors.chipBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  openText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 10.5,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.32,
   },
 });
 
 const cand = StyleSheet.create({
-  row: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: radii.md,
+    padding: 11,
+    ...shadows.sm,
   },
   avatar: {
-    width: 38, height: 38, borderRadius: radii.avatar,
-    alignItems: 'center', justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: radii.avatar,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   avatarText: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
   },
   name: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14.5,
     color: colors.textPrimary,
-  },
-  sub: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-  },
-  fitBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radii.full,
-  },
-  fitText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
   },
 });
 
 const req = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
+  card: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: radii.md,
+    padding: 12,
+    gap: spacing.sm,
+    ...shadows.sm,
   },
   avatar: {
-    width: 38, height: 38, borderRadius: radii.avatar,
-    alignItems: 'center', justifyContent: 'center',
+    width: 42,
+    height: 42,
+    borderRadius: radii.avatar,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   avatarText: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
   },
   name: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 15,
     color: colors.textPrimary,
   },
-  sub: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-  },
-  actions: { flexDirection: 'row', gap: spacing.sm },
+  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
   declineBtn: {
-    width: 34, height: 34, borderRadius: radii.full,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: colors.error + '50',
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.error + '50',
     backgroundColor: colors.error + '10',
   },
+  declineText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.error,
+  },
   approveBtn: {
-    width: 34, height: 34, borderRadius: radii.full,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.success,
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    backgroundColor: colors.accent,
+  },
+  approveText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textInverse,
   },
 });

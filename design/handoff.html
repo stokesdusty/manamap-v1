@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>manamap — Build Handoff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#F4ECE0; --surface:#FFFCF6; --surface-2:#FBF4E9;
+    --ink:#2A211B; --ink-2:#5B5048; --muted:#9C8E7F;
+    --line:#E7DBCB; --line-strong:#D6C7B2; --chip-bg:#EFE6D8;
+    --brand:#5AA452; --brand-soft:#E8F0DF; --brand-ink:#48723D;
+    --code-bg:#251F1A; --code-ink:#EFE7DC; --code-dim:#A99D8C;
+    --W:#E9D7A0; --U:#4FA9E6; --B:#6E6577; --R:#F0705B; --G:#5FB97E;
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+    line-height:1.5;}
+  a{color:inherit;}
+  ::selection{background:var(--brand);color:#fff;}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;}
+
+  /* top nav */
+  .topnav{position:sticky;top:0;z-index:50;background:rgba(244,236,224,0.82);
+    backdrop-filter:saturate(160%) blur(12px);border-bottom:1px solid var(--line);}
+  .topnav .inner{max-width:var(--maxw);margin:0 auto;padding:13px 28px;display:flex;align-items:center;gap:18px;}
+  .brandmark{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-0.02em;font-size:17px;}
+  .pips{display:inline-flex;gap:3px;}
+  .pip{width:15px;height:15px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+    font-size:8.5px;font-weight:800;color:#fff;}
+  .pip.W{background:var(--W);color:#6E5E27;} .pip.U{background:var(--U);} .pip.B{background:var(--B);}
+  .pip.R{background:var(--R);} .pip.G{background:var(--G);}
+  .navlinks{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap;}
+  .navlinks a{font-size:13.5px;font-weight:650;color:var(--ink-2);text-decoration:none;
+    padding:7px 12px;border-radius:999px;transition:background .15s,color .15s;}
+  .navlinks a:hover{background:var(--chip-bg);color:var(--ink);}
+
+  /* hero */
+  .hero{padding:60px 0 36px;}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;
+    letter-spacing:0.08em;text-transform:uppercase;color:var(--brand-ink);background:var(--brand-soft);
+    padding:6px 13px;border-radius:999px;white-space:nowrap;}
+  .hero h1{font-size:clamp(38px,6vw,62px);line-height:1.02;letter-spacing:-0.035em;margin:20px 0 0;font-weight:800;}
+  .hero .lede{font-size:19px;line-height:1.55;color:var(--ink-2);max-width:640px;margin:18px 0 0;text-wrap:pretty;}
+  .metarow{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;}
+  .meta{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:12px 16px;box-shadow:0 1px 2px rgba(80,55,30,0.04);}
+  .meta b{font-size:11px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);}
+  .meta span{font-size:15px;font-weight:700;}
+
+  /* sections */
+  section{padding:46px 0;border-top:1px solid var(--line);}
+  .sectionhead{display:flex;align-items:baseline;gap:14px;margin-bottom:8px;}
+  .sectionhead .num{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--brand);}
+  h2{font-size:clamp(26px,3.6vw,34px);letter-spacing:-0.025em;margin:0;font-weight:800;}
+  .subhead{color:var(--ink-2);font-size:16.5px;max-width:680px;margin:8px 0 0;line-height:1.55;text-wrap:pretty;}
+  h3{font-size:19px;letter-spacing:-0.01em;margin:34px 0 14px;font-weight:800;}
+
+  /* stack grid */
+  .stackgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:24px;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 18px 16px;
+    box-shadow:0 1px 2px rgba(80,55,30,0.04),0 6px 18px rgba(80,55,30,0.04);}
+  .card .lyr{font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);}
+  .card .choice{font-size:19px;font-weight:800;letter-spacing:-0.015em;margin:5px 0 0;}
+  .card .why{font-size:14px;color:var(--ink-2);margin:9px 0 0;line-height:1.5;}
+  .card .alt{font-size:12.5px;color:var(--muted);margin:11px 0 0;font-weight:600;}
+  .card .alt b{color:var(--ink-2);font-weight:700;}
+  .taglist{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px;}
+  .tag{font-size:11.5px;font-weight:700;background:var(--chip-bg);color:var(--ink-2);padding:3px 9px;border-radius:999px;
+    font-family:'JetBrains Mono',monospace;}
+
+  /* callouts */
+  .callout{display:flex;gap:14px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--brand);
+    border-radius:14px;padding:16px 18px;margin-top:16px;}
+  .callout .ico{font-size:20px;flex-shrink:0;}
+  .callout .t{font-size:15px;font-weight:800;margin-bottom:3px;}
+  .callout .d{font-size:14px;color:var(--ink-2);line-height:1.55;}
+  .callout.warn{border-left-color:var(--R);}
+  .callout.info{border-left-color:var(--U);}
+
+  /* layered diagram */
+  .layers{display:flex;flex-direction:column;gap:10px;margin-top:20px;}
+  .layer{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px;
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .layer .lname{font-weight:800;font-size:14px;min-width:120px;}
+  .layer .lbits{display:flex;flex-wrap:wrap;gap:6px;}
+  .layer .lbit{font-size:12.5px;font-weight:650;background:var(--surface-2);border:1px solid var(--line);
+    padding:5px 11px;border-radius:8px;font-family:'JetBrains Mono',monospace;color:var(--ink-2);}
+
+  /* data model */
+  .tables{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;margin-top:8px;}
+  .tbl{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+  .tbl .tname{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:14px;padding:11px 16px;
+    background:var(--surface-2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;}
+  .tbl .tnote{font-family:'Plus Jakarta Sans';font-weight:600;font-size:11.5px;color:var(--muted);margin-left:auto;}
+  .tbl .field{display:flex;gap:10px;padding:7px 16px;font-size:13px;border-top:1px solid var(--line);}
+  .tbl .field:first-of-type{border-top:none;}
+  .tbl .fname{font-family:'JetBrains Mono',monospace;color:var(--ink);font-weight:500;min-width:0;}
+  .tbl .ftype{font-family:'JetBrains Mono',monospace;color:var(--muted);font-size:12px;margin-left:auto;white-space:nowrap;}
+  .tbl .fk{color:var(--brand-ink);}
+
+  /* api */
+  .apigroup{margin-top:20px;}
+  .apigroup .gname{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;margin-bottom:8px;}
+  .dot{width:10px;height:10px;border-radius:50%;}
+  .routes{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .route{display:flex;align-items:center;gap:12px;padding:9px 16px;border-top:1px solid var(--line);font-size:13.5px;}
+  .route:first-child{border-top:none;}
+  .verb{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;padding:3px 7px;border-radius:6px;
+    min-width:54px;text-align:center;}
+  .verb.GET{background:#E4F0E6;color:#2F6B3C;} .verb.POST{background:#E2EEF9;color:#235E8C;}
+  .verb.PATCH{background:#FBE5D4;color:#9B5B1F;} .verb.DELETE{background:#FAE0DC;color:#A23A2C;}
+  .path{font-family:'JetBrains Mono',monospace;color:var(--ink);font-weight:500;}
+  .rdesc{color:var(--muted);font-size:12.5px;margin-left:auto;text-align:right;}
+
+  /* milestones */
+  .phasehead{display:flex;align-items:center;gap:12px;margin:38px 0 6px;}
+  .phasehead .ptag{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#fff;
+    background:var(--ink);padding:4px 10px;border-radius:7px;}
+  .phasehead h3{margin:0;font-size:22px;}
+  .phasehead .pgoal{color:var(--muted);font-size:14px;font-weight:600;margin-left:auto;}
+  .ms{background:var(--surface);border:1px solid var(--line);border-radius:18px;margin-top:14px;overflow:hidden;
+    box-shadow:0 1px 2px rgba(80,55,30,0.04);}
+  .ms .mhead{display:flex;align-items:flex-start;gap:14px;padding:18px 20px 14px;}
+  .ms .mcode{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:#fff;background:var(--brand);
+    padding:5px 10px;border-radius:8px;flex-shrink:0;}
+  .ms .mtitle{font-size:18px;font-weight:800;letter-spacing:-0.015em;}
+  .ms .mgoal{font-size:14px;color:var(--ink-2);margin-top:3px;line-height:1.5;}
+  .ms .mdeps{font-size:12px;color:var(--muted);font-weight:700;margin-top:7px;font-family:'JetBrains Mono',monospace;}
+  .promptbox{margin:0 20px;position:relative;background:var(--code-bg);border-radius:13px;overflow:hidden;}
+  .promptbox .ptop{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;
+    border-bottom:1px solid rgba(255,255,255,0.08);}
+  .promptbox .plabel{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--code-dim);
+    letter-spacing:0.04em;text-transform:uppercase;}
+  .copybtn{font-family:'Plus Jakarta Sans';font-size:12px;font-weight:700;color:var(--code-ink);
+    background:rgba(255,255,255,0.1);border:none;border-radius:7px;padding:6px 12px;cursor:pointer;
+    display:flex;align-items:center;gap:6px;transition:background .15s;}
+  .copybtn:hover{background:rgba(255,255,255,0.18);}
+  .copybtn.done{background:var(--G);color:#fff;}
+  .promptbox pre{margin:0;padding:15px 16px;overflow-x:auto;}
+  .promptbox code{font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.65;color:var(--code-ink);
+    white-space:pre-wrap;}
+  .promptbox code .hl{color:#F0A878;font-weight:600;}
+  .mlists{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:16px 20px 20px;}
+  @media(max-width:620px){.mlists{grid-template-columns:1fr;}}
+  .mlist .lh{font-size:11px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+  .mlist ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;}
+  .mlist li{font-size:13.5px;color:var(--ink-2);line-height:1.45;display:flex;gap:9px;align-items:flex-start;}
+  .mlist li::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--brand);margin-top:6px;flex-shrink:0;}
+  .mlist.acc li::before{background:var(--G);border-radius:50%;}
+
+  /* risks */
+  .risks{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-top:22px;}
+  .risk{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:17px 18px;}
+  .risk .rt{font-size:15px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+  .risk .rd{font-size:13.5px;color:var(--ink-2);line-height:1.5;}
+
+  .howto{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 24px;margin-top:8px;}
+  .howto ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:9px;}
+  .howto li{font-size:14.5px;color:var(--ink-2);line-height:1.5;}
+  .howto li b{color:var(--ink);}
+
+  footer{padding:40px 0 70px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px;}
+  footer b{color:var(--ink-2);}
+</style>
+</head>
+<body>
+  <nav class="topnav">
+    <div class="inner">
+      <span class="brandmark"><span class="pips"><span class="pip U">U</span><span class="pip R">R</span></span> manamap</span>
+      <span style="font-size:13px;color:var(--muted);font-weight:700;">Build Handoff</span>
+      <div class="navlinks">
+        <a href="#stack">Stack</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#data">Data model</a>
+        <a href="#api">API</a>
+        <a href="#build">Build sequence</a>
+        <a href="#risks">Risks</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero wrap">
+    <span class="eyebrow">Technical Handoff · v1</span>
+    <h1>From prototype to<br/>a shippable app.</h1>
+    <p class="lede">A recommended stack, the architecture, and a sequence of copy-paste build prompts that take manamap from the clickable iOS prototype through the full Phase&nbsp;1–3 roadmap — built by an AI agent with you reviewing each milestone.</p>
+    <div class="metarow" id="metarow"></div>
+  </header>
+
+  <main class="wrap">
+    <section id="howto">
+      <div class="sectionhead"><span class="num">00</span><h2>How to use this</h2></div>
+      <p class="subhead">Each milestone is a self-contained prompt. The loop is the same every time:</p>
+      <div class="howto">
+        <ol>
+          <li><b>Copy the milestone prompt</b> into your coding agent (Claude Code / Cursor). Each one names the exact libraries, files, and acceptance criteria, and explicitly says what <i>not</i> to build yet.</li>
+          <li><b>Review the diff / PR.</b> Prompts are scoped to land in one reviewable chunk and reference the shared types in <code>packages/shared</code> so the mobile app and API never drift.</li>
+          <li><b>Run the acceptance checks</b> listed on the card before moving on. Each milestone leaves <code>main</code> in a working state.</li>
+          <li><b>Move to the next milestone.</b> Dependencies are noted on every card — don't skip ahead past a <code>needs:</code> line.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="stack">
+      <div class="sectionhead"><span class="num">01</span><h2>Recommended stack</h2></div>
+      <p class="subhead">TypeScript end-to-end so types and validation schemas are shared between the app and the API. Everything here is chosen to reach a working MVP fast while leaving room for the rewards + partner-portal work in Phase&nbsp;3.</p>
+      <div class="stackgrid" id="stackgrid"></div>
+    </section>
+
+    <section id="architecture">
+      <div class="sectionhead"><span class="num">02</span><h2>Architecture</h2></div>
+      <p class="subhead">A standard mobile-client + REST-API + Postgres core, with two manamap-specific wrinkles: a Redis-backed <b>presence</b> layer for "who's here right now", and <b>connection-gated</b> contact data.</p>
+      <div class="layers" id="layers"></div>
+      <div id="callouts"></div>
+    </section>
+
+    <section id="data">
+      <div class="sectionhead"><span class="num">03</span><h2>Data model</h2></div>
+      <p class="subhead">PostgreSQL with the PostGIS extension for store geo-queries. Modeled in Prisma; <code>geom</code> columns use raw SQL / a PostGIS helper.</p>
+      <div class="tables" id="tables"></div>
+    </section>
+
+    <section id="api">
+      <div class="sectionhead"><span class="num">04</span><h2>API surface</h2></div>
+      <p class="subhead">REST under <code>/v1</code>. Auth via short-lived JWT access token + rotating refresh token stored in <code>expo-secure-store</code>. Request/response bodies validated with shared zod schemas.</p>
+      <div id="api-groups"></div>
+    </section>
+
+    <section id="build">
+      <div class="sectionhead"><span class="num">05</span><h2>Build sequence</h2></div>
+      <p class="subhead">Foundations first, then the flow you prototyped, then community and rewards. Each card's prompt is paste-ready.</p>
+      <div id="phases"></div>
+    </section>
+
+    <section id="risks">
+      <div class="sectionhead"><span class="num">06</span><h2>Risks &amp; open questions</h2></div>
+      <p class="subhead">The things most likely to bite — surface these to the agent and decide early.</p>
+      <div class="risks" id="risks"></div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <div>Generated for <b>manamap</b> · pairs with the clickable prototype in <b>manamap.html</b>.</div>
+    <div style="margin-top:6px;">Stack and prompts are a starting point — adjust library versions to the latest stable at build time.</div>
+  </footer>
+
+  <script src="handoff/handoff-data.js"></script>
+  <script src="handoff/render.js"></script>
+</body>
+</html>

@@ -52,6 +52,10 @@ function PreviewScreen({ p, variant, sent, onSend }) {
         </LockedPanel>
       </div>
 
+      {p.socials && p.socials.length > 0 && (
+        <window.SocialsCard socials={p.socials} mode="public" />
+      )}
+
       <div style={{ position: 'sticky', bottom: 0 }}>
         {sent ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, background: 'var(--surface)', border: '1.5px solid var(--line)', borderRadius: 'var(--r-btn)', padding: 14, color: 'var(--ink-2)', fontWeight: 750, fontSize: 15 }}>
@@ -114,6 +118,10 @@ function ConnectionDetailScreen({ p, variant, meta }) {
         <SectionLabel>Contact &amp; decks</SectionLabel>
         <ContactPanel p={p} />
       </div>
+
+      {p.socials && p.socials.length > 0 && (
+        <window.SocialsCard socials={p.socials} mode="friend" />
+      )}
     </div>
   );
 }

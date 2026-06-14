@@ -5,7 +5,7 @@
 
 import { View, Image, Text, StyleSheet, type ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
-import { colors, typography, type ManaColor } from '../theme';
+import { colors, typography, shadows, type ManaColor } from '../theme';
 
 interface AvatarProps {
   uri?: string | null;
@@ -26,7 +26,7 @@ function initialsOf(name?: string) {
     .toUpperCase();
 }
 
-export function Avatar({ uri, name, manaColors, size = 40, style }: AvatarProps) {
+export function Avatar({ uri, name, manaColors, size = 56, style }: AvatarProps) {
   const initials = initialsOf(name);
   const radius = size * 0.32; // prototype uses a squircle, not a full circle
   const tinted = !uri && manaColors && manaColors.length > 0;
@@ -73,7 +73,7 @@ export function Avatar({ uri, name, manaColors, size = 40, style }: AvatarProps)
           <Text
             style={[
               styles.initials,
-              { fontSize: size * 0.4, color: tinted ? colors.textInverse : colors.textSecondary },
+              { fontSize: size * 0.42, color: tinted ? colors.textInverse : colors.textSecondary },
               tinted && styles.initialsOnTint,
             ]}
           >
@@ -91,6 +91,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    ...shadows.avatar,
   },
   initials: {
     fontFamily: typography.fontFamily.bold,

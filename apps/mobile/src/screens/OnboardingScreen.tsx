@@ -22,6 +22,7 @@ import { ManaPip } from '../components/ManaPip';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import { useSubmitOnboarding } from '../hooks/useMe';
 import { useStores } from '../hooks/useNearby';
+import { useAddSocial } from '../hooks/useSocials';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -100,8 +101,10 @@ type Draft = {
   avatarColors: ManaColor[];
   formats: MtgFormat[];
   commander: string;
+  power: number | null;
   vibes: PlayerVibe[];
   bio: string;
+  discord: string;
   discoverable: boolean;
   decks: DeckDraft[];
   homeStoreId: string | null;
@@ -160,13 +163,54 @@ const INITIAL_DRAFT: Draft = {
   avatarColors: [],
   formats: [],
   commander: '',
+  power: null,
   vibes: [],
   bio: '',
+  discord: '',
   discoverable: true,
   decks: [],
   homeStoreId: null,
   homeStoreName: null,
 };
+
+// ---------------------------------------------------------------------------
+// Power stepper
+// ---------------------------------------------------------------------------
+
+const POWER_LABELS: Record<number, string> = {
+  1: 'Precon', 2: 'Precon+', 3: 'Casual', 4: 'Casual',
+  5: 'Focused', 6: 'Focused', 7: 'Optimized', 8: 'High power',
+  9: 'cEDH-lite', 10: 'cEDH',
+};
+
+function PowerStepper({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
+  const v = value ?? 0;
+  return (
+    <View style={step.powerContainer}>
+      <Pressable
+        style={[step.powerBtn, v === 0 && step.powerBtnDisabled]}
+        onPress={() => {
+          if (v > 1) onChange(v - 1);
+          else if (v === 1) onChange(null);
+        }}
+        disabled={v === 0}
+      >
+        <Text style={step.powerMinus}>−</Text>
+      </Pressable>
+      <View style={{ flex: 1, alignItems: 'center' }}>
+        <Text style={step.powerValue}>{v ? `${v} / 10` : '—'}</Text>
+        <Text style={step.powerLabel}>{v ? POWER_LABELS[v] : 'Optional'}</Text>
+      </View>
+      <Pressable
+        style={[step.powerBtn, v >= 10 && step.powerBtnDisabled]}
+        onPress={() => onChange(Math.min(10, (v || 0) + 1))}
+        disabled={v >= 10}
+      >
+        <Text style={step.powerPlus}>+</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Preview card
@@ -179,7 +223,7 @@ function PreviewCard({ draft }: { draft: Draft }) {
   return (
     <View style={preview.root}>
       <View style={preview.header}>
-        <Avatar name={name} manaColors={draft.avatarColors} size={52} />
+        <Avatar name={name} manaColors={draft.avatarColors} size={56} />
         <View style={preview.nameBlock}>
           <Text style={preview.name} numberOfLines={1}>{name}</Text>
           {draft.pronouns.trim() ? (
@@ -224,6 +268,11 @@ function PreviewCard({ draft }: { draft: Draft }) {
         <View style={preview.commanderRow}>
           <Ionicons name="shield-outline" size={12} color={colors.textTertiary} />
           <Text style={preview.commanderText} numberOfLines={1}>{draft.commander.trim()}</Text>
+          {draft.power ? (
+            <View style={preview.powerBadge}>
+              <Text style={preview.powerText}>P{draft.power}</Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -243,8 +292,9 @@ const preview = StyleSheet.create({
   nameBlock: { flex: 1, gap: 2 },
   name: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.lg,
+    fontSize: 19,
     color: colors.textPrimary,
+    letterSpacing: -0.38,
   },
   pronouns: {
     fontFamily: typography.fontFamily.regular,
@@ -291,15 +341,15 @@ const preview = StyleSheet.create({
     color: colors.textSecondary,
   },
   powerBadge: {
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 1,
-    backgroundColor: colors.borderLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    backgroundColor: colors.accentLight,
     borderRadius: radii.full,
   },
   powerText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
+    color: colors.accentInk,
   },
 });
 
@@ -388,9 +438,14 @@ function Step2({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
             <Pressable
               key={c}
               onPress={() => dispatch({ type: 'TOGGLE_COLOR', color: c })}
-              style={[step.pipBtn, active && step.pipBtnActive]}
+              style={[step.pipBtn, !active && step.pipBtnInactive]}
             >
               <ManaPip color={c} size={48} />
+              {active && (
+                <View style={step.pipCheck}>
+                  <Ionicons name="checkmark" size={10} color="#fff" />
+                </View>
+              )}
             </Pressable>
           );
         })}
@@ -468,6 +523,14 @@ function Step3({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
           />
         </View>
 
+        <View style={step.field}>
+          <Text style={step.label}>Power level <Text style={step.optional}>(optional)</Text></Text>
+          <PowerStepper
+            value={draft.power}
+            onChange={(v) => dispatch({ type: 'SET', key: 'power', value: v })}
+          />
+        </View>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -509,8 +572,22 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={step.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={step.heading}>Share your decks</Text>
-        <Text style={step.sub}>This step is optional — you can add decks later from your profile.</Text>
+        <Text style={step.heading}>How do people reach you?</Text>
+        <Text style={step.sub}>Shared only after you both approve a connection.</Text>
+
+        <View style={step.field}>
+          <Text style={step.label}>Discord <Text style={step.optional}>(optional)</Text></Text>
+          <TextInput
+            style={step.input}
+            value={draft.discord}
+            onChangeText={(v) => dispatch({ type: 'SET', key: 'discord', value: v })}
+            maxLength={64}
+            placeholder="your_handle"
+            placeholderTextColor={colors.textTertiary}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
 
         {draft.decks.length > 0 && (
           <View style={step.deckList}>
@@ -530,6 +607,8 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
             ))}
           </View>
         )}
+
+        <Text style={[step.label, { marginBottom: spacing.sm }]}>Deck links <Text style={step.optional}>(optional)</Text></Text>
 
         {!showAddDeck ? (
           <Pressable
@@ -681,7 +760,7 @@ function Step5({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
           <Switch
             value={draft.discoverable}
             onValueChange={(v) => dispatch({ type: 'SET', key: 'discoverable', value: v })}
-            trackColor={{ true: colors.success, false: colors.border }}
+            trackColor={{ true: colors.accent, false: colors.border }}
             thumbColor={colors.surface}
           />
         </View>
@@ -709,32 +788,16 @@ const STEPS = [
 export function OnboardingScreen() {
   const [currentStep, setCurrentStep] = useState(0);
   const [draft, dispatch] = useReducer(draftReducer, INITIAL_DRAFT);
+  const [isDone, setIsDone] = useState(false);
   const { mutate: submit, isPending } = useSubmitOnboarding();
+  const { mutate: addSocial } = useAddSocial();
 
   const canContinue = STEPS[currentStep].required(draft);
   const isLastStep = currentStep === STEPS.length - 1;
 
   function handleNext() {
     if (isLastStep) {
-      submit(
-        {
-          ...(draft.name.trim() ? { name: draft.name.trim() } : {}),
-          shareNameWithContacts: draft.shareNameWithContacts,
-          displayName: draft.displayName.trim(),
-          pronouns: draft.pronouns.trim() || null,
-          avatarColors: draft.avatarColors,
-          formats: draft.formats,
-          commander: draft.commander.trim() || null,
-          vibes: draft.vibes,
-          bio: draft.bio.trim() || null,
-          discoverable: draft.discoverable,
-          decks: draft.decks.length > 0 ? draft.decks : undefined,
-          homeStoreId: draft.homeStoreId ?? undefined,
-        },
-        {
-          onError: () => Alert.alert('Error', 'Something went wrong. Please try again.'),
-        },
-      );
+      setIsDone(true);
     } else {
       setCurrentStep((s) => s + 1);
     }
@@ -742,6 +805,34 @@ export function OnboardingScreen() {
 
   function handleBack() {
     if (currentStep > 0) setCurrentStep((s) => s - 1);
+  }
+
+  function handleEnter() {
+    submit(
+      {
+        ...(draft.name.trim() ? { name: draft.name.trim() } : {}),
+        shareNameWithContacts: draft.shareNameWithContacts,
+        displayName: draft.displayName.trim(),
+        pronouns: draft.pronouns.trim() || null,
+        avatarColors: draft.avatarColors,
+        formats: draft.formats,
+        commander: draft.commander.trim() || null,
+        ...(draft.power !== null ? { powerLevel: draft.power } : {}),
+        vibes: draft.vibes,
+        bio: draft.bio.trim() || null,
+        discoverable: draft.discoverable,
+        decks: draft.decks.length > 0 ? draft.decks : undefined,
+        homeStoreId: draft.homeStoreId ?? undefined,
+      },
+      {
+        onSuccess: () => {
+          if (draft.discord.trim()) {
+            addSocial({ platform: 'DISCORD', value: draft.discord.trim(), visibility: 'PUBLIC' });
+          }
+        },
+        onError: () => Alert.alert('Error', 'Something went wrong. Please try again.'),
+      },
+    );
   }
 
   const stepComponents = [
@@ -752,28 +843,61 @@ export function OnboardingScreen() {
     <Step5 key={4} draft={draft} dispatch={dispatch} />,
   ];
 
+  if (isDone) {
+    return (
+      <SafeAreaView style={ob.safe}>
+        <ScrollView contentContainerStyle={ob.doneScroll}>
+          <View style={ob.doneBadge}>
+            <Ionicons name="sparkles" size={15} color={colors.accentInk} />
+            <Text style={ob.doneBadgeText}>YOUR CARD IS READY</Text>
+          </View>
+          <Text style={ob.doneTitle}>
+            Welcome, {draft.displayName.trim() || 'Planeswalker'}!
+          </Text>
+          <Text style={ob.doneSub}>This is what other players see when you meet.</Text>
+          <PreviewCard draft={draft} />
+        </ScrollView>
+        <View style={ob.footer}>
+          <Pressable
+            style={({ pressed }) => [
+              ob.continueBtn,
+              isPending && ob.continueBtnDisabled,
+              pressed && !isPending && { opacity: 0.85 },
+            ]}
+            onPress={handleEnter}
+            disabled={isPending}
+          >
+            {isPending ? (
+              <ActivityIndicator color={colors.textInverse} />
+            ) : (
+              <>
+                <Text style={ob.continueBtnText}>Enter manamap</Text>
+                <Ionicons name="arrow-forward" size={18} color={colors.textInverse} />
+              </>
+            )}
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={ob.safe}>
       <View style={ob.topBar}>
         {currentStep > 0 ? (
           <Pressable onPress={handleBack} style={({ pressed }) => [ob.backBtn, pressed && { opacity: 0.6 }]}>
-            <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
+            <Ionicons name="chevron-back" size={20} color={colors.accent} />
+            <Text style={ob.backText}>Back</Text>
           </Pressable>
         ) : (
-          <View style={{ width: 36 }} />
+          <View style={{ width: 60 }} />
         )}
         <View style={ob.dots}>
           {STEPS.map((_, i) => (
             <View key={i} style={[ob.dot, i === currentStep && ob.dotActive, i < currentStep && ob.dotDone]} />
           ))}
         </View>
-        {currentStep === 3 ? (
-          <Pressable onPress={() => setCurrentStep(4)} style={({ pressed }) => [ob.skipBtn, pressed && { opacity: 0.6 }]}>
-            <Text style={ob.skipText}>Skip</Text>
-          </Pressable>
-        ) : (
-          <View style={{ width: 48 }} />
-        )}
+        <View style={{ width: 60 }} />
       </View>
 
       <View style={ob.previewWrap}>
@@ -785,6 +909,14 @@ export function OnboardingScreen() {
       </View>
 
       <View style={ob.footer}>
+        {currentStep === 3 && (
+          <Pressable
+            style={({ pressed }) => [ob.skipBtn, pressed && { opacity: 0.6 }]}
+            onPress={() => setCurrentStep(4)}
+          >
+            <Text style={ob.skipText}>Skip</Text>
+          </Pressable>
+        )}
         <Pressable
           style={({ pressed }) => [
             ob.continueBtn,
@@ -792,15 +924,16 @@ export function OnboardingScreen() {
             pressed && canContinue && { opacity: 0.85 },
           ]}
           onPress={handleNext}
-          disabled={!canContinue || isPending}
+          disabled={!canContinue}
         >
-          {isPending ? (
-            <ActivityIndicator color={colors.textInverse} />
-          ) : (
-            <Text style={ob.continueBtnText}>
-              {isLastStep ? 'Finish' : 'Continue'}
-            </Text>
-          )}
+          <Text style={ob.continueBtnText}>
+            {isLastStep ? 'Finish' : 'Continue'}
+          </Text>
+          <Ionicons
+            name={isLastStep ? 'checkmark' : 'arrow-forward'}
+            size={17}
+            color={colors.textInverse}
+          />
         </Pressable>
       </View>
     </SafeAreaView>
@@ -815,36 +948,38 @@ const step = StyleSheet.create({
   scroll: { padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxl },
   heading: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xxl,
+    fontSize: 22,
     color: colors.textPrimary,
+    letterSpacing: -0.55,
   },
   sub: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14.5,
     color: colors.textSecondary,
     lineHeight: 22,
-    marginTop: -spacing.sm,
+    marginTop: -spacing.xs,
   },
-  field: { gap: spacing.xs },
+  field: { gap: spacing.sm },
   label: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12.5,
+    color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.38,
   },
   optional: {
     fontFamily: typography.fontFamily.regular,
     color: colors.textTertiary,
     textTransform: 'none',
+    letterSpacing: 0,
   },
   required: { color: colors.accent },
   input: {
-    fontFamily: typography.fontFamily.regular,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.md,
     color: colors.textPrimary,
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
@@ -857,63 +992,78 @@ const step = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.error,
   },
-  pipRow: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: spacing.lg },
+  pipRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.lg },
   pipBtn: {
+    position: 'relative',
     borderRadius: radii.full,
-    padding: 6,
-    borderWidth: 3,
-    borderColor: 'transparent',
+    padding: 4,
   },
-  pipBtnActive: { borderColor: colors.accent },
+  pipBtnInactive: { opacity: 0.45 },
+  pipCheck: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 18,
+    height: 18,
+    borderRadius: radii.full,
+    backgroundColor: colors.accent,
+    borderWidth: 2,
+    borderColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   guildRow: { alignItems: 'center', marginTop: -spacing.sm },
   guildName: {
-    fontFamily: typography.fontFamily.semiBold,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.lg,
     color: colors.accentInk,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: radii.full,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
   chipActive: { backgroundColor: colors.accentLight, borderColor: colors.accent },
   chipText: {
-    fontFamily: typography.fontFamily.regular,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
   },
-  chipTextActive: { color: colors.accent, fontFamily: typography.fontFamily.medium },
-  stepperRow: {
+  chipTextActive: { color: colors.accentInk },
+  powerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-  },
-  stepperBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
     backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    padding: 10,
+  },
+  powerBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: colors.chipBg,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  stepperBtnDisabled: { borderColor: colors.borderLight },
-  stepperValue: {
+  powerBtnDisabled: { opacity: 0.35 },
+  powerMinus: { fontSize: 22, color: colors.textSecondary, lineHeight: 26 },
+  powerPlus: { fontSize: 22, color: colors.textSecondary, lineHeight: 26 },
+  powerValue: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xl,
+    fontSize: 20,
     color: colors.textPrimary,
-    minWidth: 36,
-    textAlign: 'center',
   },
-  clearPower: { marginLeft: spacing.xs },
-  clearPowerText: {
+  powerLabel: {
     fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
+    fontSize: 12,
     color: colors.textTertiary,
   },
   deckList: {
@@ -1132,40 +1282,89 @@ const ob = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: spacing.xs, paddingVertical: spacing.sm },
+  backText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.md,
+    color: colors.accent,
+  },
   dots: { flexDirection: 'row', gap: 6 },
   dot: {
-    width: 6,
-    height: 6,
+    width: 7,
+    height: 7,
     borderRadius: radii.full,
     backgroundColor: colors.borderLight,
   },
-  dotActive: { width: 18, backgroundColor: colors.accent },
+  dotActive: { width: 22, backgroundColor: colors.accent },
   dotDone: { backgroundColor: colors.accentLight },
-  skipBtn: { paddingHorizontal: spacing.sm },
-  skipText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.md,
-    color: colors.textTertiary,
-  },
   previewWrap: { paddingBottom: spacing.md },
   stepContent: { flex: 1 },
   footer: {
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xl,
     paddingTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  skipBtn: {
+    height: 44,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skipText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textTertiary,
   },
   continueBtn: {
+    flexDirection: 'row',
     height: 52,
     borderRadius: radii.lg,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
   },
   continueBtnDisabled: { backgroundColor: colors.borderLight },
   continueBtnText: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.lg,
     color: colors.textInverse,
+  },
+  doneScroll: {
+    padding: spacing.xl,
+    gap: spacing.lg,
+    paddingBottom: spacing.xxl,
+    alignItems: 'center',
+  },
+  doneBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.accentLight,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: radii.full,
+  },
+  doneBadgeText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12.5,
+    color: colors.accentInk,
+    letterSpacing: 0.5,
+  },
+  doneTitle: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 25,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+    textAlign: 'center',
+  },
+  doneSub: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14.5,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginTop: -spacing.sm,
   },
 });

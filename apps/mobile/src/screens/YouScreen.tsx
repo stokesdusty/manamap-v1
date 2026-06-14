@@ -225,7 +225,8 @@ const hero = StyleSheet.create({
   },
   displayName: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xl,
+    fontSize: 22,
+    letterSpacing: -0.44,
   },
   pronouns: {
     fontFamily: typography.fontFamily.regular,
@@ -242,7 +243,7 @@ const hero = StyleSheet.create({
     marginTop: spacing.xs,
   },
   guildLabel: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.xs,
     marginLeft: 2,
   },
@@ -266,7 +267,7 @@ const hero = StyleSheet.create({
   },
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   editText: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.sm,
   },
   row: {
@@ -716,7 +717,7 @@ const section = StyleSheet.create({
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heading: {
-    fontFamily: typography.fontFamily.semiBold,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
     color: colors.textPrimary,
   },
@@ -835,7 +836,7 @@ const section = StyleSheet.create({
   },
   storeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   storeTitle: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.md,
     color: colors.textPrimary,
   },
@@ -1514,7 +1515,7 @@ const qc = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   title: {
     flex: 1,
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.md,
     color: colors.textPrimary,
   },
@@ -1678,7 +1679,7 @@ const gr = StyleSheet.create({
   deckRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   deckName: {
     flex: 1,
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.sm,
     color: colors.textPrimary,
   },
@@ -1782,7 +1783,7 @@ const rg = StyleSheet.create({
     fontSize: typography.fontSize.sm,
   },
   opponents: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.sm,
     color: colors.textPrimary,
   },
@@ -2015,6 +2016,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.xxl,
+    letterSpacing: -0.48,
     color: colors.textPrimary,
   },
   scroll: { paddingBottom: spacing.xxxl },
@@ -2051,7 +2053,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   logGameText: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.md,
   },
 });

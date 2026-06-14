@@ -47,8 +47,6 @@ import type { TabParamList, RootStackParamList } from '../navigation/types';
 import { useNearby, useSuggestions, useStores, useStoreEvents, type DiscoveryFilters } from '../hooks/useNearby';
 import { usePresence } from '../hooks/usePresence';
 import { useCrossedPathsCount } from '../hooks/useEncounters';
-import { useConnections } from '../hooks/useConnections';
-import { usePendingGames } from '../hooks/useGames';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import { usePrivacy, useProfile, useUpdatePrivacy } from '../hooks/useMe';
 import { BellButton } from '../navigation/TabNavigator';
@@ -255,54 +253,47 @@ function StorePicker({ visible, onClose, onSelect }: StorePickerProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Location banner — gradient strip showing store + player count
+// Location banner — rounded gradient card showing store + player count
 // ---------------------------------------------------------------------------
-
-const LOC_BANNER_H = 68;
 
 interface LocationBannerProps {
   storeName: string;
   playerCount: number;
+  todayEventName: string | null;
   theme: IdentityTheme;
 }
 
-function LocationBanner({ storeName, playerCount, theme }: LocationBannerProps) {
-  const { gradient, onAccent } = theme;
-  const [bannerW, setBannerW] = useState(
-    () => Dimensions.get('window').width,
-  );
+function LocationBanner({ storeName, playerCount, todayEventName, theme }: LocationBannerProps) {
+  const { gradient, onAccent, accent } = theme;
+  const [bW, setBW] = useState(() => Dimensions.get('window').width - spacing.xl * 2);
+  const [bH, setBH] = useState(90);
 
   return (
     <View
-      style={locBanner.root}
-      onLayout={(e) => setBannerW(e.nativeEvent.layout.width)}
+      style={[locBanner.root, { shadowColor: accent }]}
+      onLayout={(e) => { setBW(e.nativeEvent.layout.width); setBH(e.nativeEvent.layout.height); }}
     >
-      <Svg style={StyleSheet.absoluteFill} width={bannerW} height={LOC_BANNER_H}>
+      <Svg style={StyleSheet.absoluteFill} width={bW} height={bH}>
         <Defs>
           <SvgLinearGradient id="locGrad" x1="0" y1="0" x2="1" y2="1">
             {gradient.map((c, i) => (
-              <Stop
-                key={i}
-                offset={`${i / Math.max(1, gradient.length - 1)}`}
-                stopColor={c}
-              />
+              <Stop key={i} offset={`${i / Math.max(1, gradient.length - 1)}`} stopColor={c} />
             ))}
           </SvgLinearGradient>
         </Defs>
-        <Rect x="0" y="0" width={bannerW} height={LOC_BANNER_H} fill="url(#locGrad)" />
+        <Rect x="0" y="0" width={bW} height={bH} fill="url(#locGrad)" />
       </Svg>
+
       <View style={locBanner.content}>
-        <Ionicons name="storefront-outline" size={18} color={onAccent} />
-        <View style={{ flex: 1 }}>
-          <Text style={[locBanner.name, { color: onAccent }]} numberOfLines={1}>
-            {storeName}
-          </Text>
-          <Text style={[locBanner.count, { color: onAccent + 'CC' }]}>
-            {playerCount === 0
-              ? 'No players nearby'
-              : `${playerCount} player${playerCount !== 1 ? 's' : ''} nearby`}
-          </Text>
+        <View style={locBanner.checkinRow}>
+          <Ionicons name="location" size={13} color={onAccent + 'EB'} />
+          <Text style={[locBanner.checkinLabel, { color: onAccent + 'EB' }]}>Checked in</Text>
         </View>
+        <Text style={[locBanner.name, { color: onAccent }]} numberOfLines={1}>{storeName}</Text>
+        <Text style={[locBanner.sub, { color: onAccent + 'E6' }]} numberOfLines={1}>
+          {todayEventName ? `${todayEventName} · ` : ''}
+          {playerCount === 0 ? 'No players here yet' : `${playerCount} player${playerCount !== 1 ? 's' : ''} here`}
+        </Text>
       </View>
     </View>
   );
@@ -310,23 +301,43 @@ function LocationBanner({ storeName, playerCount, theme }: LocationBannerProps) 
 
 const locBanner = StyleSheet.create({
   root: {
-    height: LOC_BANNER_H,
+    marginHorizontal: spacing.xl,
+    marginBottom: 16,
+    borderRadius: radii.lg,
     overflow: 'hidden',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.32,
+    shadowRadius: 22,
+    elevation: 8,
   },
   content: {
-    flex: 1,
+    padding: 16,
+    gap: 3,
+  },
+  checkinRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
+    gap: 6,
+    marginBottom: 2,
+  },
+  checkinLabel: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   name: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 22,
+    letterSpacing: -0.55,
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
-  count: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
+  sub: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 13,
+    marginTop: 1,
   },
 });
 
@@ -365,34 +376,28 @@ function PlayerRow({ player, onPress, isSelected }: PlayerRowProps) {
 
   return (
     <Pressable
-      style={({ pressed }) => [row.root, isSelected && row.selected, pressed && { opacity: 0.7 }]}
+      style={({ pressed }) => [row.root, isSelected && row.selected, pressed && { opacity: 0.75 }]}
       onPress={onPress}
     >
       <View style={[row.avatar, { backgroundColor: fill }]}>
         <Text style={[row.avatarText, { color: textFill }]}>{avatarInitial(player.displayName)}</Text>
       </View>
 
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, gap: 5 }}>
         <View style={row.nameRow}>
           <Text style={row.name} numberOfLines={1}>{player.displayName}</Text>
           {player.metBefore && (
-            <View style={row.metBadge}><Text style={row.metText}>Met</Text></View>
+            <View style={row.metBadge}><Text style={row.metText}>MET</Text></View>
           )}
         </View>
-        {player.commander ? (
-          <Text style={row.sub} numberOfLines={1}>
-            {player.commander}
-          </Text>
-        ) : null}
-        {player.formats.length > 0 && (
-          <View style={row.chips}>
-            {(player.formats as MtgFormat[]).slice(0, 3).map((f) => (
-              <View key={f} style={row.chip}>
-                <Text style={row.chipText}>{FORMAT_LABELS[f] ?? f}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+        <View style={row.subRow}>
+          {(player.formats as MtgFormat[]).slice(0, 1).map((f) => (
+            <Text key={f} style={row.sub}>{FORMAT_LABELS[f] ?? f}</Text>
+          ))}
+          {player.commander ? (
+            <Text style={row.sub} numberOfLines={1}> · {player.commander}</Text>
+          ) : null}
+        </View>
       </View>
 
       <Ionicons name="chevron-forward" size={16} color={colors.border} />
@@ -658,11 +663,16 @@ function LFGStatusBar({ session, isLoading, isCheckedIn, onOpen, onEdit, onStop,
         onPress={isCheckedIn ? onOpen : undefined}
         accessibilityLabel="Open to play now"
       >
-        <View style={lfgBar.dot} />
-        <Text style={lfgBar.ctaText}>Open to play now</Text>
-        {!isCheckedIn && (
-          <Text style={lfgBar.ctaHint}>Check in to a store first</Text>
-        )}
+        <View style={lfgBar.ctaIcon}>
+          <Ionicons name="flash" size={22} color={colors.textInverse} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={lfgBar.ctaTitle}>Open to play now</Text>
+          <Text style={lfgBar.ctaSubtitle}>
+            {!isCheckedIn ? 'Check in to a store first' : 'Let players here know you want a game'}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.textInverse} />
       </Pressable>
     );
   }
@@ -671,9 +681,13 @@ function LFGStatusBar({ session, isLoading, isCheckedIn, onOpen, onEdit, onStop,
 
   return (
     <View style={lfgBar.active}>
-      <View style={lfgBar.activeDot} />
       <View style={{ flex: 1, gap: 4 }}>
-        <Text style={lfgBar.activeLabel}>You're open to play</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Text style={lfgBar.activeLabel}>You're open to play</Text>
+          <View style={lfgBar.timerPill}>
+            <Text style={lfgBar.timerText}>{minsLeft}m left</Text>
+          </View>
+        </View>
         <View style={lfgBar.chips}>
           {session.format && (
             <View style={lfgBar.chip}>
@@ -686,12 +700,11 @@ function LFGStatusBar({ session, isLoading, isCheckedIn, onOpen, onEdit, onStop,
           <View style={lfgBar.chip}>
             <Text style={lfgBar.chipText}>{session.seats} seat{session.seats !== 1 ? 's' : ''}</Text>
           </View>
-          <Text style={lfgBar.timer}>{minsLeft}m left</Text>
         </View>
       </View>
       <View style={lfgBar.actions}>
         <Pressable style={({ pressed }) => [lfgBar.actionBtn, pressed && { opacity: 0.6 }]} onPress={onManagePod}>
-          <Ionicons name="people-outline" size={15} color={colors.success} />
+          <Ionicons name="people-outline" size={15} color={colors.accent} />
         </Pressable>
         <Pressable style={({ pressed }) => [lfgBar.actionBtn, pressed && { opacity: 0.6 }]} onPress={onEdit}>
           <Ionicons name="pencil-outline" size={15} color={colors.textSecondary} />
@@ -729,6 +742,7 @@ function LFGOpenRow({ item, onJoin, joined }: LFGOpenRowProps) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <Text style={lfgSection.name} numberOfLines={1}>{item.displayName}</Text>
           {item.metBefore && <View style={lfgSection.metBadge}><Text style={lfgSection.metText}>Met</Text></View>}
+          <Text style={lfgSection.timer}>{item.minutesLeft}m</Text>
         </View>
         <View style={lfgSection.chips}>
           {item.session.format && (
@@ -736,7 +750,6 @@ function LFGOpenRow({ item, onJoin, joined }: LFGOpenRowProps) {
           )}
           <View style={lfgSection.chip}><Text style={lfgSection.chipText}>P{item.session.power}</Text></View>
           <View style={lfgSection.chip}><Text style={lfgSection.chipText}>{item.session.seats} seat{item.session.seats !== 1 ? 's' : ''}</Text></View>
-          <Text style={lfgSection.timer}>{item.minutesLeft}m</Text>
         </View>
         {item.session.note ? (
           <Text style={lfgSection.note} numberOfLines={1}>{item.session.note}</Text>
@@ -770,9 +783,10 @@ function LFGSection({ items, sentInvites, onJoin }: LFGSectionProps) {
   return (
     <View style={lfgSection.wrap}>
       <View style={lfgSection.header}>
-        <View style={lfgSection.headerDot} />
-        <Text style={lfgSection.headerText}>Open to play</Text>
-        <Text style={lfgSection.headerCount}>{items.length}</Text>
+        <Text style={lfgSection.headerText}>Open to play now</Text>
+        <View style={lfgSection.headerCountBadge}>
+          <Text style={lfgSection.headerCountText}>{items.length}</Text>
+        </View>
       </View>
       <View style={lfgSection.list}>
         {items.map((item) => (
@@ -1272,168 +1286,6 @@ function PodSheet({ visible, mySession, feed, onClose, onLock, isLocking }: PodS
   );
 }
 
-// ---------------------------------------------------------------------------
-// FeatureCards — 2×2 hub grid always shown at top of Discover
-// ---------------------------------------------------------------------------
-
-interface FeatureCardsProps {
-  accent: string;
-  connectionsCount: number;
-  pendingRequestsCount: number;
-  pendingGamesCount: number;
-  todayEventsCount: number;
-  activeStoreName: string | null;
-  onOpenConnections: () => void;
-  onOpenStores: () => void;
-  onOpenGames: () => void;
-}
-
-function FeatureCards({
-  accent,
-  connectionsCount,
-  pendingRequestsCount,
-  pendingGamesCount,
-  todayEventsCount,
-  activeStoreName,
-  onOpenConnections,
-  onOpenStores,
-  onOpenGames,
-}: FeatureCardsProps) {
-  return (
-    <View style={fcStyles.grid}>
-      {/* Friends */}
-      <Pressable
-        style={({ pressed }) => [fcStyles.card, pressed && { opacity: 0.85 }]}
-        onPress={onOpenConnections}
-      >
-        <View style={[fcStyles.iconWrap, { backgroundColor: accent + '18' }]}>
-          <Ionicons name="people-outline" size={20} color={accent} />
-        </View>
-        <Text style={fcStyles.title}>Friends</Text>
-        <Text style={fcStyles.sub} numberOfLines={1}>
-          {connectionsCount > 0 ? `${connectionsCount} connected` : 'No connections yet'}
-        </Text>
-        {pendingRequestsCount > 0 && (
-          <View style={[fcStyles.badge, { backgroundColor: accent }]}>
-            <Text style={fcStyles.badgeText}>{pendingRequestsCount} new</Text>
-          </View>
-        )}
-        <Text style={[fcStyles.cta, { color: accent }]}>View all →</Text>
-      </Pressable>
-
-      {/* Stores */}
-      <Pressable
-        style={({ pressed }) => [fcStyles.card, pressed && { opacity: 0.85 }]}
-        onPress={onOpenStores}
-      >
-        <View style={[fcStyles.iconWrap, { backgroundColor: accent + '18' }]}>
-          <Ionicons name="map-outline" size={20} color={accent} />
-        </View>
-        <Text style={fcStyles.title}>Stores</Text>
-        <Text style={fcStyles.sub} numberOfLines={1}>
-          {activeStoreName ?? 'Find one near you'}
-        </Text>
-        <Text style={[fcStyles.cta, { color: accent }]}>See map →</Text>
-      </Pressable>
-
-      {/* Events */}
-      <Pressable
-        style={({ pressed }) => [fcStyles.card, pressed && { opacity: 0.85 }]}
-        onPress={onOpenStores}
-      >
-        <View style={[fcStyles.iconWrap, { backgroundColor: accent + '18' }]}>
-          <Ionicons name="calendar-outline" size={20} color={accent} />
-        </View>
-        <Text style={fcStyles.title}>Events</Text>
-        <Text style={fcStyles.sub}>
-          {todayEventsCount > 0
-            ? `${todayEventsCount} today`
-            : activeStoreName
-            ? 'None today'
-            : 'Select a store'}
-        </Text>
-        <Text style={[fcStyles.cta, { color: accent }]}>Browse →</Text>
-      </Pressable>
-
-      {/* Games */}
-      <Pressable
-        style={({ pressed }) => [fcStyles.card, pressed && { opacity: 0.85 }]}
-        onPress={onOpenGames}
-      >
-        <View style={[fcStyles.iconWrap, { backgroundColor: accent + '18' }]}>
-          <Ionicons name="game-controller-outline" size={20} color={accent} />
-        </View>
-        <Text style={fcStyles.title}>Games</Text>
-        <Text style={fcStyles.sub}>
-          {pendingGamesCount > 0 ? `${pendingGamesCount} to confirm` : 'Log a game'}
-        </Text>
-        {pendingGamesCount > 0 && (
-          <View style={[fcStyles.badge, { backgroundColor: colors.warning }]}>
-            <Text style={fcStyles.badgeText}>{pendingGamesCount}</Text>
-          </View>
-        )}
-        <Text style={[fcStyles.cta, { color: accent }]}>
-          {pendingGamesCount > 0 ? 'Confirm →' : 'Log game →'}
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
-const fcStyles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    gap: spacing.sm,
-  },
-  card: {
-    width: '48%',
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    ...shadows.sm,
-  },
-  iconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: radii.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
-  title: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-    color: colors.textPrimary,
-  },
-  sub: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radii.full,
-    marginTop: 2,
-  },
-  badgeText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
-    color: colors.textInverse,
-  },
-  cta: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
-    marginTop: spacing.xs,
-  },
-});
 
 // ---------------------------------------------------------------------------
 // DiscoverScreen
@@ -1451,6 +1303,9 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
 
   // Pod state
   const [showPodComposer, setShowPodComposer] = useState(false);
+
+  // Player list filter
+  const [listFilter, setListFilter] = useState<'all' | 'met'>('all');
 
   // LFG hooks
   const { data: myLfgSession } = useLfgMe();
@@ -1576,24 +1431,16 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   // Crossed-paths nudge
   const crossedPathsCount = useCrossedPathsCount();
 
-  // Connections — used to count who among nearby players is already connected
-  const { data: connectionsData } = useConnections();
-  const connectedIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const c of connectionsData?.accepted ?? []) ids.add(c.peer.id);
-    return ids;
-  }, [connectionsData]);
 
-  // Feature card data
-  const { data: pendingGames = [] } = usePendingGames();
+  // Banner event sub-line
   const { data: eventDays = [] } = useStoreEvents(activeStore?.id ?? null);
   const todayStr = new Date().toISOString().slice(0, 10);
-  const todayEventsCount = eventDays.find((d) => d.date === todayStr)?.events.length ?? 0;
-  const acceptedCount = connectionsData?.accepted.length ?? 0;
-  const pendingRequestsCount = connectionsData?.incoming.length ?? 0;
+  const todayEventName = eventDays.find((d) => d.date === todayStr)?.events[0]?.name ?? null;
 
   const allPlayers = nearby?.players ?? [];
-  const displayedPlayers = allPlayers;
+  const displayedPlayers = listFilter === 'met'
+    ? allPlayers.filter((p) => p.metBefore)
+    : allPlayers;
 
   const suggestions = suggestionsData?.suggestions ?? [];
 
@@ -1719,20 +1566,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
       )}
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Feature card grid — always visible */}
-        <FeatureCards
-          accent={identityTheme.accent}
-          connectionsCount={acceptedCount}
-          pendingRequestsCount={pendingRequestsCount}
-          pendingGamesCount={pendingGames.length}
-          todayEventsCount={todayEventsCount}
-          activeStoreName={activeStore?.name ?? null}
-          onOpenConnections={() => navigation.navigate('Connections')}
-          onOpenStores={() => navigation.navigate('StoresMap')}
-          onOpenGames={() => navigation.navigate('Connections')}
-        />
-
-        {/* Empty state — shown below cards when no store selected */}
+        {/* Empty state — shown when no store selected */}
         {!activeStore && (
           <View style={styles.emptyState}>
             <Ionicons name="map-outline" size={40} color={colors.border} />
@@ -1751,7 +1585,8 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
             {/* Identity gradient location banner */}
             <LocationBanner
               storeName={activeStore.name}
-              playerCount={displayedPlayers.length}
+              playerCount={allPlayers.length}
+              todayEventName={todayEventName}
               theme={identityTheme}
             />
 
@@ -1772,40 +1607,45 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
               onSelectSuggestion={handleOpenSuggestion}
             />
 
-            {/* Radar */}
-            {isLoadingNearby ? (
-              <View style={styles.radarPlaceholder}>
-                <ActivityIndicator color={colors.accent} />
-              </View>
-            ) : (
-              <Radar
-                players={displayedPlayers}
-                onSelectPlayer={handleSelectPlayer}
-                selectedId={selectedPlayerId}
-                theme={identityTheme}
-              />
-            )}
-
-            {/* Count row */}
-            <View style={styles.countRow}>
+            {/* Radar card */}
+            <View style={styles.radarCard}>
+              {isLoadingNearby ? (
+                <View style={styles.radarPlaceholder}>
+                  <ActivityIndicator color={colors.accent} />
+                </View>
+              ) : (
+                <Radar
+                  players={allPlayers}
+                  onSelectPlayer={handleSelectPlayer}
+                  selectedId={selectedPlayerId}
+                  theme={identityTheme}
+                />
+              )}
               <Text style={styles.countText}>
-                {(() => {
-                  if (displayedPlayers.length === 0) {
-                    return hasActiveFilters ? 'No players match your filters' : 'No players at this store right now';
-                  }
-                  const metCount = displayedPlayers.filter((p) => p.metBefore).length;
-                  const connCount = displayedPlayers.filter((p) => connectedIds.has(p.id)).length;
-                  const parts: string[] = [];
-                  if (metCount > 0) parts.push(`${metCount} met before`);
-                  if (connCount > 0) parts.push(`${connCount} connection${connCount !== 1 ? 's' : ''}`);
-                  const base = `${displayedPlayers.length} player${displayedPlayers.length !== 1 ? 's' : ''} nearby`;
-                  return parts.length > 0 ? `${base} (${parts.join(', ')})` : base;
-                })()}
+                <Text style={[styles.countAccent, { color: identityTheme.accent }]}>
+                  {allPlayers.length} player{allPlayers.length !== 1 ? 's' : ''}
+                </Text>
+                {hasActiveFilters ? ' match filters' : ' nearby right now'}
               </Text>
             </View>
 
+            {/* Segment filter */}
+            <View style={styles.segWrap}>
+              {(['all', 'met'] as const).map((v) => (
+                <Pressable
+                  key={v}
+                  style={[styles.seg, listFilter === v && { backgroundColor: identityTheme.soft, borderColor: identityTheme.accent }]}
+                  onPress={() => setListFilter(v)}
+                >
+                  <Text style={[styles.segText, listFilter === v && { color: identityTheme.accent, fontFamily: typography.fontFamily.semiBold }]}>
+                    {v === 'all' ? 'Everyone' : 'Met before'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
             {/* Player list */}
-            {displayedPlayers.length > 0 && (
+            {displayedPlayers.length > 0 ? (
               <View style={styles.list}>
                 {displayedPlayers.map((player) => (
                   <PlayerRow
@@ -1822,7 +1662,9 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
                   />
                 ))}
               </View>
-            )}
+            ) : listFilter === 'met' ? (
+              <Text style={styles.emptyList}>No players you've met before are here yet.</Text>
+            ) : null}
 
             {/* Pods forming here */}
             <PodsSection
@@ -2044,31 +1886,67 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.md,
     color: colors.textInverse,
   },
+  radarCard: {
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    paddingTop: 10,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    ...shadows.sm,
+  },
   radarPlaceholder: {
     height: RADAR_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  countRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
   countText: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 13.5,
+    color: colors.textSecondary,
     textAlign: 'center',
+    marginTop: 2,
+  },
+  countAccent: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 13.5,
+  },
+  segWrap: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  seg: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+  },
+  segText: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
   },
   list: {
     marginHorizontal: spacing.xl,
-    marginTop: spacing.sm,
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-    ...shadows.sm,
+    gap: 9,
+    marginBottom: spacing.sm,
+  },
+  emptyList: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    padding: 32,
+    paddingHorizontal: 20,
+    marginHorizontal: spacing.xl,
   },
   nudge: {
     flexDirection: 'row',
@@ -2121,45 +1999,50 @@ const row = StyleSheet.create({
   root: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
+    gap: 13,
+    padding: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    ...shadows.sm,
   },
-  selected: { backgroundColor: colors.accentLight },
+  selected: { borderColor: colors.accent, backgroundColor: colors.accentLight },
   avatar: {
-    width: 40, height: 40, borderRadius: radii.avatar,
+    width: 52, height: 52, borderRadius: radii.avatar,
     alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
   },
   avatarText: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.xl,
   },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   name: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 16.5,
     color: colors.textPrimary,
+    letterSpacing: -0.3,
     flex: 1,
   },
   metBadge: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    backgroundColor: colors.success + '22',
+    backgroundColor: colors.accentLight,
     borderRadius: radii.full,
   },
   metText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
-    color: colors.success,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 10.5,
+    color: colors.accentInk,
   },
+  subRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   sub: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 12.5,
+    color: colors.textTertiary,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: 2 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 1,
@@ -2412,33 +2295,36 @@ const lfgBar = StyleSheet.create({
   cta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     marginHorizontal: spacing.xl,
     marginTop: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    backgroundColor: colors.success + '18',
+    backgroundColor: colors.accent,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.success + '50',
+    ...shadows.md,
   },
   ctaDisabled: { opacity: 0.45 },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: radii.full,
-    backgroundColor: colors.success,
+  ctaIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  ctaText: {
-    flex: 1,
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
-    color: colors.success,
+  ctaTitle: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 16.5,
+    color: colors.textInverse,
+    letterSpacing: -0.16,
   },
-  ctaHint: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
+  ctaSubtitle: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 1,
   },
   active: {
     flexDirection: 'row',
@@ -2450,22 +2336,26 @@ const lfgBar = StyleSheet.create({
     paddingVertical: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.success + '60',
+    borderWidth: 1.5,
+    borderColor: colors.accent + '60',
     ...shadows.sm,
   },
-  activeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: radii.full,
-    backgroundColor: colors.success,
-  },
   activeLabel: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
-    color: colors.success,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 15.5,
+    color: colors.textPrimary,
+    letterSpacing: -0.16,
+  },
+  timerPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    backgroundColor: colors.accentLight,
+    borderRadius: radii.full,
+  },
+  timerText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 13,
+    color: colors.accentInk,
   },
   chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
   chip: {
@@ -2478,11 +2368,6 @@ const lfgBar = StyleSheet.create({
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.xs,
     color: colors.chipFg,
-  },
-  timer: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
   },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   actionBtn: {
@@ -2509,41 +2394,38 @@ const lfgSection = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
-  headerDot: {
-    width: 7,
-    height: 7,
-    borderRadius: radii.full,
-    backgroundColor: colors.success,
-  },
   headerText: {
     flex: 1,
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
-    color: colors.success,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  headerCount: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
     color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.63,
+  },
+  headerCountBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    backgroundColor: colors.accentLight,
+    borderRadius: radii.full,
+  },
+  headerCountText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12,
+    color: colors.accentInk,
   },
   list: {
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.success + '30',
-    ...shadows.sm,
+    gap: spacing.sm,
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
+    padding: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: radii.md,
+    ...shadows.sm,
   },
   avatar: {
     width: 38,
@@ -2551,27 +2433,29 @@ const lfgSection = StyleSheet.create({
     borderRadius: radii.avatar,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   avatarText: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
   },
   name: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
-    color: colors.textPrimary,
     flex: 1,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 16,
+    color: colors.textPrimary,
+    letterSpacing: -0.32,
   },
   metBadge: {
     paddingHorizontal: spacing.xs,
     paddingVertical: 1,
-    backgroundColor: colors.success + '22',
+    backgroundColor: colors.accentLight,
     borderRadius: radii.full,
   },
   metText: {
     fontFamily: typography.fontFamily.medium,
     fontSize: 10,
-    color: colors.success,
+    color: colors.accentInk,
   },
   chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
   chip: {
@@ -2586,9 +2470,9 @@ const lfgSection = StyleSheet.create({
     color: colors.chipFg,
   },
   timer: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 13,
+    color: colors.accentInk,
   },
   note: {
     fontFamily: typography.fontFamily.regular,
@@ -2600,15 +2484,16 @@ const lfgSection = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radii.full,
-    backgroundColor: colors.success,
+    backgroundColor: colors.accent,
+    flexShrink: 0,
   },
-  joinBtnSent: { backgroundColor: colors.success + '40' },
+  joinBtnSent: { backgroundColor: colors.accentLight },
   joinText: {
     fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.xs,
     color: colors.textInverse,
   },
-  joinTextSent: { color: colors.success },
+  joinTextSent: { color: colors.accentInk },
 });
 
 const composer = StyleSheet.create({
@@ -2630,7 +2515,7 @@ const composer = StyleSheet.create({
     color: colors.textPrimary,
   },
   submitBtn: {
-    backgroundColor: colors.success,
+    backgroundColor: colors.accent,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
@@ -2647,11 +2532,11 @@ const composer = StyleSheet.create({
     gap: spacing.lg,
   },
   sectionLabel: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
     color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.63,
   },
   chipRow: { gap: spacing.sm, paddingVertical: 2 },
   chip: {
@@ -2662,13 +2547,13 @@ const composer = StyleSheet.create({
     borderColor: colors.borderLight,
     backgroundColor: colors.surface,
   },
-  chipActive: { borderColor: colors.success, backgroundColor: colors.success + '18' },
+  chipActive: { borderColor: colors.accent, backgroundColor: colors.accentLight },
   chipText: {
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
   },
-  chipTextActive: { color: colors.success },
+  chipTextActive: { color: colors.accent },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2703,13 +2588,13 @@ const composer = StyleSheet.create({
     borderColor: colors.borderLight,
     backgroundColor: colors.surface,
   },
-  segActive: { borderColor: colors.success, backgroundColor: colors.success + '18' },
+  segActive: { borderColor: colors.accent, backgroundColor: colors.accentLight },
   segText: {
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
   },
-  segTextActive: { color: colors.success, fontFamily: typography.fontFamily.semiBold },
+  segTextActive: { color: colors.accent, fontFamily: typography.fontFamily.semiBold },
   noteInput: {
     backgroundColor: colors.surface,
     borderRadius: radii.md,

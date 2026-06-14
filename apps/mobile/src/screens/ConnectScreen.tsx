@@ -52,92 +52,114 @@ function ConnectionCard({
 }) {
   const initial = item.peer.displayName.charAt(0).toUpperCase();
   const isIncoming = item.direction === 'received' && item.status === 'pending';
+  const isSent = item.direction === 'sent' && item.status === 'pending';
+  const isAccepted = item.status === 'accepted';
 
-  return (
-    <Pressable
-      style={({ pressed }) => [row.root, pressed && onPress && { opacity: 0.85 }]}
-      onPress={onPress}
-      disabled={!onPress}
-    >
-      <View style={row.avatar}>
-        <Text style={row.avatarText}>{initial}</Text>
-      </View>
+  const sub = item.peer.commander
+    ?? (item.peer.vibes ?? []).slice(0, 2).join(' · ')
+    ?? null;
 
-      {item.peer.avatarColors.length > 0 && (
-        <View style={row.pipsWrap}>
-          {(item.peer.avatarColors as ManaColor[]).slice(0, 3).map((c) => (
-            <ManaPip key={c} color={c} size={12} />
-          ))}
+  // ── Incoming request — full card with accept/decline buttons ──
+  if (isIncoming) {
+    return (
+      <View style={row.reqCard}>
+        <View style={row.reqTop}>
+          <View style={[row.avatar, { width: 50, height: 50 }]}>
+            <Text style={row.avatarText}>{initial}</Text>
+          </View>
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={row.name} numberOfLines={1}>{item.peer.displayName}</Text>
+            {item.peer.avatarColors.length > 0 && (
+              <View style={row.pipsRow}>
+                {(item.peer.avatarColors as ManaColor[]).slice(0, 5).map((c) => (
+                  <ManaPip key={c} color={c} size={16} />
+                ))}
+              </View>
+            )}
+          </View>
         </View>
-      )}
 
-      {item.status === 'accepted' && onPress && (
-        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-      )}
-
-      <View style={row.info}>
-        <Text style={row.name} numberOfLines={1}>{item.peer.displayName}</Text>
-        {item.peer.commander ? (
-          <Text style={row.sub} numberOfLines={1}>{item.peer.commander}</Text>
-        ) : (item.peer.vibes ?? []).length > 0 ? (
-          <Text style={row.sub}>{(item.peer.vibes as string[]).join(' · ')}</Text>
-        ) : null}
-        {item.status === 'accepted' && item.peer.homeStoreName ? (
-          <View style={row.storeRow}>
-            <Ionicons name="storefront-outline" size={11} color={colors.textTertiary} />
-            <Text style={row.storeText} numberOfLines={1}>{item.peer.homeStoreName}</Text>
+        {item.note ? (
+          <View style={row.noteBlock}>
+            <Text style={row.noteText}>"{item.note}"</Text>
           </View>
         ) : null}
-        {item.status === 'accepted' && (item.peer.spelltable || item.peer.convokeGames) ? (
-          <View style={row.onlineRow}>
-            {item.peer.spelltable ? (
-              <View style={row.onlineBadge}>
-                <Ionicons name="videocam-outline" size={10} color={colors.accent} />
-                <Text style={row.onlineText}>SpellTable</Text>
-              </View>
-            ) : null}
-            {item.peer.convokeGames ? (
-              <View style={row.onlineBadge}>
-                <Ionicons name="globe-outline" size={10} color={colors.accent} />
-                <Text style={row.onlineText}>Convoke</Text>
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-        {item.note ? <Text style={row.note} numberOfLines={1}>{item.note}</Text> : null}
-      </View>
 
-      {isIncoming && (
-        <View style={row.actions}>
+        <View style={row.reqActions}>
           <Pressable
             style={({ pressed }) => [row.declineBtn, pressed && { opacity: 0.6 }]}
             onPress={onDecline}
-            hitSlop={4}
           >
-            <Ionicons name="close" size={18} color={colors.textTertiary} />
+            <Text style={row.declineText}>Decline</Text>
           </Pressable>
           <Pressable
-            style={({ pressed }) => [row.acceptBtn, pressed && { opacity: 0.8 }, isPending && row.disabled]}
+            style={({ pressed }) => [row.acceptBtn, isPending && { opacity: 0.6 }, pressed && { opacity: 0.8 }]}
             onPress={isPending ? undefined : onAccept}
-            hitSlop={4}
             disabled={isPending}
           >
             {isPending ? (
               <ActivityIndicator size="small" color={colors.textInverse} />
             ) : (
-              <Ionicons name="checkmark" size={18} color={colors.textInverse} />
+              <>
+                <Ionicons name="checkmark" size={15} color={colors.textInverse} />
+                <Text style={row.acceptText}>Accept</Text>
+              </>
             )}
           </Pressable>
         </View>
-      )}
+      </View>
+    );
+  }
 
-      {item.status === 'pending' && item.direction === 'sent' && (
+  // ── Accepted connection — tappable row card ──
+  if (isAccepted) {
+    return (
+      <Pressable
+        style={({ pressed }) => [row.connCard, pressed && { opacity: 0.75 }]}
+        onPress={onPress}
+      >
+        <View style={row.avatar}>
+          <Text style={row.avatarText}>{initial}</Text>
+        </View>
+        <View style={{ flex: 1, gap: 5 }}>
+          <Text style={row.connName} numberOfLines={1}>{item.peer.displayName}</Text>
+          <View style={row.pipsRow}>
+            {(item.peer.avatarColors as ManaColor[]).slice(0, 5).map((c) => (
+              <ManaPip key={c} color={c} size={15} />
+            ))}
+            {sub ? <Text style={row.connSub} numberOfLines={1}> · {sub}</Text> : null}
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+      </Pressable>
+    );
+  }
+
+  // ── Sent / outgoing request ──
+  if (isSent) {
+    return (
+      <View style={row.connCard}>
+        <View style={row.avatar}>
+          <Text style={row.avatarText}>{initial}</Text>
+        </View>
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={row.connName} numberOfLines={1}>{item.peer.displayName}</Text>
+          {item.peer.avatarColors.length > 0 && (
+            <View style={row.pipsRow}>
+              {(item.peer.avatarColors as ManaColor[]).slice(0, 5).map((c) => (
+                <ManaPip key={c} color={c} size={15} />
+              ))}
+            </View>
+          )}
+        </View>
         <View style={row.sentBadge}>
           <Text style={row.sentText}>Sent</Text>
         </View>
-      )}
-    </Pressable>
-  );
+      </View>
+    );
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -321,7 +343,7 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Text style={styles.title}>Connect</Text>
+        <Text style={styles.title}>Connections</Text>
         <BellButton />
       </View>
 
@@ -333,20 +355,15 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {profile && <ConfirmResultsSection myId={profile.id} />}
 
-          {!hasContent && (
-            <View style={styles.emptyInline}>
-              <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
-              <Text style={styles.emptyText}>No connections yet</Text>
-              <Text style={styles.emptyHint}>Scan a player's code to send a request</Text>
-            </View>
-          )}
-
-          {incoming.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>
-                Incoming requests ({incoming.length})
-              </Text>
-              {incoming.map((item) => (
+          {/* Requests — always rendered */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>
+              {incoming.length > 0
+                ? `${incoming.length} Request${incoming.length > 1 ? 's' : ''}`
+                : 'Requests'}
+            </Text>
+            {incoming.length > 0 ? (
+              incoming.map((item) => (
                 <ConnectionCard
                   key={item.id}
                   item={item}
@@ -354,10 +371,31 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
                   onAccept={() => handleAccept(item.id)}
                   onDecline={() => handleDecline(item.id)}
                 />
+              ))
+            ) : (
+              <View style={styles.emptyRequests}>
+                <Text style={styles.emptyRequestsTitle}>You're all caught up</Text>
+                <Text style={styles.emptyRequestsHint}>New requests show up here.</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Connected */}
+          {accepted.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Connections · {accepted.length}</Text>
+              {accepted.map((item) => (
+                <ConnectionCard
+                  key={item.id}
+                  item={item}
+                  isPending={false}
+                  onPress={() => navigation.navigate('Connected', { connectionId: item.id })}
+                />
               ))}
             </View>
           )}
 
+          {/* Sent */}
           {outgoing.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Sent requests</Text>
@@ -367,17 +405,11 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
             </View>
           )}
 
-          {accepted.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Connected ({accepted.length})</Text>
-              {accepted.map((item) => (
-                <ConnectionCard
-                  key={item.id}
-                  item={item}
-                  isPending={false}
-                  onPress={() => navigation.navigate('Connected', { connectionId: item.id })}
-                />
-              ))}
+          {!hasContent && accepted.length === 0 && (
+            <View style={styles.emptyInline}>
+              <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
+              <Text style={styles.emptyText}>No connections yet</Text>
+              <Text style={styles.emptyHint}>Scan a player's code to send a request</Text>
             </View>
           )}
         </ScrollView>
@@ -416,39 +448,124 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxxl,
   },
   emptyText: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
     color: colors.textSecondary,
   },
   emptyHint: {
-    fontFamily: typography.fontFamily.regular,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.sm,
     color: colors.textTertiary,
     textAlign: 'center',
   },
-  scroll: { paddingVertical: spacing.md, gap: spacing.xl, paddingBottom: spacing.xxxl },
-  section: { gap: spacing.xs },
+  scroll: { paddingTop: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl },
+  section: { gap: 11, paddingHorizontal: spacing.xl },
   sectionLabel: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12,
     color: colors.textTertiary,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xs,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    marginBottom: 2,
+  },
+  emptyRequests: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    paddingVertical: 26,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 3,
+  },
+  emptyRequestsTitle: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  emptyRequestsHint: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 13,
+    color: colors.textTertiary,
   },
 });
 
 const row = StyleSheet.create({
-  root: {
+  // Incoming request card
+  reqCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    padding: 14,
+    gap: 12,
+    ...shadows.sm,
+  },
+  reqTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  reqActions: {
+    flexDirection: 'row',
+    gap: 9,
+    marginTop: 2,
+  },
+  noteBlock: {
+    backgroundColor: colors.paper,
+    borderRadius: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+  },
+  noteText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 13.5,
+    color: colors.textSecondary,
+    lineHeight: 19,
+  },
+  declineBtn: {
+    flex: 1,
+    height: 38,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  declineText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+  },
+  acceptBtn: {
+    flex: 2,
+    height: 38,
+    borderRadius: radii.md,
+    backgroundColor: colors.success,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    justifyContent: 'center',
+    gap: 5,
+    ...shadows.sm,
+  },
+  acceptText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.sm,
+    color: colors.textInverse,
+  },
+
+  // Accepted / sent connection card
+  connCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
     backgroundColor: colors.surface,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    padding: 12,
+    ...shadows.sm,
   },
   avatar: {
     width: 44,
@@ -464,90 +581,38 @@ const row = StyleSheet.create({
     fontSize: typography.fontSize.lg,
     color: colors.accent,
   },
-  pipsWrap: {
-    position: 'absolute',
-    left: spacing.xl + 32,
-    bottom: spacing.md + 2,
-    flexDirection: 'row',
-    gap: 2,
-  },
-  info: { flex: 1 },
-  name: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-    color: colors.textPrimary,
-  },
-  sub: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  storeRow: {
+  pipsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    marginTop: 2,
+    gap: 4,
+    flexWrap: 'wrap',
   },
-  storeText: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
+  name: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 16.5,
+    color: colors.textPrimary,
+    letterSpacing: -0.3,
+  },
+  connName: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 16,
+    color: colors.textPrimary,
+    letterSpacing: -0.3,
+  },
+  connSub: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 12,
     color: colors.textTertiary,
     flexShrink: 1,
   },
-  onlineRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: 3,
-  },
-  onlineBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    backgroundColor: colors.accentLight,
-    borderRadius: radii.full,
-  },
-  onlineText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
-    color: colors.accent,
-  },
-  note: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
-    marginTop: 2,
-    fontStyle: 'italic',
-  },
-  actions: { flexDirection: 'row', gap: spacing.sm },
-  declineBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.full,
-    backgroundColor: colors.borderLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  acceptBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.full,
-    backgroundColor: colors.success,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.sm,
-  },
-  disabled: { opacity: 0.6 },
   sentBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
     backgroundColor: colors.borderLight,
     borderRadius: radii.full,
   },
   sentText: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.xs,
     color: colors.textTertiary,
   },

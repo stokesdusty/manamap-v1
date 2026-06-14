@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>manamap Partner — Store Tools</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --accent:#7c3aed; --accent-light:#ede9fe; --surface:#fff; --paper:#f8f7ff;
+    --border:#e4e4e7; --border-light:#f0effe; --text-primary:#1a1a2e; --text-secondary:#52525b;
+    --text-tertiary:#a1a1aa; --text-inverse:#fff; --primary:#7c3aed; --primary-bg:#ede9fe;
+    --success:#16a34a; --success-bg:#dcfce7; --danger:#dc2626; --muted-bg:#f4f4f5;
+    --radius-sm:6px; --radius-md:10px; --radius-lg:14px; --radius-full:9999px;
+    --shadow:0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; font-size:15px;
+    color:var(--text-primary); background:var(--paper); -webkit-font-smoothing:antialiased;
+  }
+  a { color:var(--accent); text-decoration:none; }
+  button { cursor:pointer; border:none; background:none; font-family:inherit; font-size:inherit; }
+  input, select, textarea { font-family:inherit; font-size:inherit; border:1px solid var(--border);
+    border-radius:var(--radius-md); padding:9px 12px; outline:none; width:100%; background:var(--surface); color:var(--text-primary); }
+  input:focus, select:focus, textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,58,237,.15); }
+
+  .layout { display:flex; min-height:100vh; }
+  .sidebar { width:230px; background:var(--surface); border-right:1px solid var(--border); padding:24px 16px; display:flex; flex-direction:column; gap:6px; flex-shrink:0; }
+  .sidebar-brand { font-size:18px; font-weight:700; color:var(--accent); padding:0 8px 16px; border-bottom:1px solid var(--border-light); margin-bottom:8px; }
+  .sidebar-store { font-size:12px; color:var(--text-tertiary); padding:0 8px 12px; }
+  .sidebar-store b { color:var(--text-secondary); font-size:13px; display:block; font-weight:700; }
+  .sidebar-link { display:flex; align-items:center; gap:9px; padding:9px 12px; border-radius:var(--radius-md); color:var(--text-secondary); font-weight:500; width:100%; text-align:left; }
+  .sidebar-link:hover, .sidebar-link.active { background:var(--accent-light); color:var(--accent); }
+  .sidebar-sec { margin:16px 8px 6px; font-size:11px; font-weight:700; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:1px; }
+  .main-content { flex:1; padding:32px 40px; overflow-y:auto; max-width:880px; }
+
+  .page-title { font-size:24px; font-weight:800; }
+  .page-sub { color:var(--text-secondary); margin-top:4px; font-size:14.5px; }
+  .card { background:var(--surface); border-radius:var(--radius-lg); padding:24px; box-shadow:var(--shadow); margin-bottom:20px; }
+  .card-title { font-size:17px; font-weight:700; margin-bottom:16px; }
+  .label { display:block; font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; }
+  .hint { font-size:12px; color:var(--text-tertiary); margin-top:5px; }
+
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 20px; border-radius:var(--radius-full); font-weight:600; font-size:14px; transition:opacity .15s; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover:not(:disabled){ opacity:.88; }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text-secondary); }
+  .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-danger { background:var(--danger); color:#fff; }
+  .btn-sm { padding:5px 14px; font-size:13px; }
+
+  .badge { display:inline-block; padding:2px 10px; border-radius:var(--radius-full); font-size:12px; font-weight:600; }
+  .badge-store { background:var(--primary-bg); color:var(--primary); }
+  .badge-discord { background:#e0e7ff; color:#4338ca; }
+  .badge-live { background:var(--success-bg); color:var(--success); }
+  .badge-upcoming { background:#fef3c7; color:#b45309; }
+  .badge-past { background:var(--muted-bg); color:var(--text-tertiary); }
+
+  .table { width:100%; border-collapse:collapse; }
+  .table th { text-align:left; padding:10px 14px; font-size:12px; font-weight:600; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--border); }
+  .table td { padding:13px 14px; border-bottom:1px solid var(--border-light); font-size:14px; vertical-align:middle; }
+  .table tr:last-child td { border-bottom:none; }
+  .table tr:hover td { background:var(--paper); }
+
+  .seg { display:inline-flex; background:var(--muted-bg); border-radius:var(--radius-full); padding:4px; gap:4px; }
+  .seg button { padding:8px 16px; border-radius:var(--radius-full); font-weight:600; font-size:13.5px; color:var(--text-secondary); }
+  .seg button.on { background:var(--surface); color:var(--accent); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+
+  .aud { display:flex; flex-direction:column; gap:10px; }
+  .aud-opt { display:flex; align-items:center; gap:13px; padding:14px 16px; border:1.5px solid var(--border); border-radius:var(--radius-md); cursor:pointer; transition:border-color .15s, background .15s; }
+  .aud-opt.on { border-color:var(--accent); background:var(--accent-light); }
+  .aud-radio { width:20px; height:20px; border-radius:50%; border:2px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .aud-opt.on .aud-radio { border-color:var(--accent); }
+  .aud-opt.on .aud-radio::after { content:''; width:10px; height:10px; border-radius:50%; background:var(--accent); }
+  .aud-main { flex:1; }
+  .aud-main b { font-size:14.5px; font-weight:700; }
+  .aud-main div { font-size:12.5px; color:var(--text-secondary); margin-top:1px; }
+  .aud-count { font-size:20px; font-weight:800; color:var(--accent); }
+
+  .phone-prev { background:var(--paper); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; }
+  .push-card { background:var(--surface); border-radius:14px; box-shadow:0 2px 10px rgba(0,0,0,.1); padding:13px 15px; display:flex; gap:11px; }
+  .push-ico { width:38px; height:38px; border-radius:9px; background:linear-gradient(135deg,#4FA9E6,#F0705B); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .push-body b { font-size:13.5px; font-weight:700; display:block; }
+  .push-body p { font-size:13px; color:var(--text-secondary); margin-top:2px; line-height:1.4; }
+  .push-time { font-size:11px; color:var(--text-tertiary); }
+
+  .code-input { font-family:'Courier New',monospace; font-size:30px; font-weight:800; letter-spacing:10px; text-align:center; text-transform:uppercase; padding:18px; color:var(--accent); }
+  .scan-box { width:100%; height:150px; border:2px dashed var(--border); border-radius:var(--radius-md); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--text-tertiary); cursor:pointer; }
+  .scan-box:hover { border-color:var(--accent); color:var(--accent); }
+
+  .result-card { border-radius:var(--radius-lg); padding:22px; margin-top:18px; }
+  .result-ok { background:var(--success-bg); border:1px solid #bbf7d0; }
+  .result-err { background:#fee2e2; border:1px solid #fecaca; }
+  .result-used { background:#fef3c7; border:1px solid #fde68a; }
+  .result-row { display:flex; align-items:center; gap:14px; }
+  .av { width:48px; height:48px; border-radius:32%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:19px; flex-shrink:0; text-shadow:0 1px 2px rgba(0,0,0,.2); }
+
+  .empty { text-align:center; padding:44px 24px; color:var(--text-tertiary); }
+  .empty-ic { font-size:38px; margin-bottom:10px; }
+  .toast { position:fixed; bottom:24px; right:24px; background:var(--text-primary); color:#fff; padding:12px 20px; border-radius:var(--radius-md); font-size:14px; font-weight:500; z-index:9999; opacity:0; transform:translateY(8px); transition:opacity .2s, transform .2s; }
+  .toast.show { opacity:1; transform:translateY(0); }
+
+  .modal-veil { position:fixed; inset:0; background:rgba(26,26,46,.45); display:none; align-items:center; justify-content:center; z-index:500; padding:24px; }
+  .modal-veil.show { display:flex; }
+  .modal { background:var(--surface); border-radius:var(--radius-lg); padding:26px; width:100%; max-width:520px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+  .modal-title { font-size:19px; font-weight:800; margin-bottom:18px; }
+  .row2 { display:flex; gap:14px; }
+  .row2 > * { flex:1; }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">🗺️ ManaMap Partner</div>
+      <div class="sidebar-store"><b>Dragon’s Den</b>Riverton, WA</div>
+      <button class="sidebar-link" data-nav="dashboard">Dashboard</button>
+      <button class="sidebar-link" data-nav="offers">Reward Offers</button>
+      <div class="sidebar-sec">Engage</div>
+      <button class="sidebar-link active" data-nav="broadcast">📣 Broadcast</button>
+      <button class="sidebar-link" data-nav="events">📅 Events</button>
+      <button class="sidebar-link" data-nav="redeem">🎟️ Redeem code</button>
+    </aside>
+    <main class="main-content" id="main"></main>
+  </div>
+  <div class="modal-veil" id="modalVeil"><div class="modal" id="modal"></div></div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+  const MANA={W:'#F2E6BE',U:'#4FA9E6',B:'#574F5E',R:'#F0705B',G:'#5FB97E'};
+  const grad=cs=>cs.length===1?`linear-gradient(135deg,${MANA[cs[0]]},${MANA[cs[0]]})`:`linear-gradient(135deg,${cs.map(c=>MANA[c]).join(',')})`;
+  const $=id=>document.getElementById(id);
+  let toastT; function toast(m){const e=$('toast');e.textContent=m;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),2200);}
+  function openModal(html){$('modal').innerHTML=html;$('modalVeil').classList.add('show');}
+  function closeModal(){$('modalVeil').classList.remove('show');}
+  $('modalVeil').onclick=e=>{if(e.target===$('modalVeil'))closeModal();};
+
+  // ---------- state ----------
+  let nav='broadcast';
+  const audiences=[
+    {key:'checkedin',label:'Checked in now',sub:'Players currently at the store',count:14},
+    {key:'today',label:'Here today',sub:'Anyone who checked in today',count:38},
+    {key:'event',label:'Friday Commander RSVPs',sub:'Players attending the next event',count:22},
+    {key:'recent',label:'Recent visitors (30d)',sub:'Checked in within a month',count:156},
+  ];
+  let bAudience='checkedin', bText='';
+  let broadcasts=[
+    {text:'Singles sale today — 20% off all Commander staples until close!',audience:'Here today',sent:'2h ago',delivered:34},
+    {text:'Friday Commander fires at 7pm. Two seats left in the league!',audience:'Recent visitors (30d)',sent:'Yesterday',delivered:142},
+  ];
+
+  let events=[
+    {id:'e1',name:'Friday Night Commander',format:'Commander',source:'STORE',starts:'Fri 7:00 PM',ends:'Fri 11:00 PM',rsvps:22,desc:'Weekly multiplayer pods. All power levels.'},
+    {id:'e2',name:'Modern Showdown',format:'Modern',source:'STORE',starts:'Sat 1:00 PM',ends:'Sat 6:00 PM',rsvps:8,desc:'Swiss rounds, prize support by entries.'},
+    {id:'e3',name:'Prerelease: Tarkir Reborn',format:'Sealed',source:'DISCORD',starts:'Next Sat 12:00 PM',ends:null,rsvps:41,desc:'Imported from the store Discord event channel.'},
+    {id:'e4',name:'Pauper Pauper Night',format:'Pauper',source:'STORE',starts:'Last Tue 6:30 PM',ends:'Last Tue 10:00 PM',rsvps:11,desc:'',past:true},
+  ];
+
+  const PLAYERS={
+    riffle:{name:'Riffle',initials:'R',colors:['U','R'],handle:'@riffle'},
+    moss:{name:'Mossbrook',initials:'M',colors:['G'],handle:'@moss'},
+    pearl:{name:'Pearl',initials:'P',colors:['W','U'],handle:'@pearl'},
+  };
+  // redemption codes the player app generated (per-redemption, one-time)
+  let redemptions={
+    '7K2M9QXP':{player:'riffle',offer:'First Visit — 15% off',reason:'First check-in at Dragon’s Den',status:'PENDING'},
+    'BD4WR8LC':{player:'moss',offer:'5-Visit Streak — free booster',reason:'5-day check-in streak',status:'PENDING'},
+    'AA11BB22':{player:'pearl',offer:'First Visit — 15% off',reason:'First check-in',status:'REDEEMED',when:'10m ago'},
+  };
+  let redeemLog=[{code:'AA11BB22',player:'pearl',offer:'First Visit — 15% off',when:'10m ago'}];
+  let codeEntry='';
+
+  // ---------- pages ----------
+  function render(){
+    document.querySelectorAll('.sidebar-link').forEach(b=>b.classList.toggle('active',b.dataset.nav===nav));
+    if(nav==='broadcast')renderBroadcast();
+    else if(nav==='events')renderEvents();
+    else if(nav==='redeem')renderRedeem();
+    else $('main').innerHTML=`<div class="page-title">${nav}</div><div class="card" style="margin-top:20px"><div class="empty"><div class="empty-ic">🗺️</div>This screen already exists in the portal.</div></div>`;
+  }
+
+  // ===== BROADCAST =====
+  function renderBroadcast(){
+    const aud=audiences.find(a=>a.key===bAudience);
+    $('main').innerHTML=`
+      <div class="page-title">Broadcast a message</div>
+      <div class="page-sub">Send a push notification to players connected to your store. Use sparingly — over-messaging makes people mute you.</div>
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;margin-top:24px;align-items:start">
+        <div>
+          <div class="card">
+            <div class="card-title">Audience</div>
+            <div class="aud">
+              ${audiences.map(a=>`
+                <div class="aud-opt ${a.key===bAudience?'on':''}" data-aud="${a.key}">
+                  <span class="aud-radio"></span>
+                  <span class="aud-main"><b>${a.label}</b><div>${a.sub}</div></span>
+                  <span class="aud-count">${a.count}</span>
+                </div>`).join('')}
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Message</div>
+            <label class="label">Title</label>
+            <input id="bTitle" value="Dragon’s Den" maxlength="40" />
+            <label class="label" style="margin-top:14px">Body</label>
+            <textarea id="bBody" rows="3" maxlength="140" placeholder="e.g. Friday Commander fires at 7 — two seats left!">${bText}</textarea>
+            <div class="hint"><span id="bCount">${bText.length}</span>/140 · players can mute store messages anytime</div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="position:sticky;top:0">
+            <div class="card-title">Preview</div>
+            <div class="phone-prev">
+              <div class="push-card">
+                <div class="push-ico">🗺️</div>
+                <div class="push-body">
+                  <b id="pvTitle">Dragon’s Den</b>
+                  <p id="pvBody">${bText||'Your message appears here…'}</p>
+                  <span class="push-time">now</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:14px;text-align:center;font-size:13px;color:var(--text-secondary)">
+              Sending to <b style="color:var(--accent)">${aud.count} players</b><br>via “${aud.label}”
+            </div>
+            <button class="btn btn-primary" id="bSend" style="width:100%;margin-top:16px" ${bText.trim()?'':'disabled'}>Send broadcast</button>
+          </div>
+        </div>
+      </div>
+      ${broadcasts.length?`
+      <div class="card">
+        <div class="card-title">Recent broadcasts</div>
+        <table class="table"><thead><tr><th>Message</th><th>Audience</th><th>Delivered</th><th>Sent</th></tr></thead>
+        <tbody>${broadcasts.map(b=>`<tr><td style="max-width:320px">${b.text}</td><td>${b.audience}</td><td>${b.delivered}</td><td style="color:var(--text-tertiary)">${b.sent}</td></tr>`).join('')}</tbody></table>
+      </div>`:''}`;
+
+    document.querySelectorAll('[data-aud]').forEach(o=>o.onclick=()=>{bAudience=o.dataset.aud;render();});
+    $('bBody').oninput=e=>{bText=e.target.value;$('pvBody').textContent=bText||'Your message appears here…';$('bCount').textContent=bText.length;$('bSend').disabled=!bText.trim();};
+    $('bTitle').oninput=e=>$('pvTitle').textContent=e.target.value||'Dragon’s Den';
+    $('bSend').onclick=()=>{
+      const aud=audiences.find(a=>a.key===bAudience);
+      broadcasts.unshift({text:bText,audience:aud.label,sent:'Just now',delivered:aud.count});
+      toast(`Broadcast sent to ${aud.count} players`); bText=''; render();
+    };
+  }
+
+  // ===== EVENTS =====
+  function eventBadge(e){
+    if(e.source==='DISCORD')return '<span class="badge badge-discord">Discord</span>';
+    if(e.past)return '<span class="badge badge-past">Past</span>';
+    return '<span class="badge badge-store">Store</span>';
+  }
+  function renderEvents(){
+    $('main').innerHTML=`
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div><div class="page-title">Events</div><div class="page-sub">Create and manage events for your store. Discord-sourced events are read-only.</div></div>
+        <button class="btn btn-primary" id="evNew">+ New event</button>
+      </div>
+      <div class="card" style="margin-top:24px;padding:0;overflow:hidden">
+        <table class="table">
+          <thead><tr><th>Event</th><th>Format</th><th>When</th><th>RSVPs</th><th></th></tr></thead>
+          <tbody>
+          ${events.map(e=>`
+            <tr>
+              <td><div style="font-weight:700">${e.name}</div><div style="font-size:12px;color:var(--text-tertiary);margin-top:2px">${eventBadge(e)}</div></td>
+              <td>${e.format}</td>
+              <td>${e.starts}${e.ends?` – ${e.ends.replace(/^[A-Za-z]+ /,'')}`:''}</td>
+              <td><b>${e.rsvps}</b></td>
+              <td style="text-align:right">
+                ${e.source==='STORE'?`<button class="btn btn-outline btn-sm" data-edit="${e.id}">Edit</button>`:`<span style="font-size:12px;color:var(--text-tertiary)">read-only</span>`}
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    $('evNew').onclick=()=>openEventForm(null);
+    document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openEventForm(events.find(e=>e.id===b.dataset.edit)));
+  }
+  function openEventForm(e){
+    const isEdit=!!e;
+    openModal(`
+      <div class="modal-title">${isEdit?'Edit event':'New event'}</div>
+      <label class="label">Name *</label>
+      <input id="evName" value="${e?e.name:''}" placeholder="e.g. Friday Night Commander" />
+      <div class="row2" style="margin-top:14px">
+        <div><label class="label">Format</label>
+          <select id="evFormat">${['Commander','Modern','Standard','Pioneer','Legacy','Pauper','Sealed','Draft'].map(f=>`<option ${e&&e.format===f?'selected':''}>${f}</option>`).join('')}</select></div>
+        <div><label class="label">RSVP cap (optional)</label><input id="evCap" type="number" placeholder="e.g. 32" /></div>
+      </div>
+      <div class="row2" style="margin-top:14px">
+        <div><label class="label">Starts *</label><input id="evStart" type="datetime-local" /></div>
+        <div><label class="label">Ends</label><input id="evEnd" type="datetime-local" /></div>
+      </div>
+      <label class="label" style="margin-top:14px">Description</label>
+      <textarea id="evDesc" rows="2" placeholder="Entry fee, prize support, power level…">${e?e.desc:''}</textarea>
+      <label class="label" style="margin-top:14px">Discord event channel (optional)</label>
+      <input id="evChan" placeholder="https://discord.gg/…" />
+      <div style="display:flex;gap:10px;margin-top:22px">
+        <button class="btn btn-primary" id="evSave">${isEdit?'Save changes':'Create event'}</button>
+        <button class="btn btn-outline" onclick="(${closeModal.toString()})()" id="evCancel">Cancel</button>
+        ${isEdit?`<button class="btn btn-danger" id="evDel" style="margin-left:auto">Delete</button>`:''}
+      </div>`);
+    $('evCancel').onclick=closeModal;
+    $('evSave').onclick=()=>{
+      const name=$('evName').value.trim(); if(!name){toast('Name is required');return;}
+      if(isEdit){e.name=name;e.format=$('evFormat').value;e.desc=$('evDesc').value;toast('Event updated');}
+      else{events.unshift({id:'e'+Date.now(),name,format:$('evFormat').value,source:'STORE',starts:'Scheduled',ends:null,rsvps:0,desc:$('evDesc').value});toast('Event created');}
+      closeModal();render();
+    };
+    if(isEdit)$('evDel').onclick=()=>{events=events.filter(x=>x.id!==e.id);closeModal();toast('Event deleted');render();};
+  }
+
+  // ===== REDEEM =====
+  function renderRedeem(){
+    $('main').innerHTML=`
+      <div class="page-title">Redeem a code</div>
+      <div class="page-sub">A player shows their offer code at the counter. Enter or scan it to verify and mark it used.</div>
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;margin-top:24px;align-items:start">
+        <div>
+          <div class="card">
+            <div class="card-title">Enter code</div>
+            <input class="code-input" id="codeIn" maxlength="8" placeholder="········" value="${codeEntry}" />
+            <button class="btn btn-primary" id="codeCheck" style="width:100%;margin-top:14px">Verify code</button>
+            <div style="text-align:center;color:var(--text-tertiary);font-size:13px;margin:14px 0 10px">or</div>
+            <div class="scan-box" id="scanBox"><div style="font-size:30px">⛶</div><div style="font-weight:600">Scan player’s QR</div></div>
+          </div>
+          <div id="resultSlot"></div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-title">Recent redemptions</div>
+            <div id="redeemLog">${renderLog()}</div>
+          </div>
+        </div>
+      </div>`;
+    const inp=$('codeIn');
+    inp.oninput=e=>{codeEntry=e.target.value.toUpperCase();e.target.value=codeEntry;};
+    $('codeCheck').onclick=()=>checkCode(codeEntry);
+    $('scanBox').onclick=()=>{ // simulate a scan picking a pending code
+      const pend=Object.keys(redemptions).find(c=>redemptions[c].status==='PENDING');
+      codeEntry=pend||'';inp.value=codeEntry;checkCode(codeEntry);
+    };
+    inp.focus();
+  }
+  function renderLog(){
+    if(!redeemLog.length)return '<div style="color:var(--text-tertiary);font-size:13px;text-align:center;padding:18px 0">No redemptions yet today.</div>';
+    return redeemLog.map(r=>{const p=PLAYERS[r.player];return `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-light)">
+        <div class="av" style="width:32px;height:32px;font-size:13px;background:${grad(p.colors)}">${p.initials}</div>
+        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700">${p.name}</div><div style="font-size:12px;color:var(--text-tertiary)">${r.offer}</div></div>
+        <span style="font-size:11.5px;color:var(--text-tertiary)">${r.when}</span>
+      </div>`;}).join('');
+  }
+  function checkCode(code){
+    const slot=$('resultSlot');
+    const r=redemptions[code];
+    if(!code||code.length<8){slot.innerHTML=resultErr('Enter the full 8-character code.');return;}
+    if(!r){slot.innerHTML=resultErr(`No offer found for code <b>${code}</b>. Double-check with the player.`);return;}
+    const p=PLAYERS[r.player];
+    if(r.status==='REDEEMED'){
+      slot.innerHTML=`<div class="result-card result-used"><div style="font-weight:800;font-size:15px;margin-bottom:10px">⚠ Already redeemed</div>
+        <div class="result-row"><div class="av" style="background:${grad(p.colors)}">${p.initials}</div>
+        <div><div style="font-weight:700">${p.name} · ${r.offer}</div><div style="font-size:13px;color:var(--text-secondary)">Used ${r.when}. Codes are one-time only.</div></div></div></div>`;
+      return;
+    }
+    slot.innerHTML=`<div class="result-card result-ok">
+      <div style="font-weight:800;font-size:15px;margin-bottom:12px;color:var(--success)">✓ Valid — ready to redeem</div>
+      <div class="result-row"><div class="av" style="background:${grad(p.colors)}">${p.initials}</div>
+        <div style="flex:1"><div style="font-weight:800;font-size:16px">${p.name} <span style="font-weight:500;color:var(--text-tertiary);font-size:13px">${p.handle}</span></div>
+        <div style="font-size:14px;font-weight:600;margin-top:2px">${r.offer}</div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-top:2px">Qualified: ${r.reason}</div></div></div>
+      <button class="btn btn-primary" id="doRedeem" style="width:100%;margin-top:16px">Mark redeemed</button></div>`;
+    $('doRedeem').onclick=()=>{
+      r.status='REDEEMED';r.when='Just now';
+      redeemLog.unshift({code,player:r.player,offer:r.offer,when:'Just now'});
+      toast(`${r.offer} redeemed for ${p.name}`);
+      codeEntry='';render();
+    };
+  }
+  function resultErr(msg){return `<div class="result-card result-err"><div style="font-weight:800;font-size:15px;margin-bottom:6px;color:var(--danger)">✕ Not valid</div><div style="font-size:14px;color:var(--text-secondary)">${msg}</div></div>`;}
+
+  document.querySelectorAll('.sidebar-link').forEach(b=>b.onclick=()=>{nav=b.dataset.nav;render();});
+  render();
+  </script>
+</body>
+</html>

@@ -111,6 +111,14 @@ export const SOCIAL_META: Record<SocialPlatform, PlatformMeta> = {
     isUrl: false,
     isPhone: true,
   },
+  EMAIL: {
+    label: 'Email',
+    color: '#0EA5E9',
+    iconName: 'mail-outline',
+    placeholder: 'your@email.com',
+    isUrl: false,
+    isPhone: false,
+  },
 };
 
 const ALL_PLATFORMS = Object.keys(SOCIAL_META) as SocialPlatform[];
@@ -125,18 +133,19 @@ const VISIBILITY_OPTIONS: Array<{ value: SocialVisibility; label: string }> = [
 // PlatformTile — brand-colored icon chip in the rail
 // ---------------------------------------------------------------------------
 
-function PlatformTile({ platform, size = 36 }: { platform: SocialPlatform; size?: number }) {
+function PlatformTile({ platform, size = 36, dim }: { platform: SocialPlatform; size?: number; dim?: boolean }) {
   const meta = SOCIAL_META[platform];
   return (
     <View
       style={[
         tile.root,
-        { width: size, height: size, borderRadius: size / 4, backgroundColor: meta.color },
+        { width: size, height: size, borderRadius: size * 0.3, backgroundColor: meta.color },
+        dim && tile.dim,
       ]}
     >
       <Ionicons
         name={meta.iconName as never}
-        size={size * 0.55}
+        size={size * 0.5}
         color="#fff"
       />
     </View>
@@ -144,7 +153,8 @@ function PlatformTile({ platform, size = 36 }: { platform: SocialPlatform; size?
 }
 
 const tile = StyleSheet.create({
-  root: { alignItems: 'center', justifyContent: 'center' },
+  root: { alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  dim: { opacity: 0.4 },
 });
 
 // ---------------------------------------------------------------------------
@@ -165,6 +175,7 @@ function getProfileUrl(platform: SocialPlatform, value: string): string | null {
     case 'FACEBOOK':  return value.startsWith('http') ? value : `https://www.facebook.com/${handle}`;
     case 'WEBSITE':   return value;
     case 'PHONE':     return `tel:${value}`;
+    case 'EMAIL':     return `mailto:${value}`;
     case 'DISCORD':   return null;
     default:          return null;
   }
@@ -188,16 +199,21 @@ function SocialRow({ link }: { link: SocialLink }) {
       style={({ pressed }) => [row.root, pressed && { opacity: 0.7 }]}
       onPress={handleAction}
     >
-      <PlatformTile platform={link.platform} size={32} />
+      <PlatformTile platform={link.platform} size={30} />
       <View style={row.body}>
-        <Text style={row.label}>{meta.label}</Text>
+        <Text style={row.label}>{meta.label.toUpperCase()}</Text>
         <Text style={row.value} numberOfLines={1}>{link.value}</Text>
       </View>
-      <Ionicons
-        name={profileUrl ? 'open-outline' : 'copy-outline'}
-        size={16}
-        color={colors.textTertiary}
-      />
+      {link.visibility === 'FRIENDS' && (
+        <Ionicons name="people-outline" size={14} color="#D9952E" />
+      )}
+      <View style={row.actionBtn}>
+        <Ionicons
+          name={profileUrl ? 'chevron-forward' : 'copy-outline'}
+          size={15}
+          color={colors.textSecondary}
+        />
+      </View>
     </Pressable>
   );
 }
@@ -211,16 +227,25 @@ const row = StyleSheet.create({
   },
   body: { flex: 1, gap: 1 },
   label: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 10.5,
     color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    letterSpacing: 0.44,
   },
   value: {
-    fontFamily: typography.fontFamily.regular,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.sm,
     color: colors.textPrimary,
+  },
+  actionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radii.full,
+    backgroundColor: colors.chipBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
 });
 
@@ -282,7 +307,7 @@ function ManageSocialsSheet({ visible, onClose }: ManageSheetProps) {
     >
       <SafeAreaView style={ms.safe}>
         <View style={ms.topBar}>
-          <Text style={ms.title}>Manage Socials</Text>
+          <Text style={ms.title}>Your socials</Text>
           <Pressable onPress={onClose} hitSlop={8}>
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
@@ -344,7 +369,9 @@ function ManageSocialsSheet({ visible, onClose }: ManageSheetProps) {
                           autoCapitalize="none"
                           autoCorrect={false}
                           keyboardType={
-                            SOCIAL_META[addingPlatform].isUrl
+                            addingPlatform === 'EMAIL'
+                              ? 'email-address'
+                              : SOCIAL_META[addingPlatform].isUrl
                               ? 'url'
                               : SOCIAL_META[addingPlatform].isPhone
                               ? 'phone-pad'
@@ -505,17 +532,18 @@ const ms = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xl,
+    fontSize: 22,
     color: colors.textPrimary,
+    letterSpacing: -0.55,
   },
   scroll: { padding: spacing.xl, gap: spacing.xl, paddingBottom: 80 },
   section: { gap: spacing.md },
   sectionLabel: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
     color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.63,
   },
   platformGrid: {
     flexDirection: 'row',
@@ -617,7 +645,7 @@ export function SocialsCard({ mode, links, publicCount = 0, friendsOnlyCount = 0
             onPress={() => setManageOpen(true)}
             style={({ pressed }) => [sc.manageBtn, pressed && { opacity: 0.6 }]}
           >
-            <Ionicons name="settings-outline" size={14} color={colors.accent} />
+            <Ionicons name="pencil-outline" size={14} color={colors.accent} />
             <Text style={sc.manageText}>Manage</Text>
           </Pressable>
         )}
@@ -625,35 +653,69 @@ export function SocialsCard({ mode, links, publicCount = 0, friendsOnlyCount = 0
 
       {isLoading ? (
         <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.sm }} />
-      ) : isEmpty ? (
-        isOwner ? (
-          <Text style={sc.empty}>Add your socials so others can find you</Text>
-        ) : null
       ) : (
-        <View style={sc.rows}>
-          {displayLinks.map((link, i) => (
-            <View
-              key={link.id}
-              style={i > 0 ? sc.rowDivider : undefined}
-            >
-              <SocialRow link={link} />
+        <>
+          {/* Colorful icon rail */}
+          {(isOwner ? ownLinks : displayLinks).length > 0 && (
+            <View style={sc.rail}>
+              {(isOwner ? ownLinks : displayLinks).map((link) => (
+                <PlatformTile
+                  key={link.id}
+                  platform={link.platform}
+                  size={44}
+                  dim={isOwner && link.visibility === 'HIDDEN'}
+                />
+              ))}
             </View>
-          ))}
-        </View>
-      )}
+          )}
 
-      {/* Footer summary */}
-      {isOwner && ownLinks.length > 0 && (
-        <View style={sc.summary}>
-          <Text style={sc.summaryText}>
-            Public {ownerPublicCount} · Friends {ownerFriendsCount} · Hidden {hiddenCount}
-          </Text>
-        </View>
+          {/* Row list — non-owner only */}
+          {!isOwner && (
+            isEmpty ? null : (
+              <View style={sc.rows}>
+                {displayLinks.map((link, i) => (
+                  <View key={link.id} style={i > 0 ? sc.rowDivider : undefined}>
+                    <SocialRow link={link} />
+                  </View>
+                ))}
+              </View>
+            )
+          )}
+
+          {/* Owner summary badges */}
+          {isOwner && ownLinks.length > 0 && (
+            <View style={sc.summary}>
+              <View style={[sc.visBadge, sc.visBadgePublic]}>
+                <Ionicons name="eye-outline" size={11} color={colors.accentInk} />
+                <Text style={[sc.visBadgeText, sc.visBadgePublicText]}>Public</Text>
+              </View>
+              <Text style={sc.summaryCount}>{ownerPublicCount}</Text>
+              <View style={[sc.visBadge, sc.visBadgeFriends]}>
+                <Ionicons name="people-outline" size={11} color="#D9952E" />
+                <Text style={[sc.visBadgeText, sc.visBadgeFriendsText]}>Friends</Text>
+              </View>
+              <Text style={sc.summaryCount}>{ownerFriendsCount}</Text>
+              {hiddenCount > 0 && (
+                <>
+                  <View style={[sc.visBadge, sc.visBadgeHidden]}>
+                    <Ionicons name="lock-closed-outline" size={11} color={colors.textTertiary} />
+                    <Text style={[sc.visBadgeText, sc.visBadgeHiddenText]}>Hidden</Text>
+                  </View>
+                  <Text style={sc.summaryCount}>{hiddenCount}</Text>
+                </>
+              )}
+            </View>
+          )}
+
+          {isEmpty && isOwner && (
+            <Text style={sc.empty}>Add your socials so others can find you</Text>
+          )}
+        </>
       )}
 
       {mode === 'public' && friendsOnlyCount > 0 && (
         <View style={sc.teaser}>
-          <Ionicons name="lock-closed-outline" size={13} color={colors.textTertiary} />
+          <Ionicons name="people-outline" size={15} color={colors.textTertiary} />
           <Text style={sc.teaserText}>
             +{friendsOnlyCount} more shared once you connect
           </Text>
@@ -669,6 +731,8 @@ const sc = StyleSheet.create({
   root: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     marginHorizontal: spacing.xl,
     marginTop: spacing.lg,
     paddingHorizontal: spacing.xl,
@@ -682,15 +746,20 @@ const sc = StyleSheet.create({
     justifyContent: 'space-between',
   },
   heading: {
-    fontFamily: typography.fontFamily.semiBold,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
     color: colors.textPrimary,
   },
   manageBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   manageText: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.sm,
     color: colors.accent,
+  },
+  rail: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
   rows: { gap: 0 },
   rowDivider: {
@@ -698,28 +767,47 @@ const sc = StyleSheet.create({
     borderTopColor: colors.borderLight,
   },
   summary: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.borderLight,
-    paddingTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingTop: spacing.xs,
   },
-  summaryText: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
+  summaryCount: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12.5,
     color: colors.textTertiary,
-    textAlign: 'center',
   },
+  visBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  visBadgeText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11,
+    letterSpacing: 0.22,
+  },
+  visBadgePublic: { backgroundColor: colors.accentLight },
+  visBadgePublicText: { color: colors.accentInk },
+  visBadgeFriends: { backgroundColor: 'rgba(217,149,46,0.16)' },
+  visBadgeFriendsText: { color: '#D9952E' },
+  visBadgeHidden: { backgroundColor: colors.chipBg },
+  visBadgeHiddenText: { color: colors.textTertiary },
   teaser: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    justifyContent: 'center',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.borderLight,
     paddingTop: spacing.sm,
   },
   teaserText: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12.5,
     color: colors.textTertiary,
   },
   empty: {

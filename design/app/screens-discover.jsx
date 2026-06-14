@@ -3,7 +3,7 @@ const { Icon, Avatar, ManaRow, Chip, comboName, Button, Segmented, manaGradient 
 const _R = React;
 
 // ── Radar hero ────────────────────────────────────────────
-function Radar({ players, onPick }) {
+function Radar({ players, onPick, me }) {
   // place up to 5 avatars at varying radius/angle
   const spots = [
     { a: -40, r: 0.78 }, { a: 60, r: 0.62 }, { a: 158, r: 0.85 },
@@ -16,22 +16,25 @@ function Radar({ players, onPick }) {
         <div key={i} style={{
           position: 'absolute', width: 200 * s, height: 200 * s, borderRadius: '50%',
           border: '1.5px solid var(--radar-ring)',
+          boxShadow: i === 0 ? 'inset 0 0 60px color-mix(in srgb, var(--brand) 14%, transparent)' : 'none',
         }} />
       ))}
       {/* pulse */}
       {[0, 1].map(i => (
         <div key={'p' + i} style={{
           position: 'absolute', width: 60, height: 60, borderRadius: '50%',
-          background: 'var(--brand)', opacity: 0.18,
+          background: 'var(--brand)', opacity: 0.22,
           animation: `mm-pulse 3s ease-out ${i * 1.5}s infinite`,
         }} />
       ))}
-      {/* center = me */}
+      {/* center = me (identity gradient) */}
       <div style={{
-        width: 58, height: 58, borderRadius: '50%', background: 'var(--brand)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2,
-        boxShadow: '0 4px 16px var(--brand-shadow)', color: 'var(--on-brand)', fontWeight: 800, fontSize: 14,
-      }}>YOU</div>
+        width: 60, height: 60, borderRadius: '50%', backgroundImage: 'var(--identity-grad)', zIndex: 2,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 6px 22px color-mix(in srgb, var(--brand) 55%, transparent), inset 0 1px 1px rgba(255,255,255,0.4)',
+        color: '#fff', fontWeight: 850, fontSize: 19, textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+        border: '2.5px solid var(--surface)',
+      }}>{me ? me.initials : 'R'}</div>
       {/* nearby dots */}
       {players.slice(0, 5).map((p, i) => {
         const sp = spots[i];
@@ -79,20 +82,40 @@ function PlayerRow({ p, onOpen, pending }) {
   );
 }
 
-function DiscoverScreen({ players, onOpen, sentSet, onShowCode }) {
+function DiscoverScreen({ players, me, onOpen, sentSet, onShowCode, lfg, pods }) {
   const [filter, setFilter] = _R.useState('all');
   const shown = filter === 'met' ? players.filter(p => p.metBefore) : players;
   return (
     <div style={{ padding: '0 16px 24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, margin: '2px 0 14px' }}>
-        <Icon name="pin" size={16} color="var(--brand)" />
-        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink-2)' }}>Dragon’s Den · Friday Commander</span>
+      {/* identity gradient location banner */}
+      <div style={{
+        position: 'relative', overflow: 'hidden', borderRadius: 'var(--r-lg)', padding: '16px 16px',
+        backgroundImage: 'var(--identity-grad)', marginBottom: 16,
+        boxShadow: '0 6px 22px color-mix(in srgb, var(--brand) 32%, transparent)',
+      }}>
+        <div style={{ position: 'absolute', inset: 0, opacity: 0.5, backgroundImage: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 2px, transparent 2px 12px)' }} />
+        <div style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="pin" size={15} color="#fff" stroke={2.4} />
+            <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.92)' }}>Checked in</span>
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 850, letterSpacing: '-0.025em', color: '#fff', marginTop: 4, textShadow: '0 1px 3px rgba(0,0,0,0.2)' }}>Dragon’s Den</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginTop: 1 }}>Friday Commander · {players.length} players here</div>
+        </div>
       </div>
 
+      {lfg && (
+        <>
+          <window.LFGStatusBar open={lfg.open} session={lfg.session} onGoOpen={lfg.onGoOpen} onEdit={lfg.onEdit} onStop={lfg.onStop} />
+          {pods && <window.PodsSection pods={pods.list} me={pods.me} onOpenPod={pods.onOpenPod} onStart={pods.onStart} />}
+          <window.LFGSection sessions={lfg.sessions} onJoin={lfg.onJoin} onOpenPlayer={onOpen} />
+        </>
+      )}
+
       <div style={{ background: 'var(--surface)', borderRadius: 'var(--r-lg)', border: '1px solid var(--line)', boxShadow: 'var(--shadow-card)', padding: '10px 14px 16px', marginBottom: 18 }}>
-        <Radar players={players} onPick={onOpen} />
+        <Radar players={players} onPick={onOpen} me={me} />
         <div style={{ textAlign: 'center', fontSize: 13.5, fontWeight: 700, color: 'var(--ink-2)' }}>
-          <span style={{ color: 'var(--brand)' }}>{players.length} players</span> nearby right now
+          <span style={{ color: 'var(--brand-ink)' }}>{players.length} players</span> nearby right now
         </div>
       </div>
 

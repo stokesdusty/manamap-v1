@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>manamap — Hardening Prompts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#F4ECE0; --surface:#FFFCF6; --surface-2:#FBF4E9;
+    --ink:#2A211B; --ink-2:#5B5048; --muted:#9C8E7F;
+    --line:#E7DBCB; --line-strong:#D6C7B2; --chip-bg:#EFE6D8;
+    --brand:#5AA452; --brand-soft:#E8F0DF; --brand-ink:#48723D;
+    --code-bg:#251F1A; --code-ink:#EFE7DC; --code-dim:#A99D8C;
+    --U:#4FA9E6; --G:#5FB97E; --R:#F0705B;
+    --maxw:1000px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5;}
+  ::selection{background:var(--brand);color:#fff;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;}
+
+  .hero{padding:54px 0 30px;}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;
+    letter-spacing:0.08em;text-transform:uppercase;color:var(--brand-ink);background:var(--brand-soft);
+    padding:6px 13px;border-radius:999px;white-space:nowrap;}
+  .hero h1{font-size:clamp(34px,5vw,52px);line-height:1.04;letter-spacing:-0.03em;margin:18px 0 0;font-weight:800;}
+  .hero .lede{font-size:18px;line-height:1.55;color:var(--ink-2);max-width:640px;margin:16px 0 0;text-wrap:pretty;}
+
+  section{padding:30px 0;}
+  h2{font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin:0 0 16px;}
+
+  /* status (apple) */
+  .status{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--G);
+    border-radius:16px;padding:20px 22px;}
+  .status .h{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;letter-spacing:-0.015em;}
+  .status .badge{font-size:11px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:#2F6B3C;
+    background:#E4F0E6;padding:4px 10px;border-radius:999px;}
+  .status p{font-size:14.5px;color:var(--ink-2);line-height:1.55;margin:12px 0 0;}
+  .status code{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:var(--chip-bg);padding:1px 6px;border-radius:5px;}
+  .check{display:flex;flex-direction:column;gap:9px;margin-top:14px;}
+  .check .ck{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;color:var(--ink-2);line-height:1.5;}
+  .check .ck b{color:var(--ink);font-weight:750;}
+  .check .ck::before{content:"○";color:var(--brand);font-weight:800;margin-top:1px;}
+  .check .ck.done::before{content:"✓";color:#2F6B3C;}
+
+  /* milestone */
+  .ms{background:var(--surface);border:1px solid var(--line);border-radius:18px;margin-bottom:20px;overflow:hidden;
+    box-shadow:0 1px 2px rgba(80,55,30,0.04),0 8px 22px rgba(80,55,30,0.05);}
+  .mhead{display:flex;align-items:flex-start;gap:14px;padding:20px 22px 14px;}
+  .mcode{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:#fff;background:var(--brand);
+    padding:6px 11px;border-radius:8px;flex-shrink:0;}
+  .mtitle{font-size:20px;font-weight:800;letter-spacing:-0.02em;}
+  .mgoal{font-size:14.5px;color:var(--ink-2);margin-top:4px;line-height:1.5;}
+  .mdeps{font-size:12px;color:var(--muted);font-weight:700;margin-top:8px;font-family:'JetBrains Mono',monospace;}
+  .promptbox{margin:0 22px;background:var(--code-bg);border-radius:13px;overflow:hidden;}
+  .ptop{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.08);}
+  .plabel{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--code-dim);letter-spacing:0.04em;text-transform:uppercase;}
+  .copybtn{font-family:'Plus Jakarta Sans';font-size:12.5px;font-weight:700;color:var(--code-ink);
+    background:rgba(255,255,255,0.1);border:none;border-radius:7px;padding:7px 13px;cursor:pointer;transition:background .15s;}
+  .copybtn:hover{background:rgba(255,255,255,0.18);}
+  .copybtn.done{background:var(--G);color:#fff;}
+  .promptbox pre{margin:0;padding:16px 17px;overflow-x:auto;max-height:340px;overflow-y:auto;}
+  .promptbox code{font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7;color:var(--code-ink);white-space:pre-wrap;}
+  .mlists{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:18px 22px 22px;}
+  @media(max-width:640px){.mlists{grid-template-columns:1fr;}}
+  .mlist .lh{font-size:11px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;}
+  .mlist ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;}
+  .mlist li{font-size:13.5px;color:var(--ink-2);line-height:1.45;display:flex;gap:9px;align-items:flex-start;}
+  .mlist li::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--brand);margin-top:6px;flex-shrink:0;}
+  .mlist.acc li::before{background:var(--G);border-radius:50%;}
+
+  footer{padding:30px 0 70px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line);margin-top:20px;}
+  footer b{color:var(--ink-2);}
+</style>
+</head>
+<body>
+  <header class="hero wrap">
+    <span class="eyebrow">Hardening · grounded in your codebase</span>
+    <h1>Build prompts &amp; a checklist.</h1>
+    <p class="lede">Grounded build prompts for manamap, written against the actual modules and file paths. <b>M14–M18 are shipped</b> (verified in the codebase); <b>M19</b> is the next one up — the moderation dashboard that closes the M14 safety loop. Apple auth was already built, so it's a verification checklist, not a prompt.</p>
+  </header>
+
+  <main class="wrap">
+    <!-- APPLE STATUS -->
+    <section>
+      <h2>Already done — Apple Sign In</h2>
+      <div class="status">
+        <div class="h"><span>Sign in with Apple is fully implemented</span><span class="badge">No prompt needed</span></div>
+        <p>The API exposes <code>POST /v1/auth/apple</code> (<code>apple.service.ts</code> verifies the identity token against Apple's JWKS; <code>auth.service.ts</code> upserts the user). The mobile <code>SignInScreen.tsx</code> already renders the native Apple button on iOS and calls it. <code>AppleAuthBodySchema</code> exists in <code>packages/shared</code>. This means you're <b>not</b> exposed to the App Store "must offer Sign in with Apple" rejection I flagged earlier — good. Just verify the config:</p>
+        <div class="check">
+          <div class="ck"><span><b>Set <code>APPLE_CLIENT_ID</code></b> in <code>apps/api/.env</code> and ensure it's in <code>config/config.schema.ts</code> — the service throws <code>ServiceUnavailable</code> if it's missing.</span></div>
+          <div class="ck"><span><b>Enable the iOS capability</b> — <code>ios.usesAppleSignIn: true</code> in <code>app.config.ts</code>, and confirm the <code>expo-apple-authentication</code> plugin is registered.</span></div>
+          <div class="ck"><span><b>Apple Developer portal</b> — turn on "Sign In with Apple" for the app's bundle ID; the <code>APPLE_CLIENT_ID</code> (audience) must match.</span></div>
+          <div class="ck"><span><b>Email-on-first-login</b> — Apple returns email only once. <code>auth.service.ts</code> already handles "email required on first sign-in," and the client requests the EMAIL scope. Nothing to change; just don't strip it.</span></div>
+          <div class="ck"><span><b>Android</b> — the Apple button is correctly gated to <code>Platform.OS === 'ios'</code>; Discord stays the Android path.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROMPTS -->
+    <section>
+      <h2>Build prompts</h2>
+
+      <!-- A: SAFETY -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M14</span>
+          <div>
+            <div class="mtitle">Block, report &amp; “Go invisible”</div>
+            <div class="mgoal">Real safety primitives for in-person discovery: a bidirectional block list, lightweight reporting, and a fast invisibility toggle — enforced at the API, not just hidden in the UI.</div>
+            <div class="mdeps">touches: prisma/schema · discovery.service · exchange.service · connections.service · me/privacy · mobile preview/profile</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M14 · build prompt</span><button class="copybtn" data-src="p-safety">⧉ Copy</button></div>
+          <pre><code id="code-p-safety"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Block + Report models + migration</li>
+              <li>SafetyModule: blocks CRUD + reports endpoint</li>
+              <li>getBlockedIds() bidirectional helper</li>
+              <li>Enforcement in discovery, exchange-resolve, connections</li>
+              <li>“Go invisible” quick toggle + banner (mobile)</li>
+              <li>Block/Report ••• menu + Blocked-players list</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Blocked users never appear in nearby/suggestions (both directions)</li>
+              <li>Resolving a blocked player's QR returns not-found</li>
+              <li>Can't send a connection request to/from a blocker</li>
+              <li>Invisible user is hidden AND logs no co-presence encounters</li>
+              <li>Reports persist with status OPEN</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- B: SEEDING -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M15</span>
+          <div>
+            <div class="mtitle">Store seeding &amp; launch dataset</div>
+            <div class="mgoal">Replace the 3 hardcoded stores with a file-driven, idempotent launch dataset so the map isn't empty — and so re-seeding updates rather than duplicates.</div>
+            <div class="mdeps">touches: prisma/schema · prisma/seed.ts · prisma/data/stores.json · package scripts</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M15 · build prompt</span><button class="copybtn" data-src="p-seed">⧉ Copy</button></div>
+          <pre><code id="code-p-seed"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>prisma/data/stores.json (~20–40 launch-city stores)</li>
+              <li>@@unique([name, city]) + migration</li>
+              <li>Idempotent upsert + geom UPDATE on re-run</li>
+              <li>timezone + isPartner columns reconciled</li>
+              <li>db:seed:stores focused script + counts</li>
+              <li>README note on the format + adding a city</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Re-running the seed updates (no duplicate stores)</li>
+              <li>Coordinates update on re-run</li>
+              <li>GET /v1/stores?bbox= returns the launch metro's pins</li>
+              <li>Demo users stay out of stores.json</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- C: ONBOARDING -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M16</span>
+          <div>
+            <div class="mtitle">First-run profile onboarding</div>
+            <div class="mgoal">New users land with a complete, exchangeable card instead of a blank one — a 5-step flow with a live-building preview, saved atomically on finish. Visual spec: design/app/onboarding.jsx.</div>
+            <div class="mdeps">touches: prisma/schema (onboardedAt) · me.service · RootNavigator · new Onboarding flow · packages/shared</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M16 · build prompt</span><button class="copybtn" data-src="p-onboard">⧉ Copy</button></div>
+          <pre><code id="code-p-onboard"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>User.onboardedAt + migration; me returns it</li>
+              <li>POST /v1/me/onboarding (atomic profile+privacy+decks+store)</li>
+              <li>OnboardingSubmitSchema in packages/shared</li>
+              <li>RootNavigator routes new users into the flow</li>
+              <li>5-step flow + live preview, ported from the prototype</li>
+              <li>Soft-gate Continue + skippable contact step</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Brand-new account is auto-routed into onboarding</li>
+              <li>Finish writes everything in one request + flips onboardedAt</li>
+              <li>You tab reflects every field afterward</li>
+              <li>Re-opening after completion skips onboarding</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- D: DARK THEME -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M17</span>
+          <div>
+            <div class="mtitle">Apply the Dusk dark theme</div>
+            <div class="mgoal">Swap the light "Soft paper" palette for the Dusk dark theme (green accent) and fix the few screens with hardcoded light assumptions. Ships with a corrected colors.ts.</div>
+            <div class="mdeps">touches: theme/colors.ts · theme/tokens.ts (shadows) · App.tsx (StatusBar) · SignInScreen · screen audit</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M17 · build prompt</span><button class="copybtn" data-src="p-dark">⧉ Copy</button></div>
+          <pre><code id="code-p-dark"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Dark colors.ts (provided — drop in)</li>
+              <li>StatusBar set to light</li>
+              <li>Apple button → WHITE; audit hardcoded light colors</li>
+              <li>Optional dark map style + darker shadows/borders</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Every screen renders dark with readable text</li>
+              <li>No white flashes / dark-on-dark text</li>
+              <li>Status bar text is legible on dark</li>
+              <li>Accent (green) is consistent across buttons/states</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- E: PROXIMITY CHECK-IN -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M18</span>
+          <div>
+            <div class="mtitle">Proximity-gated check-in</div>
+            <div class="mgoal">Only let players check in when they're physically near the store — server-side PostGIS distance gating, with accuracy tolerance and a graceful “too far” UX. Protects streaks, badges &amp; the leaderboard.</div>
+            <div class="mdeps">touches: prisma/schema (checkinRadiusMeters) · stores.service · packages/shared · mobile check-in + expo-location</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M18 · build prompt</span><button class="copybtn" data-src="p-prox">⧉ Copy</button></div>
+          <pre><code id="code-p-prox"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>checkinRadiusMeters + ST_DWithin gate</li>
+              <li>lat/lng/accuracy in checkin body + schemas</li>
+              <li>422 too_far with distance/allowed</li>
+              <li>expo-location flow + permission strings</li>
+              <li>“You’re ~Nm away” sheet + Retry</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Far-away check-in rejected with distance message</li>
+              <li>On-site check-in succeeds; poor GPS widens tolerance</li>
+              <li>Permission denial handled with a Settings path</li>
+              <li>Per-store radius respected; null geom doesn’t crash</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- F: MODERATION -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M19</span>
+          <div>
+            <div class="mtitle">Moderation dashboard + enforcement</div>
+            <div class="mgoal">Close the safety loop: an ADMIN-gated review queue in the portal that actions the Report rows M14 stores as OPEN — with real enforcement (warn / suspend / ban) the AuthGuard honors. Visual spec: design/moderation-dashboard.html.</div>
+            <div class="mdeps">touches: prisma/schema (moderationStatus, ModerationAction, Report resolution) · safety.service · new admin moderation module · AuthGuard · discovery/exchange · apps/admin</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M19 · build prompt</span><button class="copybtn" data-src="p-mod">⧉ Copy</button></div>
+          <pre><code id="code-p-mod"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>User.moderationStatus + suspendedUntil; ModerationAction audit log</li>
+              <li>Report resolution fields (resolvedBy/At/note)</li>
+              <li>ADMIN-only /v1/admin/moderation endpoints</li>
+              <li>AuthGuard blocks banned/suspended; discovery+exchange exclude them</li>
+              <li>Admin portal Moderation queue + detail (two-pane)</li>
+              <li>Reporter identity never returned</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Resolving sets report status + writes an audit row</li>
+              <li>Ban/suspend actually blocks API access (guard enforced)</li>
+              <li>Suspension auto-expires at suspendedUntil</li>
+              <li>Non-admins can’t see or hit moderation routes/UI</li>
+              <li>Repeat-offender counts + signals shown on the detail</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- G: LFG -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M20</span>
+          <div>
+            <div class="mtitle">LFG — “Open to play now” + pods</div>
+            <div class="mgoal">The play-a-game loop: broadcast that you want a game right now at your store, see who else is open, and assemble a pod. Ephemeral + Redis-backed, layered on the existing presence system. Visual spec: design/app/lfg.jsx.</div>
+            <div class="mdeps">touches: new lfg module (Redis) · reuses presence + SafetyService + ModerationStatus + push · mobile Discover + hooks</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M20 · build prompt</span><button class="copybtn" data-src="p-lfg">⧉ Copy</button></div>
+          <pre><code id="code-p-lfg"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Redis LFG session (format/power/seats/note, TTL=duration)</li>
+              <li>GET/POST/PATCH/DELETE /v1/lfg endpoints</li>
+              <li>Feed filtered by block + moderation + discoverable</li>
+              <li>Pod invite → push + Encounter(GAME) on lock-in</li>
+              <li>Discover status bar + open-players list + composer + pod sheet</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Going open shows you in others’ feeds; status auto-expires</li>
+              <li>Blocked / banned / invisible users never appear</li>
+              <li>Only present-at-this-store sessions are listed</li>
+              <li>Pod invite pushes the host; lock-in seats the pod</li>
+              <li>Editing/stopping updates the live status immediately</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- H: RATE LIMITING -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M21</span>
+          <div>
+            <div class="mtitle">Rate limiting &amp; abuse caps</div>
+            <div class="mgoal">Stop spam and abuse: per-user + per-IP caps on the write endpoints that can be weaponized — connection requests, reports, and exchange-token mints — using a Redis-backed sliding window so limits hold across multiple API instances.</div>
+            <div class="mdeps">touches: new throttle setup (Redis) · main.ts (trust proxy) · connections / safety(reports) / exchange controllers · global guard</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M21 · build prompt</span><button class="copybtn" data-src="p-rate">⧉ Copy</button></div>
+          <pre><code id="code-p-rate"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Redis sliding-window limiter on the shared ioredis client</li>
+              <li>Global default IP cap + per-route named limits</li>
+              <li>Tight caps: connect requests, reports, token mints</li>
+              <li>Fastify trust-proxy so client IP is real</li>
+              <li>429 with retry-after; per-user keying when authed</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Exceeding a route cap returns 429 + Retry-After</li>
+              <li>Limits are per-user when authed, per-IP otherwise</li>
+              <li>Counters live in Redis (survive multi-instance)</li>
+              <li>Normal usage never trips; reads are unthrottled or loose</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- I: POD FORMATION -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M22</span>
+          <div>
+            <div class="mtitle">Pod formation</div>
+            <div class="mgoal">First-class pods: a host opens a pod with a target power + tolerance, players ask to join, the host approves each seat, and a full pod becomes a "pod ready" record. Builds directly on the M20 LFG Redis sessions. Visual spec: design/app/pods.jsx.</div>
+            <div class="mdeps">needs: M20 (LFG) · touches: lfg/pods module (Redis) · reuses presence + Safety + ModerationStatus + push + Encounter(GAME)</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M22 · build prompt</span><button class="copybtn" data-src="p-pod">⧉ Copy</button></div>
+          <pre><code id="code-p-pod"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Redis pod (host, format, targetPower, tolerance, seats, where, members, requests, TTL)</li>
+              <li>Create / get / request / approve / decline / lock / disband endpoints</li>
+              <li>Compatibility (fit) computed server-side from target±tolerance + format</li>
+              <li>Approve pushes the player; lock writes GAME Encounters + disbands</li>
+              <li>Discover "Pods forming here" + create sheet + manage/join screens</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Host creates a pod; it appears for present players with their fit</li>
+              <li>Join request notifies host; approve seats them (respects cap)</li>
+              <li>Blocked / banned / non-discoverable users excluded</li>
+              <li>Locking a full pod writes Encounters between members + clears it</li>
+              <li>Pod auto-expires; host disband removes it immediately</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- J: LOG A GAME -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M23</span>
+          <div>
+            <div class="mtitle">Log a game</div>
+            <div class="mgoal">Record real game results: pick the roster + decks + a single winner, the other players confirm, and confirmed games become pairwise WIN/LOSS Encounters that power profile stats, per-deck win rate, and a games-won leaderboard. Upgrades the neutral DRAW rows M20/M22 write on pod lock. Visual spec: design/app/loggame.jsx.</div>
+            <div class="mdeps">touches: prisma/schema (GameLog + status, Encounter.gameId) · new games module · gamification (games leaderboard) · me/profile stats · push · mobile pod/You/Connect</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M23 · build prompt</span><button class="copybtn" data-src="p-log">⧉ Copy</button></div>
+          <pre><code id="code-p-log"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>GameLog + GamePlayer models (status PENDING→CONFIRMED), Encounter.gameId</li>
+              <li>Create / confirm / dispute endpoints; confirm pushes players</li>
+              <li>Pairwise WIN/LOSS Encounters written on full confirmation</li>
+              <li>Profile stats (W/L, win rate, per-deck) + recent games</li>
+              <li>Games-won store leaderboard alongside check-in streaks</li>
+              <li>Log flow (pod + standalone), confirm prompts on Connect</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Logging notifies other players to confirm; stats only move on confirm</li>
+              <li>One winner expands to correct pairwise WIN/LOSS rows</li>
+              <li>Dispute halts the game; no Encounters written</li>
+              <li>Profile shows W/L + per-deck rate; leaderboard ranks games won</li>
+              <li>Blocked/banned users can't be added to a roster</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- K: SIM / DEV HARNESS -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M24</span>
+          <div>
+            <div class="mtitle">Simulated users / dev harness</div>
+            <div class="mgoal">Solo-test every screen: dev-only bot users that act through the REAL services — check in at your store, go LFG-open, host pods, send you connection requests, and log a game you must confirm. Plus an in-app Dev panel to trigger scenarios from the phone.</div>
+            <div class="mdeps">DEV-ONLY (guarded) · new dev module driving presence / lfg / pods / connections / games services · seed bot accounts · mobile hidden Dev screen</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M24 · build prompt</span><button class="copybtn" data-src="p-sim">⧉ Copy</button></div>
+          <pre><code id="code-p-sim"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Seeded bot users (isBot flag) with known ids</li>
+              <li>DEV-gated DevModule (off in prod) driving real services</li>
+              <li>Scenario endpoints: populate-store, lfg, pod, request-me, log-game-with-me, accept-mine, reset</li>
+              <li>In-app Dev panel (hidden flag) with one-tap scenarios</li>
+              <li>Bots act as their own user id through real code paths</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>One tap fills Discover/LFG/pods at your current store</li>
+              <li>A bot request appears in your Connect tab; accepting works</li>
+              <li>A bot-logged game shows in Confirm results</li>
+              <li>Reset clears all bot presence/sessions/requests</li>
+              <li>Dev routes + panel are unreachable in production</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- L: RSVP REMINDERS -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M25</span>
+          <div>
+            <div class="mtitle">Event RSVP reminders</div>
+            <div class="mgoal">Push a reminder the morning of and ~1 hour before an event you've RSVP'd to. Uses BullMQ delayed jobs (already in the stack) + the existing push pattern — scheduled on attend, cancelled on un-attend.</div>
+            <div class="mdeps">needs: events + EventAttendee (exist) · BullMQ (gamification queue exists) · sendPushToUser pattern · attendEvent / un-attend</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M25 · build prompt</span><button class="copybtn" data-src="p-rsvp">⧉ Copy</button></div>
+          <pre><code id="code-p-rsvp"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>events-reminders BullMQ queue + processor</li>
+              <li>Schedule morning-of + T-1h delayed jobs on RSVP</li>
+              <li>DELETE attend (un-RSVP) cancels the jobs</li>
+              <li>Idempotent send; skip past/began events</li>
+              <li>Respects notification opt-out + dedupes</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>RSVP schedules two delayed jobs at the right times</li>
+              <li>Un-RSVP (or event delete) cancels pending reminders</li>
+              <li>Reminder pushes once, deep-links to the event</li>
+              <li>No reminder for events already started/past</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- M: EVENT-DAY CHECK-IN TIE-IN -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M26</span>
+          <div>
+            <div class="mtitle">Event-day check-in tie-in</div>
+            <div class="mgoal">Link a check-in to an active event at that store: on check-in, if an event is happening now, ask "Here for Friday Commander?" — then show "who's here for this event" (RSVP'd + checked-in), turning the roster into live attendance.</div>
+            <div class="mdeps">touches: Checkin (add eventId?) · stores.checkin + getEvents · new event-attendance query · check-in result + event detail UI</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M26 · build prompt</span><button class="copybtn" data-src="p-evtci">⧉ Copy</button></div>
+          <pre><code id="code-p-evtci"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Checkin.eventId? + active-events-now helper</li>
+              <li>Check-in result surfaces happening-now events to tag</li>
+              <li>POST associate check-in ↔ event (sets attendance)</li>
+              <li>"Who's here for this event" roster (present + RSVP'd)</li>
+              <li>Live "N here now" count on the event card</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Checking in during an event offers to tag it</li>
+              <li>Tagging marks you attending + present for that event</li>
+              <li>Event shows who's physically here now vs just RSVP'd</li>
+              <li>No active event → check-in flow unchanged</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- N: BROADCAST -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M27</span>
+          <div>
+            <div class="mtitle">Store broadcast announcement</div>
+            <div class="mgoal">Let a store owner push a message to players connected to their store — checked-in now, here today, event RSVPs, or recent visitors — with rate limits + opt-out so it can't be abused. Portal page. Visual spec: design/store-tools.html (Broadcast).</div>
+            <div class="mdeps">touches: new Broadcast model · partner module (owner-guarded) · audience queries (Checkin/presence/EventAttendee) · sendPushToUser · admin portal page</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M27 · build prompt</span><button class="copybtn" data-src="p-bcast">⧉ Copy</button></div>
+          <pre><code id="code-p-bcast"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Broadcast model (audience, body, counts) + migration</li>
+              <li>Owner-guarded send + audience-count endpoints</li>
+              <li>Audience resolvers: checked-in / today / event / recent</li>
+              <li>Fan-out push via sendPushToUser; respects opt-out</li>
+              <li>Per-store daily cap; recent-broadcasts list</li>
+              <li>Portal Broadcast page (audience + preview)</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Only verified store owners can broadcast</li>
+              <li>Each audience resolves to the right recipients</li>
+              <li>Opted-out players excluded; daily cap enforced</li>
+              <li>Push deep-links to the store; history shows counts</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- O: EVENT MANAGEMENT -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M28</span>
+          <div>
+            <div class="mtitle">Store event management</div>
+            <div class="mgoal">Give owners full CRUD over their store's STORE-source events in the portal (today events are read-only / connector-sourced). Discord/Wizards-sourced events stay read-only. Visual spec: design/store-tools.html (Events).</div>
+            <div class="mdeps">touches: partner module (owner-guarded event CRUD) · Event model (source guard) · formats · admin portal Events page + form</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M28 · build prompt</span><button class="copybtn" data-src="p-evmgmt">⧉ Copy</button></div>
+          <pre><code id="code-p-evmgmt"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Owner-guarded POST/PATCH/DELETE for STORE events</li>
+              <li>source=STORE enforced; connector events read-only</li>
+              <li>Validation (name, format, starts/ends, optional cap)</li>
+              <li>Portal Events list + create/edit modal form</li>
+              <li>RSVP counts surfaced per event</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Owner can create/edit/delete their STORE events</li>
+              <li>DISCORD/WIZARDS events can't be edited (403/hidden)</li>
+              <li>New events appear in the mobile store calendar</li>
+              <li>Non-owners can't mutate another store's events</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- P: STAFF REDEMPTION -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M29</span>
+          <div>
+            <div class="mtitle">Staff offer redemption</div>
+            <div class="mgoal">A counter flow to validate + redeem reward offers: the player's app shows a one-time 8-char code/QR, staff enters or scans it, and it's marked used (can't be reused). Adds the missing per-redemption tracking. Visual spec: design/store-tools.html (Redeem).</div>
+            <div class="mdeps">touches: new OfferRedemption model (per-redemption code) · partner verify/redeem endpoints · mobile claim/show-code · portal Redeem page</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M29 · build prompt</span><button class="copybtn" data-src="p-redeem">⧉ Copy</button></div>
+          <pre><code id="code-p-redeem"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>OfferRedemption model: per-redemption code, status, who</li>
+              <li>Player claim → one-time code/QR in the app</li>
+              <li>Owner-guarded verify + redeem (mark used) endpoints</li>
+              <li>Eligibility re-check on redeem; one-time enforcement</li>
+              <li>Portal Redeem page (enter/scan + result + log)</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Valid code shows player + offer + qualifying reason</li>
+              <li>Redeeming marks it used; re-entry shows "already used"</li>
+              <li>Invalid/expired/wrong-store codes are rejected</li>
+              <li>Only that store's staff can redeem its codes</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Q: NOTIFICATIONS INBOX -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M30</span>
+          <div>
+            <div class="mtitle">Notifications center / inbox</div>
+            <div class="mgoal">Persist every push as an in-app notification so a missed or cleared push isn't lost: a bell + unread badge in the header opens a grouped inbox (connects, accepts, nearby, pods, game-confirms, event reminders, broadcasts, quests) that deep-links to the right screen. Visual spec: design/app/retention.jsx (NotificationsInbox).</div>
+            <div class="mdeps">touches: new Notification model · notifications module · write-on-push at every sendPushToUser call site · mobile header bell + inbox screen</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M30 · build prompt</span><button class="copybtn" data-src="p-notif">⧉ Copy</button></div>
+          <pre><code id="code-p-notif"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Notification model (kind, title, body, data, readAt)</li>
+              <li>NotificationsService.create — called wherever push fires</li>
+              <li>list / unread-count / mark-read(-all) endpoints</li>
+              <li>Header bell + unread badge; inbox screen (New/Earlier)</li>
+              <li>Tapping deep-links by kind; useNotifications hook</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Every push also writes a Notification for the recipient</li>
+              <li>Unread count drives the badge; mark-read clears it</li>
+              <li>Tapping a row opens the relevant screen</li>
+              <li>Pagination works; only my own notifications return</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- R: MONTHLY QUESTS -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M31</span>
+          <div>
+            <div class="mtitle">Monthly quests</div>
+            <div class="mgoal">Data-driven, time-boxed challenges ("meet 3 new players", "try a new store", "play 5 games") with live progress, evaluated like badges off existing signals (connections, check-ins, games). Completing awards a badge. Visual spec: design/app/retention.jsx (QuestsCard).</div>
+            <div class="mdeps">touches: Quest + QuestProgress models · quests module (reuse BadgeCriteria-style evaluator) · hook into checkin/connection/game events · mobile You-tab quests card</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M31 · build prompt</span><button class="copybtn" data-src="p-quests">⧉ Copy</button></div>
+          <pre><code id="code-p-quests"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Quest (criteria JSON, period) + QuestProgress models</li>
+              <li>Criteria evaluator mirroring BadgeCriteria union</li>
+              <li>Progress bumps on checkin / connect / game-confirm</li>
+              <li>Completion awards a badge + notification</li>
+              <li>Monthly seed/rollover; You-tab quests card</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Active quests show correct live progress per user</li>
+              <li>Hitting a goal marks complete + awards the badge once</li>
+              <li>Quests reset/rollover monthly; expired ones don't count</li>
+              <li>New quests need no deploy (data-driven criteria)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- S: FRIEND-STREAKS -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M32</span>
+          <div>
+            <div class="mtitle">Friend-streaks / rivalries</div>
+            <div class="mgoal">Reward repeatedly playing the same person: derive a head-to-head record + games-together count from confirmed-game Encounters, surface "Rivalries" on the profile and the connection detail, and flag hot streaks. Visual spec: design/app/retention.jsx (FriendStreaks).</div>
+            <div class="mdeps">touches: pairwise Encounter aggregation (M23 data) · rivalry query/endpoint · optional rivalry badge · mobile You-tab + connection detail</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M32 · build prompt</span><button class="copybtn" data-src="p-rivalry">⧉ Copy</button></div>
+          <pre><code id="code-p-rivalry"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>Rivalry aggregation from confirmed-game Encounters</li>
+              <li>GET /me/rivalries (top opponents, W–L, last played)</li>
+              <li>Per-opponent head-to-head on connection detail</li>
+              <li>"Hot" flag for recent repeated play</li>
+              <li>You-tab Rivalries section</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Records match the underlying WIN/LOSS Encounters</li>
+              <li>Rivalries rank by games together; show last-played</li>
+              <li>Connection detail shows your head-to-head</li>
+              <li>Blocked/non-ACTIVE opponents are excluded</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- T: E2E TESTS -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M33</span>
+          <div>
+            <div class="mtitle">End-to-end test suite</div>
+            <div class="mgoal">Cover the core flows with real HTTP E2E tests against a live test DB — auth → onboarding → check-in → discover → connect → log-a-game → confirm — plus the safety/moderation gates. Complements the existing unit specs. Backend only, no design.</div>
+            <div class="mdeps">touches: apps/api e2e setup (supertest + Fastify) · test DB via docker-compose · dev-login bypass · CI script</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M33 · build prompt</span><button class="copybtn" data-src="p-e2e">⧉ Copy</button></div>
+          <pre><code id="code-p-e2e"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>jest-e2e config + Fastify test bootstrap + DB reset</li>
+              <li>Auth/onboarding, check-in (proximity), connect flows</li>
+              <li>LFG/pod/log-a-game + confirm happy paths</li>
+              <li>Safety: blocked excluded; banned 403</li>
+              <li>test:e2e script + CI step</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>pnpm test:e2e spins up, migrates, runs, tears down</li>
+              <li>Core happy paths pass against real HTTP + DB</li>
+              <li>Auth/proximity/safety gates assert 401/403/422</li>
+              <li>Suite is isolated + repeatable (clean DB per run)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- U: OBSERVABILITY -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M34</span>
+          <div>
+            <div class="mtitle">Observability: logging + error tracking</div>
+            <div class="mgoal">Structured request/response logging with correlation IDs, a global exception filter that logs + shapes errors, and optional error tracking (Sentry) — so production issues are visible. Replaces ad-hoc NestJS Logger usage. Backend only.</div>
+            <div class="mdeps">touches: apps/api main bootstrap (pino) · global exception filter · request-id middleware · config flags · optional Sentry</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M34 · build prompt</span><button class="copybtn" data-src="p-observ">⧉ Copy</button></div>
+          <pre><code id="code-p-observ"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>nestjs-pino structured logging + redaction</li>
+              <li>Request-id correlation on every log line</li>
+              <li>Global exception filter (log + typed error body)</li>
+              <li>Optional Sentry behind a DSN flag</li>
+              <li>Migrate existing Logger call sites</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Each request logs method/path/status/latency + req id</li>
+              <li>Unhandled errors are logged with stack + return clean JSON</li>
+              <li>Secrets/tokens redacted from logs</li>
+              <li>Sentry captures errors when DSN set; no-ops otherwise</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- T: IDENTITY COLOR THEMING -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M35</span>
+          <div>
+            <div class="mtitle">Identity color theming (You + Discover)</div>
+            <div class="mgoal">Personalize the app around each player's mana colors: derive the accent + a gradient from user.avatarColors and recolor the app, then apply the colorful hero/banner redesign to the You and Discover screens. Visual spec: design/app (manamap.html — ProfileScreen hero, DiscoverScreen banner + radar, identity stat card).</div>
+            <div class="mdeps">touches: theme (ThemeProvider/useIdentityTheme) · MANA_ACCENT map · You screen · Discover screen · stats strip</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M35 · build prompt</span><button class="copybtn" data-src="p-identity">⧉ Copy</button></div>
+          <pre><code id="code-p-identity"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>MANA_ACCENT map + accent/gradient/readable-on helpers</li>
+              <li>useIdentityTheme(colors) → accent, accent2, gradient, onAccent</li>
+              <li>Accent derives from my avatarColors (override fallback)</li>
+              <li>You: identity hero banner + gradient win-rate card</li>
+              <li>Discover: gradient location banner + identity radar center</li>
+              <li>Re-themes live when colors change in profile edit</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>A mono-Green player sees a green app; Izzet sees blue→red</li>
+              <li>Accent text stays readable (onAccent contrast)</li>
+              <li>Changing colors in Edit recolors the app immediately</li>
+              <li>You + Discover match the prototype hero/banner treatment</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- U: SOCIAL CARD -->
+      <div class="ms">
+        <div class="mhead">
+          <span class="mcode">M36</span>
+          <div>
+            <div class="mtitle">Social card with per-link visibility</div>
+            <div class="mgoal">A full social card (Discord, Instagram, Twitch, YouTube, X, TikTok, Facebook, website, phone) where the player sets each link to Public / Friends-only / Hidden — gated server-side like the existing Discord/deck contact data, and shown as a colorful link-in-bio card. Visual spec: design/app (manamap.html — SocialsCard + manage sheet).</div>
+            <div class="mdeps">touches: SocialLink model (platform, value, visibility) · me/profile CRUD · gating in public-profile + exchange + connection endpoints · mobile You + manage sheet + player-detail</div>
+          </div>
+        </div>
+        <div class="promptbox">
+          <div class="ptop"><span class="plabel">M36 · build prompt</span><button class="copybtn" data-src="p-social">⧉ Copy</button></div>
+          <pre><code id="code-p-social"></code></pre>
+        </div>
+        <div class="mlists">
+          <div class="mlist">
+            <div class="lh">Deliverables</div>
+            <ul>
+              <li>SocialLink model: platform, value, visibility, sort</li>
+              <li>/me/socials CRUD + reorder; platform validation</li>
+              <li>Visibility gating: public / friends (=accepted connection) / hidden</li>
+              <li>Public-profile + exchange omit non-public; connection detail adds friends</li>
+              <li>Mobile: colorful socials card + manage sheet (3-way per link)</li>
+              <li>"+N more once you connect" teaser on previews</li>
+            </ul>
+          </div>
+          <div class="mlist acc">
+            <div class="lh">Acceptance</div>
+            <ul>
+              <li>Hidden links never leave the API; friends links only to accepted connections</li>
+              <li>Owner manages value + visibility per platform; persists</li>
+              <li>Preview shows public only + accurate "+N" teaser</li>
+              <li>Connection detail shows public + friends links</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <div>Grounded in the <b>manamap</b> monorepo as of this review · run after the palette reconcile.</div>
+    <div style="margin-top:6px;"><b>Shipped:</b> M14–M18, plus M19–M32 built per audit; docker-compose + push delivery done. <b>Prompt-ready (this doc):</b> M19–M35 — moderation, LFG, rate-limiting, pods, log-a-game, sim harness, RSVP reminders, event check-in, broadcast, event mgmt, staff redemption, notifications, quests, friend-streaks, E2E tests, observability, identity color theming, social card. The full backlog lives in <b>BACKLOG.md</b>.</div></div>
+  </footer>
+
+  <!-- prompt sources (raw text, no escaping needed) -->
+  <script type="text/plain" id="src-p-safety">Add user-safety features — blocking, reporting, and a fast "Go invisible" toggle — to the manamap monorepo (apps/api NestJS + Prisma, apps/mobile Expo). Follow CLAUDE.md conventions: module → service → controller, AuthGuard on protected routes, shared zod schemas in packages/shared/src/index.ts, PostGIS via $queryRaw. All DB ids are TEXT/uuid.
+
+DATA MODEL — apps/api/prisma/schema.prisma:
+- Add `Block` { id, blockerId, blockedId, createdAt }, @@unique([blockerId, blockedId]), @@index([blockedId]); add the matching User relation fields (e.g. `blocksMade Block[] @relation("Blocker")`, `blocksAgainst Block[] @relation("Blocked")`).
+- Add `Report` { id, reporterId, reportedId, reason (enum ReportReason: HARASSMENT | SPAM | FAKE_PROFILE | INAPPROPRIATE | OTHER), detail String?, context String? (e.g. screen or connectionId), status (enum ReportStatus: OPEN | REVIEWED | ACTIONED @default OPEN), createdAt }.
+- Generate + run a migration (pnpm --filter @manamap/api db:migrate).
+
+CORE — create a SafetyService with getBlockedIds(userId): Promise<Set<string>> that returns every userId the caller has blocked OR who has blocked the caller (BIDIRECTIONAL). Reuse it everywhere people are surfaced, and EXCLUDE those ids in:
+- discovery.service.ts → nearby() AND suggestions(): remove blocked ids from `validIds` BEFORE the PRESENCE-encounter write block, so you never log co-presence with a blocked user.
+- exchange.service.ts → resolveToken(): if the resolved user is blocked either way, throw NotFoundException (do not reveal them).
+- connections.service.ts → request creation: reject (Forbidden) if either party has blocked the other.
+- On block: also delete/withdraw any existing Connection row between the two users (either direction). No Redis mutation needed — the discovery filter covers presence.
+
+ENDPOINTS — new SafetyModule (import AuthModule), all AuthGuard + zod-validated:
+- POST   /v1/blocks            { userId }      → create block
+- DELETE /v1/blocks/:userId                    → unblock
+- GET    /v1/blocks                            → [{ id, displayName, avatarColors }]
+- POST   /v1/reports           { userId, reason, detail?, context? } → file report (reporting does NOT auto-block)
+Add to packages/shared: BlockBodySchema, ReportBodySchema, ReportReasonSchema (enum), BlockedUserSchema + inferred types.
+
+GO INVISIBLE — PrivacySettings.discoverable already exists and discovery already respects it. Surface it as a prominent control, not a buried setting:
+- Mobile: add a "Go invisible" toggle on the DiscoverScreen header (and mirror in the You/privacy screen). When invisible, show a clear banner ("You're invisible — nobody here can see you") with one tap back. Use the existing PATCH /v1/me/privacy { discoverable } endpoint with an optimistic TanStack Query update.
+- Make it symmetric: in discovery.nearby(), when the CALLER is not discoverable, skip the PRESENCE-encounter write so an invisible user neither sees-as-met nor is-seen.
+
+MOBILE UI:
+- Add an overflow (•••) menu to PlayerPreviewScreen and the connection-detail/profile view with "Block" and "Report".
+- Block → confirm sheet → POST /v1/blocks → pop screen + invalidate discovery & connections queries.
+- Report → sheet with the reason options + optional detail → POST /v1/reports → success toast; include an "Also block this player" checkbox.
+- Add a "Blocked players" list (GET /v1/blocks) with unblock in the You/settings area.
+
+TESTS: unit-test getBlockedIds (bidirectional) and assert nearby() + resolveToken() exclude blocked users.
+
+OUT OF SCOPE: no admin moderation queue this milestone — reports just persist as OPEN. Leave a comment that the moderation dashboard is future work.</script>
+
+  <script type="text/plain" id="src-p-seed">Build a real store-seeding system for manamap so the map isn't empty at launch. Work in apps/api. Follow CLAUDE.md conventions; stores.geom is PostGIS geography(Point,4326) managed via $executeRaw.
+
+GOAL: replace the 3 hardcoded stores in prisma/seed.ts with a curated, idempotent, file-driven dataset, and make re-seeding safe to run repeatedly (upsert + coordinate refresh, not insert-if-absent — the current seed skips updates with `if (!existing)`).
+
+1) DATA FILE — create prisma/data/stores.json: an array of { name, address, city, state, zip, lat, lng, discordUrl?, website?, timezone? }. Populate it with ~20–40 real, well-known MTG local game stores across ONE or TWO launch metros (pick a focused launch market, e.g. Seattle + Portland). Use accurate coordinates. Add a top-of-file comment naming the launch markets and noting how to append a new city.
+
+2) IDEMPOTENT UPSERT — stores currently have no natural key, so re-seeds would duplicate. Add @@unique([name, city]) to the Store model (name alone is not unique across cities) via a migration. In the seed, for each store: upsert the non-geo columns with Prisma keyed on (name, city), THEN set geometry with a follow-up $executeRaw UPDATE keyed by the row id: ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography. This refreshes coordinates on every run.
+
+3) SCHEMA RECONCILE — the existing seed passes `timezone` but Store has no such column (silently dropped). Add `timezone String?` to Store (useful for event schedules) and populate it. Also add `isPartner Boolean @default(false)` if not already present, so seeded stores can be flagged partner-eligible. Migration for both.
+
+4) CLI — keep `pnpm --filter @manamap/api db:seed` running the full seed (formats, badges, demo users, stores). Add a focused `db:seed:stores` package script that (re)imports ONLY prisma/data/stores.json and logs a summary (created vs updated counts).
+
+5) VERIFY — after seeding, GET /v1/stores?bbox=<launch metro> returns the seeded pins. Document the stores.json format and "how to add a launch city" in README/CLAUDE.md.
+
+OUT OF SCOPE: no automated Google Places / external-API importer this milestone — a curated JSON file is the launch approach; leave it as a comment for later. Keep demo users in seed.ts, NOT in stores.json.</script>
+
+  <script type="text/plain" id="src-p-onboard">Build first-run profile onboarding for manamap so new users land with a complete, exchangeable card instead of a blank one. Work in apps/api (NestJS + Prisma) and apps/mobile (Expo). Follow CLAUDE.md conventions; shared zod schemas in packages/shared.
+
+VISUAL + INTERACTION SPEC: design/app/onboarding.jsx is the approved prototype — match its 5-step flow, live-building preview card, copy, and soft-gate behavior. It's React-for-web; TRANSLATE to React Native (View/StyleSheet, reuse the existing Avatar/ManaPip/Chip components + theme). Do not copy the web code verbatim, and reuse the reconciled Avatar manaColors gradient.
+
+API:
+- Add `onboardedAt DateTime?` to the User model + migration. GET /v1/me must return it (or an `onboarded` boolean).
+- Add POST /v1/me/onboarding: accepts the full draft and applies it in ONE Prisma transaction — profile fields (displayName, pronouns, avatarColors, formats, commander, powerLevel, vibe, bio), privacy (discoverable), deck links, and home store — then sets onboardedAt = now() and returns the updated profile. Validate with a new OnboardingSubmitSchema in packages/shared.
+- Reuse the EXISTING field logic from me.service.ts (updateProfile / updatePrivacy / createDeck / setHomeStore); do NOT create parallel per-field endpoints. The onboarding route is just an atomic wrapper so nothing is half-saved if the user drops off.
+
+MOBILE:
+- Routing: in RootNavigator.tsx, when authenticated AND me.onboardedAt == null, render the Onboarding flow instead of the TabNavigator. On completion, invalidate the `me` query so the navigator swaps to tabs automatically.
+- Flow (from design/app/onboarding.jsx), 5 steps then a 'Your card is ready' summary that renders the real player card:
+  1. Name + pronouns (prefill displayName from the Apple/Discord identity)
+  2. Color identity — tappable WUBRG mana pips (multi-select)
+  3. Play style — formats (multi), commander (text), power level (stepper 1–10), vibe (single-select)
+  4. Contact — Discord handle (prefill from linked identity) + deck links (Moxfield/Archidekt); FULLY skippable
+  5. Home store (reuse the GET /v1/stores?q= search/picker) + a discoverable toggle (default true) with the privacy explanation
+- Keep all draft state in a local reducer/context; hit the network only once, on Finish → POST /v1/me/onboarding.
+- LIVE PREVIEW: a card pinned at the top that updates as the draft changes — avatar gradient from the selected colors (Avatar manaColors), combo/guild name, format chips, commander + power. Reuse the same card building blocks as PlayerPreview/You so it matches.
+- SOFT GATE: disable Continue until each step's required field is set — name non-empty (1), ≥1 color (2), ≥1 format (3), a selected home store (5). Step 4 is skippable. Provide a global Skip: if the user skips, leave onboardedAt null and show a persistent 'Finish your profile' banner on Discover that reopens the flow (do NOT mark them onboarded). 
+
+ACCEPTANCE:
+- A brand-new account is auto-routed into onboarding; an onboarded account goes straight to tabs.
+- Finishing writes profile + privacy + decks + home store in one request and flips onboardedAt; the You tab + a freshly built card reflect every field.
+- Continue gating matches the required/optional rules above; contact is skippable; Skip leaves them un-onboarded with a nudge.
+- Re-opening the app after completion does NOT show onboarding again.
+
+OUT OF SCOPE: photo upload (avatar stays mana-gradient), push-notification permission priming (later), and post-onboarding editing (the existing You-tab editor covers changes).</script>
+
+  <script type="text/plain" id="src-p-dark">Apply the manamap Dusk dark theme (green accent) to the mobile app. Work in apps/mobile. The light "Soft paper" palette is being replaced wholesale — a corrected dark colors.ts is provided alongside this prompt.
+
+1) PALETTE — replace apps/mobile/src/theme/colors.ts with the provided dark colors.ts. It keeps the SAME keys (dark surfaces, light text, green accent #5AA452, brightened status colors; mana identity colors unchanged except a lighter Black-pip ring so it stays visible on dark). Because every screen reads tokens, most of the app turns dark with no per-component edits.
+
+2) STATUS BAR — set the app StatusBar to light content in App.tsx (expo-status-bar: <StatusBar style="light" />) so the time/icons are legible on the dark background.
+
+3) AUDIT HARDCODED LIGHT VALUES — grep apps/mobile/src for literals that bypass the theme and route them through tokens: '#fff' / '#FFFFFF' / 'white' backgrounds, dark hex text colors, and rgba(0,0,0,...) overlays. Known spots to check: SignInScreen uses AppleAuthenticationButtonStyle.BLACK → switch to WHITE for dark (keep the Discord #5865F2 brand color); DiscoverScreen radar gradient; PlayerPreview locked-panel bars (should use colors.border, not a literal). Modals/sheets that default to white must use colors.surface.
+
+4) SEPARATION — on dark, drop shadows nearly vanish. In theme/tokens.ts either raise shadow opacity or (better) lean on borderColor: colors.borderLight so cards (surface) read as distinct from the screen (paper). Verify cards don't disappear into the background.
+
+5) MAPS (optional) — react-native-maps shows light tiles; apply a dark customMapStyle so the Stores map matches the theme. If you skip it, leave a TODO comment.
+
+ACCEPTANCE: every screen (SignIn, Discover, Stores, PlayerPreview, Connect, You, onboarding) renders dark with readable text and no white flashes or dark-on-dark text; the status bar is legible; the green accent is consistent across buttons, toggles, selected states, and the radar "you" node. Test iOS + Android.
+
+NOTE: this replaces the single static theme. A user-facing light/dark TOGGLE is a separate refactor to a ThemeProvider — out of scope here.</script>
+
+  <script type="text/plain" id="src-p-prox">Add proximity gating to store check-in so a player can only check in when they're physically near the store. Work in apps/api (NestJS + Prisma/PostGIS) and apps/mobile (Expo). Follow CLAUDE.md conventions; stores.geom is PostGIS geography(Point,4326).
+
+SCHEMA:
+- Add `checkinRadiusMeters Int?` to the Store model (per-store override; null → global default). Migration. Define DEFAULT_CHECKIN_RADIUS_M = 250 and ACCURACY_CAP_M = 150 as constants.
+
+API — POST /v1/stores/:id/checkin:
+- Extend the request body to { lat, lng, accuracy? } and update CheckinBodySchema / CheckinResultSchema in packages/shared.
+- In stores.service, BEFORE writing the Checkin, compute proximity with $queryRaw using ST_DWithin(store.geom, ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography, allowed). allowed = (store.checkinRadiusMeters ?? DEFAULT_CHECKIN_RADIUS_M) + min(accuracy ?? 0, ACCURACY_CAP_M) — adding the device-reported accuracy as tolerance so poor GPS doesn't block legit users.
+- If outside the radius, throw 422 UnprocessableEntity with a structured body { code: 'too_far', distanceMeters, allowedMeters } (compute distanceMeters via ST_Distance) so the client can show how far off they are.
+- Keep the rest of the existing flow (presence start, gamification job, eligibleOffers) unchanged — only add the gate up front.
+- If store.geom is null (legacy rows), SKIP the distance check and log a warning rather than hard-blocking.
+
+MOBILE — at check-in (StorePicker / Stores detail):
+- Request foreground location with expo-location ONLY when the user taps "Check in" (never on launch). Handle permission denied, location services off, and a timeout.
+- Take a single fix (Location.getCurrentPositionAsync, balanced accuracy) and send lat/lng/accuracy with the checkin mutation. Show a "Checking you in…" state while acquiring it.
+- On 422 too_far: show a friendly sheet — "You're ~{distanceMeters}m away — get within {allowedMeters}m of {store} to check in" + Retry. On permission denied: explain why location is needed with a button to open Settings.
+
+PERMISSIONS/CONFIG: add iOS NSLocationWhenInUseUsageDescription + Android ACCESS_FINE_LOCATION (expo-location plugin) with copy explaining it confirms you're at the store. FOREGROUND ONLY — no background location.
+
+ACCEPTANCE:
+- Checking in from far away is rejected with a clear distance message; on-site check-in succeeds.
+- Poor GPS accuracy widens tolerance rather than hard-failing.
+- Permission denial is handled gracefully with a path to Settings.
+- Per-store checkinRadiusMeters is respected; stores without geom don't crash.
+
+OUT OF SCOPE (note as follow-on): QR/beacon "verified at counter" check-in for reward-grade integrity, and mock-location/anti-spoof detection. GPS gating stops casual cheating; reward redemption should later require the QR path.</script>
+
+  <script type="text/plain" id="src-p-mod">Build the moderation dashboard + enforcement to close the safety loop. M14 already stores Report rows (reason, detail, context, reporterId, reportedId, status OPEN|REVIEWED|ACTIONED) and Block, with SafetyService.getBlockedIds. Today reports are written as OPEN with a "// TODO: admin moderation dashboard" and nothing can action them. Work in apps/api (NestJS + Prisma) and apps/admin (Vite + React + React Router v6 + TanStack Query). Follow CLAUDE.md conventions. VISUAL SPEC: design/moderation-dashboard.html — match its two-pane queue+detail, purple admin tokens (index.css), stat row, filter tabs, reason badges, and resolve actions. It's a standalone mock; wire it to the real API.
+
+SCHEMA (apps/api/prisma/schema.prisma) + migration:
+- User: add `moderationStatus ModerationStatus @default(ACTIVE)` (enum ACTIVE|SUSPENDED|BANNED) and `suspendedUntil DateTime?`.
+- New `ModerationAction` { id, reportId String?, targetUserId, adminId, action (enum ModerationActionType: DISMISS|WARN|SUSPEND|BAN), note String?, createdAt } — an immutable audit log.
+- Report: add `status` already exists; add `resolvedById String?`, `resolvedAt DateTime?`, `resolutionNote String?`.
+
+API — new AdminModerationModule, ALL routes guarded by AuthGuard + @Roles('ADMIN') (the RolesGuard + @Roles decorator + UserRole.ADMIN already exist). Mount under /v1/admin/moderation:
+- GET /reports?status=OPEN|REVIEWED|ACTIONED|ALL — list, newest first. Each item: report id, reason, context, createdAt, status, resolution, and the REPORTED user (id, displayName, handle, avatarColors) + that user's priorReports count and priorActions count. NEVER include reporter identity.
+- GET /reports/:id — detail: same + a "signals" array (other OPEN reports on this user this week; prior ModerationActions like "Warned (date)"). Reporter still hidden.
+- POST /reports/:id/resolve { action: DISMISS|WARN|SUSPEND|BAN, note?, suspendDays? } — in one transaction: set Report.status (DISMISS→REVIEWED, others→ACTIONED) + resolvedById/At/note; write a ModerationAction; apply enforcement to the reported user — WARN: status stays ACTIVE (log only); SUSPEND: moderationStatus=SUSPENDED, suspendedUntil=now+suspendDays (default 7); BAN: moderationStatus=BANNED. On BAN/SUSPEND also withdraw the reported user's active presence (Redis) and, on BAN, their pending connections.
+- Add a stats endpoint or include counts (open, repeatOffenders = OPEN reports whose user has >=3 priorReports, reviewed, actionedAllTime) for the header cards.
+- Shared zod schemas in packages/shared: ModerationReportSchema, ModerationDetailSchema, ResolveReportSchema, ModerationStatsSchema.
+
+ENFORCEMENT (this is the half a dashboard alone misses):
+- In AuthGuard (or a small ModerationGuard run right after it on all protected routes): reject BANNED users (403 'account_banned'); for SUSPENDED, if suspendedUntil > now reject (403 'account_suspended' + until); if suspendedUntil <= now, lazily reset moderationStatus=ACTIVE and allow. Auth/refresh/logout routes stay reachable so the client can sign out cleanly.
+- discovery.nearby()/suggestions() and exchange.resolveToken(): exclude users whose moderationStatus != ACTIVE (a banned/suspended user must not surface or be resolvable), in addition to the existing block filter.
+
+ADMIN PORTAL (apps/admin):
+- Add a route /moderation + page, and a sidebar "Admin" section link shown ONLY when the logged-in user's role is ADMIN (the role is in the JWT/me). Non-admins never see it; the page itself also guards (redirect if not ADMIN).
+- Build the two-pane console from the mock: stat cards, status filter tabs (Open/Reviewed/Actioned/All), the report queue (left) and a sticky detail panel (right) with the reported user, reason, the report quote, signals, repeat-offender flags, an internal-note textarea, and Dismiss/Warn/Suspend 7d/Ban buttons. On resolve → mutate → invalidate the reports + stats queries → toast → auto-advance to the next open report. Reuse index.css classes/tokens; match the purple aesthetic (the mobile app's dark theme does NOT apply to the portal).
+
+ACCEPTANCE:
+- Resolving a report sets its status, writes a ModerationAction audit row, and applies the chosen enforcement.
+- A banned or actively-suspended user is blocked by the API (guard) and excluded from discovery/exchange; suspension auto-expires at suspendedUntil.
+- Non-admins cannot see the nav link, load the page, or call /v1/admin/moderation (403).
+- Reporter identity is never returned by any endpoint.
+- Repeat-offender count + signals render on the detail.
+
+OUT OF SCOPE: appeals flow, bulk actions, email notifications to actioned users, and the "Users" admin browser (leave the sidebar link as a stub). Reports remain the only moderation surface for now.</script>
+
+  <script type="text/plain" id="src-p-lfg">Build the LFG ("Open to play now") feature so players can broadcast they want a game right now at their store, see who else is open, and form a pod. Work in apps/api (NestJS) and apps/mobile (Expo). Follow CLAUDE.md conventions; shared zod schemas in packages/shared. VISUAL SPEC: design/app/lfg.jsx — match LFGStatusBar (CTA → live status with countdown + Edit/Stop), LFGSection (open-players list with format/power/seats/note + Join pod), LFGComposer (format, power slider, seats, duration, note), and PodSheet (seat row + suggested players). Translate web→React Native; reuse Avatar/ManaPip/Chip/theme.
+
+KEY ARCHITECTURE: an LFG session is EPHEMERAL and lives in Redis, exactly like presence — do NOT add a Prisma table for live sessions. Bind it to the user's CURRENT store from the existing presence layer. Reuse DiscoveryService._getPresence (presence:${userId} → storeId, store_members:${storeId} zset) so "open players" are a subset of who's actually checked in.
+
+API — new LfgModule (LfgService + LfgController), all AuthGuard-guarded, under /v1/lfg:
+- Redis key lfg:${userId} = JSON { storeId, format, power, seats, note, createdAt, expiresAt } with EXPIRE = duration (30/60/120 min). A per-store index set lfg_store:${storeId} (zset by expiresAt) holds open user ids; prune expired members on read (mirror the existing presence prune pattern).
+- POST /v1/lfg { format, power (1–10), seats (1–3), durationMins (30|60|120), note? } — requires an active presence (else 409 'not_checked_in'); writes the session keyed to that storeId; returns it. PATCH /v1/lfg edits an active session (keep remaining TTL unless duration changes). DELETE /v1/lfg ends it. GET /v1/lfg/me returns the caller's active session or null.
+- GET /v1/lfg — the feed: other open players at the caller's current store. Resolve lfg_store:${storeId}, drop expired + the caller, then filter the SAME way nearby() does: exclude SafetyService.getBlockedIds, require user.moderationStatus === ACTIVE, and respect each target's privacySettings.discoverable. Return profile (PROFILE_SELECT) + session fields + minutesLeft + a metBefore flag. Validate bodies with new shared schemas (LfgSessionSchema, CreateLfgSchema, LfgFeedItemSchema).
+
+PODS — POST /v1/lfg/:hostUserId/invite { inviteeIds? } sends the host an Expo push ("X wants to join your pod") via the existing sendPushToUser pattern from connections.service.ts. Add POST /v1/lfg/:hostUserId/lock to finalize a pod: write Encounter rows (EncounterSource.GAME, result DRAW as a neutral "played" record) between all seated members so it feeds suggestions' "you've played together" weight and the met-before history, then DELETE the host's lfg session. Keep pod state itself lightweight (no new table) — the durable artifact is the Encounters.
+
+MOBILE — on DiscoverScreen, above the nearby list:
+- LFGStatusBar: if the caller has no active session, the green "Open to play now" CTA → opens the composer sheet; if active, the live card (pulsing dot, format/power/seats chips, minutes-left, Edit/Stop). Poll or refetch GET /v1/lfg/me + GET /v1/lfg with TanStack Query (short staleTime); show minutesLeft counting down.
+- LFGComposer sheet → POST/PATCH /v1/lfg. PodSheet → invite/lock endpoints. Gate the CTA on being checked in (if not, prompt to check in first, reusing the M8 check-in flow).
+- Add a useLfg hook family alongside the existing discovery hooks.
+
+ACCEPTANCE:
+- Going open makes you appear in other present players' GET /v1/lfg; the session auto-expires at its TTL and disappears from all feeds.
+- The feed excludes blocked, non-ACTIVE (banned/suspended), and non-discoverable users, and only includes players currently checked in at the same store.
+- POST without an active check-in returns 409.
+- Sending a pod invite pushes the host; locking a pod writes GAME Encounters between members and clears the session.
+- Edit/Stop reflect immediately in the caller's status bar and others' feeds.
+
+OUT OF SCOPE: full pod chat, scheduled/future LFG, cross-store matchmaking, and recording win/loss results (that's the separate "Log a game" backlog item — here GAME encounters are just neutral "played" records).</script>
+
+  <script type="text/plain" id="src-p-rate">Add rate limiting / abuse caps to the manamap API. Work in apps/api (NestJS on the FASTIFY adapter — important, the app uses FastifyAdapter not Express, so any throttler storage/guard must be Fastify-compatible). Reuse the existing shared Redis client (the REDIS symbol provider from redis.module.ts, a @Global ioredis instance) so counters are distributed across API instances — do NOT use an in-memory store.
+
+APPROACH: use @nestjs/throttler with a Redis storage backend (e.g. a small custom ThrottlerStorage that backs onto the existing REDIS ioredis client via INCR+EXPIRE or a sorted-set sliding window — prefer a sliding window so bursts at window edges don't double the effective rate). Register ThrottlerModule globally with a sensible default and apply named, tighter limits to the abuse-prone write routes. Key the limit by AUTHENTICATED USER id when a valid token is present (req.user.sub), else fall back to client IP.
+
+TRUST PROXY: the app runs behind a proxy in prod, so configure Fastify trustProxy in main.ts (and/or the throttler's getTracker) so the real client IP is used, not the proxy's — otherwise per-IP limits collapse to a single bucket.
+
+LIMITS (make these constants, easy to tune):
+- GLOBAL default: ~100 requests / 60s per user-or-IP across all routes (a backstop; reads should comfortably fit).
+- POST /api/connections (connections.sendRequest): ~10 / 10 min per user. This is the prime spam vector (mass connect requests at a store).
+- POST /api/reports (the M14 safety report endpoint): ~5 / 10 min per user — enough for legit reporting, not for report-bombing someone.
+- POST /api/exchange/token (exchange.mintToken): ~20 / 5 min per user — QR codes legitimately refresh on a ~60s TTL, but cap runaway minting.
+- Leave GET/read endpoints on the loose global default only; do NOT tightly throttle discovery/feed reads (they poll).
+Use @Throttle({ name, limit, ttl }) decorators on those controller methods; keep the global guard via APP_GUARD.
+
+RESPONSES: a tripped limit returns HTTP 429 with a Retry-After header (seconds) and a JSON body { statusCode: 429, error: 'Too Many Requests', message }. Make sure the ThrottlerExceptionFilter/Fastify path actually sets Retry-After.
+
+CONFIG/ENV: allow disabling throttling in test (NODE_ENV === 'test') and via an env flag (e.g. THROTTLE_DISABLED) so e2e/CI isn't flaky; document the defaults in CLAUDE.md.
+
+TESTS: a unit/e2e test that hammers POST /api/connections past its cap and asserts a 429 + Retry-After, and that a different user/IP is unaffected (independent buckets).
+
+ACCEPTANCE:
+- Exceeding any named cap returns 429 with Retry-After; staying under it never trips during normal use.
+- Limits are keyed per-user when authenticated, per-IP otherwise; two users don't share a bucket.
+- Counters live in Redis (verified: limits hold even with two API instances / after a process restart within the window).
+- Real client IP is used behind a proxy (trustProxy effective).
+
+OUT OF SCOPE: WAF/DDoS protection (infra layer), CAPTCHA, and account-level automated bans for abuse (M19 moderation handles human-actioned bans). This is request-rate limiting only.</script>
+
+  <script type="text/plain" id="src-p-pod">Build first-class Pod formation for manamap. REQUIRES M20 (LFG) — pods reuse the same ephemeral Redis + presence approach; do NOT add a Prisma table for live pods. Work in apps/api (extend the LfgModule, or a sibling PodsModule in the same module) and apps/mobile. Follow CLAUDE.md conventions; shared zod schemas in packages/shared. VISUAL SPEC: design/app/pods.jsx — match PodsSection (Discover "Pods forming here" list + Start a pod), PodCreateSheet (format, target-power slider, tolerance ±1/±2/±3, seats, free-text where-to-meet, note), and PodScreen (status banner, where-to-meet, seat row, host: join requests + invite list with fit badges / joiner: "your fit" callout + Ask to join, and a "Pod ready" state). Translate web→React Native; reuse Avatar/ManaPip/Chip/Button/theme.
+
+MODEL (Redis, ephemeral, bound to the host's CURRENT store via the existing presence layer — reuse DiscoveryService._getPresence):
+- pod:${podId} = JSON { id, hostId, storeId, format, targetPower (1-10), tolerance (1-3), seats (2-4), where (free text, max 40), note?, memberIds: string[] (memberIds[0] = host), requestIds: string[], createdAt, expiresAt }. EXPIRE = a sensible TTL (e.g. 90 min); refresh on host activity.
+- pod_store:${storeId} = set of open pod ids at that store; prune expired on read (mirror the LFG/presence prune pattern). A user can host at most one active pod (key user_pod:${userId} = podId).
+
+API — under /v1/pods, all AuthGuard-guarded:
+- POST /v1/pods { format, targetPower, tolerance, seats, where, note? } — requires active presence (else 409 'not_checked_in'); host becomes memberIds[0]; returns the pod. 409 if the user already hosts one.
+- GET /v1/pods — pods open at the caller's current store. For each: host profile (PROFILE_SELECT), seat counts, where, and the CALLER'S fit (see below). Apply the SAME filters as discovery.nearby(): exclude SafetyService.getBlockedIds (either direction), require host.moderationStatus === ACTIVE, and skip pods whose host is non-discoverable. GET /v1/pods/:id — full detail (members + requests as profiles; requests visible to host only).
+- POST /v1/pods/:id/request — caller asks to join (added to requestIds); push the host ("X wants to join your pod"). 409 if full. POST /v1/pods/:id/approve { userId } (host only) — move from requestIds to memberIds if a seat is free, push the approved player; /decline { userId } removes the request. DELETE /v1/pods/:id (host) disbands + clears keys.
+- POST /v1/pods/:id/lock (host) — finalize: write Encounter rows (EncounterSource.GAME, result DRAW as a neutral "played" record) between ALL seated members (every unordered pair), then disband the pod (delete keys). This feeds the suggestion ranker's "played together" weight + met-before history — same pattern as M20's pod lock.
+- Shared schemas: CreatePodSchema, PodSchema, PodFeedItemSchema, PodFitSchema, and a ROLE/seat-cap check.
+
+FIT (compute server-side, return on feed + detail): given a player and a pod —
+- formatMatch = player.formats includes pod.format
+- diff = |player.powerLevel - pod.targetPower|
+- tier: 'great' if formatMatch && diff <= tolerance; 'close' if formatMatch && diff <= tolerance+1; else 'off'. Return { tier, label, reason } (e.g. "Power 7 is in 8±1"). Host invite list = present open players (reuse the LFG/nearby candidate set) sorted great→close→off.
+
+MOBILE:
+- DiscoverScreen: add a "Pods forming here" section (above the LFG individual list) rendering GET /v1/pods with each pod's fit badge, seats, where; tap → PodScreen. A "Start a pod" button → PodCreateSheet (gate on being checked in; if not, prompt to check in first, reuse M8).
+- PodScreen two modes: HOST (your pod) shows pending join requests with Approve/Decline + an "Invite players here" list (fit badges) + seat row + "Pod ready" when full + disband; JOINER shows the seat row, where, your fit callout, and "Ask to join" → "Request sent, waiting for host". Use TanStack Query with short staleTime; add a usePods hook family.
+
+ACCEPTANCE:
+- A host with an active check-in can create exactly one pod; it shows for other present players with their computed fit.
+- Asking to join pushes the host; approving seats the player (and is blocked once seats are full); decline removes the request.
+- Blocked, banned/suspended (moderationStatus != ACTIVE), and non-discoverable hosts/players are excluded from feeds and candidates.
+- Locking a full pod writes GAME Encounters between all members and clears the pod; pods auto-expire at TTL and host disband removes them immediately.
+
+OUT OF SCOPE: pod chat/threads, scheduled pods, win/loss results (the "Log a game" backlog item upgrades the neutral GAME encounters to real results), and cross-store pods.</script>
+
+  <script type="text/plain" id="src-p-log">Build "Log a game" so players record real results after playing, upgrading the neutral DRAW Encounters that M20 (LFG) and M22 (pods) write on lock into real WIN/LOSS records. Work in apps/api (NestJS + Prisma) and apps/mobile. Follow CLAUDE.md conventions; shared zod in packages/shared. VISUAL SPEC: design/app/loggame.jsx — match the stepped log flow (Who played → decks → Who won → confirm), the profile Game-record strip + by-deck bars + recent games, and the Connect "Confirm results" cards. Translate web→React Native; reuse Avatar/Button/theme.
+
+CONTEXT: the Encounter model is PAIRWISE (userId, opponentId, storeId?, eventId?, formatId?, source, result WIN|LOSS|DRAW, notes). Today's store leaderboard (gamification.service) ranks CHECK-INS (streak/total), not games. This milestone adds a durable game record + a games-won leaderboard dimension.
+
+SCHEMA (+ migration):
+- GameLog { id, createdById, storeId?, formatId?, winnerId, status (enum GameStatus: PENDING|CONFIRMED|DISPUTED @default PENDING), note?, createdAt, confirmedAt? }.
+- GamePlayer { id, gameLogId, userId, deck String?, confirmed Boolean @default false } @@unique([gameLogId, userId]). The creator's row is auto-confirmed.
+- Add Encounter.gameId String? (link the pairwise rows back to the GameLog) so confirmed games and ad-hoc co-presence encounters are distinguishable.
+
+API — new GamesModule, AuthGuard:
+- POST /v1/games { storeId?, format, winnerId, players: [{ userId, deck? }], note? } — creator must be in players; winner must be in players; reject if any player is blocked-by/blocking the creator (SafetyService.getBlockedIds) or non-ACTIVE. Create GameLog PENDING + GamePlayer rows (creator.confirmed=true). Push every OTHER player ("X logged a game — confirm the result"). Do NOT write Encounters yet.
+- POST /v1/games/:id/confirm — sets that player's confirmed=true. When ALL players are confirmed, flip GameLog→CONFIRMED, set confirmedAt, and WRITE THE PAIRWISE ENCOUNTERS: single-winner expansion → for each non-winner L: one Encounter (userId=winnerId, opponentId=L, result=WIN) and the reciprocal (userId=L, opponentId=winnerId, result=LOSS); loser↔loser pairs get NO row (they didn't beat each other). Tag all with gameId, storeId, formatId, source=GAME. Enqueue the games-leaderboard refresh.
+- POST /v1/games/:id/dispute — sets status=DISPUTED, notifies the creator, writes no Encounters (a disputed game never counts). 
+- GET /v1/games/pending — games awaiting THIS user's confirmation. GET /v1/me/games?limit= — recent games involving me (with my win/loss + decks).
+- Shared schemas: CreateGameSchema, GameSchema, GamePlayerSchema, GameStatsSchema.
+
+STATS + LEADERBOARD:
+- GET /v1/me/stats (or extend /v1/me): games, wins, losses, winRate, and per-deck { deck, w, l, rate } computed from CONFIRMED GameLogs where the caller played. (Derive from GamePlayer + GameLog.winnerId; do NOT double-count the pairwise Encounters.)
+- Extend gamification: add a games-won leaderboard per store — e.g. leaderboard:${storeId}:wins (zset, count of CONFIRMED games won at that store). Surface it on the store leaderboard alongside the existing streak/total boards (a tab or second list), reusing the existing privacy-aware leaderboard plumbing.
+
+MOBILE:
+- Log flow (stepped sheet, from a locked pod's "Log result" AND standalone from the You tab): pick roster (prefilled from pod members; standalone picks from connections, excluding blocked) → deck per player (mine prefilled from my commander) → single winner → confirm summary → POST. After submit, toast "logged — players notified to confirm".
+- You tab: a "Game record" section (games/wins/win-rate cards + by-deck bars) and a "Recent games" list (GET /v1/me/games).
+- Connect tab: a "Confirm results" section at top (GET /v1/games/pending) with Confirm / Dispute per card; on action, mutate + invalidate stats/pending queries.
+- Add a useGames hook family.
+
+ACCEPTANCE:
+- Logging a game creates a PENDING record and notifies the other players; stats/leaderboard do NOT change until everyone confirms.
+- On full confirmation, the correct pairwise WIN/LOSS Encounters are written (winner beats each other player; losers have no row against each other) and the games-won leaderboard updates.
+- A dispute sets DISPUTED and writes no Encounters.
+- Profile shows W/L, win rate, and per-deck breakdown; the store has a games-won leaderboard next to check-in streaks.
+- Blocked/banned users cannot be added to a roster.
+
+OUT OF SCOPE: full placement (1st–4th) and team games (single-winner only for now), editing a confirmed game (dispute instead), and ELO/ranking math. Keep DRAW rows from pod/LFG lock as-is for games never formally logged.</script>
+
+  <script type="text/plain" id="src-p-sim">Build a DEV-ONLY simulation harness so a single developer can populate manamap with believable activity and reach/interact with every screen solo. Work in apps/api (NestJS) and apps/mobile (Expo). Follow CLAUDE.md conventions. CRITICAL: everything here must be gated OFF in production — reuse the SAME guard the existing POST /v1/auth/dev-login uses (process.env.NODE_ENV !== 'production'); optionally also require process.env.DEV_TOOLS === 'true'. If disabled, the routes 404 and the mobile Dev panel is hidden.
+
+PRINCIPLE: simulated users act through the REAL services, not by inserting fake rows. Drive the existing service methods AS the bot user so every code path (safety filters, presence TTLs, push, encounters) behaves exactly like production. The relevant services + signatures already exist:
+- PresenceService.heartbeat(userId, storeId)
+- LfgService.create(userId, dto) / feed / lock
+- PodsService.create(userId, dto) / request(callerId, podId) / approve / lock
+- ConnectionsService.sendRequest(requesterId, dto) / accept / decline
+- GamesService.create(creatorId, dto) / confirm / dispute
+- ExchangeService.mintToken / resolveToken
+
+SEED BOTS: the API ALREADY has POST /v1/auth/dev-login { email } (gated on NODE_ENV !== 'production') that mints tokens for seeded accounts, and prisma/seed.ts already creates demo users (ghalta@example.com, marchesa@example.com, giada@example.com, krenko@example.com, tatyova@example.com) each with an apple identity + privacySettings. Build on that: add `isBot Boolean @default(false)` to User (migration), set it true on those demo accounts, and EXPAND the seed to ~8 bots with varied avatarColors/formats/powerLevel/commander so feeds look real. Bots must be ACTIVE + discoverable. Reuse the SAME dev-only gate the existing dev-login uses (NODE_ENV !== 'production'); optionally also require DEV_TOOLS === 'true'. Document the bot emails/ids in CLAUDE.md.
+
+DEV MODULE — apps/api/src/dev/, guarded as above, routes under v1/dev (full path /api/v1/dev/* given the global 'api' prefix). The authenticated real caller is treated as "me" / the target. Each endpoint orchestrates real service calls:
+- POST /v1/dev/populate-store { storeId?, count? } — pick N bots, call PresenceService.heartbeat(bot, storeId) for each (storeId defaults to my current presence or my home store), and have ~half call LfgService.create(bot, {format, power, seats, durationMins, note}). Result: Discover radar + LFG feed fill at my store.
+- POST /v1/dev/host-pod { storeId? } — a bot checks in + PodsService.create(bot, {...}); returns the pod so I can request to join and watch the host auto-/manually-approve (optionally auto-approve my request via a follow-up call).
+- POST /v1/dev/request-me { botId? } — a bot calls ConnectionsService.sendRequest(bot, { addresseeId: me }) so a real pending request lands in my Connect tab (and pushes me).
+- POST /v1/dev/accept-mine — bots accept any pending requests I sent them (so my "pending" turns into connections).
+- POST /v1/dev/log-game-with-me { winnerId? } — a bot calls GamesService.create(bot, { players:[me + bots], winnerId, format }) so a PENDING game appears in my "Confirm results"; optionally have the other bots pre-confirm so only my confirm is left.
+- POST /v1/dev/full-scene — runs populate-store + a hosted pod + one connection request + one pending game in sequence (the "make everything alive" button).
+- POST /v1/dev/reset — clear all BOT presence/LFG/pod Redis keys, withdraw bot→me and me→bot pending connections, and delete PENDING bot games. Leave my real data intact. Idempotent.
+Validate bodies with small zod schemas; reuse existing DTOs when calling services.
+
+MOBILE DEV PANEL — a hidden screen (reachable only when DEV_TOOLS is on — e.g. a long-press on the You-tab header or an entry under a __DEV__ guard). Buttons map 1:1 to the endpoints above (Populate store, Host a pod, Send me a request, Accept my requests, Log a game with me, Full scene, Reset), each firing the call then invalidating the relevant TanStack Query caches so the UI updates immediately. Show a tiny result toast. Style it utilitarian (it's not shipping to users) but readable in the dark theme.
+
+ACCEPTANCE:
+- With DEV_TOOLS on, "Full scene" (or the individual buttons) makes Discover, LFG, and Pods populate at my current store; a connection request appears in Connect; a pending game appears in Confirm results — all via real services, so safety/discoverable/TTL rules still apply.
+- I can complete every real interaction solo: join a bot's pod and get approved, accept a bot's request, confirm a bot-logged game.
+- Reset returns me to a clean slate without touching my account.
+- With DEV_TOOLS unset (prod), /v1/dev/* return 404 and the mobile Dev panel is not present.
+
+OUT OF SCOPE: autonomous/looping bot behavior over time (this is on-demand triggers), load testing, and any bot logic in the production bundle. Document the DEV_TOOLS flag + bot ids in CLAUDE.md.</script>
+
+  <script type="text/plain" id="src-p-rsvp">Add RSVP reminder push notifications for events in manamap. Work in apps/api. Follow CLAUDE.md conventions. CONTEXT THAT ALREADY EXISTS: Event { storeId, name, startsAt, endsAt, format, ... }; EventAttendee @@unique([userId, eventId]); StoresService.attendEvent(userId, storeId, eventId) upserts an EventAttendee; getEvents returns isAttending + attendeeCount. BullMQ is already wired (see gamification.module BullModule + gamification.service InjectQueue + leaderboard.processor). Push is done via the sendPushToUser pattern (prisma.pushToken.findMany + Expo, copied across connections/games/lfg/pods services).
+
+GOAL: when a user RSVPs (attends) an event, schedule two reminder pushes — (1) the MORNING OF (e.g. 9am in the store's timezone, using Store.timezone which exists) and (2) ~60 MINUTES BEFORE startsAt. Cancel them if the user un-RSVPs or the event is deleted/moved.
+
+IMPLEMENTATION:
+- Add an 'event-reminders' BullMQ queue + a Processor (mirror gamification's queue/processor setup; reuse the existing Redis connection config).
+- ATTEND: in attendEvent (or a thin EventsService wrapping it), after the EventAttendee upsert, enqueue two DELAYED jobs keyed deterministically by `${eventId}:${userId}:morning` and `${eventId}:${userId}:hour` (use BullMQ jobId for idempotency so re-RSVP doesn't double-schedule). Compute delays from now: skip scheduling a reminder whose fire time is already in the past (e.g. RSVP'ing an event starting in 20 min → only maybe the morning one is skipped, hour one fires soon or is skipped if past). Morning-of time uses the store timezone; if startsAt is today and morning-of already passed, skip it.
+- UN-RSVP: add a DELETE attend path (un-attend) that removes the EventAttendee AND removes both delayed jobs by jobId. Expose it (DELETE /v1/stores/:storeId/events/:eventId/attend) + a useUnattendEvent hook on mobile; the event card's "Going" toggle should toggle both directions.
+- PROCESSOR: on job run, re-load the event + verify the user is still an attendee and the event hasn't started/passed and wasn't cancelled; if all good, sendPushToUser(userId, { title, body, data: { type: 'event_reminder', eventId, storeId } }) with copy like "Friday Commander starts in an hour at Dragon's Den". Make the send idempotent (a job only fires once via jobId; also guard against duplicate by checking event time window).
+- Respect a notifications opt-out if one exists on the user/privacy settings; if none exists yet, just send (note it as a follow-on).
+- If an event's startsAt is edited later, reschedule (best-effort): on event update, remove + re-add jobs for current attendees. If event update isn't a code path yet, leave a documented TODO.
+
+SHARED: no new client schema strictly required beyond the un-attend response; add UnattendEventResponseSchema to packages/shared.
+
+ACCEPTANCE:
+- RSVP'ing schedules a morning-of and a T-60min delayed job (verify jobIds exist in the queue); both skip cleanly if their time has already passed.
+- Un-RSVP (or deleting the event) cancels the pending jobs — no orphan pushes.
+- The reminder fires once and its push payload deep-links to the event (data.eventId/storeId).
+- No reminders for events already started or in the past.
+
+OUT OF SCOPE: email reminders, configurable reminder timing per user, and a full notification-preferences center (note the opt-out hook for later).</script>
+
+  <script type="text/plain" id="src-p-evtci">Add an event-day check-in tie-in to manamap so checking in during an event links you to it and turns the event into live attendance ("who's here for Friday Commander"). Work in apps/api and apps/mobile. Follow CLAUDE.md conventions. CONTEXT: StoresService.checkin(userId, storeId, body) writes a Checkin, starts presence, runs gamification, returns a result object. getEvents returns events for a store (with startsAt/endsAt, isAttending, attendeeCount). EventAttendee @@unique([userId, eventId]); presence is Redis-backed (presence:${userId} → storeId, store_members:${storeId} zset) via PresenceService/DiscoveryService.
+
+SCHEMA: add `eventId String?` to Checkin (nullable FK to Event) + migration, so a check-in can be associated with the event it was for. Index on (eventId).
+
+API:
+- Add a helper to find events "happening now" at a store: startsAt <= now+15min AND (endsAt ?? startsAt+4h) >= now. 
+- Extend the checkin RESULT: include `activeEvents` = events happening now at that store (id, name, startsAt, formatName) so the client can prompt "Here for {event}?". Do NOT auto-associate — let the user pick (they might just be there to shop).
+- POST /v1/stores/:storeId/checkin/:checkinId/event { eventId } (or fold into checkin body as optional eventId) — sets Checkin.eventId AND upserts EventAttendee(userId, eventId) so tagging a check-in also marks attendance. Validate the event is at that store + happening now.
+- Add GET /v1/stores/:storeId/events/:eventId/attendance — returns two groups: HERE NOW = users with an active presence at the store (store_members) who are attending this event (or whose current check-in.eventId == this event), and RSVP'd = EventAttendees not currently present. Each entry = public profile (PROFILE_SELECT), respecting block/moderation/discoverable filters like discovery does. Include a `hereNowCount`.
+- Extend the event objects in getEvents with `hereNowCount` (how many attendees are currently checked in for it) so the calendar/list can show "12 here now".
+
+MOBILE:
+- Check-in result: if activeEvents is non-empty, show a sheet/prompt "Are you here for {event name}?" with the event(s) + a "Just visiting" dismiss. Choosing one calls the associate endpoint and shows confirmation. Reuse the existing check-in success UI; this is an add-on step, not a replacement.
+- Event detail: add a "Who's here" section using the attendance endpoint — a "Here now (N)" group (present) above an "RSVP'd" group, each row a tappable player (→ PlayerPreview). Show the live hereNowCount badge on the event card in the list.
+- Add useEventAttendance + useAssociateCheckinEvent hooks; invalidate the events query after associating.
+
+ACCEPTANCE:
+- Checking in while an event is happening now surfaces it and lets me tag it (or skip).
+- Tagging sets Checkin.eventId AND makes me an attendee; the event's "here now" count + roster include me.
+- Event detail distinguishes who is physically present now vs just RSVP'd, with block/moderation/discoverable respected.
+- Checking in with no active event leaves the flow unchanged.
+
+OUT OF SCOPE: auto check-out ending event presence (lean on existing presence TTL/checkout), per-event chat, and historical "who was here" after the event ends (only live attendance for now).</script>
+
+  <script type="text/plain" id="src-p-bcast">Add a store BROADCAST feature so a verified store owner can push an announcement to players connected to their store. Work in apps/api (NestJS + Prisma) and apps/admin (Vite + React portal). Follow CLAUDE.md conventions. VISUAL SPEC: design/store-tools.html (Broadcast page) — match the audience picker, live push preview, and recent-broadcasts list using the portal's index.css tokens (purple). CONTEXT: store ownership is StoreOwnership (userId↔storeId); the partner module already owner-guards routes under /v1/partner/stores/:storeId/*. Push uses the sendPushToUser pattern (prisma.pushToken.findMany + Expo). Presence is Redis (store_members:${storeId} zset). Checkin rows have checkedInAt + storeId. EventAttendee links users to events.
+
+SCHEMA (+ migration): Broadcast { id, storeId, sentById, audience (enum BroadcastAudience: CHECKED_IN_NOW|TODAY|EVENT_RSVPS|RECENT_30D), title, body, eventId? (when audience=EVENT_RSVPS), recipientCount Int, createdAt }. Optionally add a per-user notification opt-out for store messages (e.g. PrivacySettings.storeMessages Boolean @default true) — if a privacy model doesn't have room, add it; respect it in fan-out.
+
+API — under /v1/partner/stores/:storeId (owner-guarded):
+- GET /broadcast/audiences → counts for each audience right now: CHECKED_IN_NOW (distinct users in store_members Redis set / active presence at this store), TODAY (distinct users with a Checkin at this store since local midnight in Store.timezone), EVENT_RSVPS (attendees of the store's next upcoming event — include the event id+name), RECENT_30D (distinct users with a Checkin in the last 30 days).
+- POST /broadcast { audience, title, body, eventId? } → resolve the recipient userIds for that audience, EXCLUDE opted-out users and the sender, create a Broadcast row with recipientCount, and fan out a push (title, body, data:{ type:'store_broadcast', storeId }) to each recipient (batch via the existing Expo sender). Enforce a per-store daily cap (e.g. 3/day) → 429 with a clear message. Validate body length (<=140) + title (<=40).
+- GET /broadcast → recent broadcasts for the store (body, audience label, recipientCount, createdAt).
+Shared zod: BroadcastAudienceSchema, SendBroadcastSchema, BroadcastSchema, AudienceCountsSchema.
+
+PORTAL: add a "Broadcast" link in the store section of the sidebar + a page: audience radio cards (with live counts from the audiences endpoint), title + body fields with a phone push preview, a send button showing the recipient count, and a recent-broadcasts table. Use TanStack Query; invalidate the recent list after sending; toast on success; surface the 429 cap message.
+
+MOBILE: store_broadcast pushes deep-link to the store detail screen. (No new mobile UI beyond handling the notification tap.)
+
+ACCEPTANCE: only verified owners can broadcast their store; each audience resolves to the correct recipients in the store's timezone; opted-out users + sender are excluded; the daily cap is enforced; the push deep-links to the store and the history shows delivered counts.
+
+OUT OF SCOPE: scheduled/recurring broadcasts, images/rich media, and targeting by format/power (audiences are the four above only).</script>
+
+  <script type="text/plain" id="src-p-evmgmt">Add store EVENT MANAGEMENT so a verified owner has full CRUD over their store's events in the portal. Work in apps/api and apps/admin. Follow CLAUDE.md conventions. VISUAL SPEC: design/store-tools.html (Events page + modal form) — match the events table with Store/Discord/Past badges and the create/edit modal. CONTEXT: Event { storeId, formatId?, source (EventSource STORE|DISCORD|WIZARDS), name, description?, url?, eventChannelUrl?, startsAt, endsAt? }; EventAttendee for RSVPs; partner module owner-guards /v1/partner/stores/:storeId/*; Format has id+name+slug. getEvents already returns store events with attendee counts.
+
+API — under /v1/partner/stores/:storeId/events (owner-guarded):
+- POST → create an event with source=STORE (FORCED server-side; an owner can never create a DISCORD/WIZARDS event). Body: name, formatId?, description?, startsAt, endsAt?, eventChannelUrl?. Validate startsAt is present and endsAt (if given) > startsAt.
+- PATCH /:eventId → edit, but ONLY if event.storeId matches AND event.source === 'STORE'. Editing a DISCORD/WIZARDS (connector-sourced) event → 403 'read_only_event'.
+- DELETE /:eventId → same STORE-only guard; cascade EventAttendee (already onDelete cascade).
+- GET /:eventId (or reuse list) → include attendeeCount for the management table.
+Shared zod: CreateEventSchema, UpdateEventSchema (+ inferred types). When startsAt changes and M25 (RSVP reminders) is present, trigger the reschedule hook noted there.
+
+PORTAL: add an "Events" link in the store sidebar section + a page: a table of the store's events (name, format, when, RSVP count) with Store/Discord/Past badges; a "+ New event" button and an edit modal (name, format select from /v1/formats, starts/ends datetime, description, optional Discord channel url, optional RSVP cap if you add one). Connector-sourced rows show "read-only" instead of Edit. Use TanStack Query + invalidate on save/delete; toast on success.
+
+ACCEPTANCE: a verified owner can create/edit/delete their STORE events and they appear in the mobile store calendar (getEvents); DISCORD/WIZARDS events are not editable (403 + no Edit button); non-owners cannot mutate another store's events; new events are immediately RSVP-able from the app.
+
+OUT OF SCOPE: recurring-event templates, ticketing/payments, and building the Discord/Wizards INGESTION connectors (those remain read-only sources; this is about owner-authored events).</script>
+
+  <script type="text/plain" id="src-p-redeem">Add STAFF OFFER REDEMPTION so store staff can validate + redeem reward offers at the counter, marking each redemption used (one-time). Work in apps/api, apps/admin, and apps/mobile. Follow CLAUDE.md conventions. VISUAL SPEC: design/store-tools.html (Redeem page) — code entry + scan, valid/already-used/invalid result states, recent-redemptions list. CONTEXT + GAP: RewardOffer has a STATIC per-offer redemptionCode (unique) and there is NO redemption-tracking model today, so codes can't be "marked used." This milestone adds per-redemption records. Offers: type FIRST_VISIT|STREAK, active, streakRequired?, startsAt?/endsAt?. Streaks live in the Streak model; first-visit derivable from Checkin history. Partner module owner-guards /v1/partner/stores/:storeId/*.
+
+SCHEMA (+ migration): OfferRedemption { id, offerId, userId, storeId, code (8-char, unique, the ONE-TIME code shown to the player), status (enum RedemptionStatus: PENDING|REDEEMED|VOID @default PENDING), createdAt, redeemedAt?, redeemedByStaffId? } with @@index([storeId, status]). Generate code as 8 uppercase alphanumerics (avoid ambiguous chars 0/O/1/I).
+
+API:
+- PLAYER (auth'd): POST /v1/offers/:offerId/claim → verify the user is eligible for that offer right now (FIRST_VISIT: first-ever checkin at that store; STREAK: current Streak.currentStreak >= streakRequired) and the offer is active + in its date window; create (or return existing PENDING) OfferRedemption with a fresh one-time code; return { code, offer, expiresAt? }. The mobile app shows this code + a QR encoding it.
+- STAFF (owner-guarded, /v1/partner/stores/:storeId): 
+  GET /redemptions/verify?code=XXXXXXXX → resolve the code; return { valid, status, player: publicProfile, offer, qualifyingReason } or a typed error (not_found | wrong_store | already_redeemed | expired_offer | not_eligible). Never reveal anything for a code from another store.
+  POST /redemptions/redeem { code } → re-validate (PENDING, this store, offer still active, still eligible), set status=REDEEMED + redeemedAt + redeemedByStaffId; idempotent/atomic so two staff can't double-redeem (transaction + status guard). Return the updated record.
+  GET /redemptions?status=&limit= → recent redemptions for the store (player, offer, when).
+Shared zod: ClaimOfferSchema, VerifyRedemptionSchema, RedeemSchema, RedemptionResultSchema.
+
+PORTAL: add a "Redeem code" link in the store sidebar + a page: an 8-char code input (auto-uppercase) + a "Scan QR" affordance (camera/manual), a Verify action that calls verify and renders the result card (valid → player + offer + qualifying reason + "Mark redeemed"; already-used → warning; invalid → error), and a recent-redemptions list. On redeem → mutate + toast + clear; invalidate the recent list.
+
+MOBILE: where an eligible offer is surfaced (e.g. the store detail / check-in result eligibleOffers), add a "Redeem at counter" action → calls claim → shows a sheet with the big 8-char code + a QR (react-native-qrcode-svg, already used for exchange). Show PENDING vs REDEEMED state; once redeemed (poll or on focus refetch), reflect it.
+
+ACCEPTANCE: an eligible player can generate a one-time code/QR; staff verify shows the player + offer + why they qualify; redeeming marks it used and a second attempt shows "already redeemed"; invalid/expired/not-eligible/wrong-store codes are rejected; only that store's staff can redeem its codes; double-redeem is impossible (atomic).
+
+OUT OF SCOPE: discounts/payments integration, partial redemptions, and expiring unclaimed codes on a timer (codes are one-time but don't auto-expire unless the offer's window passes; note as a follow-on).</script>
+
+  <script type="text/plain" id="src-p-notif">Add a NOTIFICATIONS CENTER / inbox so every push manamap sends is also persisted and viewable in-app. Work in apps/api and apps/mobile. Follow CLAUDE.md conventions. VISUAL SPEC: design/app/retention.jsx (NotificationsInbox) — a header bell + unread badge opening a screen grouped into "New" (unread, tinted) and "Earlier", rows mixing player avatars and kind-icon tiles. CONTEXT: pushes are sent ad-hoc today via the sendPushToUser pattern (prisma.pushToken.findMany + Expo) duplicated across connections / games / lfg / pods / stores(broadcast) / events(reminders). There is NO notification persistence.
+
+SCHEMA (+ migration): Notification { id, userId, kind (enum NotificationKind: CONNECT_REQUEST|CONNECT_ACCEPTED|NEARBY|POD|GAME_CONFIRM|EVENT_REMINDER|BROADCAST|QUEST), title, body, data Json? (e.g. { playerId, storeId, eventId, connectionId, gameId }), readAt DateTime?, createdAt } @@index([userId, createdAt]).
+
+CORE: create NotificationsService.create(userId, { kind, title, body, data }) that writes the row AND sends the Expo push (fold the existing sendPushToUser logic into it). Then REPLACE every current direct push call site to go through it, so a notification row is always written alongside the push: connection request/accept (ConnectionsService), pod full/seat (PodsService), game logged-confirm (GamesService), event reminder (M25 processor), store broadcast (M27 — one per recipient), nearby "player you've met checked in" (DiscoveryService/PresenceService if such a push exists; if not, add it here), and quest complete (M31). Keep batch efficiency for broadcast (bulk create).
+
+API (AuthGuard): GET /v1/notifications?cursor=&limit= (newest first, paginated), GET /v1/notifications/unread-count, POST /v1/notifications/read { ids? } (mark some or, with no ids, all read), POST /v1/notifications/:id/read. Only ever return the caller's own rows. Shared zod: NotificationSchema, NotificationKindSchema.
+
+MOBILE: add a bell button with an unread badge to the main header (Discover/Connect/You). It opens a Notifications screen: "New" (unread, brand-tinted background + dot) and "Earlier" groups, each row an avatar (when data.playerId) or a kind-icon tile, title + body + relative time. A "Mark read" action clears unread. Tapping a row marks it read and DEEP-LINKS by kind: CONNECT_REQUEST/GAME_CONFIRM → Connect tab; NEARBY → Discover; POD → the pod; BROADCAST/EVENT_REMINDER → the store/event; player-bearing → that player's preview. Add a useNotifications hook (list + unreadCount + markRead) and refetch on screen focus; invalidate unread-count after marking read. Register the bell badge off unread-count.
+
+ACCEPTANCE: every push also creates a Notification for the recipient; the header badge reflects unread count and clears on mark-read; tapping a row opens the correct screen; pagination works; a user only ever sees their own notifications.
+
+OUT OF SCOPE: per-kind notification preferences/mute (note as a follow-on; the M27 store-message opt-out still applies to broadcasts), grouping/collapsing duplicates, and read-sync across devices beyond what the endpoints give.</script>
+
+  <script type="text/plain" id="src-p-quests">Add MONTHLY QUESTS — data-driven, time-boxed challenges with live progress, evaluated like badges. Work in apps/api and apps/mobile. Follow CLAUDE.md conventions. VISUAL SPEC: design/app/retention.jsx (QuestsCard) — a "This month's quests" card, each quest an icon + title + sub + progress bar (or DONE badge) + reward. CONTEXT: badges already use a data-driven evaluator — BadgeCriteria union ({type:'first_checkin'} | {type:'store_total',count} | {type:'global_total',count} | {type:'streak',length} | {type:'unique_stores',count}) evaluated in GamificationService.evaluateAndAwardBadges. Mirror that approach; reuse Badge for the reward.
+
+SCHEMA (+ migration): Quest { id, code, title, description, icon, criteria Json, period (enum QuestPeriod: MONTHLY), rewardBadgeId?, activeFrom DateTime, activeTo DateTime } and QuestProgress { id, userId, questId, progress Int @default 0, completedAt DateTime? } @@unique([userId, questId]). Define a QuestCriteria union EXTENDING the badge style with goals, e.g. { type:'meet_new_players', count } | { type:'new_store' } | { type:'play_games', count } | { type:'checkin_streak', length } | { type:'unique_stores', count }.
+
+CORE: a QuestsService with evaluate(userId) that, for each ACTIVE quest (now within activeFrom..activeTo), computes the user's progress from EXISTING data SINCE activeFrom: meet_new_players = Connections accepted this period; new_store/unique_stores = distinct stores checked in; play_games = CONFIRMED GameLogs this period; checkin_streak = current Streak. Upsert QuestProgress; when progress >= goal and not yet completed, set completedAt, award the rewardBadge (reuse the badge-award path), and fire a QUEST notification (M30). Call evaluate at the natural moments — after a check-in (in/after processCheckin), after a connection is accepted, and after a game is confirmed — plus expose it for a daily sweep.
+
+API (AuthGuard): GET /v1/quests → active quests for the caller with { quest, progress, goal, completed }. Shared zod: QuestSchema, QuestProgressSchema, QuestCriteriaSchema. Seed ~4 launch quests in prisma/seed.ts (meet 3 new players, try a new store, play 5 games, 3-week check-in streak) with their reward badges; document how to add a quest (data only).
+
+MONTHLY ROLLOVER: quests are scoped by activeFrom/activeTo (calendar month). Add a seed/util (or BullMQ repeatable job) that ensures the upcoming month's quests exist; past-period progress stays as history. Keep it simple — seeding the current month is enough for v1; note the cron as follow-on.
+
+MOBILE: on the You tab, a "This month's quests" card (GET /v1/quests) with per-quest progress bars, a DONE state, and the reward; a small "N/M done" header. Invalidate after actions that can bump progress.
+
+ACCEPTANCE: active quests show correct live progress derived from real data; reaching a goal marks complete and awards the badge exactly once (+ a notification); quests are month-scoped and expired ones don't accrue; adding a new quest requires only data (no code deploy).
+
+OUT OF SCOPE: weekly/daily cadences, quest chains, manual claim step (auto-complete on threshold), and a dedicated quests screen (the You-tab card is enough for now).</script>
+
+  <script type="text/plain" id="src-p-rivalry">Add FRIEND-STREAKS / RIVALRIES — reward repeatedly playing the same person. Work in apps/api and apps/mobile. Follow CLAUDE.md conventions. VISUAL SPEC: design/app/retention.jsx (FriendStreaks) — a "Rivalries" list, each row a player + games-together count + flame for hot streaks + your head-to-head record. CONTEXT: M23 (log a game) writes PAIRWISE Encounters on confirmation — Encounter { userId, opponentId, result WIN|LOSS|DRAW, source GAME, gameId, createdAt }. A rivalry is just an aggregation of these by opponent; NO new write-path is needed.
+
+CORE: a RivalriesService that, for a user, aggregates GAME-source Encounters grouped by opponentId into { opponentId, gamesTogether (count of distinct gameIds), wins (result=WIN), losses (result=LOSS), lastPlayedAt, hot (>=N games in the last ~30 days) }. Exclude opponents the user has blocked or who blocked them (SafetyService.getBlockedIds) and any non-ACTIVE (banned/suspended) opponent. Sort by gamesTogether desc, then lastPlayedAt.
+
+API (AuthGuard): GET /v1/me/rivalries?limit= → top opponents with public profile (PROFILE_SELECT) + { gamesTogether, wins, losses, record:"W–L", lastPlayedAt, hot }. GET /v1/rivalries/:opponentId → the head-to-head detail for one opponent (for the connection-detail view). Shared zod: RivalrySchema. OPTIONAL: a data-driven "rivalry" badge (e.g. 5+ games vs one player) via the existing badge path — wire it as a quest/badge criterion if cheap, else note as follow-on.
+
+MOBILE: on the You tab, a "Rivalries" section (GET /v1/me/rivalries) — each row: avatar, name, games-together (flame when hot), and your record (e.g. 4–2), tappable to that player. On the connection-detail screen, add a compact "Head-to-head" line (GET /v1/rivalries/:opponentId) showing games + record. Add a useRivalries hook; refetch after a game is confirmed.
+
+ACCEPTANCE: rivalry records exactly match the underlying WIN/LOSS Encounters; the list ranks by games-together and shows last-played + a hot flag; the connection detail shows your head-to-head with that player; blocked or non-ACTIVE opponents never appear.
+
+OUT OF SCOPE: rivalry chat/taunts, notifications on rivalry milestones (could fold into M31 quests later), and cross-format rivalry splits (aggregate all formats together for v1).</script>
+
+  <script type="text/plain" id="src-p-e2e">Add an END-TO-END test suite for the manamap API. Work in apps/api. Follow CLAUDE.md conventions. CONTEXT: NestJS on the Fastify adapter (platform-fastify), global 'api' prefix + zod validation pipe. Unit specs already exist under src/**/__tests__ (auth.guard, token.service, safety.service, throttle.guard) run by `jest`. There is NO E2E layer yet. A dev-only POST /api/v1/auth/dev-login { email } exists (NODE_ENV !== 'production') to mint tokens for seeded users without OAuth — USE IT to authenticate in tests. docker-compose provides postgres(postgis) + redis.
+
+SETUP:
+- Add a separate Jest E2E project: test/jest-e2e.json (testRegex .e2e-spec.ts$, node env, ts-jest) and a `test:e2e` script. Bootstrap the real Nest app with the Fastify adapter in a global setup helper (test/setup-e2e.ts): create the app, apply the same global prefix + validation pipe as main.ts, await app.init() and app.getHttpAdapter().getInstance().ready() (Fastify), and use supertest against app.getHttpServer() (or Fastify's inject). Add supertest + @types/supertest as devDeps.
+- TEST DB: run against a real Postgres+Redis (the docker-compose services) using a TEST_DATABASE_URL. Before the suite, run prisma migrate deploy + the seed (formats, stores, bots) against the test DB; reset state between suites by truncating mutable tables (or wrapping each spec file in a clean reseed). Provide a documented `pnpm --filter @manamap/api test:e2e` that assumes docker compose is up.
+
+FLOWS TO COVER (happy path + the key guards):
+- Auth + onboarding: dev-login → GET /me (onboardedAt null) → POST /me/onboarding → GET /me reflects fields + onboardedAt set.
+- Check-in proximity (M18): check-in at a seeded store with on-site coords → 200; with far coords → 422 { code:'too_far' }.
+- Discovery + connect: two dev users both present at a store → GET /discovery/nearby shows the other → POST /connections → accept → GET /connections/:id exposes contact only after accept.
+- Exchange: mint token → resolve → returns public profile only (no discord/decks).
+- LFG/pods/games: create LFG; create pod, request+approve a seat, lock; log a game (creator) → other confirms → GET /me/stats reflects the win/loss.
+- Safety gates: blocked user excluded from /discovery/nearby (both directions) and exchange resolve returns 404; a BANNED user's token is rejected 403 by the guard.
+- Authz: protected route without a token → 401; admin-only moderation route as non-admin → 403.
+
+Keep specs isolated and deterministic (unique users per spec via dev-login emails; no cross-test order dependence). Add a CI step (GitHub Actions) that spins up postgres+redis services and runs test:e2e. Do NOT mock the DB/Redis — these are real-integration tests; only external HTTP (Apple/Discord/Expo push) may be stubbed.
+
+ACCEPTANCE: `pnpm --filter @manamap/api test:e2e` migrates+seeds the test DB, runs the flows over real HTTP, and tears down cleanly; the core happy paths pass; auth/proximity/safety gates assert 401/403/422 correctly; the suite is repeatable with a clean DB each run.
+
+OUT OF SCOPE: mobile/Detox E2E, load testing, and 100% coverage — target the critical flows above.</script>
+
+  <script type="text/plain" id="src-p-observ">Add OBSERVABILITY (structured logging + error tracking) to the manamap API. Work in apps/api. Follow CLAUDE.md conventions. CONTEXT: NestJS on the Fastify adapter; today only the stock NestJS Logger is used ad-hoc in a few services (apple/discord/auth/stores). No request logging, no correlation IDs, no global exception handling, no error tracking. Config is validated via a zod config schema.
+
+LOGGING:
+- Add nestjs-pino (pino + pino-http) as the app logger; set app.useLogger() so Nest's own logs route through pino. JSON logs in production, pretty (pino-pretty) in dev (gate on NODE_ENV).
+- Attach a correlation/request id to every request (generate if absent, echo an incoming x-request-id) and include it on every log line for that request via pino-http's genReqId + child logger. Log method, path, statusCode, and latency for each request.
+- REDACTION: configure pino redact paths so secrets never hit logs — Authorization headers, cookies, JWTs, refresh tokens, Discord/Apple tokens, push tokens. Verify a login request doesn't log the token.
+- Set a sensible log level via config (LOG_LEVEL, default 'info'; 'debug' in dev).
+
+ERROR HANDLING:
+- Add a global exception filter (Fastify-compatible) that: logs the exception with stack + request id at error level (warn for expected 4xx like validation/401/403), and returns a consistent JSON error body { statusCode, error, message, requestId } without leaking internals on 500. Preserve the existing typed error codes (e.g. too_far, account_banned) — don't flatten them.
+- Ensure unhandled promise rejections / uncaught exceptions are logged (process handlers) rather than dying silently.
+
+ERROR TRACKING (optional, flag-gated):
+- Integrate Sentry (@sentry/node) initialized ONLY when SENTRY_DSN is set; capture unhandled exceptions + 5xx from the filter, tag with request id + environment. When DSN is unset it must be a complete no-op (no init, no overhead). Add SENTRY_DSN to the config schema as optional.
+
+MIGRATE: replace the ad-hoc `new Logger(X.name)` usages with the pino-backed logger (inject PinoLogger or Nest Logger now routed through pino) so all logs share one structured format. Keep messages, gain structure.
+
+ACCEPTANCE: every request emits one structured log line with method/path/status/latency + a correlation id (echoed back as x-request-id); unhandled errors are logged with a stack and return a clean typed JSON body (no stack leak on 500); Authorization/token fields are redacted in logs; with SENTRY_DSN set, errors reach Sentry tagged with env + request id, and with it unset the app runs identically with no Sentry overhead.
+
+OUT OF SCOPE: metrics/tracing (Prometheus/OpenTelemetry), log shipping/aggregation infra, and dashboards — this is app-level logging + error capture only; note APM as a follow-on.</script>
+
+  <script type="text/plain" id="src-p-identity">Add IDENTITY COLOR THEMING so the app is personalized around each player's mana colors, and apply the colorful hero/banner redesign to the You and Discover screens. Work in apps/mobile. Follow CLAUDE.md conventions. VISUAL SPEC: the prototype in design/app (manamap.html) — ProfileScreen identity hero, the gradient win-rate stat card, DiscoverScreen gradient location banner, and the identity-gradient radar center. CONTEXT: theme tokens live in apps/mobile/src/theme (Dusk dark palette in colors.ts; spacing/radii/shadows in tokens.ts); the brand/accent is currently a single static color (colors.accent). The player's chosen colors are user.avatarColors (WUBRG[], set in M16 onboarding). ManaPip/Avatar already render mana colors.
+
+ACCENT SYSTEM (theme):
+- Add a MANA_ACCENT map — a vivid, UI-ready accent per mana color (the pip fills are too pale to use as an accent; by MTG convention render Black as violet and White as gold so they read on the dark theme): W #D7A93C, U #3E8FE6, B #8E63D6, R #EC5B47, G #4FA85C, C #8E8896.
+- Helpers: manaAccent(colors) = MANA_ACCENT[colors[0]] (fallback C); manaAccent2(colors) = last color's accent; identityGradient(colors) = a linear gradient (single color → shade(+10)→shade(-22); multi → each color's accent as stops); readableOn(hex) = '#2A211B' if luminance>0.62 else '#fff'.
+- Add a useIdentityTheme() hook (or extend the existing theme context) that reads the CURRENT user's avatarColors (from the me/profile query/store) and returns { accent, accent2, gradient, onAccent, soft, ink } — where soft/ink mirror the existing brand-soft/brand-ink derivations (e.g. mix accent into surface/ink). Provide a manual-override fallback for users with no colors yet (use colors.accent). It must recompute when avatarColors change.
+
+APPLY:
+- Route the app's accent through useIdentityTheme so buttons, the active tab color, links, toggles, selected states, the Scan FAB, and "open to play" CTAs use the player's accent (replace direct colors.accent reads in shared Button/Tab/etc. with the identity accent). Keep contrast safe via onAccent.
+- YOU screen: replace the plain profile card header with an IDENTITY HERO — a rounded banner filled with identityGradient(avatarColors) containing the avatar, name, handle/pronouns, and a translucent chip with the mana pips + guild/combo name; below it (on surface) the Share/Edit actions. Make the "Win rate" stat card use the identity gradient with onAccent text. Keep the existing game-record/quests/rivalries sections, but let their accents follow the identity.
+- DISCOVER screen: add a gradient location banner (identityGradient) showing the checked-in store + player count, and make the radar's center node use the identity gradient with a matching glow; tint the rings/pulse with the accent.
+- Use react-native-svg / expo-linear-gradient (whichever the app already uses for Avatar/QR) for the gradients; do NOT introduce a second gradient lib.
+
+ACCEPTANCE: a mono-Green player sees a green app (You hero, win-rate card, Discover banner, radar, tab accent); an Izzet (U+R) player sees a blue→red gradient with a blue accent; accent text remains readable via onAccent; editing avatarColors in profile edit recolors the app immediately; the You and Discover screens match the prototype's hero/banner treatment.
+
+OUT OF SCOPE: theming every screen's background (keep the Dusk surfaces; only accents/heroes are identity-colored), a user-facing manual color picker beyond the existing color selection, and light mode.</script>
+
+  <script type="text/plain" id="src-p-social">Add a SOCIAL CARD with per-link visibility so players share their socials (Discord, Instagram, Twitch, YouTube, X, TikTok, Facebook, website, phone), each set to Public / Friends-only / Hidden, gated server-side exactly like the existing Discord/deck contact data. Work in apps/api and apps/mobile. Follow CLAUDE.md conventions; shared zod in packages/shared. VISUAL SPEC: design/app (manamap.html) — the SocialsCard (colorful brand-tiled rail + rows + visibility summary) and the manage sheet (per-platform value + 3-way visibility). CONTEXT: today contact-gating exists for Discord + deck links — public/discovery/exchange responses already strip them and they're only returned by the connection endpoint once status=accepted AND privacy flags allow (see PROFILE_SELECT / the contact-gating in connections + exchange). Reuse that exact gating pattern.
+
+SCHEMA (+ migration): SocialLink { id, userId, platform (enum SocialPlatform: DISCORD|INSTAGRAM|TWITCH|YOUTUBE|X|TIKTOK|FACEBOOK|WEBSITE|PHONE), value String, visibility (enum SocialVisibility: PUBLIC|FRIENDS|HIDDEN @default PUBLIC), sort Int } @@unique([userId, platform]) @@index([userId]). (Keep the legacy User.discord/deck_links as-is, or migrate Discord into a SocialLink seed — your call; if you migrate, keep the connect-time Discord reveal working.)
+
+API (AuthGuard):
+- /me/socials CRUD: GET list (mine, all visibilities), POST add { platform, value, visibility }, PATCH /:id { value?, visibility? }, DELETE /:id, and a reorder endpoint (sort). Validate platform-appropriate values (e.g. PHONE numeric-ish, WEBSITE a URL, handles non-empty); strip leading @ consistently. One row per platform (the @@unique).
+- GATING — define a single helper visibleSocials(targetUserId, viewerId) that returns: PUBLIC links always; FRIENDS links ONLY when viewer has an accepted Connection with target (and is not blocked / both ACTIVE); HIDDEN never. Then:
+  • Public profile + GET /discovery/nearby + exchange.resolve → PUBLIC socials only (and never PHONE unless PUBLIC).
+  • GET /connections/:id (accepted) → PUBLIC + FRIENDS socials (respect existing per-field privacy flags too).
+  • Always include a publicCount + friendsOnlyCount on the profile payload so the client can render a "+N more once you connect" teaser WITHOUT leaking the hidden values.
+- Shared zod: SocialPlatformSchema, SocialVisibilitySchema, SocialLinkSchema, SocialLinkInputSchema.
+
+MOBILE:
+- A SOCIAL_META map (label, brand color, icon per platform) — reuse the prototype's colors (Discord #5865F2, Twitch #9146FF, YouTube #FF3B30, Instagram #E1306C, X #52525B, Facebook #1877F2, Phone #34C759, Website #14B8A6, TikTok #FE2C55). Add the icons (react-native-svg) for the platforms the icon set lacks.
+- SocialsCard component with mode owner|friend|public: a colorful brand-tiled rail + a row list (icon tile, platform label, value, copy/open); owner shows a "Public N · Friends N · Hidden N" summary + Manage; public mode shows only public links + a "+{friendsOnlyCount} more shared once you connect" teaser; friend mode shows public + friends.
+- You screen: render SocialsCard (owner) prominently under the identity hero, with a Manage action opening a sheet — per-platform value input + a 3-way Public/Friends/Hidden segmented control + add/remove platform + reorder. Persist via /me/socials.
+- Player detail: render SocialsCard (public before connect → friend after) from the gated profile/connection payload. Copy action for handles/phone; open action for URLs.
+
+ACCEPTANCE: HIDDEN links never appear in any API response; FRIENDS links appear only to accepted connections; the owner can set value + visibility per platform and it persists + reorders; a non-connected viewer sees public links + an accurate "+N more once you connect" teaser (never the hidden values); a connected viewer sees public + friends links; the card matches the prototype's colorful treatment.
+
+OUT OF SCOPE: OAuth verification / verified-handle checkmarks, deep-linking into each native app (basic copy/open is enough), and analytics on link taps — note verification as a follow-on.</script>
+
+  <script>
+    document.querySelectorAll('.promptbox').forEach((box) => {
+      const btn = box.querySelector('.copybtn');
+      const key = btn.dataset.src;
+      const text = document.getElementById('src-' + key).textContent.trim();
+      document.getElementById('code-' + key).textContent = text;
+      btn.addEventListener('click', () => {
+        const done = () => { btn.classList.add('done'); btn.textContent = '✓ Copied';
+          setTimeout(() => { btn.classList.remove('done'); btn.textContent = '⧉ Copy'; }, 1600); };
+        const fallback = () => {
+          const ta = document.createElement('textarea'); ta.value = text;
+          ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); done(); } catch (e) {} document.body.removeChild(ta);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(fallback);
+        else fallback();
+      });
+    });
+  </script>
+</body>
+</html>

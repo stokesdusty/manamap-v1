@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>manamap — MTG Social Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&family=Figtree:wght@400;500;600;700;800;900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #14110e;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  #root { width: 100%; }
+  button { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+
+  /* ── derived brand tokens (recompute as --brand / surface / ink change) ── */
+  [data-theme] {
+    --on-brand: #fff;
+    --brand-soft: color-mix(in srgb, var(--brand) 14%, var(--surface));
+    --brand-ink:  color-mix(in srgb, var(--brand) 62%, var(--ink));
+    --brand-shadow: color-mix(in srgb, var(--brand) 36%, transparent);
+    --r-lg: 22px; --r-md: 15px; --r-btn: 15px;
+  }
+
+  /* ── Soft paper (default) ── */
+  [data-theme="soft"] {
+    --bg:#F4ECE0; --surface:#FFFCF6; --ink:#2A211B; --ink-2:#5B5048; --muted:#9C8E7F;
+    --line:#EBE0D1; --line-strong:#D9CBB8; --chip-bg:#EFE6D8; --chip-fg:#6C5E50;
+    --radar-ring:rgba(120,90,60,0.16);
+    --header-bg:rgba(244,236,224,0.8); --tabbar-bg:rgba(255,252,246,0.82);
+    --tab-idle:#B7A998; --switch-off:#DCD0BF; --lock-veil:rgba(255,252,246,0.42);
+    --shadow-card:0 2px 4px rgba(80,55,30,0.04), 0 8px 22px rgba(80,55,30,0.07);
+    --shadow-row:0 1px 2px rgba(80,55,30,0.05);
+  }
+  /* ── Bright pop ── */
+  [data-theme="pop"] {
+    --bg:#FBF8F2; --surface:#FFFFFF; --ink:#221C16; --ink-2:#54493F; --muted:#948A7E;
+    --line:#EFEAE1; --line-strong:#E0D8CB; --chip-bg:#F3EEE5; --chip-fg:#5F564B;
+    --radar-ring:rgba(120,90,60,0.14);
+    --header-bg:rgba(251,248,242,0.82); --tabbar-bg:rgba(255,255,255,0.85);
+    --tab-idle:#B3A899; --switch-off:#E0D8CB; --lock-veil:rgba(255,255,255,0.5);
+    --r-lg:26px; --r-md:18px; --r-btn:18px;
+    --shadow-card:0 3px 8px rgba(70,45,20,0.06), 0 14px 34px rgba(70,45,20,0.10);
+    --shadow-row:0 2px 6px rgba(70,45,20,0.06);
+  }
+  /* ── Dusk ── */
+  [data-theme="dusk"] {
+    --bg:#191420; --surface:#241E2E; --ink:#F3ECF6; --ink-2:#C4B9CF; --muted:#8E839B;
+    --line:#332B40; --line-strong:#463C56; --chip-bg:#322A3E; --chip-fg:#C4B9CF;
+    --radar-ring:rgba(255,255,255,0.10);
+    --header-bg:rgba(25,20,32,0.7); --tabbar-bg:rgba(25,20,32,0.8);
+    --tab-idle:#6E6480; --switch-off:#463C56; --lock-veil:rgba(36,30,46,0.5);
+    --brand-ink: color-mix(in srgb, var(--brand) 52%, var(--ink));
+    --shadow-card:0 4px 10px rgba(0,0,0,0.3), 0 16px 40px rgba(0,0,0,0.4);
+    --shadow-row:0 2px 8px rgba(0,0,0,0.25);
+  }
+
+  /* ── keyframes ── */
+  @keyframes mm-pulse { 0% { transform: scale(.4); opacity:.28; } 100% { transform: scale(3.3); opacity:0; } }
+  @keyframes mm-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes mm-scan { 0% { transform: translateY(18px); } 50% { transform: translateY(220px); } 100% { transform: translateY(18px); } }
+  @keyframes mm-slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  @keyframes mm-slide-out { from { transform: translateX(0); } to { transform: translateX(100%); } }
+  @keyframes mm-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes mm-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes mm-toast { 0% { transform: translateX(-50%) translateY(10px); opacity:0; } 100% { transform: translateX(-50%) translateY(0); opacity:1; } }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- data (plain JS) -->
+  <script src="app/data.js"></script>
+
+  <!-- frames + helpers (babel) -->
+  <script type="text/babel" src="frames/ios-frame.jsx"></script>
+  <script type="text/babel" src="frames/tweaks-panel.jsx"></script>
+  <script type="text/babel" src="app/icons.jsx"></script>
+  <script type="text/babel" src="app/components.jsx"></script>
+  <script type="text/babel" src="app/cards.jsx"></script>
+  <script type="text/babel" src="app/ui.jsx"></script>
+  <script type="text/babel" src="app/screens-discover.jsx"></script>
+  <script type="text/babel" src="app/screens-detail.jsx"></script>
+  <script type="text/babel" src="app/screens-connect.jsx"></script>
+  <script type="text/babel" src="app/lfg.jsx"></script>
+  <script type="text/babel" src="app/pods.jsx"></script>
+  <script type="text/babel" src="app/loggame.jsx"></script>
+  <script type="text/babel" src="app/retention.jsx"></script>
+  <script type="text/babel" src="app/socials.jsx"></script>
+  <script type="text/babel" src="app/onboarding.jsx"></script>
+  <script type="text/babel" src="app/screens-home.jsx?v=4"></script>
+  <script type="text/babel" src="app/walkthrough.jsx"></script>
+  <script type="text/babel" src="app/screens-stores.jsx"></script>
+  <script type="text/babel" src="app/screens-history.jsx"></script>
+  <script type="text/babel" src="app/screens-lifetracker.jsx"></script>
+  <script type="text/babel" src="app/screens-playonline.jsx"></script>
+  <script type="text/babel" src="app/App.jsx"></script>
+</body>
+</html>

@@ -49,7 +49,11 @@
       "Bash(tar -xzOf /tmp/metro-0.81.5.tgz package/src/Bundler.js)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:v for k,v in d.get\\('dependencies',{}\\).items\\(\\) if 'cli' in k.lower\\(\\) or 'metro' in k.lower\\(\\)}, indent=2\\)\\)\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('version:', d['version']\\); deps=d.get\\('peerDependencies',{}\\); print\\('peers:', json.dumps\\(deps, indent=2\\)\\)\")",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); deps=d.get\\('dependencies',{}\\); print\\(deps.get\\('babel-preset-expo','NOT FOUND'\\)\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); deps=d.get\\('dependencies',{}\\); print\\(deps.get\\('babel-preset-expo','NOT FOUND'\\)\\)\")",
+      "Bash(pnpm store *)",
+      "Bash(psql \"postgresql://manamap:manamap@localhost:5432/manamap\" -c \"\\\\dt users\")",
+      "Bash(Get-ChildItem \"c:\\\\dev\\\\manamap\\\\apps\\\\api\\\\prisma\\\\migrations\")",
+      "Bash(Select-Object -Last 5 -ExpandProperty Name)"
     ]
   }
 }

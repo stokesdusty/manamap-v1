@@ -75,6 +75,11 @@ export class AuthService {
     await this.prisma.identity.create({
       data: { userId: user.id, provider: 'discord', providerId: profile.id, discordHandle },
     });
+    await this.prisma.socialLink.upsert({
+      where: { userId_platform: { userId: user.id, platform: 'DISCORD' } },
+      create: { userId: user.id, platform: 'DISCORD', value: discordHandle, visibility: 'PUBLIC' },
+      update: {},
+    });
     return this.tokens.issueTokens(user.id, user.email);
   }
 

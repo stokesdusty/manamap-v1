@@ -78,16 +78,18 @@ function StepHeader({
         hitSlop={8}
       >
         {onBack ? (
-          <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
+          <Ionicons name="chevron-back" size={22} color={colors.accent} />
         ) : (
           <View style={{ width: 22 }} />
         )}
       </Pressable>
-      <View style={{ flex: 1, alignItems: 'center', gap: 4 }}>
-        <Text style={hdr.stepLabel}>
-          {step} of {total}
-        </Text>
+      <View style={{ flex: 1, alignItems: 'center', gap: 6 }}>
         <Text style={hdr.title}>{title}</Text>
+        <View style={hdr.pills}>
+          {Array.from({ length: total }).map((_, i) => (
+            <View key={i} style={[hdr.pill, i < step && hdr.pillFilled]} />
+          ))}
+        </View>
       </View>
       <View style={{ width: 22 }} />
     </View>
@@ -104,18 +106,14 @@ const hdr = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   back: { padding: 2 },
-  stepLabel: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
   title: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.lg,
     color: colors.textPrimary,
   },
+  pills: { flexDirection: 'row', gap: 4 },
+  pill: { width: 20, height: 4, borderRadius: 2, backgroundColor: colors.borderLight },
+  pillFilled: { backgroundColor: colors.accent },
 });
 
 export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, storeId }: Props) {
@@ -145,7 +143,7 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
     }
     setRoster(base);
     setWinnerId('');
-    setStep('roster');
+    setStep(preselectedPlayers ? 'decks' : 'roster');
   }
 
   const acceptedConnections: RosterPlayer[] = (connections?.accepted ?? []).map((c) => ({
@@ -203,7 +201,7 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
   function RosterStep() {
     return (
       <>
-        <StepHeader step={1} total={3} title="Who played?" />
+        <StepHeader step={1} total={4} title="Who played?" />
         <ScrollView contentContainerStyle={sh.scroll} keyboardShouldPersistTaps="handled">
           <Text style={sh.sectionLabel}>IN GAME ({roster.length}/4)</Text>
           {roster.map((p) => (
@@ -268,7 +266,12 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
   function DecksStep() {
     return (
       <>
-        <StepHeader step={2} total={3} title="What did you play?" onBack={() => setStep('roster')} />
+        <StepHeader
+          step={preselectedPlayers ? 1 : 2}
+          total={preselectedPlayers ? 3 : 4}
+          title="What did you play?"
+          onBack={preselectedPlayers ? undefined : () => setStep('roster')}
+        />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
@@ -317,7 +320,12 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
   function WinnerStep() {
     return (
       <>
-        <StepHeader step={3} total={3} title="Who won?" onBack={() => setStep('decks')} />
+        <StepHeader
+          step={preselectedPlayers ? 2 : 3}
+          total={preselectedPlayers ? 3 : 4}
+          title="Who won?"
+          onBack={() => setStep('decks')}
+        />
         <ScrollView contentContainerStyle={sh.scroll}>
           {roster.map((p) => {
             const selected = winnerId === p.userId;
@@ -361,6 +369,7 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
 
   function ConfirmStep() {
     const winner = roster.find((p) => p.userId === winnerId);
+    const others = roster.filter((p) => p.userId !== winnerId);
 
     return (
       <>
@@ -370,7 +379,7 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
             onPress={() => setStep('winner')}
             hitSlop={8}
           >
-            <Ionicons name="chevron-back" size={22} color={colors.textSecondary} />
+            <Ionicons name="chevron-back" size={22} color={colors.accent} />
           </Pressable>
           <Text style={[hdr.title, { flex: 1, textAlign: 'center' }]}>Confirm game</Text>
           <View style={{ width: 22 }} />
@@ -378,31 +387,22 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
 
         <ScrollView contentContainerStyle={sh.scroll}>
           <View style={sh.confirmCard}>
-            <Text style={sh.sectionLabel}>PLAYERS</Text>
-            {roster.map((p) => (
+            <Text style={sh.sectionLabel}>WINNER</Text>
+            {winner && (
+              <View style={sh.winnerHero}>
+                <PlayerAvatar player={winner} size={40} />
+                <Text style={sh.winnerHeroName} numberOfLines={1}>{winner.displayName}</Text>
+                <Ionicons name="sparkles" size={18} color={colors.accent} />
+              </View>
+            )}
+            {others.length > 0 && <View style={sh.confirmDivider} />}
+            {others.map((p) => (
               <View key={p.userId} style={sh.confirmRow}>
-                <PlayerAvatar player={p} size={32} />
-                <View style={{ flex: 1 }}>
-                  <Text style={sh.confirmName} numberOfLines={1}>{p.displayName}</Text>
-                  {p.deck.trim() ? (
-                    <Text style={sh.confirmDeck} numberOfLines={1}>{p.deck}</Text>
-                  ) : null}
-                </View>
-                {p.userId === winnerId && (
-                  <View style={sh.winBadge}>
-                    <Text style={sh.winBadgeText}>Winner</Text>
-                  </View>
-                )}
+                <PlayerAvatar player={p} size={26} />
+                <Text style={sh.confirmName} numberOfLines={1}>{p.displayName}</Text>
               </View>
             ))}
           </View>
-
-          {winner && (
-            <View style={sh.winnerBanner}>
-              <Ionicons name="trophy-outline" size={20} color={colors.success} />
-              <Text style={sh.winnerBannerText}>{winner.displayName} wins</Text>
-            </View>
-          )}
 
           <Text style={sh.confirmHint}>
             Other players will be notified to confirm. Stats update when everyone confirms.
@@ -481,11 +481,11 @@ const sh = StyleSheet.create({
   },
   scroll: { padding: spacing.xl, gap: spacing.md, paddingBottom: 120 },
   sectionLabel: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
     color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.63,
   },
   playerRow: {
     flexDirection: 'row',
@@ -512,7 +512,7 @@ const sh = StyleSheet.create({
   },
   playerName: {
     flex: 1,
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,
     color: colors.textPrimary,
   },
@@ -552,12 +552,12 @@ const sh = StyleSheet.create({
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.borderLight,
   },
   winnerRowSelected: {
-    borderColor: colors.success,
-    backgroundColor: colors.success + '12',
+    borderColor: colors.accent,
+    backgroundColor: colors.accentLight,
   },
   radio: {
     width: 20,
@@ -568,8 +568,8 @@ const sh = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioSelected: { borderColor: colors.success, backgroundColor: colors.success + '20' },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.success },
+  radioSelected: { borderColor: colors.accent, backgroundColor: colors.accentLight },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
   confirmCard: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
@@ -579,6 +579,24 @@ const sh = StyleSheet.create({
     gap: spacing.sm,
     ...shadows.sm,
   },
+  winnerHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  winnerHeroName: {
+    flex: 1,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 18,
+    color: colors.textPrimary,
+    letterSpacing: -0.18,
+  },
+  confirmDivider: {
+    height: 1,
+    backgroundColor: colors.borderLight,
+    marginVertical: spacing.xs,
+  },
   confirmRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -586,47 +604,14 @@ const sh = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   confirmName: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.md,
-    color: colors.textPrimary,
-  },
-  confirmDeck: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
-    color: colors.textTertiary,
-  },
-  winBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    backgroundColor: colors.success + '20',
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.success + '60',
-  },
-  winBadgeText: {
+    flex: 1,
     fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
-    color: colors.success,
-  },
-  winnerBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.success + '18',
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.success + '50',
-    padding: spacing.md,
-    justifyContent: 'center',
-  },
-  winnerBannerText: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.md,
-    color: colors.success,
+    fontSize: 13.5,
+    color: colors.textPrimary,
   },
   confirmHint: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
+    fontSize: 12.5,
     color: colors.textTertiary,
     textAlign: 'center',
     lineHeight: 20,

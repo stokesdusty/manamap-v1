@@ -18,7 +18,7 @@ interface ManaPipProps {
 
 export function ManaPip({
   color,
-  size = 24,
+  size = 22,
   showLetter = true,
   ring = true,
   style,

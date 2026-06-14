@@ -16,18 +16,17 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { StoreEvent } from '@manamap/shared';
 import type { TabParamList, RootStackParamList } from '../navigation/types';
 import { useActiveStore } from '../context/ActiveStoreContext';
+import { useAuth } from '../context/AuthContext';
 import { useIdentityTheme } from '../hooks/useIdentityTheme';
 import { useProfile } from '../hooks/useMe';
 import { useNearby, useStoreEvents } from '../hooks/useNearby';
-import { useLeaderboard, useStreaksSummary } from '../hooks/useGamification';
+import { useStreaksSummary } from '../hooks/useGamification';
 import { usePendingGames, useMyGameStats } from '../hooks/useGames';
 import { useConnections } from '../hooks/useConnections';
 import { useQuests } from '../hooks/useQuests';
 import { useLfgMe } from '../hooks/useLfg';
+import { useNotificationUnreadCount } from '../hooks/useNotifications';
 import { LogGameSheet } from '../components/LogGameSheet';
-import { PlayOnlineSheet } from '../components/PlayOnlineSheet';
-import { BellButton } from '../navigation/TabNavigator';
-import { useNearestStore } from '../hooks/useNearestStore';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 
 type HomeScreenProps = CompositeScreenProps<
@@ -35,13 +34,16 @@ type HomeScreenProps = CompositeScreenProps<
   NativeStackScreenProps<RootStackParamList>
 >;
 
-const BANNER_H = 108;
-
 const SOURCE_COLORS: Record<string, string> = {
   DISCORD: '#5865F2',
   WIZARDS: '#9333ea',
   STORE: colors.accent,
 };
+
+function greet() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Morning' : h < 17 ? 'Hey' : 'Evening';
+}
 
 function formatTime(iso: string) {
   const d = new Date(iso);
@@ -49,7 +51,7 @@ function formatTime(iso: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Today's event row
+// Event row
 // ---------------------------------------------------------------------------
 
 function EventItem({ event, accent }: { event: StoreEvent; accent: string }) {
@@ -63,88 +65,49 @@ function EventItem({ event, accent }: { event: StoreEvent; accent: string }) {
       ) : null}
       <Text style={evtStyles.time}>{formatTime(event.startsAt)}</Text>
       {event.isAttending && (
-        <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+        <View style={[evtStyles.rsvpBadge, { backgroundColor: accent + '22' }]}>
+          <Text style={[evtStyles.rsvpText, { color: accent }]}>RSVP'd</Text>
+        </View>
       )}
     </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Compact feature cards (Friends / Stores / Events / Games)
+// Quick action tile (2×2 grid)
 // ---------------------------------------------------------------------------
 
-interface HomeFeatureCardsProps {
-  accent: string;
-  connectionsCount: number;
-  pendingGamesCount: number;
-  todayEventsCount: number;
-  activeStoreName: string | null;
-  onOpenConnections: () => void;
-  onOpenStores: () => void;
-  onOpenGames: () => void;
+interface QuickTileProps {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  sub: string;
+  iconBg: string;
+  iconColor: string;
+  badge?: number | null;
+  live?: boolean;
+  onPress: () => void;
 }
 
-function HomeFeatureCards({
-  accent,
-  connectionsCount,
-  pendingGamesCount,
-  todayEventsCount,
-  activeStoreName,
-  onOpenConnections,
-  onOpenStores,
-  onOpenGames,
-}: HomeFeatureCardsProps) {
+function QuickTile({ icon, label, sub, iconBg, iconColor, badge, live, onPress }: QuickTileProps) {
   return (
-    <View style={hfc.grid}>
-      <View style={hfc.row}>
-        <Pressable style={({ pressed }) => [hfc.card, pressed && { opacity: 0.85 }]} onPress={onOpenConnections}>
-          <View style={[hfc.iconWrap, { backgroundColor: accent + '18' }]}>
-            <Ionicons name="people-outline" size={16} color={accent} />
-          </View>
-          <Text style={hfc.title}>Friends</Text>
-          <Text style={hfc.sub} numberOfLines={1}>
-            {connectionsCount > 0 ? `${connectionsCount} connected` : 'No connections yet'}
-          </Text>
-        </Pressable>
-
-        <Pressable style={({ pressed }) => [hfc.card, pressed && { opacity: 0.85 }]} onPress={onOpenStores}>
-          <View style={[hfc.iconWrap, { backgroundColor: accent + '18' }]}>
-            <Ionicons name="map-outline" size={16} color={accent} />
-          </View>
-          <Text style={hfc.title}>Stores</Text>
-          <Text style={hfc.sub} numberOfLines={1}>
-            {activeStoreName ?? 'Find one near you'}
-          </Text>
-        </Pressable>
+    <Pressable
+      style={({ pressed }) => [qtStyles.tile, pressed && { transform: [{ scale: 0.96 }] }]}
+      onPress={onPress}
+    >
+      {badge != null && badge > 0 && (
+        <View style={qtStyles.badge}>
+          <Text style={qtStyles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+        </View>
+      )}
+      <View style={[qtStyles.iconWell, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={22} color={iconColor} />
+        {live && <View style={qtStyles.liveDot} />}
       </View>
-
-      <View style={hfc.row}>
-        <Pressable style={({ pressed }) => [hfc.card, pressed && { opacity: 0.85 }]} onPress={onOpenStores}>
-          <View style={[hfc.iconWrap, { backgroundColor: accent + '18' }]}>
-            <Ionicons name="calendar-outline" size={16} color={accent} />
-          </View>
-          <Text style={hfc.title}>Events</Text>
-          <Text style={hfc.sub}>
-            {todayEventsCount > 0 ? `${todayEventsCount} today` : activeStoreName ? 'None today' : 'Select a store'}
-          </Text>
-        </Pressable>
-
-        <Pressable style={({ pressed }) => [hfc.card, pressed && { opacity: 0.85 }]} onPress={onOpenGames}>
-          <View style={[hfc.iconWrap, { backgroundColor: accent + '18' }]}>
-            <Ionicons name="game-controller-outline" size={16} color={accent} />
-          </View>
-          <Text style={hfc.title}>Games</Text>
-          <Text style={hfc.sub}>
-            {pendingGamesCount > 0 ? `${pendingGamesCount} to confirm` : 'Log a game'}
-          </Text>
-          {pendingGamesCount > 0 && (
-            <View style={[hfc.badge, { backgroundColor: colors.warning }]}>
-              <Text style={hfc.badgeText}>{pendingGamesCount}</Text>
-            </View>
-          )}
-        </Pressable>
+      <View style={qtStyles.textBlock}>
+        <Text style={qtStyles.label}>{label}</Text>
+        <Text style={qtStyles.sub} numberOfLines={1}>{sub}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -155,33 +118,33 @@ function HomeFeatureCards({
 export function HomeScreen({ navigation }: HomeScreenProps) {
   const { activeStore } = useActiveStore();
   const { gradient, accent, onAccent, soft } = useIdentityTheme();
+  const { isAuthenticated } = useAuth();
   const { data: profile } = useProfile();
   const storeId = activeStore?.id ?? null;
 
   const { data: nearby } = useNearby(!!activeStore);
   const { data: eventDays = [] } = useStoreEvents(storeId);
-  const { data: leaderboard } = useLeaderboard(storeId);
   const { data: streaks } = useStreaksSummary();
   const { data: pendingGames = [] } = usePendingGames();
   const { data: gameStats } = useMyGameStats();
   const { data: connections } = useConnections();
   const { data: quests = [] } = useQuests();
   const { data: lfgSession } = useLfgMe();
+  const { data: bellCount = 0 } = useNotificationUnreadCount(isAuthenticated);
 
-  const { store: nearestStore, distanceKm: nearestDistKm, loading: nearestLoading } = useNearestStore();
   const [showLogGame, setShowLogGame] = useState(false);
-  const [showPlayOnline, setShowPlayOnline] = useState(false);
-  const [dismissedNearby, setDismissedNearby] = useState(false);
   const [bannerW, setBannerW] = useState(() => Dimensions.get('window').width);
+  const [bannerH, setBannerH] = useState(175);
 
   const playerCount = nearby?.players.length ?? 0;
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayEvents = eventDays.find((d) => d.date === todayStr)?.events ?? [];
-  const myRank = leaderboard?.myEntry?.rank ?? leaderboard?.entries.find((e) => e.isMe)?.rank;
   const currentStreak = streaks?.bestCurrentStreak ?? 0;
   const pendingRequests = connections?.incoming.length ?? 0;
   const activeQuests = quests.filter((q) => !q.completed);
   const attentionCount = pendingGames.length + pendingRequests;
+  const topQuest = activeQuests[0] ?? null;
+  const hasStats = (gameStats?.wins ?? 0) > 0 || (gameStats?.losses ?? 0) > 0;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -190,9 +153,12 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         {/* ── Identity gradient banner ── */}
         <View
           style={styles.banner}
-          onLayout={(e) => setBannerW(e.nativeEvent.layout.width)}
+          onLayout={(e) => {
+            setBannerW(e.nativeEvent.layout.width);
+            setBannerH(e.nativeEvent.layout.height);
+          }}
         >
-          <Svg style={StyleSheet.absoluteFill} width={bannerW} height={BANNER_H}>
+          <Svg style={StyleSheet.absoluteFill} width={bannerW} height={bannerH}>
             <Defs>
               <SvgLinearGradient id="hbg" x1="0" y1="0" x2="1" y2="1">
                 {gradient.map((c, i) => (
@@ -204,193 +170,114 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                 ))}
               </SvgLinearGradient>
             </Defs>
-            <Rect x="0" y="0" width={bannerW} height={BANNER_H} fill="url(#hbg)" />
+            <Rect x="0" y="0" width={bannerW} height={bannerH} fill="url(#hbg)" />
           </Svg>
 
+          {/* Bell — absolute top-right */}
+          <Pressable
+            style={[styles.bellWrap, { backgroundColor: onAccent + '38' }]}
+            onPress={() => navigation.navigate('Notifications')}
+            hitSlop={8}
+          >
+            <Ionicons name="notifications-outline" size={20} color={onAccent} />
+            {bellCount > 0 && <View style={styles.bellDot} />}
+          </Pressable>
+
+          {/* Text content */}
           <View style={styles.bannerContent}>
-            <View style={styles.bannerLeft}>
-              <Text style={[styles.bannerGreeting, { color: onAccent + 'CC' }]}>
-                {profile?.displayName ? `Hey, ${profile.displayName}` : 'ManaMap'}
-              </Text>
-              <View style={styles.bannerPills}>
-                {currentStreak > 0 && (
-                  <View style={[styles.bannerPill, { backgroundColor: onAccent + '28' }]}>
-                    <Text style={[styles.bannerPillText, { color: onAccent }]}>
-                      🔥 {currentStreak}w streak
-                    </Text>
-                  </View>
-                )}
-                {lfgSession && (
-                  <View style={[styles.bannerPill, { backgroundColor: colors.success + '30' }]}>
-                    <Ionicons name="radio-outline" size={11} color={colors.success} />
-                    <Text style={[styles.bannerPillText, { color: colors.success }]}>Open to play</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-            <BellButton />
-          </View>
-        </View>
+            <Text style={[styles.bannerSub, { color: onAccent + 'B8' }]}>{greet()},</Text>
+            <Text style={[styles.bannerName, { color: onAccent }]} numberOfLines={1}>
+              {profile?.displayName ?? 'Planeswalker'}
+            </Text>
 
-        {/* ── Feature cards ── */}
-        <HomeFeatureCards
-          accent={accent}
-          connectionsCount={connections?.accepted.length ?? 0}
-          pendingGamesCount={pendingGames.length}
-          todayEventsCount={todayEvents.length}
-          activeStoreName={activeStore?.name ?? null}
-          onOpenConnections={() => navigation.navigate('Connections')}
-          onOpenStores={() => navigation.navigate('Stores')}
-          onOpenGames={() => navigation.navigate('Connections')}
-        />
-
-        {/* ── Store card ── */}
-        {activeStore ? (
-          <View style={styles.storeCard}>
-            <View style={styles.storeCardTop}>
-              <Ionicons name="storefront-outline" size={17} color={accent} />
-              <Text style={[styles.storeName, { color: accent }]} numberOfLines={1}>
-                {activeStore.name}
-              </Text>
-              <View style={styles.hereBadge}>
-                <Ionicons name="radio-outline" size={11} color={colors.success} />
-                <Text style={styles.hereText}>Here</Text>
-              </View>
-            </View>
-
-            <View style={styles.storeChips}>
-              {myRank != null && (
-                <View style={[styles.chip, { backgroundColor: soft }]}>
-                  <Text style={[styles.chipText, { color: accent }]}>🏆 #{myRank}</Text>
+            {activeStore ? (
+              <Pressable
+                style={styles.storeRow}
+                onPress={() => navigation.navigate('StoresMap')}
+              >
+                <View style={styles.storeGlowDot} />
+                <Text style={[styles.storeRowName, { color: onAccent }]} numberOfLines={1}>
+                  {activeStore.name}
+                </Text>
+                <View style={styles.checkinPill}>
+                  <Text style={[styles.checkinPillText, { color: onAccent + 'D8' }]}>Checked in ›</Text>
                 </View>
-              )}
+              </Pressable>
+            ) : (
+              <Pressable
+                style={styles.storeRow}
+                onPress={() => navigation.navigate('StoresMap')}
+              >
+                <Ionicons name="location-outline" size={13} color={onAccent + '99'} />
+                <Text style={[styles.storeRowMuted, { color: onAccent + '99' }]}>Find a store →</Text>
+              </Pressable>
+            )}
+
+            <View style={styles.bannerPills}>
               {currentStreak > 0 && (
-                <View style={[styles.chip, { backgroundColor: soft }]}>
-                  <Text style={[styles.chipText, { color: accent }]}>🔥 {currentStreak}w</Text>
+                <View style={styles.bannerPill}>
+                  <Text style={[styles.bannerPillText, { color: onAccent }]}>
+                    🔥 {currentStreak}w streak
+                  </Text>
                 </View>
               )}
-              {playerCount > 0 && (
-                <View style={styles.chip}>
-                  <Text style={styles.chipText}>👥 {playerCount} nearby</Text>
+              {lfgSession && (
+                <View style={styles.bannerPill}>
+                  <View style={styles.bannerLiveDot} />
+                  <Text style={[styles.bannerPillText, { color: onAccent }]}>Open · playing</Text>
                 </View>
               )}
               {todayEvents.length > 0 && (
-                <View style={styles.chip}>
-                  <Text style={styles.chipText}>📅 {todayEvents.length} event{todayEvents.length !== 1 ? 's' : ''} today</Text>
+                <View style={styles.bannerPill}>
+                  <Text style={[styles.bannerPillText, { color: onAccent }]}>
+                    📅 {todayEvents[0].name}
+                  </Text>
                 </View>
               )}
             </View>
-
-            <View style={styles.storeCtaRow}>
-              <Pressable
-                style={({ pressed }) => [styles.storeCta, { borderColor: accent + '50' }, pressed && { opacity: 0.7 }]}
-                onPress={() => navigation.navigate('StoresMap')}
-              >
-                <Ionicons name="map-outline" size={13} color={accent} />
-                <Text style={[styles.storeCtaText, { color: accent }]}>Map</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.storeCta, { borderColor: accent + '50' }, pressed && { opacity: 0.7 }]}
-                onPress={() => navigation.navigate('StoresMap')}
-              >
-                <Ionicons name="calendar-outline" size={13} color={accent} />
-                <Text style={[styles.storeCtaText, { color: accent }]}>Events</Text>
-              </Pressable>
-            </View>
           </View>
-        ) : (
-          <View style={styles.noStoreCard}>
-            {!nearestLoading && nearestStore && !dismissedNearby ? (
-              <>
-                <Ionicons name="location" size={22} color={accent} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.noStoreTitle}>Store nearby</Text>
-                  <Text style={[styles.noStoreHint, { color: accent }]} numberOfLines={1}>
-                    {nearestStore.name}
-                    {nearestDistKm !== null
-                      ? ` · ${nearestDistKm < 1 ? `${Math.round(nearestDistKm * 1000)}m` : `${nearestDistKm.toFixed(1)}km`}`
-                      : ''}
-                  </Text>
-                </View>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.findStoreBtn,
-                    { backgroundColor: accent },
-                    pressed && { opacity: 0.85 },
-                  ]}
-                  onPress={() => navigation.navigate('StoresMap', { storeId: nearestStore.id })}
-                >
-                  <Text style={[styles.findStoreBtnText, { color: onAccent }]}>View →</Text>
-                </Pressable>
-                <Pressable onPress={() => setDismissedNearby(true)} hitSlop={10}>
-                  <Ionicons name="close" size={16} color={colors.textTertiary} />
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Ionicons name="location-outline" size={22} color={colors.border} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.noStoreTitle}>No store selected</Text>
-                  <Text style={styles.noStoreHint}>Check in at your local game store</Text>
-                </View>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.findStoreBtn,
-                    { backgroundColor: accent },
-                    pressed && { opacity: 0.85 },
-                  ]}
-                  onPress={() => navigation.navigate('StoresMap')}
-                >
-                  <Text style={[styles.findStoreBtnText, { color: onAccent }]}>Find →</Text>
-                </Pressable>
-              </>
-            )}
-          </View>
-        )}
+        </View>
 
-        {/* ── Quick actions ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Quick Actions</Text>
-          <View style={styles.actionRow}>
-            <Pressable
-              style={({ pressed }) => [styles.actionTile, pressed && { opacity: 0.8 }]}
+        {/* ── Quick actions (2 × 2) ── */}
+        <View style={styles.qaGrid}>
+          <View style={styles.qaRow}>
+            <QuickTile
+              icon="radio-outline"
+              label="Open to Play"
+              sub={lfgSession ? 'Live now' : 'Tap to go live'}
+              iconBg={colors.success + '1E'}
+              iconColor={colors.success}
+              live={!!lfgSession}
               onPress={() => navigation.navigate('Discover')}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: colors.success + '20' }]}>
-                <Ionicons name="radio-outline" size={22} color={colors.success} />
-              </View>
-              <Text style={styles.actionLabel}>Open to{'\n'}Play</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [styles.actionTile, pressed && { opacity: 0.8 }]}
+            />
+            <QuickTile
+              icon="game-controller-outline"
+              label="Log a Game"
+              sub="Record a result"
+              iconBg={accent + '1E'}
+              iconColor={accent}
               onPress={() => setShowLogGame(true)}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: accent + '20' }]}>
-                <Ionicons name="game-controller-outline" size={22} color={accent} />
-              </View>
-              <Text style={styles.actionLabel}>Log a{'\n'}Game</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [styles.actionTile, pressed && { opacity: 0.8 }]}
-              onPress={() => setShowPlayOnline(true)}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: '#5865F2' + '20' }]}>
-                <Ionicons name="videocam-outline" size={22} color="#5865F2" />
-              </View>
-              <Text style={styles.actionLabel}>Play{'\n'}Online</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [styles.actionTile, pressed && { opacity: 0.8 }]}
-              onPress={() => navigation.navigate('History')}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: colors.textTertiary + '20' }]}>
-                <Ionicons name="time-outline" size={22} color={colors.textTertiary} />
-              </View>
-              <Text style={styles.actionLabel}>History</Text>
-            </Pressable>
+            />
+          </View>
+          <View style={styles.qaRow}>
+            <QuickTile
+              icon="navigate-outline"
+              label="Meet Players"
+              sub={playerCount > 0 ? `${playerCount} nearby now` : 'Find opponents'}
+              iconBg={accent + '1E'}
+              iconColor={accent}
+              onPress={() => navigation.navigate('Discover')}
+            />
+            <QuickTile
+              icon="people-outline"
+              label="Connections"
+              sub={pendingRequests > 0
+                ? `${pendingRequests} pending request${pendingRequests > 1 ? 's' : ''}`
+                : 'Your network'}
+              iconBg={accent + '1E'}
+              iconColor={accent}
+              onPress={() => navigation.navigate('Connections')}
+            />
           </View>
         </View>
 
@@ -406,7 +293,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                 >
                   <View style={[styles.attentionDot, { backgroundColor: accent }]} />
                   <Text style={styles.attentionText}>
-                    {pendingGames.length} game{pendingGames.length !== 1 ? 's' : ''} awaiting your confirmation
+                    {pendingGames.length} game result{pendingGames.length !== 1 ? 's' : ''} to confirm
                   </Text>
                   <Ionicons name="chevron-forward" size={14} color={colors.border} />
                 </Pressable>
@@ -422,7 +309,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                 >
                   <View style={[styles.attentionDot, { backgroundColor: colors.success }]} />
                   <Text style={styles.attentionText}>
-                    {pendingRequests} connection request{pendingRequests !== 1 ? 's' : ''}
+                    {pendingRequests} new connection request{pendingRequests !== 1 ? 's' : ''}
                   </Text>
                   <Ionicons name="chevron-forward" size={14} color={colors.border} />
                 </Pressable>
@@ -431,21 +318,20 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         )}
 
-        {/* ── Today's events ── */}
+        {/* ── Tonight's events ── */}
         {activeStore && todayEvents.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionRow}>
-              <Text style={styles.sectionLabel}>Today at {activeStore.name}</Text>
+              <Text style={styles.sectionLabel} numberOfLines={1}>
+                Tonight · {activeStore.name}
+              </Text>
               <Pressable onPress={() => navigation.navigate('StoresMap')} hitSlop={8}>
                 <Text style={[styles.seeAll, { color: accent }]}>See all →</Text>
               </Pressable>
             </View>
             <View style={styles.eventsCard}>
               {todayEvents.slice(0, 3).map((evt, idx) => (
-                <View
-                  key={evt.id}
-                  style={idx > 0 ? styles.eventsCardBorder : undefined}
-                >
+                <View key={evt.id} style={idx > 0 ? styles.eventsCardBorder : undefined}>
                   <EventItem event={evt} accent={accent} />
                 </View>
               ))}
@@ -453,45 +339,56 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         )}
 
-        {/* ── Progress ── */}
+        {/* ── Your month ── */}
         <View style={styles.section}>
           <View style={styles.sectionRow}>
-            <Text style={styles.sectionLabel}>Your Progress</Text>
-            <Pressable onPress={() => navigation.navigate('You')} hitSlop={8}>
-              <Text style={[styles.seeAll, { color: accent }]}>Full profile →</Text>
+            <Text style={styles.sectionLabel}>Your Month</Text>
+            <Pressable onPress={() => navigation.navigate('History')} hitSlop={8}>
+              <Text style={[styles.seeAll, { color: accent }]}>History ›</Text>
             </Pressable>
           </View>
           <View style={styles.progressCard}>
-            {gameStats && (gameStats.wins > 0 || gameStats.losses > 0) ? (
-              <View style={styles.progressRow}>
+            {hasStats && gameStats ? (
+              <View style={[styles.progressRow, topQuest ? styles.progressRowBorder : undefined]}>
                 <Ionicons name="trophy-outline" size={15} color={accent} />
                 <Text style={styles.progressText}>
                   {gameStats.wins}W · {gameStats.losses}L this month
                 </Text>
                 {gameStats.winRate > 0 && (
-                  <Text style={[styles.progressBadge, { backgroundColor: soft, color: accent }]}>
-                    {Math.round(gameStats.winRate * 100)}%
-                  </Text>
+                  <View style={[styles.winBadge, { backgroundColor: soft }]}>
+                    <Text style={[styles.winBadgeText, { color: accent }]}>
+                      {Math.round(gameStats.winRate * 100)}%
+                    </Text>
+                  </View>
                 )}
               </View>
             ) : null}
 
-            {activeQuests.slice(0, 2).map((q, idx) => (
-              <View
-                key={q.quest.id}
-                style={[
-                  styles.progressRow,
-                  (idx > 0 || (gameStats && (gameStats.wins > 0 || gameStats.losses > 0))) &&
-                    styles.progressRowBorder,
-                ]}
-              >
-                <Ionicons name="flash-outline" size={15} color={colors.warning} />
-                <Text style={styles.progressText} numberOfLines={1}>{q.quest.title}</Text>
-                <Text style={styles.progressSub}>{q.progress}/{q.goal}</Text>
+            {topQuest && (
+              <View style={styles.questBlock}>
+                <View style={styles.questRow}>
+                  <Ionicons name="flash-outline" size={15} color={colors.warning} />
+                  <Text style={styles.questTitle} numberOfLines={1}>{topQuest.quest.title}</Text>
+                  <Text style={styles.questCounter}>{topQuest.progress}/{topQuest.goal}</Text>
+                </View>
+                <View style={styles.questBarBg}>
+                  <View
+                    style={[
+                      styles.questBarFill,
+                      {
+                        backgroundColor: accent,
+                        width: `${Math.round(100 * Math.min(topQuest.progress, topQuest.goal) / topQuest.goal)}%`,
+                      },
+                    ]}
+                  />
+                </View>
+                {topQuest.quest.rewardBadge && (
+                  <Text style={styles.questReward}>Reward: {topQuest.quest.rewardBadge.name}</Text>
+                )}
               </View>
-            ))}
+            )}
 
-            {!gameStats?.wins && !gameStats?.losses && activeQuests.length === 0 && (
+            {!hasStats && !topQuest && (
               <Text style={styles.progressEmpty}>
                 Play games and complete quests to track your progress here
               </Text>
@@ -507,11 +404,6 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         onSuccess={() => setShowLogGame(false)}
         {...(activeStore?.id !== undefined ? { storeId: activeStore.id } : {})}
       />
-
-      <PlayOnlineSheet
-        visible={showPlayOnline}
-        onClose={() => setShowPlayOnline(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -524,137 +416,132 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.paper },
   scroll: { paddingBottom: spacing.xxxl },
 
+  // Banner
   banner: {
-    height: BANNER_H,
     overflow: 'hidden',
+    minHeight: 175,
+  },
+  bellWrap: {
+    position: 'absolute',
+    top: 14,
+    right: 16,
+    zIndex: 2,
+    width: 40,
+    height: 40,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellDot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: radii.full,
+    backgroundColor: '#E8484A',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.4)',
   },
   bannerContent: {
-    flex: 1,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 22,
+    gap: 0,
+  },
+  bannerSub: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 13,
+    letterSpacing: -0.1,
+    marginBottom: 1,
+  },
+  bannerName: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.hero,
+    lineHeight: typography.fontSize.hero * 1.06,
+    letterSpacing: -1.2,
+    textShadowColor: 'rgba(0,0,0,0.18)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 14,
+  },
+  storeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    gap: spacing.md,
+    gap: 7,
+    marginTop: 13,
+    alignSelf: 'flex-start',
   },
-  bannerLeft: { flex: 1, gap: spacing.xs },
-  bannerGreeting: {
+  storeGlowDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radii.full,
+    backgroundColor: '#4ade80',
+    shadowColor: '#4ade80',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.85,
+    shadowRadius: 5,
+  },
+  storeRowName: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xl,
+    fontSize: 14,
+    letterSpacing: -0.2,
   },
-  bannerPills: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
+  storeRowMuted: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 13,
+  },
+  checkinPill: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 9,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+  },
+  checkinPillText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 11.5,
+  },
+  bannerPills: {
+    flexDirection: 'row',
+    gap: 7,
+    marginTop: 12,
+    flexWrap: 'wrap',
+  },
   bannerPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: 11,
+    paddingVertical: 4,
     borderRadius: radii.full,
   },
   bannerPillText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12,
+  },
+  bannerLiveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: radii.full,
+    backgroundColor: '#4ade80',
+    shadowColor: '#4ade80',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 4,
   },
 
-  storeCard: {
-    marginHorizontal: spacing.xl,
-    marginTop: spacing.lg,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    gap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    ...shadows.sm,
+  // Quick actions grid
+  qaGrid: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    gap: 10,
   },
-  storeCardTop: {
+  qaRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  storeName: {
-    flex: 1,
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-  },
-  hereBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    backgroundColor: colors.success + '18',
-    borderRadius: radii.full,
-  },
-  hereText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
-    color: colors.success,
-  },
-  storeChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  chip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radii.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  chipText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-  },
-  storeCtaRow: { flexDirection: 'row', gap: spacing.sm },
-  storeCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.full,
-    borderWidth: 1,
-  },
-  storeCtaText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
+    gap: 10,
   },
 
-  noStoreCard: {
-    marginTop: spacing.sm,
-    marginHorizontal: spacing.xl,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    ...shadows.sm,
-  },
-  noStoreTitle: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
-    color: colors.textPrimary,
-  },
-  noStoreHint: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  findStoreBtn: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: radii.full,
-    flexShrink: 0,
-  },
-  findStoreBtnText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
-  },
-
+  // Sections
   section: {
     marginHorizontal: spacing.xl,
     marginTop: spacing.xl,
@@ -666,46 +553,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sectionLabel: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
+    flex: 1,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12,
     color: colors.textTertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.8,
   },
   seeAll: {
-    fontFamily: typography.fontFamily.medium,
+    fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.sm,
+    flexShrink: 0,
   },
 
-  actionRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  actionTile: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    ...shadows.sm,
-  },
-  actionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionLabel: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
-    color: colors.textPrimary,
-    textAlign: 'center',
-  },
-
+  // Attention
   attentionCard: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
@@ -717,27 +578,28 @@ const styles = StyleSheet.create({
   attentionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   attentionRowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.borderLight,
   },
   attentionDot: {
-    width: 8,
-    height: 8,
+    width: 9,
+    height: 9,
     borderRadius: radii.full,
     flexShrink: 0,
   },
   attentionText: {
     flex: 1,
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14,
     color: colors.textPrimary,
   },
 
+  // Events
   eventsCard: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
@@ -751,6 +613,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.borderLight,
   },
 
+  // Progress / month
   progressCard: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
@@ -762,91 +625,146 @@ const styles = StyleSheet.create({
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   progressRowBorder: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.borderLight,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderLight,
   },
   progressText: {
     flex: 1,
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14,
     color: colors.textPrimary,
   },
-  progressBadge: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+  winBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
     borderRadius: radii.full,
   },
-  progressSub: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
+  winBadgeText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12.5,
+  },
+  questBlock: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  questRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  questTitle: {
+    flex: 1,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  questCounter: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12.5,
+    color: colors.textSecondary,
+  },
+  questBarBg: {
+    height: 7,
+    borderRadius: radii.full,
+    backgroundColor: colors.borderLight,
+    overflow: 'hidden',
+  },
+  questBarFill: {
+    height: '100%',
+    borderRadius: radii.full,
+  },
+  questReward: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 12,
     color: colors.textTertiary,
+    marginTop: 7,
   },
   progressEmpty: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 13.5,
     color: colors.textTertiary,
-    padding: spacing.lg,
+    padding: 22,
+    paddingHorizontal: 16,
     textAlign: 'center',
     lineHeight: 20,
   },
 });
 
-const hfc = StyleSheet.create({
-  grid: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    gap: spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  card: {
+const qtStyles = StyleSheet.create({
+  tile: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    padding: spacing.md,
-    gap: 4,
+    borderRadius: radii.lg,
+    padding: 15,
+    paddingBottom: 14,
+    gap: 11,
     borderWidth: 1,
     borderColor: colors.borderLight,
+    position: 'relative',
     ...shadows.sm,
   },
-  iconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: radii.full,
+  iconWell: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 2,
+    position: 'relative',
   },
-  title: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
+  liveDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 11,
+    height: 11,
+    borderRadius: radii.full,
+    backgroundColor: '#4ade80',
+    borderWidth: 2.5,
+    borderColor: colors.surface,
+  },
+  textBlock: {
+    minWidth: 0,
+    width: '100%',
+  },
+  label: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14.5,
     color: colors.textPrimary,
+    letterSpacing: -0.15,
+    lineHeight: 18,
   },
   sub: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 12,
     color: colors.textSecondary,
+    marginTop: 3,
+    lineHeight: 16,
   },
   badge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    position: 'absolute',
+    top: 11,
+    right: 11,
+    minWidth: 18,
+    height: 18,
     borderRadius: radii.full,
-    marginTop: 2,
+    backgroundColor: '#E8484A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: colors.surface,
+    zIndex: 1,
   },
   badgeText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
-    color: colors.textInverse,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11,
+    color: '#fff',
   },
 });
 
@@ -854,9 +772,9 @@ const evtStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
   },
   dot: {
     width: 8,
@@ -866,20 +784,32 @@ const evtStyles = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14,
     color: colors.textPrimary,
   },
   format: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 12,
     color: colors.textTertiary,
+    flexShrink: 0,
   },
   time: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 13,
+    color: colors.textSecondary,
+    flexShrink: 0,
     minWidth: 50,
     textAlign: 'right',
+  },
+  rsvpBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radii.full,
+    flexShrink: 0,
+  },
+  rsvpText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 10.5,
   },
 });

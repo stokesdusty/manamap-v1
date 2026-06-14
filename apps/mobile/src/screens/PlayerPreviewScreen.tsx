@@ -48,7 +48,7 @@ const FORMAT_LABELS: Record<MtgFormat, string> = {
 // ProfileHero
 // ---------------------------------------------------------------------------
 
-const BANNER_H = 160;
+const BANNER_H = 180;
 
 function ProfileHero({ profile }: { profile: { displayName: string; pronouns?: string | null; avatarColors: string[]; vibes?: string[] | undefined; commander?: string | null; formats: string[]; bio?: string | null } }) {
   const avatarColors = profile.avatarColors as ManaColor[];
@@ -229,25 +229,23 @@ export function PlayerPreviewScreen({
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Met before banner */}
+        {/* Met before chip */}
         {lastMetStoreName !== undefined && lastMetStoreName !== null && (
-          <View style={styles.metBanner}>
-            <Ionicons name="checkmark-circle" size={15} color={colors.success} />
-            <Text style={styles.metBannerText} numberOfLines={1}>
-              {'Met before · '}
-              <Text style={styles.metBannerStore}>{lastMetStoreName}</Text>
+          <View style={styles.metChip}>
+            <Ionicons name="sparkles-outline" size={18} color={colors.accentInk} />
+            <Text style={styles.metChipText} numberOfLines={1}>
+              You met at {lastMetStoreName} before
             </Text>
           </View>
         )}
 
-        {/* Shared event banner */}
+        {/* Shared event chip */}
         {sharedEvent && (
-          <View style={styles.sharedEventBanner}>
-            <Ionicons name="calendar" size={15} color={colors.accent} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.sharedEventLabel}>You're both going to</Text>
-              <Text style={styles.sharedEventName} numberOfLines={1}>{sharedEvent.name}</Text>
-            </View>
+          <View style={styles.metChip}>
+            <Ionicons name="calendar-outline" size={18} color={colors.accentInk} />
+            <Text style={styles.metChipText} numberOfLines={1}>
+              Both going to {sharedEvent.name}
+            </Text>
           </View>
         )}
 
@@ -283,8 +281,10 @@ export function PlayerPreviewScreen({
         {/* CTA */}
         {sent ? (
           <View style={styles.sentRow}>
-            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-            <Text style={styles.sentText}>Request sent!</Text>
+            <Ionicons name="checkmark" size={18} color={colors.accentInk} />
+            <Text style={styles.sentText}>
+              Request sent — waiting for {profile.displayName}
+            </Text>
           </View>
         ) : (
           <Pressable
@@ -305,6 +305,9 @@ export function PlayerPreviewScreen({
             </Text>
           </Pressable>
         )}
+        <Text style={styles.disclaimer}>
+          They approve before any contact info is shared.
+        </Text>
       </ScrollView>
 
       {/* Overflow menu */}
@@ -442,53 +445,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    height: 52,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: 14,
     marginTop: spacing.sm,
   },
   sentText: {
     fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.md,
-    color: colors.success,
-  },
-  metBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.success + '14',
-    borderRadius: radii.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.success + '30',
-  },
-  metBannerText: {
+    color: colors.textSecondary,
     flex: 1,
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
-    color: colors.success,
+    textAlign: 'center',
   },
-  metBannerStore: {
-    fontFamily: typography.fontFamily.semiBold,
-    color: colors.success,
-  },
-  sharedEventBanner: {
+  metChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 9,
     backgroundColor: colors.accentLight,
-    borderRadius: radii.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.accent + '40',
+    borderRadius: radii.md,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
   },
-  sharedEventLabel: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
-    color: colors.accent,
-  },
-  sharedEventName: {
+  metChipText: {
+    flex: 1,
     fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
-    color: colors.accent,
+    fontSize: 13.5,
+    color: colors.accentInk,
+  },
+  disclaimer: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
 });
 
@@ -511,7 +502,11 @@ const hero = StyleSheet.create({
   avatar: { borderRadius: radii.xl, marginBottom: spacing.xs },
   displayName: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.xl,
+    fontSize: 26,
+    letterSpacing: -0.52,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   pronouns: {
     fontFamily: typography.fontFamily.regular,

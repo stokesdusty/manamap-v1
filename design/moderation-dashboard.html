@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>manamap admin — Moderation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --accent:#7c3aed; --accent-light:#ede9fe; --surface:#fff; --paper:#f8f7ff;
+    --border:#e4e4e7; --border-light:#f0effe; --text-primary:#1a1a2e; --text-secondary:#52525b;
+    --text-tertiary:#a1a1aa; --muted-bg:#f4f4f5;
+    --success:#16a34a; --success-bg:#dcfce7; --danger:#dc2626; --danger-bg:#fee2e2;
+    --warn:#b45309; --warn-bg:#fef3c7;
+    --radius-md:10px; --radius-lg:14px; --radius-full:9999px;
+    --shadow:0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    --mW:#F2E6BE; --mU:#4FA9E6; --mB:#574F5E; --mR:#F0705B; --mG:#5FB97E;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:15px; color:var(--text-primary); background:var(--paper); -webkit-font-smoothing:antialiased;
+  }
+  .layout { display:flex; min-height:100vh; }
+  .sidebar { width:220px; background:var(--surface); border-right:1px solid var(--border); padding:24px 16px; display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
+  .sidebar-brand { font-size:18px; font-weight:800; color:var(--accent); padding:0 8px 14px; border-bottom:1px solid var(--border-light); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+  .pips { display:inline-flex; gap:2px; }
+  .pip { width:13px; height:13px; border-radius:50%; }
+  .sidebar-section { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-tertiary); padding:14px 8px 6px; }
+  .sidebar-link { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-radius:var(--radius-md); color:var(--text-secondary); font-weight:600; font-size:14px; text-decoration:none; }
+  .sidebar-link:hover { background:var(--paper); }
+  .sidebar-link.active { background:var(--accent-light); color:var(--accent); }
+  .sidebar-link .pillct { font-size:11px; font-weight:800; background:var(--danger); color:#fff; border-radius:var(--radius-full); padding:1px 7px; }
+
+  .main { flex:1; padding:30px 34px; overflow-y:auto; max-width:1180px; }
+  .page-title { font-size:25px; font-weight:800; letter-spacing:-0.02em; }
+  .page-sub { color:var(--text-secondary); margin-top:3px; font-size:14.5px; }
+
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:22px 0 24px; }
+  .stat { background:var(--surface); border-radius:var(--radius-lg); padding:16px 18px; box-shadow:var(--shadow); }
+  .stat .v { font-size:28px; font-weight:800; letter-spacing:-0.02em; }
+  .stat .l { font-size:12.5px; color:var(--text-secondary); margin-top:2px; font-weight:600; }
+  .stat.alert .v { color:var(--danger); }
+
+  .tabs { display:flex; gap:6px; margin-bottom:18px; }
+  .tab { padding:8px 16px; border-radius:var(--radius-full); font-weight:700; font-size:13.5px; color:var(--text-secondary); background:var(--surface); border:1px solid var(--border); cursor:pointer; }
+  .tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .tab .ct { opacity:.7; margin-left:5px; }
+
+  .console { display:grid; grid-template-columns:minmax(330px,1fr) minmax(420px,1.3fr); gap:18px; align-items:start; }
+
+  /* queue */
+  .queue { display:flex; flex-direction:column; gap:10px; }
+  .qcard { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px 15px; box-shadow:var(--shadow); cursor:pointer; transition:box-shadow .15s, border-color .15s; }
+  .qcard:hover { box-shadow:0 4px 20px rgba(124,58,237,.13); }
+  .qcard.sel { border-color:var(--accent); box-shadow:0 0 0 2px rgba(124,58,237,.18); }
+  .qtop { display:flex; align-items:center; gap:11px; }
+  .av { width:40px; height:40px; border-radius:32%; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:16px; text-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .qname { font-weight:800; font-size:15px; letter-spacing:-0.01em; }
+  .qmeta { font-size:12.5px; color:var(--text-tertiary); font-weight:600; margin-top:1px; }
+  .reason { display:inline-block; padding:2px 9px; border-radius:var(--radius-full); font-size:11.5px; font-weight:700; }
+  .r-harassment { background:var(--danger-bg); color:var(--danger); }
+  .r-spam { background:var(--warn-bg); color:var(--warn); }
+  .r-fake_profile { background:#e0e7ff; color:#4338ca; }
+  .r-inappropriate { background:#fce7f3; color:#be185d; }
+  .r-other { background:var(--muted-bg); color:var(--text-secondary); }
+  .qbody { font-size:13px; color:var(--text-secondary); margin-top:10px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .qfoot { display:flex; align-items:center; justify-content:space-between; margin-top:11px; }
+  .repeat { font-size:11.5px; font-weight:700; color:var(--danger); display:inline-flex; align-items:center; gap:4px; }
+  .when { font-size:12px; color:var(--text-tertiary); font-weight:600; }
+
+  /* detail */
+  .detail { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); position:sticky; top:30px; overflow:hidden; }
+  .dhead { padding:20px 22px 18px; border-bottom:1px solid var(--border-light); }
+  .dwho { display:flex; align-items:center; gap:13px; }
+  .dwho .av { width:54px; height:54px; font-size:21px; }
+  .dname { font-size:19px; font-weight:800; letter-spacing:-0.02em; }
+  .dhandle { font-size:13px; color:var(--text-tertiary); font-weight:600; }
+  .dflags { display:flex; gap:7px; margin-top:9px; flex-wrap:wrap; }
+  .flag { font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:var(--radius-full); background:var(--muted-bg); color:var(--text-secondary); }
+  .flag.bad { background:var(--danger-bg); color:var(--danger); }
+  .dbody { padding:18px 22px; }
+  .drow { display:flex; gap:14px; padding:9px 0; border-bottom:1px solid var(--border-light); }
+  .drow:last-child { border-bottom:none; }
+  .dk { font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--text-tertiary); width:88px; flex-shrink:0; padding-top:2px; }
+  .dv { font-size:14px; color:var(--text-primary); font-weight:500; line-height:1.5; }
+  .quote { background:var(--paper); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:11px 14px; font-size:13.5px; color:var(--text-secondary); line-height:1.55; font-style:italic; }
+  .history { margin-top:6px; display:flex; flex-direction:column; gap:7px; }
+  .hrow { display:flex; align-items:center; gap:9px; font-size:13px; color:var(--text-secondary); }
+  .hdot { width:7px; height:7px; border-radius:50%; background:var(--text-tertiary); flex-shrink:0; }
+  .hdot.open { background:var(--danger); }
+
+  .actions { padding:16px 22px 20px; border-top:1px solid var(--border-light); background:var(--paper); }
+  .alabel { font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:10px; }
+  .noteinput { width:100%; border:1px solid var(--border); border-radius:var(--radius-md); padding:9px 12px; font-size:13.5px; font-family:inherit; resize:none; outline:none; margin-bottom:12px; background:var(--surface); }
+  .noteinput:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,58,237,.13); }
+  .abtns { display:flex; gap:8px; flex-wrap:wrap; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 16px; border-radius:var(--radius-full); font-weight:700; font-size:13.5px; cursor:pointer; border:1px solid transparent; font-family:inherit; }
+  .btn-dismiss { background:var(--surface); border-color:var(--border); color:var(--text-secondary); }
+  .btn-dismiss:hover { border-color:var(--text-secondary); }
+  .btn-warn { background:var(--warn-bg); color:var(--warn); }
+  .btn-suspend { background:#ffedd5; color:#c2410c; }
+  .btn-ban { background:var(--danger); color:#fff; margin-left:auto; }
+  .btn:hover { filter:brightness(.97); }
+
+  .empty { background:var(--surface); border:1px dashed var(--border); border-radius:var(--radius-lg); padding:60px 24px; text-align:center; color:var(--text-tertiary); box-shadow:var(--shadow); }
+  .empty .ic { font-size:40px; margin-bottom:12px; }
+  .empty .t { font-size:16px; font-weight:700; color:var(--text-secondary); }
+
+  .toast { position:fixed; bottom:26px; left:50%; transform:translateX(-50%); background:var(--text-primary); color:#fff; font-weight:700; font-size:14px; padding:12px 20px; border-radius:var(--radius-full); box-shadow:0 8px 28px rgba(0,0,0,.28); opacity:0; transition:opacity .2s, transform .2s; pointer-events:none; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(-4px); }
+
+  @media (max-width:880px){ .console{ grid-template-columns:1fr; } .stats{ grid-template-columns:repeat(2,1fr);} .detail{ position:static; } }
+</style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="pips"><span class="pip" style="background:var(--mU)"></span><span class="pip" style="background:var(--mR)"></span></span>
+        manamap
+      </div>
+      <div class="sidebar-section">Partner</div>
+      <a class="sidebar-link" href="#">My Stores</a>
+      <a class="sidebar-link" href="#">Claim a store</a>
+      <div class="sidebar-section">Admin</div>
+      <a class="sidebar-link active" href="#">Moderation <span class="pillct" id="navct">5</span></a>
+      <a class="sidebar-link" href="#">Users</a>
+    </aside>
+
+    <main class="main">
+      <div class="page-title">Moderation</div>
+      <div class="page-sub">Review and action player reports. Reporter identities are hidden from store partners.</div>
+
+      <div class="stats" id="stats"></div>
+      <div class="tabs" id="tabs"></div>
+      <div class="console">
+        <div class="queue" id="queue"></div>
+        <div id="detailWrap"></div>
+      </div>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+  const MANA = { W:'#F2E6BE', U:'#4FA9E6', B:'#574F5E', R:'#F0705B', G:'#5FB97E' };
+  const grad = (cs) => cs.length===1 ? `linear-gradient(135deg, ${MANA[cs[0]]}, ${shade(MANA[cs[0]],-22)})` : `linear-gradient(135deg, ${cs.map(c=>MANA[c]).join(', ')})`;
+  function shade(hex,p){const n=parseInt(hex.slice(1),16);let r=(n>>16)&255,g=(n>>8)&255,b=n&255;const f=p/100;r=Math.round(r+(f<0?r:255-r)*f);g=Math.round(g+(f<0?g:255-g)*f);b=Math.round(b+(f<0?b:255-b)*f);return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');}
+  const REASON_LABEL = { HARASSMENT:'Harassment', SPAM:'Spam', FAKE_PROFILE:'Fake profile', INAPPROPRIATE:'Inappropriate', OTHER:'Other' };
+
+  let reports = [
+    { id:'r1', status:'OPEN', reason:'HARASSMENT', when:'8m ago', context:'Connection chat',
+      reported:{ name:'Grixxle', handle:'@grixxle', colors:['B','R'], initials:'G', joined:'Joined 3 weeks ago', priorReports:3, priorActions:1 },
+      detail:'Kept messaging me after I declined the connection. Aggressive language about my deck and told me to stop coming to Friday Commander.',
+      history:[ {t:'2 other open reports this week', open:true}, {t:'Warned once (Apr 12)', open:false} ] },
+    { id:'r2', status:'OPEN', reason:'SPAM', when:'22m ago', context:'Nearby discovery',
+      reported:{ name:'DealsDealsDeals', handle:'@cardflipper', colors:['G'], initials:'D', joined:'Joined 2 days ago', priorReports:5, priorActions:0 },
+      detail:'Profile bio is just a link to an external card-selling site. Sending connect requests to everyone at the store with the same copy-paste sales pitch.',
+      history:[ {t:'4 other open reports today', open:true} ] },
+    { id:'r3', status:'OPEN', reason:'FAKE_PROFILE', when:'1h ago', context:'Player preview',
+      reported:{ name:'Jace B.', handle:'@realjace', colors:['U'], initials:'J', joined:'Joined 5 days ago', priorReports:1, priorActions:0 },
+      detail:'Using a pro player\u2019s name and photo. Claims to be someone they\u2019re not to get connections.',
+      history:[] },
+    { id:'r4', status:'OPEN', reason:'INAPPROPRIATE', when:'3h ago', context:'Profile bio',
+      reported:{ name:'Moxfield Mike', handle:'@mmike', colors:['R','W'], initials:'M', joined:'Joined 1 month ago', priorReports:1, priorActions:0 },
+      detail:'Bio contains inappropriate content not suitable for a community app.',
+      history:[] },
+    { id:'r5', status:'OPEN', reason:'OTHER', when:'5h ago', context:'Encounter log',
+      reported:{ name:'Tezz', handle:'@tezzeret', colors:['U','B'], initials:'T', joined:'Joined 2 months ago', priorReports:0, priorActions:0 },
+      detail:'Logged a game result that never happened to farm the leaderboard. We never played.',
+      history:[] },
+    { id:'r6', status:'REVIEWED', reason:'SPAM', when:'Yesterday', context:'Nearby discovery',
+      reported:{ name:'BotAccount7', handle:'@bot7', colors:['B'], initials:'B', joined:'Joined 1 week ago', priorReports:2, priorActions:0 },
+      detail:'Suspected bot — identical messages.', history:[], resolution:'Dismissed — not enough signal' },
+    { id:'r7', status:'ACTIONED', reason:'HARASSMENT', when:'2 days ago', context:'Connection chat',
+      reported:{ name:'RageQuit', handle:'@rq', colors:['R'], initials:'R', joined:'Joined 6 months ago', priorReports:4, priorActions:2 },
+      detail:'Repeated harassment after games.', history:[], resolution:'Banned (2 days ago)' },
+  ];
+
+  let filter = 'OPEN';
+  let selectedId = 'r1';
+
+  const TABS = [ ['OPEN','Open'], ['REVIEWED','Reviewed'], ['ACTIONED','Actioned'], ['ALL','All'] ];
+
+  function counts(){
+    return {
+      open: reports.filter(r=>r.status==='OPEN').length,
+      reviewed: reports.filter(r=>r.status==='REVIEWED').length,
+      actioned: reports.filter(r=>r.status==='ACTIONED').length,
+      repeat: reports.filter(r=>r.status==='OPEN' && r.reported.priorReports>=3).length,
+    };
+  }
+
+  function renderStats(){
+    const c = counts();
+    document.getElementById('stats').innerHTML = `
+      <div class="stat alert"><div class="v">${c.open}</div><div class="l">Open reports</div></div>
+      <div class="stat"><div class="v">${c.repeat}</div><div class="l">Repeat offenders</div></div>
+      <div class="stat"><div class="v">${c.reviewed}</div><div class="l">Reviewed</div></div>
+      <div class="stat"><div class="v">${c.actioned}</div><div class="l">Actioned (all time)</div></div>`;
+    document.getElementById('navct').textContent = c.open;
+    document.getElementById('navct').style.display = c.open ? '' : 'none';
+  }
+
+  function renderTabs(){
+    const c = counts();
+    const ctOf = { OPEN:c.open, REVIEWED:c.reviewed, ACTIONED:c.actioned, ALL:reports.length };
+    document.getElementById('tabs').innerHTML = TABS.map(([k,label])=>
+      `<button class="tab ${filter===k?'active':''}" data-f="${k}">${label}<span class="ct">${ctOf[k]}</span></button>`).join('');
+    document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ filter=t.dataset.f; const list=visible(); selectedId = list[0] ? list[0].id : null; render(); });
+  }
+
+  function visible(){ return reports.filter(r=> filter==='ALL' ? true : r.status===filter); }
+
+  function avatar(p, cls=''){ return `<div class="av ${cls}" style="background:${grad(p.colors)}">${p.initials}</div>`; }
+
+  function renderQueue(){
+    const list = visible();
+    const q = document.getElementById('queue');
+    if(!list.length){ q.innerHTML = `<div class="empty"><div class="ic">\u2728</div><div class="t">Nothing here</div><div>No ${filter.toLowerCase()} reports.</div></div>`; return; }
+    q.innerHTML = list.map(r=>`
+      <div class="qcard ${r.id===selectedId?'sel':''}" data-id="${r.id}">
+        <div class="qtop">
+          ${avatar(r.reported)}
+          <div style="flex:1; min-width:0">
+            <div class="qname">${r.reported.name}</div>
+            <div class="qmeta">${r.reported.handle} \u00b7 ${r.context}</div>
+          </div>
+          <span class="reason r-${r.reason.toLowerCase()}">${REASON_LABEL[r.reason]}</span>
+        </div>
+        <div class="qbody">${r.detail}</div>
+        <div class="qfoot">
+          ${r.reported.priorReports>=3 ? `<span class="repeat">\u26a0 ${r.reported.priorReports} prior reports</span>` : `<span class="when">${r.status!=='OPEN'?(r.resolution||''):''}</span>`}
+          <span class="when">${r.when}</span>
+        </div>
+      </div>`).join('');
+    document.querySelectorAll('.qcard').forEach(c=>c.onclick=()=>{ selectedId=c.dataset.id; render(); });
+  }
+
+  function renderDetail(){
+    const r = reports.find(x=>x.id===selectedId);
+    const wrap = document.getElementById('detailWrap');
+    if(!r){ wrap.innerHTML = `<div class="empty"><div class="ic">\u2714\ufe0f</div><div class="t">Queue clear</div><div>Select a report to review.</div></div>`; return; }
+    const p = r.reported;
+    const isOpen = r.status==='OPEN';
+    wrap.innerHTML = `
+      <div class="detail">
+        <div class="dhead">
+          <div class="dwho">
+            ${avatar(p)}
+            <div style="flex:1">
+              <div class="dname">${p.name}</div>
+              <div class="dhandle">${p.handle} \u00b7 ${p.joined}</div>
+            </div>
+          </div>
+          <div class="dflags">
+            <span class="flag ${p.priorReports>=3?'bad':''}">${p.priorReports} report${p.priorReports===1?'':'s'} total</span>
+            ${p.priorActions>0?`<span class="flag bad">${p.priorActions} prior action${p.priorActions===1?'':'s'}</span>`:''}
+            <span class="flag">Reported via ${r.context}</span>
+          </div>
+        </div>
+        <div class="dbody">
+          <div class="drow"><div class="dk">Reason</div><div class="dv"><span class="reason r-${r.reason.toLowerCase()}">${REASON_LABEL[r.reason]}</span></div></div>
+          <div class="drow"><div class="dk">Report</div><div class="dv"><div class="quote">${r.detail}</div></div></div>
+          <div class="drow"><div class="dk">Reporter</div><div class="dv">Hidden \u00b7 reporter protected</div></div>
+          ${r.history.length?`<div class="drow"><div class="dk">Signals</div><div class="dv"><div class="history">${r.history.map(h=>`<div class="hrow"><span class="hdot ${h.open?'open':''}"></span>${h.t}</div>`).join('')}</div></div></div>`:''}
+          ${r.resolution?`<div class="drow"><div class="dk">Outcome</div><div class="dv" style="font-weight:700; color:${r.status==='ACTIONED'?'var(--danger)':'var(--text-secondary)'}">${r.resolution}</div></div>`:''}
+        </div>
+        ${isOpen?`
+        <div class="actions">
+          <div class="alabel">Resolve</div>
+          <textarea class="noteinput" rows="2" id="modnote" placeholder="Internal note (optional) \u2014 visible to admins only"></textarea>
+          <div class="abtns">
+            <button class="btn btn-dismiss" data-act="dismiss">Dismiss</button>
+            <button class="btn btn-warn" data-act="warn">Warn</button>
+            <button class="btn btn-suspend" data-act="suspend">Suspend 7d</button>
+            <button class="btn btn-ban" data-act="ban">Ban user</button>
+          </div>
+        </div>`:''}
+      </div>`;
+    if(isOpen){
+      wrap.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>resolve(r, b.dataset.act));
+    }
+  }
+
+  const ACT = {
+    dismiss:{ status:'REVIEWED', word:'Dismissed', res:'Dismissed \u2014 no action' },
+    warn:{ status:'ACTIONED', word:'Warning sent', res:'Warned' },
+    suspend:{ status:'ACTIONED', word:'User suspended 7 days', res:'Suspended 7 days' },
+    ban:{ status:'ACTIONED', word:'User banned', res:'Banned' },
+  };
+  function resolve(r, act){
+    const a = ACT[act];
+    r.status = a.status; r.resolution = a.res + (act!=='dismiss'?' (just now)':'');
+    const list = visible();
+    selectedId = list[0] ? list[0].id : null;
+    render(); toast(a.word + ' \u00b7 ' + r.reported.name);
+  }
+
+  let toastT;
+  function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove('show'),2200); }
+
+  function render(){ renderStats(); renderTabs(); renderQueue(); renderDetail(); }
+  render();
+  </script>
+</body>
+</html>

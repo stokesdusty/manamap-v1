@@ -291,14 +291,14 @@ function PlayerPanel({
   const hasCmdDamage = Object.keys(player.commanderDamage).length > 0;
   const cmdTotal = Object.values(player.commanderDamage).reduce((s, v) => s + v, 0);
   const fill = playerColor(player.avatarColors);
-  const lifeFontSize = compact ? 56 : 80;
+  const lifeFontSize = compact ? 58 : 82;
 
   const content = (
     <View
       style={[
         pp.panel,
-        { borderColor: fill + '60' },
-        isActiveTurn && pp.activeBorder,
+        { borderColor: fill + '55', borderWidth: 1.5 },
+        isActiveTurn && { borderColor: fill, borderWidth: 2.5 },
         player.isEliminated && pp.eliminated,
       ]}
     >
@@ -422,7 +422,6 @@ const pp = StyleSheet.create({
     gap: spacing.xs,
     justifyContent: 'space-between',
   },
-  activeBorder: { borderColor: colors.accent + '80', borderWidth: 2 },
   eliminated: { opacity: 0.55 },
   eliminatedOverlay: {
     ...StyleSheet.absoluteFill as object,
@@ -433,7 +432,7 @@ const pp = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: 5 },
   name: {
     flex: 1,
-    fontFamily: typography.fontFamily.semiBold,
+    fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.sm,
     color: colors.textPrimary,
   },
@@ -457,6 +456,7 @@ const pp = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
     color: colors.textPrimary,
     lineHeight: undefined,
+    letterSpacing: -2,
   },
   lifeDead: { color: colors.textTertiary },
   deadLabel: {
@@ -572,8 +572,8 @@ function GameBar({ state, allPlayers, canUndo, onUndo, onNextTurn, onReset, onCl
         >
           <Ionicons name="arrow-undo" size={18} color={canUndo ? colors.textSecondary : colors.border} />
         </Pressable>
-        <Pressable onPress={onNextTurn} hitSlop={8} style={gb.actionBtn}>
-          <Ionicons name="play-skip-forward" size={18} color={colors.accent} />
+        <Pressable onPress={onNextTurn} hitSlop={8} style={[gb.actionBtn, gb.actionBtnNext]}>
+          <Ionicons name="play-skip-forward" size={18} color={colors.accentInk} />
         </Pressable>
         <Pressable onPress={onReset} hitSlop={8} style={gb.actionBtn}>
           <Ionicons name="refresh" size={18} color={colors.textTertiary} />
@@ -594,7 +594,14 @@ const gb = StyleSheet.create({
     borderBottomColor: colors.borderLight,
     gap: spacing.sm,
   },
-  closeBtn: { padding: spacing.xs },
+  closeBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.full,
+    backgroundColor: colors.chipBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   chips: { flex: 1, flexDirection: 'row', gap: spacing.xs, flexWrap: 'nowrap' },
   chip: {
     flexDirection: 'row',
@@ -617,7 +624,16 @@ const gb = StyleSheet.create({
   activeLabel: { color: colors.accent },
   tokenIcon: { fontSize: 12 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  actionBtn: { padding: spacing.xs },
+  actionBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBtnNext: {
+    backgroundColor: colors.accentLight,
+  },
   actionDisabled: { opacity: 0.35 },
 });
 
@@ -716,7 +732,8 @@ const ss = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.lg,
+    fontSize: 20,
+    letterSpacing: -0.4,
     color: colors.textPrimary,
   },
   label: {
@@ -913,7 +930,7 @@ export function LifeTrackerScreen({ route, navigation }: Props) {
           onReset={handleConfirmReset}
           onClose={() => navigation.goBack()}
         />
-        {grid}
+        <>{grid}</>
       </SafeAreaView>
     </View>
   );

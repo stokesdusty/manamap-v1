@@ -4,9 +4,12 @@ const MMby = window.MM.byId;
 const _RC = React;
 
 // ── Connect tab ───────────────────────────────────────────
-function ConnectScreen({ requests, connections, onAccept, onDecline, onOpenConn }) {
+function ConnectScreen({ requests, connections, onAccept, onDecline, onOpenConn, pending, me, onConfirmGame, onDisputeGame }) {
   return (
     <div style={{ padding: '2px 16px 24px' }}>
+      {pending && pending.length > 0 && (
+        <window.ConfirmGamesSection pending={pending} me={me} onConfirm={onConfirmGame} onDispute={onDisputeGame} />
+      )}
       <SectionLabel>{requests.length ? `${requests.length} request${requests.length > 1 ? 's' : ''}` : 'Requests'}</SectionLabel>
       {requests.length ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 11, marginBottom: 22 }}>
@@ -73,7 +76,7 @@ function ConnectScreen({ requests, connections, onAccept, onDecline, onOpenConn 
 }
 
 // ── Profile (You) tab ─────────────────────────────────────
-function ProfileScreen({ me, variant, privacy, onTogglePrivacy, onShare }) {
+function ProfileScreen({ me, variant, privacy, onTogglePrivacy, onShare, stats, recentGames, onLogGame, quests, friendStreaks, onOpenPlayer, onManageSocials, onCopySocial, onPlayOnline }) {
   const rows = [
     { key: 'discoverable', label: 'Discoverable nearby', sub: 'Let players at your store find you' },
     { key: 'showDiscord', label: 'Share Discord on connect', sub: 'Revealed only after you both approve' },
@@ -82,12 +85,63 @@ function ProfileScreen({ me, variant, privacy, onTogglePrivacy, onShare }) {
   ];
   return (
     <div style={{ padding: '4px 16px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <PlayerCard p={me} variant={variant} />
-
-      <div style={{ display: 'flex', gap: 10 }}>
-        <Button variant="primary" full icon="qr" onClick={onShare}>Share my card</Button>
-        <Button variant="outline" icon="edit" onClick={() => {}}>Edit</Button>
+      {/* identity hero */}
+      <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-card)' }}>
+        <div style={{ position: 'relative', backgroundImage: 'var(--identity-grad)', padding: '20px 18px 18px' }}>
+          <div style={{ position: 'absolute', inset: 0, opacity: 0.5, backgroundImage: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 2px, transparent 2px 13px)' }} />
+          <div style={{ position: 'relative', display: 'flex', gap: 15, alignItems: 'center' }}>
+            <div style={{ borderRadius: '32%', boxShadow: '0 4px 16px rgba(0,0,0,0.25)' }}><Avatar player={me} size={68} ring={3} /></div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 24, fontWeight: 850, letterSpacing: '-0.025em', color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.25)' }}>{me.name}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: 'rgba(255,255,255,0.9)', marginTop: 1 }}>{me.handle} · {me.pronouns}</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, marginTop: 9, background: 'rgba(0,0,0,0.18)', padding: '4px 10px 4px 6px', borderRadius: 999, backdropFilter: 'blur(4px)' }}>
+                <ManaRow colors={me.colors} size={18} />
+                <span style={{ fontSize: 12.5, fontWeight: 800, color: '#fff' }}>{comboName(me.colors)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ background: 'var(--surface)', padding: 14, display: 'flex', gap: 10 }}>
+          <Button variant="primary" full icon="qr" onClick={onShare}>Share my card</Button>
+          <Button variant="outline" icon="edit" onClick={() => {}}>Edit</Button>
+        </div>
+        {onPlayOnline && (
+          <button onClick={onPlayOnline} style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+            padding: '12px 16px', border: 'none', borderTop: '1px solid var(--line)',
+            background: 'var(--surface)', cursor: 'pointer', fontFamily: 'inherit',
+            WebkitTapHighlightColor: 'transparent',
+          }}>
+            <span style={{ width: 36, height: 36, borderRadius: 11, background: 'var(--brand-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Icon name="globe" size={19} color="var(--brand-ink)" />
+            </span>
+            <span style={{ flex: 1, fontSize: 15, fontWeight: 750, color: 'var(--ink)', textAlign: 'left' }}>Play Online</span>
+            <Icon name="chevR" size={16} color="var(--muted)" />
+          </button>
+        )}
       </div>
+
+      {me.socials && me.socials.length > 0 && (
+        <window.SocialsCard socials={me.socials} mode="owner" onManage={onManageSocials} />
+      )}
+
+      {stats && (
+        <div>
+          <SectionLabel action={onLogGame ? <button onClick={onLogGame} style={{ border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 750, color: 'var(--brand-ink)', display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0 }}><Icon name="plus" size={15} stroke={2.4} /> Log a game</button> : null}>Game record</SectionLabel>
+          <window.GameStatsStrip stats={stats} />
+        </div>
+      )}
+
+      {quests && quests.length > 0 && <window.QuestsCard quests={quests} />}
+
+      {friendStreaks && friendStreaks.length > 0 && <window.FriendStreaks streaks={friendStreaks} me={me} onOpen={onOpenPlayer} />}
+
+      {recentGames && recentGames.length > 0 && (
+        <div>
+          <SectionLabel>Recent games</SectionLabel>
+          <window.RecentGames games={recentGames} me={me} />
+        </div>
+      )}
 
       <div>
         <SectionLabel>Privacy</SectionLabel>

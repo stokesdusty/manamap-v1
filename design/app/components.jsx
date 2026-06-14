@@ -26,6 +26,37 @@ function shade(hex, pct) {
   return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('');
 }
 
+// ── Identity accents ──────────────────────────────────────
+// Vivid, UI-ready version of each mana color (the pip fills are too pale to
+// use as an accent — White/Black especially). Black reads as violet, White as
+// gold, by MTG UI convention, so they work as readable accents on dark.
+const MANA_ACCENT = {
+  W: '#D7A93C', U: '#3E8FE6', B: '#8E63D6', R: '#EC5B47', G: '#4FA85C', C: '#8E8896', M: '#D7A93C',
+};
+function manaAccent(colors) {
+  if (!colors || !colors.length) return MANA_ACCENT.C;
+  return MANA_ACCENT[colors[0]] || MANA_ACCENT.C;
+}
+function manaAccent2(colors) {
+  if (!colors || !colors.length) return MANA_ACCENT.C;
+  return MANA_ACCENT[colors[colors.length - 1]] || MANA_ACCENT.C;
+}
+function identityGradient(colors, angle = 135) {
+  if (!colors || !colors.length) return `linear-gradient(${angle}deg, ${MANA_ACCENT.C}, ${shade(MANA_ACCENT.C, -22)})`;
+  if (colors.length === 1) {
+    const a = MANA_ACCENT[colors[0]];
+    return `linear-gradient(${angle}deg, ${shade(a, 10)}, ${shade(a, -22)})`;
+  }
+  return `linear-gradient(${angle}deg, ${colors.map(c => MANA_ACCENT[c]).join(', ')})`;
+}
+// readable text color on a given accent
+function readableOn(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.62 ? '#2A211B' : '#fff';
+}
+
 // ── ManaPip ───────────────────────────────────────────────
 function ManaPip({ c, size = 22, ring = true }) {
   const m = MANA[c];
@@ -99,4 +130,4 @@ function MetBadge({ where }) {
   );
 }
 
-Object.assign(window, { comboName, manaGradient, shade, ManaPip, ManaRow, Avatar, Chip, MetBadge });
+Object.assign(window, { comboName, manaGradient, shade, manaAccent, manaAccent2, identityGradient, readableOn, MANA_ACCENT, ManaPip, ManaRow, Avatar, Chip, MetBadge });
