@@ -60,5 +60,13 @@ target 'manamap' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # Write .xcode.env.local so Xcode build phase scripts can find node.
+    # `command -v node` is unreliable inside Xcode's sandboxed environment;
+    # running it here (during pod install, in the normal shell) is reliable.
+    node_binary = `command -v node`.strip
+    unless node_binary.empty?
+      File.write(File.join(__dir__, '.xcode.env.local'), "export NODE_BINARY=#{node_binary}\n")
+    end
   end
 end

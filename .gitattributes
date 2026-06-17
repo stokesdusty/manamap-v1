@@ -1,0 +1,5 @@
+# Ensure iOS shell/env files always use LF so macOS build agents don't choke
+apps/mobile/ios/.xcode.env   text eol=lf
+apps/mobile/ios/.xcode.env.* text eol=lf
+apps/mobile/ios/Podfile       text eol=lf
+*.sh                          text eol=lf
