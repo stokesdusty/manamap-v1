@@ -61,6 +61,18 @@ target 'manamap' do
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
 
+    # Normalize .xcode.env line endings (CRLF → LF).
+    # EAS cached checkouts can arrive with CRLF on Windows-originated repos.
+    # A stray \r on the blank line causes bash to report "command not found"
+    # when sourcing the file, leaving NODE_BINARY unset and breaking the
+    # [Expo] Configure project build phase.
+    xcode_env_path = File.join(__dir__, '.xcode.env')
+    if File.exist?(xcode_env_path)
+      raw = File.binread(xcode_env_path)
+      fixed = raw.gsub("\r\n", "\n").gsub("\r", "\n")
+      File.binwrite(xcode_env_path, fixed) if raw != fixed
+    end
+
     # Write .xcode.env.local so Xcode build phase scripts can find node.
     # `command -v node` is unreliable inside Xcode's sandboxed environment;
     # running it here (during pod install, in the normal shell) is reliable.
