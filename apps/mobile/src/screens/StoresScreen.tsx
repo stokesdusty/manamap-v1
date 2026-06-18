@@ -20,6 +20,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ActiveEvent, EarnedBadge, EventAttendeeEntry, NearbyPlayer, StoreEvent, StorePin } from '@manamap/shared';
 import type { RootStackParamList } from '../navigation/types';
 import { useActiveStore } from '../context/ActiveStoreContext';
+import { useProfile } from '../hooks/useMe';
 import {
   useAttendEvent,
   useUnattendEvent,
@@ -874,8 +875,17 @@ type ViewMode = 'map' | 'list';
 type StoresScreenProps = NativeStackScreenProps<RootStackParamList, 'StoresMap'>;
 
 export function StoresScreen({ navigation, route }: StoresScreenProps) {
+  const { data: profile } = useProfile();
   const [viewMode, setViewMode] = useState<ViewMode>('map');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Seed the initial region from the DB-stored last location so the map
+  // always opens near the user even before the live GPS fix arrives.
+  const storedRegion: Region =
+    profile?.lastLat != null && profile?.lastLng != null
+      ? { latitude: profile.lastLat, longitude: profile.lastLng, latitudeDelta: 0.15, longitudeDelta: 0.15 }
+      : DEFAULT_REGION;
+
   const [region, setRegion] = useState<Region>(DEFAULT_REGION);
   const [pendingRegion, setPendingRegion] = useState<Region | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(
@@ -948,7 +958,7 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        {navigation.canGoBack() && (
+        {route.name === 'StoresMap' && (
           <Pressable onPress={() => navigation.goBack()} style={styles.headerCloseBtn} hitSlop={8}>
             <Ionicons name="close" size={22} color={colors.textSecondary} />
           </Pressable>
@@ -1014,7 +1024,7 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
           <MapView
             ref={mapRef}
             style={styles.map}
-            initialRegion={DEFAULT_REGION}
+            initialRegion={storedRegion}
             onRegionChangeComplete={handleRegionChangeComplete}
             showsUserLocation
             showsMyLocationButton={false}

@@ -1423,7 +1423,9 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   }, [isInvisible, updatePrivacy]);
 
   // Nearby players (filtered)
-  const { data: nearby, isLoading: isLoadingNearby } = useNearby(!!activeStore, discoveryFilters);
+  // Always enabled — API returns store-based players when checked in,
+  // or location-based players (800 m radius, 15 min staleness) otherwise.
+  const { data: nearby, isLoading: isLoadingNearby } = useNearby(true, discoveryFilters);
 
   // Matchmaking suggestions (unfiltered — separate ranking)
   const { data: suggestionsData } = useSuggestions(!!activeStore);
@@ -1566,18 +1568,44 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
       )}
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Empty state — shown when no store selected */}
+        {/* No store selected — show location-based nearby if available, otherwise prompt */}
         {!activeStore && (
-          <View style={styles.emptyState}>
-            <Ionicons name="map-outline" size={40} color={colors.border} />
-            <Text style={styles.emptyTitle}>Select your store to see nearby players</Text>
-            <Pressable
-              style={({ pressed }) => [styles.selectBtn, { backgroundColor: identityTheme.accent }, pressed && { opacity: 0.8 }]}
-              onPress={() => setShowPicker(true)}
-            >
-              <Text style={[styles.selectBtnText, { color: identityTheme.onAccent }]}>Choose a store</Text>
-            </Pressable>
-          </View>
+          allPlayers.length > 0 ? (
+            <View style={styles.locationNearbySection}>
+              <View style={styles.locationNearbyHeader}>
+                <Ionicons name="navigate-circle-outline" size={16} color={identityTheme.accent} />
+                <Text style={[styles.locationNearbyTitle, { color: identityTheme.accent }]}>
+                  {allPlayers.length} player{allPlayers.length !== 1 ? 's' : ''} nearby
+                </Text>
+              </View>
+              <Text style={styles.locationNearbyHint}>Check in to a store to access LFG and events</Text>
+              <View style={styles.radarCard}>
+                {isLoadingNearby ? (
+                  <View style={styles.radarPlaceholder}>
+                    <ActivityIndicator color={colors.accent} />
+                  </View>
+                ) : (
+                  <Radar
+                    players={allPlayers}
+                    onSelectPlayer={handleSelectPlayer}
+                    selectedId={selectedPlayerId}
+                    theme={identityTheme}
+                  />
+                )}
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="map-outline" size={40} color={colors.border} />
+              <Text style={styles.emptyTitle}>Check in to a store to see nearby players</Text>
+              <Pressable
+                style={({ pressed }) => [styles.selectBtn, { backgroundColor: identityTheme.accent }, pressed && { opacity: 0.8 }]}
+                onPress={() => setShowPicker(true)}
+              >
+                <Text style={[styles.selectBtnText, { color: identityTheme.onAccent }]}>Choose a store</Text>
+              </Pressable>
+            </View>
+          )
         )}
 
         {activeStore && (
@@ -1859,6 +1887,27 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   scroll: { flexGrow: 1, paddingBottom: spacing.xxxl },
+  locationNearbySection: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  locationNearbyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  locationNearbyTitle: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.md,
+    letterSpacing: -0.2,
+  },
+  locationNearbyHint: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
+    marginBottom: spacing.sm,
+  },
   emptyState: {
     flex: 1,
     alignItems: 'center',

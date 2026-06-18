@@ -179,6 +179,10 @@ model User {
   suspendedUntil      DateTime? @map("suspended_until")
   isBot               Boolean  @default(false) @map("is_bot")
 
+  lastLat             Float?    @map("last_lat")
+  lastLng             Float?    @map("last_lng")
+  lastLocatedAt       DateTime? @map("last_located_at")
+
   identities          Identity[]
   privacySettings     PrivacySettings?
   deckLinks           DeckLink[]

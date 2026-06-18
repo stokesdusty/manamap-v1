@@ -63,7 +63,7 @@ export class DevService {
     if (!bots.length) throw new NotFoundException('No bot accounts found — run db:seed first');
 
     for (const bot of bots) {
-      await this.presence.heartbeat(bot.id, effectiveStoreId);
+      await this.presence.heartbeat(bot.id, { storeId: effectiveStoreId });
     }
 
     const lfgBots = bots.slice(0, Math.ceil(bots.length / 2));
@@ -91,7 +91,7 @@ export class DevService {
     const [bot] = await this.getBots(1);
     if (!bot) throw new NotFoundException('No bot accounts found — run db:seed first');
 
-    await this.presence.heartbeat(bot.id, effectiveStoreId);
+    await this.presence.heartbeat(bot.id, { storeId: effectiveStoreId });
 
     // Disband any existing pod for this bot first
     const existingPodId = await this.redis.get(`user_pod:${bot.id}`);
@@ -222,7 +222,7 @@ export class DevService {
     }
 
     // Ensure caller is checked in (heartbeat is idempotent)
-    await this.presence.heartbeat(callerId, storeId);
+    await this.presence.heartbeat(callerId, { storeId });
 
     // Disband any existing pod for caller to avoid already_hosting conflict
     const existingPodId = await this.redis.get(`user_pod:${callerId}`);
@@ -234,7 +234,7 @@ export class DevService {
     const bots = await this.getBots(botCount);
     if (!bots.length) throw new NotFoundException('No bot accounts found — run db:seed first');
     for (const bot of bots) {
-      await this.presence.heartbeat(bot.id, storeId);
+      await this.presence.heartbeat(bot.id, { storeId });
     }
 
     // Create pod with caller as host (commander format)

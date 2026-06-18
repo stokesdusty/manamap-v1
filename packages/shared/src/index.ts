@@ -154,6 +154,8 @@ export const ProfileSchema = z.object({
   convokeGames: z.boolean().optional(),
   createdAt: TimestampSchema,
   onboardedAt: z.string().datetime().nullable(),
+  lastLat: z.number().nullable().optional(),
+  lastLng: z.number().nullable().optional(),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
 
@@ -441,13 +443,15 @@ export type SetHomeStore = z.infer<typeof SetHomeStoreSchema>;
 // --- Presence ---
 
 export const HeartbeatBodySchema = z.object({
-  storeId: IdSchema,
+  storeId: IdSchema.optional(),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
 });
 export type HeartbeatBody = z.infer<typeof HeartbeatBodySchema>;
 
 export const HeartbeatResponseSchema = z.object({
-  storeId: IdSchema,
-  storeName: z.string(),
+  storeId: IdSchema.nullable(),
+  storeName: z.string().nullable(),
   expiresIn: z.number().int().positive(),
 });
 export type HeartbeatResponse = z.infer<typeof HeartbeatResponseSchema>;

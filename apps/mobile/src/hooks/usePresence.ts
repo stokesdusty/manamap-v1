@@ -1,27 +1,48 @@
 import { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
-import type { HeartbeatResponse } from '@manamap/shared';
+import * as Location from 'expo-location';
+import type { HeartbeatBody, HeartbeatResponse } from '@manamap/shared';
 import { api } from '../api/client';
 import { useActiveStore } from '../context/ActiveStoreContext';
 
 const HEARTBEAT_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes (TTL is 5 min)
 
-function sendHeartbeat(storeId: string) {
+async function buildHeartbeatBody(storeId?: string): Promise<HeartbeatBody> {
+  const body: HeartbeatBody = {};
+  if (storeId) body.storeId = storeId;
+
+  try {
+    const { status } = await Location.getForegroundPermissionsAsync();
+    if (status === 'granted') {
+      // Use cached position — fast and sufficient for presence/map purposes
+      const pos = await Location.getLastKnownPositionAsync({ maxAge: 5 * 60 * 1000 });
+      if (pos) {
+        body.lat = pos.coords.latitude;
+        body.lng = pos.coords.longitude;
+      }
+    }
+  } catch { /* location unavailable — heartbeat still fires without coords */ }
+
+  return body;
+}
+
+function sendHeartbeat(body: HeartbeatBody) {
   return api
-    .post<HeartbeatResponse>('/v1/presence/heartbeat', { storeId })
+    .post<HeartbeatResponse>('/v1/presence/heartbeat', body)
     .then((r) => r.data);
 }
 
 /**
- * Sends periodic presence heartbeats for the active store from context while
- * the app is foregrounded. Stops when backgrounded and resumes on foreground.
- * No-ops when no store is active.
+ * Sends periodic presence heartbeats while the app is foregrounded.
+ * Always fires (not gated on store check-in) so the server always has
+ * a fresh last-known location. Includes storeId when the user is
+ * checked in to a store.
  */
 export function usePresence() {
   const { activeStore } = useActiveStore();
   const { mutate } = useMutation({
-    mutationFn: (id: string) => sendHeartbeat(id),
+    mutationFn: (body: HeartbeatBody) => sendHeartbeat(body),
   });
 
   const activeStoreRef = useRef(activeStore);
@@ -30,14 +51,14 @@ export function usePresence() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
+  function fire() {
+    void buildHeartbeatBody(activeStoreRef.current?.id).then((body) => mutate(body));
+  }
+
   function startHeartbeat() {
     if (intervalRef.current) return;
-    if (!activeStoreRef.current) return;
-
-    mutate(activeStoreRef.current.id);
-    intervalRef.current = setInterval(() => {
-      if (activeStoreRef.current) mutate(activeStoreRef.current.id);
-    }, HEARTBEAT_INTERVAL_MS);
+    fire();
+    intervalRef.current = setInterval(fire, HEARTBEAT_INTERVAL_MS);
   }
 
   function stopHeartbeat() {
@@ -47,12 +68,9 @@ export function usePresence() {
     }
   }
 
-  // Restart when the active store changes while foregrounded
+  // Restart when the active store changes while foregrounded so the new
+  // storeId is sent immediately rather than waiting for the next tick.
   useEffect(() => {
-    if (!activeStore) {
-      stopHeartbeat();
-      return;
-    }
     if (appStateRef.current === 'active') {
       stopHeartbeat();
       startHeartbeat();
@@ -71,7 +89,7 @@ export function usePresence() {
       }
     });
 
-    if (AppState.currentState === 'active' && activeStore) {
+    if (AppState.currentState === 'active') {
       startHeartbeat();
     }
 

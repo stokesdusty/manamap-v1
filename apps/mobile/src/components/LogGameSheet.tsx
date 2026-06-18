@@ -270,7 +270,7 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
           step={preselectedPlayers ? 1 : 2}
           total={preselectedPlayers ? 3 : 4}
           title="What did you play?"
-          onBack={preselectedPlayers ? undefined : () => setStep('roster')}
+          {...(!preselectedPlayers ? { onBack: () => setStep('roster') } : {})}
         />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

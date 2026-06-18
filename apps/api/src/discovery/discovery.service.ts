@@ -80,6 +80,42 @@ export class DiscoveryService {
     return { storeId, storeName: store?.name ?? null, validIds };
   }
 
+  private async _locationNearbyIds(callerId: string): Promise<{ lat: number; lng: number; ids: string[] }> {
+    const RADIUS_METERS = 800;
+    const STALENESS_MS = 15 * 60 * 1000;
+
+    const caller = await this.prisma.user.findUnique({
+      where: { id: callerId },
+      select: { lastLat: true, lastLng: true, lastLocatedAt: true },
+    });
+    if (
+      caller?.lastLat == null ||
+      caller?.lastLng == null ||
+      !caller.lastLocatedAt ||
+      Date.now() - caller.lastLocatedAt.getTime() > STALENESS_MS
+    ) {
+      return { lat: 0, lng: 0, ids: [] };
+    }
+
+    const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT u.id FROM users u
+      LEFT JOIN privacy_settings ps ON ps.user_id = u.id
+      WHERE u.last_lat IS NOT NULL
+        AND u.last_lng IS NOT NULL
+        AND u.last_located_at > NOW() - INTERVAL '15 minutes'
+        AND u.moderation_status = 'ACTIVE'
+        AND u.id != ${callerId}
+        AND (ps.discoverable IS NULL OR ps.discoverable = true)
+        AND ST_DWithin(
+          ST_SetSRID(ST_MakePoint(u.last_lng, u.last_lat), 4326)::geography,
+          ST_SetSRID(ST_MakePoint(${caller.lastLng}, ${caller.lastLat}), 4326)::geography,
+          ${RADIUS_METERS}
+        )
+    `;
+
+    return { lat: caller.lastLat, lng: caller.lastLng, ids: rows.map((r) => r.id) };
+  }
+
   async nearby(callerId: string, filters?: NearbyFilters) {
     const [presenceData, blockedIds, callerPrivacy] = await Promise.all([
       this._getPresence(callerId),
@@ -90,7 +126,81 @@ export class DiscoveryService {
       }),
     ]);
     const { storeId, storeName, validIds: rawValidIds } = presenceData;
-    if (!storeId) return { storeId: null, storeName: null, players: [] };
+
+    // If user is not at a store, fall back to location-based nearby
+    if (!storeId) {
+      const { ids: locIds } = await this._locationNearbyIds(callerId);
+      const validIds = locIds.filter((id) => !blockedIds.has(id));
+      if (!validIds.length) return { storeId: null, storeName: null, players: [] };
+
+      const users = await this.prisma.user.findMany({
+        where: { id: { in: validIds }, moderationStatus: ModerationStatus.ACTIVE },
+        select: { ...PROFILE_SELECT, privacySettings: { select: { discoverable: true } } },
+      });
+      const [encounters, connections] = await Promise.all([
+        this.prisma.encounter.findMany({
+          where: {
+            OR: [
+              { userId: callerId, opponentId: { in: validIds } },
+              { userId: { in: validIds }, opponentId: callerId },
+            ],
+          },
+          select: { userId: true, opponentId: true, store: { select: { name: true } }, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.connection.findMany({
+          where: {
+            status: ConnectionStatus.ACCEPTED,
+            OR: [
+              { requesterId: callerId, addresseeId: { in: validIds } },
+              { requesterId: { in: validIds }, addresseeId: callerId },
+            ],
+          },
+          select: { requesterId: true, addresseeId: true },
+        }),
+      ]);
+
+      const metBeforeSet = new Set<string>();
+      const lastMetStoreByPeer = new Map<string, string | null>();
+      for (const e of encounters) {
+        const peerId = e.userId === callerId ? e.opponentId : e.userId;
+        metBeforeSet.add(peerId);
+        if (!lastMetStoreByPeer.has(peerId)) {
+          lastMetStoreByPeer.set(peerId, (e as { store?: { name: string } | null }).store?.name ?? null);
+        }
+      }
+      for (const c of connections) {
+        metBeforeSet.add(c.requesterId === callerId ? c.addresseeId : c.requesterId);
+      }
+
+      const discoverableUsers = users.filter((u) => u.privacySettings?.discoverable !== false);
+      const socialsBatch = await this.socialsService.publicSocialsBatch(discoverableUsers.map((u) => u.id));
+
+      let players = discoverableUsers.map(({ privacySettings: _ps, ...u }) => {
+        const sd = socialsBatch.get(u.id) ?? { socials: [], friendsOnlyCount: 0 };
+        return {
+          ...u,
+          pronouns: u.pronouns ?? null,
+          bio: u.bio ?? null,
+          commander: u.commander ?? null,
+          powerLevel: u.powerLevel ?? null,
+          vibes: u.vibes ?? [],
+          metBefore: metBeforeSet.has(u.id),
+          lastMetStoreName: lastMetStoreByPeer.get(u.id) ?? null,
+          sharedEvent: null,
+          socials: sd.socials,
+          socialsSummary: { publicCount: sd.socials.length, friendsOnlyCount: sd.friendsOnlyCount },
+        };
+      });
+
+      if (filters?.format) players = players.filter((p) => (p.formats as string[]).includes(filters.format!));
+      if (filters?.colors?.length) players = players.filter((p) => (p.avatarColors as string[]).some((c) => filters.colors!.includes(c)));
+      if (filters?.powerMin != null && !isNaN(filters.powerMin)) players = players.filter((p) => p.powerLevel != null && p.powerLevel >= filters.powerMin!);
+      if (filters?.powerMax != null && !isNaN(filters.powerMax)) players = players.filter((p) => p.powerLevel != null && p.powerLevel <= filters.powerMax!);
+      if (filters?.vibe) players = players.filter((p) => p.vibes.includes(filters.vibe!));
+
+      return { storeId: null, storeName: null, players };
+    }
 
     const validIds = rawValidIds.filter((id) => !blockedIds.has(id));
     if (!validIds.length) return { storeId, storeName, players: [] };

@@ -67,6 +67,7 @@ export function useUpdatePrivacy() {
           showMetHistory: patch.showMetHistory ?? old.showMetHistory,
           storeMessages: patch.storeMessages ?? old.storeMessages,
           shareNameWithContacts: patch.shareNameWithContacts ?? old.shareNameWithContacts,
+          eventReminders: patch.eventReminders ?? old.eventReminders,
         };
       });
       return { prev };

@@ -17,6 +17,6 @@ export class PresenceController {
     @Req() req: AuthRequest,
     @Body(new ZodValidationPipe(HeartbeatBodySchema)) body: HeartbeatBody,
   ) {
-    return this.presence.heartbeat(req.user.sub, body.storeId);
+    return this.presence.heartbeat(req.user.sub, body);
   }
 }

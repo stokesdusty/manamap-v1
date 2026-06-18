@@ -1,5 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type Redis from 'ioredis';
+import type { HeartbeatBody } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -14,26 +15,42 @@ export class PresenceService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async heartbeat(userId: string, storeId: string) {
-    const store = await this.prisma.store.findUnique({
-      where: { id: storeId },
-      select: { id: true, name: true },
-    });
-    if (!store) throw new NotFoundException('Store not found');
+  async heartbeat(userId: string, body: HeartbeatBody) {
+    const { storeId, lat, lng } = body;
+    let storeInfo: { id: string; name: string } | null = null;
 
-    // If the user was at a different store, remove them from that store's set
-    const currentStoreId = await this.redis.get(presenceKey(userId));
-    if (currentStoreId && currentStoreId !== storeId) {
-      await this.redis.zrem(storeMembersKey(currentStoreId), userId);
+    if (storeId) {
+      const store = await this.prisma.store.findUnique({
+        where: { id: storeId },
+        select: { id: true, name: true },
+      });
+      if (!store) throw new NotFoundException('Store not found');
+      storeInfo = store;
+
+      const currentStoreId = await this.redis.get(presenceKey(userId));
+      if (currentStoreId && currentStoreId !== storeId) {
+        await this.redis.zrem(storeMembersKey(currentStoreId), userId);
+      }
+
+      await Promise.all([
+        this.redis.setex(presenceKey(userId), PRESENCE_TTL, storeId),
+        this.redis.zadd(storeMembersKey(storeId), Date.now(), userId),
+      ]);
     }
 
-    // Refresh presence key and add to store member sorted set (score = now for recency)
-    await Promise.all([
-      this.redis.setex(presenceKey(userId), PRESENCE_TTL, storeId),
-      this.redis.zadd(storeMembersKey(storeId), Date.now(), userId),
-    ]);
+    // Always persist last-known location when provided
+    if (lat != null && lng != null) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { lastLat: lat, lastLng: lng, lastLocatedAt: new Date() },
+      });
+    }
 
-    return { storeId: store.id, storeName: store.name, expiresIn: PRESENCE_TTL };
+    return {
+      storeId: storeInfo?.id ?? null,
+      storeName: storeInfo?.name ?? null,
+      expiresIn: PRESENCE_TTL,
+    };
   }
 
   async getStoreMembers(storeId: string): Promise<string[]> {

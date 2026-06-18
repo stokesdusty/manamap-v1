@@ -268,7 +268,7 @@ export class StoresService {
     });
 
     const [presence, gamificationResult, priorVisits, eligibleOffers, activeEvents] = await Promise.all([
-      this.presence.heartbeat(userId, storeId),
+      this.presence.heartbeat(userId, { storeId }),
       this.gamification.processCheckin(userId, storeId),
       this.prisma.checkin.count({ where: { userId, storeId, id: { not: checkin.id } } }),
       this.getEligibleOffers(userId, storeId),
