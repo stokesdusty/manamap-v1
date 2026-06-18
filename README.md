@@ -88,6 +88,20 @@ Expo SDK 52 bare workflow. Screens: Discover, Stores, History, You, Connect, Pod
 
 Features: Discord PKCE login · BLE proximity · check-in with PostGIS gating · event RSVP + push reminders · LFG/pods · game logging.
 
+### Android builds on Windows
+
+Windows has a 260-character path limit that CMake/ninja cannot bypass, and pnpm's virtual store adds long hash-suffixed directory names to every native package path. To work around this, the project must live at a short root path.
+
+**Working directory: `C:\m`** — keep all development here. Do not build Android from `C:\dev\...` or other deep paths; the build will fail with `ninja: Filename longer than 260 characters`.
+
+`gradle.properties` sets `reactNativeArchitectures=x86_64` so only the emulator architecture is compiled, which keeps CMake object-file paths within the 260-char limit. Change to `arm64-v8a` if you need a physical-device build (and be aware it may push some paths close to the limit again).
+
+```bash
+# Android emulator build (run from repo root at C:\m)
+cd apps/mobile/android
+.\gradlew.bat assembleDebug
+```
+
 ## Admin portal
 
 Partner-facing: claim stores, manage reward offers (FIRST_VISIT / STREAK), view check-in analytics. Admins see a moderation queue for reports.
