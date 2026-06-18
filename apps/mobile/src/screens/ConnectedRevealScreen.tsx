@@ -143,11 +143,11 @@ function CelebrationCard({ peer, myDisplayName, myColors, via, onDismiss }: Cele
 // ---------------------------------------------------------------------------
 
 function DeckRow({ deck }: { deck: DeckLink }) {
-  const siteLabel = (DECK_SITE_LABELS[deck.site] ?? deck.site).toUpperCase();
+  const siteLabel = (deck.site !== null ? (DECK_SITE_LABELS[deck.site] ?? deck.site) : deck.name).toUpperCase();
   return (
     <Pressable
       style={({ pressed }) => [drow.root, pressed && { opacity: 0.75 }]}
-      onPress={() => void Linking.openURL(deck.url)}
+      onPress={() => deck.url != null && void Linking.openURL(deck.url)}
     >
       <View style={drow.iconWell}>
         <Ionicons name="layers-outline" size={20} color={colors.accentInk} />

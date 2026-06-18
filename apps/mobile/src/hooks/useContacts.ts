@@ -17,8 +17,9 @@ export function useAddContact() {
 
       await Contacts.addContactAsync({
         contactType: Contacts.ContactTypes.Person,
+        name: displayName,
         firstName,
-        lastName,
+        ...(lastName !== undefined ? { lastName } : {}),
         note: 'ManaMap connection',
       });
     },
