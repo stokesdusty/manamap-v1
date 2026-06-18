@@ -156,6 +156,8 @@ export const ProfileSchema = z.object({
   onboardedAt: z.string().datetime().nullable(),
   lastLat: z.number().nullable().optional(),
   lastLng: z.number().nullable().optional(),
+  tradeWants: z.string().nullable().optional(),
+  tradeHaves: z.string().nullable().optional(),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
 
@@ -171,6 +173,8 @@ export const UpdateProfileSchema = z.object({
   formats: z.array(MtgFormatSchema).optional(),
   spelltable: z.boolean().optional(),
   convokeGames: z.boolean().optional(),
+  tradeWants: z.string().max(2000).nullable().optional(),
+  tradeHaves: z.string().max(2000).nullable().optional(),
 });
 export type UpdateProfile = z.infer<typeof UpdateProfileSchema>;
 
@@ -200,19 +204,19 @@ export type UpdatePrivacy = z.infer<typeof UpdatePrivacySchema>;
 
 // --- Deck links ---
 
-function deckUrlHostValid(site: DeckSite, url: string): boolean {
+export function siteFromUrl(url: string): DeckSite | null {
   try {
     const host = new URL(url).hostname.replace(/^www\./, '');
-    const expected = DECK_SITE_HOSTS[site];
-    return host === expected || host.endsWith(`.${expected}`);
-  } catch {
-    return false;
-  }
+    for (const [site, expected] of Object.entries(DECK_SITE_HOSTS) as [DeckSite, string][]) {
+      if (host === expected || host.endsWith(`.${expected}`)) return site;
+    }
+  } catch {}
+  return null;
 }
 
 export const DeckLinkSchema = z.object({
   id: IdSchema,
-  site: DeckSiteSchema,
+  site: DeckSiteSchema.nullable(),
   name: z.string().min(1).max(64),
   url: z.string().url().optional(),
 });
@@ -220,29 +224,24 @@ export type DeckLink = z.infer<typeof DeckLinkSchema>;
 
 export const CreateDeckLinkSchema = z
   .object({
-    site: DeckSiteSchema,
     name: z.string().min(1).max(64),
     url: z.string().url().optional(),
   })
-  .refine((d) => !d.url || deckUrlHostValid(d.site, d.url), {
-    message: 'URL host does not match the selected site',
+  .refine((d) => !d.url || siteFromUrl(d.url) !== null, {
+    message: 'Only Moxfield or Archidekt URLs are supported',
     path: ['url'],
   });
 export type CreateDeckLink = z.infer<typeof CreateDeckLinkSchema>;
 
 export const UpdateDeckLinkSchema = z
   .object({
-    site: DeckSiteSchema.optional(),
     name: z.string().min(1).max(64).optional(),
     url: z.string().url().optional(),
   })
-  .refine(
-    (d) => {
-      if (!d.site || !d.url) return true;
-      return deckUrlHostValid(d.site, d.url);
-    },
-    { message: 'URL host does not match the selected site', path: ['url'] },
-  );
+  .refine((d) => !d.url || siteFromUrl(d.url) !== null, {
+    message: 'Only Moxfield or Archidekt URLs are supported',
+    path: ['url'],
+  });
 export type UpdateDeckLink = z.infer<typeof UpdateDeckLinkSchema>;
 
 // --- Connections ---

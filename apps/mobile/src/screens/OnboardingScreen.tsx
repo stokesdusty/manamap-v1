@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import type { DeckSite, ManaColor, MtgFormat, PlayerVibe } from '@manamap/shared';
+import type { ManaColor, MtgFormat, PlayerVibe } from '@manamap/shared';
 import { DECK_SITE_HOSTS } from '@manamap/shared';
 import { Avatar } from '../components/Avatar';
 import { ManaPip } from '../components/ManaPip';
@@ -91,7 +91,7 @@ function guildName(cs: ManaColor[]): string {
 // Draft state
 // ---------------------------------------------------------------------------
 
-type DeckDraft = { site: DeckSite; name: string; url: string };
+type DeckDraft = { name: string; url?: string };
 
 type Draft = {
   name: string;
@@ -477,7 +477,6 @@ function Step3({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
 
 function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<DraftAction> }) {
   const [showAddDeck, setShowAddDeck] = useState(false);
-  const [deckSite, setDeckSite] = useState<DeckSite>('moxfield');
   const [deckName, setDeckName] = useState('');
   const [deckUrl, setDeckUrl] = useState('');
   const [deckUrlError, setDeckUrlError] = useState('');
@@ -487,24 +486,21 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
     if (deckUrl.trim()) {
       try {
         const host = new URL(deckUrl).hostname.replace(/^www\./, '');
-        const expected = DECK_SITE_HOSTS[deckSite];
-        if (host !== expected && !host.endsWith(`.${expected}`)) {
-          setDeckUrlError(`URL must be a ${expected} link`);
-          return;
-        }
+        const valid = Object.values(DECK_SITE_HOSTS).some(
+          (h) => host === h || host.endsWith(`.${h}`),
+        );
+        if (!valid) { setDeckUrlError('Only Moxfield or Archidekt links are supported'); return; }
       } catch {
         setDeckUrlError('Enter a valid URL');
         return;
       }
     }
-    dispatch({ type: 'ADD_DECK', deck: { site: deckSite, name: deckName.trim(), ...(deckUrl.trim() ? { url: deckUrl.trim() } : {}) } });
+    dispatch({ type: 'ADD_DECK', deck: { name: deckName.trim(), ...(deckUrl.trim() ? { url: deckUrl.trim() } : {}) } });
     setDeckName('');
     setDeckUrl('');
     setDeckUrlError('');
     setShowAddDeck(false);
   }
-
-  const SITE_LABELS: Record<DeckSite, string> = { moxfield: 'Moxfield', archidekt: 'Archidekt' };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
@@ -531,8 +527,8 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
             {draft.decks.map((d, i) => (
               <View key={i} style={step.deckRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={step.deckSite}>{SITE_LABELS[d.site]}</Text>
                   <Text style={step.deckName} numberOfLines={1}>{d.name}</Text>
+                  {d.url && <Text style={step.deckSite} numberOfLines={1}>{d.url}</Text>}
                 </View>
                 <Pressable
                   onPress={() => dispatch({ type: 'REMOVE_DECK', index: i })}
@@ -565,19 +561,6 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
               placeholder="Deck name"
               placeholderTextColor={colors.textTertiary}
             />
-            <View style={step.siteRow}>
-              {(['moxfield', 'archidekt'] as DeckSite[]).map((s) => (
-                <Pressable
-                  key={s}
-                  onPress={() => { setDeckSite(s); setDeckUrlError(''); }}
-                  style={[step.siteBtn, deckSite === s && step.siteBtnActive]}
-                >
-                  <Text style={[step.siteBtnText, deckSite === s && step.siteBtnTextActive]}>
-                    {SITE_LABELS[s]}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
             <TextInput
               style={[step.input, deckUrlError ? step.inputError : null]}
               value={deckUrl}
@@ -585,7 +568,7 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
-              placeholder={`URL (optional) — https://${DECK_SITE_HOSTS[deckSite]}/decks/...`}
+              placeholder="URL (optional) — Moxfield or Archidekt only"
               placeholderTextColor={colors.textTertiary}
             />
             {deckUrlError ? <Text style={step.errorText}>{deckUrlError}</Text> : null}
@@ -1042,23 +1025,6 @@ const step = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderLight,
   },
-  siteRow: { flexDirection: 'row', gap: spacing.sm },
-  siteBtn: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-  },
-  siteBtnActive: { backgroundColor: colors.accentLight, borderColor: colors.accent },
-  siteBtnText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-  },
-  siteBtnTextActive: { color: colors.accent },
   formBtns: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'flex-end' },
   cancelBtn: {
     paddingHorizontal: spacing.lg,

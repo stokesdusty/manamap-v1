@@ -143,6 +143,18 @@ VITE_DISCORD_CLIENT_ID=<id>
 VITE_API_URL=http://localhost:3000/api
 ```
 
+## Hidden / future features
+
+The following features are fully implemented in the API and data model but are hidden from the mobile UI. They can be re-enabled by restoring the relevant render calls in the mobile app.
+
+| Feature | Status | Where to re-enable |
+|---|---|---|
+| Game logging | Hidden | Restore the "Log game result" button and `<LogGameSheet>` in `YouScreen`, and `<ConfirmResultsSection>` in `ConnectScreen` |
+| Game record & history | Hidden | Restore `<GameRecordCard>`, `<RecentGamesCard>`, and `<RivalriesCard>` in `YouScreen` |
+| Monthly quests | Hidden | Restore `<QuestsCard>` in `YouScreen` |
+
+API routes (`/v1/games/*`, `/v1/me/stats`) and database tables (`game_logs`, `game_players`) remain active.
+
 ## Tech stack
 
 | Layer | Technology |

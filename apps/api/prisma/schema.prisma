@@ -184,6 +184,9 @@ model User {
   lastLng             Float?    @map("last_lng")
   lastLocatedAt       DateTime? @map("last_located_at")
 
+  tradeWants          String?   @map("trade_wants")
+  tradeHaves          String?   @map("trade_haves")
+
   identities          Identity[]
   privacySettings     PrivacySettings?
   deckLinks           DeckLink[]
@@ -283,9 +286,9 @@ model Format {
 }
 
 model DeckLink {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  site      DeckSite
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  site      DeckSite?
   name      String
   url       String?
   createdAt DateTime @default(now()) @map("created_at")

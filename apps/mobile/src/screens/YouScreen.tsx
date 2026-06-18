@@ -19,9 +19,8 @@ import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'reac
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
-import { LogGameSheet } from '../components/LogGameSheet';
 import { SocialsCard } from '../components/SocialsCard';
-import { useMyGameStats, useMyGames } from '../hooks/useGames';
+import { useMyGames } from '../hooks/useGames';
 import type { Game, GameStats } from '@manamap/shared';
 import type { BlockedUser } from '@manamap/shared';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -470,7 +469,7 @@ function DecksCard() {
       {decks.map((deck) => (
         <View key={deck.id} style={section.deckRow}>
           <View style={section.deckInfo}>
-            <Text style={section.deckSite}>{SITE_LABELS[deck.site]}</Text>
+            {deck.site && <Text style={section.deckSite}>{SITE_LABELS[deck.site]}</Text>}
             <Text style={section.deckName} numberOfLines={1}>
               {deck.name}
             </Text>
@@ -494,6 +493,171 @@ function DecksCard() {
     </View>
   );
 }
+
+// ---------------------------------------------------------------------------
+// TradeListCard + EditTradeListModal
+// ---------------------------------------------------------------------------
+
+function EditTradeListModal({
+  visible,
+  profile,
+  onClose,
+}: {
+  visible: boolean;
+  profile: Profile;
+  onClose: () => void;
+}) {
+  const { mutate: update, isPending } = useUpdateProfile();
+  const [wants, setWants] = useState('');
+  const [haves, setHaves] = useState('');
+
+  function handleOpen() {
+    setWants(profile.tradeWants ?? '');
+    setHaves(profile.tradeHaves ?? '');
+  }
+
+  function handleSave() {
+    update(
+      { tradeWants: wants.trim() || null, tradeHaves: haves.trim() || null },
+      { onSuccess: onClose },
+    );
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onShow={handleOpen}
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={modal.safe}>
+        <View style={modal.topBar}>
+          <Pressable onPress={onClose} style={({ pressed }) => pressed && { opacity: 0.6 }}>
+            <Text style={modal.cancel}>Cancel</Text>
+          </Pressable>
+          <Text style={modal.title}>Trade List</Text>
+          <Pressable
+            onPress={handleSave}
+            disabled={isPending}
+            style={({ pressed }) => [modal.saveBtn, pressed && { opacity: 0.6 }]}
+          >
+            {isPending ? (
+              <ActivityIndicator size="small" color={colors.surface} />
+            ) : (
+              <Text style={modal.saveText}>Save</Text>
+            )}
+          </Pressable>
+        </View>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={modal.scroll}
+            keyboardShouldPersistTaps="handled"
+          >
+            <FormField label="Looking for">
+              <TextInput
+                style={[form.input, tl.textArea]}
+                value={wants}
+                onChangeText={setWants}
+                maxLength={2000}
+                placeholder={"e.g. Doubling Season, Force of Will\nor \"all squirrel cards\""}
+                placeholderTextColor={colors.textTertiary}
+                multiline
+                textAlignVertical="top"
+              />
+            </FormField>
+
+            <FormField label="Have / For trade">
+              <TextInput
+                style={[form.input, tl.textArea]}
+                value={haves}
+                onChangeText={setHaves}
+                maxLength={2000}
+                placeholder="e.g. Foil Rhystic Study, multiple Smothering Tithe..."
+                placeholderTextColor={colors.textTertiary}
+                multiline
+                textAlignVertical="top"
+              />
+            </FormField>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+function TradeListCard({ profile }: { profile: Profile }) {
+  const [manageOpen, setManageOpen] = useState(false);
+  const hasWants = !!profile.tradeWants?.trim();
+  const hasHaves = !!profile.tradeHaves?.trim();
+  const isEmpty = !hasWants && !hasHaves;
+
+  return (
+    <View style={section.card}>
+      <View style={section.cardHeader}>
+        <Text style={section.heading}>Trade list</Text>
+        <Pressable
+          style={({ pressed }) => [section.addBtn, pressed && { opacity: 0.6 }]}
+          onPress={() => setManageOpen(true)}
+        >
+          <Ionicons name="list-outline" size={17} color={colors.accent} />
+          <Text style={section.addText}>Manage</Text>
+        </Pressable>
+      </View>
+
+      {isEmpty ? (
+        <Text style={section.empty}>
+          No trade list yet — tap Manage to add cards you want or have.
+        </Text>
+      ) : (
+        <>
+          {hasWants && (
+            <View style={tl.section}>
+              <Text style={tl.sectionLabel}>Looking for</Text>
+              <Text style={tl.body}>{profile.tradeWants}</Text>
+            </View>
+          )}
+          {hasHaves && (
+            <View style={[tl.section, hasWants && tl.sectionBorder]}>
+              <Text style={tl.sectionLabel}>Have / For trade</Text>
+              <Text style={tl.body}>{profile.tradeHaves}</Text>
+            </View>
+          )}
+        </>
+      )}
+
+      <EditTradeListModal
+        visible={manageOpen}
+        profile={profile}
+        onClose={() => setManageOpen(false)}
+      />
+    </View>
+  );
+}
+
+const tl = StyleSheet.create({
+  textArea: { height: 140, paddingTop: spacing.sm },
+  section: { gap: spacing.xs, paddingTop: spacing.xs },
+  sectionBorder: { borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: spacing.md },
+  sectionLabel: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.accent,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  body: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+});
 
 // ---------------------------------------------------------------------------
 // RewardsCard
@@ -1159,6 +1323,7 @@ function EditProfileModal({
                 />
               </View>
             </FormField>
+
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -1288,13 +1453,11 @@ const form = StyleSheet.create({
 
 function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { mutate: createDeck, isPending } = useCreateDeck();
-  const [site, setSite] = useState<DeckSite>('moxfield');
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [urlError, setUrlError] = useState('');
 
   function reset() {
-    setSite('moxfield');
     setName('');
     setUrl('');
     setUrlError('');
@@ -1303,11 +1466,10 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
   function validateUrl(raw: string): string {
     try {
       const host = new URL(raw).hostname.replace(/^www\./, '');
-      const expected = DECK_SITE_HOSTS[site];
-      if (host !== expected && !host.endsWith(`.${expected}`)) {
-        return `URL must be a ${expected} link`;
-      }
-      return '';
+      const valid = Object.values(DECK_SITE_HOSTS).some(
+        (h) => host === h || host.endsWith(`.${h}`),
+      );
+      return valid ? '' : 'Only Moxfield or Archidekt links are supported';
     } catch {
       return 'Enter a valid URL';
     }
@@ -1321,7 +1483,7 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
     }
 
     createDeck(
-      { site, name: name.trim(), ...(url.trim() ? { url: url.trim() } : {}) },
+      { name: name.trim(), ...(url.trim() ? { url: url.trim() } : {}) },
       {
         onSuccess: () => {
           reset();
@@ -1381,23 +1543,8 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
               />
             </FormField>
 
-            <FormField label="Site">
-              <View style={addDeck.siteRow}>
-                {(['moxfield', 'archidekt'] as DeckSite[]).map((s) => (
-                  <Pressable
-                    key={s}
-                    onPress={() => { setSite(s); setUrlError(''); }}
-                    style={[addDeck.siteBtn, site === s && addDeck.siteBtnActive]}
-                  >
-                    <Text style={[addDeck.siteBtnText, site === s && addDeck.siteBtnTextActive]}>
-                      {SITE_LABELS[s]}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </FormField>
-
             <FormField label="URL (optional)">
+              <Text style={addDeck.hint}>Only Moxfield and Archidekt links are supported</Text>
               <TextInput
                 style={[form.input, urlError ? addDeck.inputError : null]}
                 value={url}
@@ -1405,7 +1552,7 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"
-                placeholder={`https://${DECK_SITE_HOSTS[site]}/decks/...`}
+                placeholder="https://moxfield.com/decks/..."
                 placeholderTextColor={colors.textTertiary}
               />
               {urlError ? <Text style={addDeck.errorText}>{urlError}</Text> : null}
@@ -1420,23 +1567,12 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
 const addDeck = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.paper },
   scroll: { padding: spacing.xl, gap: spacing.lg },
-  siteRow: { flexDirection: 'row', gap: spacing.sm },
-  siteBtn: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    backgroundColor: colors.surface,
+  hint: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    marginBottom: spacing.xs,
   },
-  siteBtnActive: { backgroundColor: colors.accentLight, borderColor: colors.accent },
-  siteBtnText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
-  },
-  siteBtnTextActive: { color: colors.accent },
   inputError: { borderColor: colors.error },
   errorText: {
     fontFamily: typography.fontFamily.regular,
@@ -1484,7 +1620,7 @@ function QuestRow({ item }: { item: ActiveQuest }) {
   );
 }
 
-function QuestsCard() {
+function _QuestsCard() {
   const { data: quests, isLoading } = useQuests();
 
   if (isLoading) {
@@ -1614,7 +1750,7 @@ function WinRateStat({ winRate }: { winRate: number }) {
   );
 }
 
-function GameRecordCard({ stats }: { stats: GameStats }) {
+function _GameRecordCard({ stats }: { stats: GameStats }) {
   const { accent } = useIdentityTheme();
   if (stats.games === 0) return null;
 
@@ -1718,7 +1854,7 @@ function gameResultLabel(game: Game, myId: string): { label: string; color: stri
   return { label: 'L', color: colors.error };
 }
 
-function RecentGamesCard({ myId }: { myId: string }) {
+function _RecentGamesCard({ myId }: { myId: string }) {
   const { data: games = [], isLoading } = useMyGames(8);
 
   if (isLoading) {
@@ -1832,7 +1968,7 @@ function RivalryRow({ item, isLast }: { item: Rivalry; isLast: boolean }) {
   );
 }
 
-function RivalriesCard() {
+function _RivalriesCard() {
   const { data: rivalries, isLoading } = useRivalries(5);
 
   if (isLoading || !rivalries?.length) return null;
@@ -1906,10 +2042,8 @@ export function YouScreen() {
   const { signOut } = useAuth();
   const { data: profile, isLoading: profileLoading, error: profileError } = useProfile();
   const { data: privacy, isLoading: privacyLoading } = usePrivacy();
-  const { data: gameStats } = useMyGameStats();
-  const { accent, soft } = useIdentityTheme();
+  const { accent } = useIdentityTheme();
   const [editOpen, setEditOpen] = useState(false);
-  const [logGameOpen, setLogGameOpen] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   if (profileLoading) {
@@ -1957,14 +2091,6 @@ export function YouScreen() {
 
         <SocialsCard mode="owner" />
 
-        <Pressable
-          style={({ pressed }) => [styles.logGameBtn, { borderColor: accent + '60', backgroundColor: soft }, pressed && { opacity: 0.8 }]}
-          onPress={() => setLogGameOpen(true)}
-        >
-          <Ionicons name="game-controller-outline" size={18} color={accent} />
-          <Text style={[styles.logGameText, { color: accent }]}>Log game result</Text>
-        </Pressable>
-
         {privacyLoading ? (
           <View style={[section.card, { alignItems: 'center' }]}>
             <ActivityIndicator color={colors.accent} />
@@ -1977,17 +2103,11 @@ export function YouScreen() {
 
         <DecksCard />
 
+        <TradeListCard profile={profile} />
+
         <HomeStoreRow />
 
         <RewardsCard />
-
-        <QuestsCard />
-
-        {gameStats && <GameRecordCard stats={gameStats} />}
-
-        <RecentGamesCard myId={profile.id} />
-
-        <RivalriesCard />
 
         <Pressable
           style={({ pressed }) => [styles.signOutBtn, pressed && styles.pressed]}
@@ -2001,11 +2121,6 @@ export function YouScreen() {
         visible={editOpen}
         profile={profile}
         onClose={() => setEditOpen(false)}
-      />
-
-      <LogGameSheet
-        visible={logGameOpen}
-        onClose={() => setLogGameOpen(false)}
       />
     </SafeAreaView>
   );
@@ -2060,19 +2175,12 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.md,
     color: colors.textSecondary,
   },
-  logGameBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginHorizontal: spacing.xl,
-    marginTop: spacing.md,
-    height: 44,
-    borderRadius: radii.md,
-    borderWidth: 1,
-  },
-  logGameText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-  },
 });
+
+// Hidden game/quest features — see README "Hidden / future features"
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export type _HiddenGameFeatures =
+  | typeof _QuestsCard
+  | typeof _GameRecordCard
+  | typeof _RecentGamesCard
+  | typeof _RivalriesCard;

@@ -22,7 +22,6 @@ import {
   useDeclineConnection,
 } from '../hooks/useConnections';
 import { useConfirmGame, useDisputeGame, usePendingGames } from '../hooks/useGames';
-import { useProfile } from '../hooks/useMe';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -174,7 +173,7 @@ function ConnectionCard({
 // ConfirmResultsSection
 // ---------------------------------------------------------------------------
 
-function ConfirmResultsSection({ myId }: { myId: string }) {
+function _ConfirmResultsSection({ myId }: { myId: string }) {
   const { data: pending = [], isLoading } = usePendingGames();
   const { mutate: confirmGame, isPending: confirming, variables: confirmingId } = useConfirmGame();
   const { mutate: disputeGame, isPending: disputing, variables: disputingId } = useDisputeGame();
@@ -316,7 +315,6 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
   const { data, isLoading } = useConnections();
   const { mutate: accept, isPending: accepting, variables: acceptingId } = useAcceptConnection();
   const { mutate: decline } = useDeclineConnection();
-  const { data: profile } = useProfile();
   const { mutate: addContact } = useAddContact();
 
   useFocusEffect(
@@ -367,8 +365,6 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          {profile && <ConfirmResultsSection myId={profile.id} />}
-
           {/* Requests — always rendered */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>
@@ -643,3 +639,7 @@ const row = StyleSheet.create({
     color: colors.textTertiary,
   },
 });
+
+// Hidden game feature — see README "Hidden / future features"
+export type _HiddenGameFeature = typeof _ConfirmResultsSection;
+

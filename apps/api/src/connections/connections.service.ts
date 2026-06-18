@@ -226,7 +226,7 @@ export class ConnectionsService {
       : null;
 
     const deckLinks = showDecks
-      ? peerRaw.deckLinks.map((d) => ({ ...d, site: d.site.toLowerCase() }))
+      ? peerRaw.deckLinks.map((d) => ({ ...d, site: d.site?.toLowerCase() ?? null }))
       : [];
 
     const socialsData = accepted

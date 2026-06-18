@@ -1,0 +1,1 @@
+ALTER TABLE "deck_links" ALTER COLUMN "site" DROP NOT NULL;

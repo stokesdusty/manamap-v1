@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DeckSite } from '@prisma/client';
 import {
-  DECK_SITE_HOSTS,
+  siteFromUrl,
   type CreateDeckLink,
   type OnboardingSubmit,
   type SetHomeStore,
@@ -36,6 +36,8 @@ export class MeService {
         ...(dto.formats !== undefined ? { formats: dto.formats } : {}),
         ...(dto.spelltable !== undefined ? { spelltable: dto.spelltable } : {}),
         ...(dto.convokeGames !== undefined ? { convokeGames: dto.convokeGames } : {}),
+        ...(dto.tradeWants !== undefined ? { tradeWants: dto.tradeWants } : {}),
+        ...(dto.tradeHaves !== undefined ? { tradeHaves: dto.tradeHaves } : {}),
       },
     });
   }
@@ -86,38 +88,32 @@ export class MeService {
       where: { userId },
       orderBy: { createdAt: 'asc' },
     });
-    return decks.map((d) => ({ ...d, site: d.site.toLowerCase() }));
+    return decks.map((d) => ({ ...d, site: d.site?.toLowerCase() ?? null }));
   }
 
   async createDeck(userId: string, dto: CreateDeckLink) {
+    const site = dto.url ? siteFromUrl(dto.url) : null;
     const deck = await this.prisma.deckLink.create({
-      data: { userId, site: dto.site.toUpperCase() as DeckSite, name: dto.name, url: dto.url },
+      data: { userId, name: dto.name, url: dto.url ?? null, site: site ? site.toUpperCase() as DeckSite : null },
     });
-    return { ...deck, site: deck.site.toLowerCase() };
+    return { ...deck, site: deck.site?.toLowerCase() ?? null };
   }
 
   async updateDeck(userId: string, deckId: string, dto: UpdateDeckLink) {
     const existing = await this.prisma.deckLink.findFirst({ where: { id: deckId, userId } });
     if (!existing) throw new NotFoundException('Deck not found');
 
-    if (dto.url && !dto.site) {
-      const existingSite = existing.site.toLowerCase() as keyof typeof DECK_SITE_HOSTS;
-      const expected = DECK_SITE_HOSTS[existingSite];
-      const actual = new URL(dto.url).hostname.replace(/^www\./, '');
-      if (actual !== expected && !actual.endsWith(`.${expected}`)) {
-        throw new BadRequestException(`URL must be a ${expected} link`);
-      }
-    }
-
     const deck = await this.prisma.deckLink.update({
       where: { id: deckId },
       data: {
-        ...(dto.site !== undefined ? { site: dto.site.toUpperCase() as DeckSite } : {}),
         ...(dto.name !== undefined ? { name: dto.name } : {}),
-        ...(dto.url !== undefined ? { url: dto.url } : {}),
+        ...(dto.url !== undefined ? {
+          url: dto.url,
+          site: dto.url ? (siteFromUrl(dto.url)?.toUpperCase() as DeckSite ?? null) : null,
+        } : {}),
       },
     });
-    return { ...deck, site: deck.site.toLowerCase() };
+    return { ...deck, site: deck.site?.toLowerCase() ?? null };
   }
 
   async deleteDeck(userId: string, deckId: string) {
@@ -316,9 +312,9 @@ export class MeService {
         await tx.deckLink.createMany({
           data: dto.decks.map((d) => ({
             userId,
-            site: d.site.toUpperCase() as DeckSite,
             name: d.name,
-            url: d.url,
+            url: d.url ?? null,
+            site: d.url ? (siteFromUrl(d.url)?.toUpperCase() as DeckSite ?? null) : null,
           })),
           skipDuplicates: true,
         });
