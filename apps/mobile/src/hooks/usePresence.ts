@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import type { HeartbeatBody, HeartbeatResponse } from '@manamap/shared';
 import { api } from '../api/client';
@@ -31,6 +31,18 @@ function sendHeartbeat(body: HeartbeatBody) {
   return api
     .post<HeartbeatResponse>('/v1/presence/heartbeat', body)
     .then((r) => r.data);
+}
+
+export function useCheckout() {
+  const { setActiveStore } = useActiveStore();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.delete('/v1/presence/checkin').then((r) => r.data),
+    onSuccess: () => {
+      setActiveStore(null);
+      void qc.invalidateQueries({ queryKey: ['nearby'] });
+    },
+  });
 }
 
 /**

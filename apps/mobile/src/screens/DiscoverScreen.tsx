@@ -13,7 +13,7 @@ import {
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Defs, G, Line, LinearGradient as SvgLinearGradient, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'react-native-svg';
 import type {
   ManaColor as SharedManaColor,
   MtgFormat,
@@ -45,11 +45,11 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { TabParamList, RootStackParamList } from '../navigation/types';
 import { useNearby, useSuggestions, useStores, useStoreEvents, type DiscoveryFilters } from '../hooks/useNearby';
-import { usePresence } from '../hooks/usePresence';
+import { usePresence, useCheckout } from '../hooks/usePresence';
 import { useCrossedPathsCount } from '../hooks/useEncounters';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import { usePrivacy, useProfile, useUpdatePrivacy } from '../hooks/useMe';
-import { BellButton } from '../navigation/TabNavigator';
+import { BellButton } from '../components/BellButton';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import { useIdentityTheme, type IdentityTheme } from '../hooks/useIdentityTheme';
 
@@ -60,30 +60,8 @@ type DiscoverScreenProps = {
   >;
 } & Pick<NativeStackScreenProps<RootStackParamList, 'Discover'>, 'route'>;
 
-// ---------------------------------------------------------------------------
-// Radar
-// ---------------------------------------------------------------------------
-
-const RADAR_SIZE = 260;
-const RADAR_CENTER = RADAR_SIZE / 2;
-const OUTER_RADIUS = 110;
-const INNER_RADIUS = 60;
-const NODE_RADIUS = 18;
-
 function avatarInitial(name: string) {
   return name.charAt(0).toUpperCase();
-}
-
-function playerPositions(count: number): Array<{ x: number; y: number }> {
-  if (count === 0) return [];
-  return Array.from({ length: count }, (_, i) => {
-    const angle = (2 * Math.PI * i) / count - Math.PI / 2;
-    const r = i % 2 === 0 ? OUTER_RADIUS : INNER_RADIUS;
-    return {
-      x: RADAR_CENTER + r * Math.cos(angle),
-      y: RADAR_CENTER + r * Math.sin(angle),
-    };
-  });
 }
 
 const MANA_FILL: Record<string, string> = {
@@ -99,82 +77,6 @@ function nodeColor(player: NearbyPlayer): string {
     return MANA_FILL[player.avatarColors[0] as SharedManaColor] ?? colors.border;
   }
   return colors.border;
-}
-
-interface RadarProps {
-  players: NearbyPlayer[];
-  onSelectPlayer: (p: NearbyPlayer) => void;
-  selectedId: string | null;
-  theme: IdentityTheme;
-}
-
-function Radar({ players, onSelectPlayer, selectedId, theme }: RadarProps) {
-  const { accent, gradient, onAccent, soft } = theme;
-  const positions = playerPositions(players.length);
-  const ringStroke = accent + '50';
-
-  return (
-    <View style={radar.wrap}>
-      <Svg width={RADAR_SIZE} height={RADAR_SIZE}>
-        <Defs>
-          <RadialGradient id="bg" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={accent} stopOpacity={0.18} />
-            <Stop offset="100%" stopColor={colors.paper} stopOpacity={0} />
-          </RadialGradient>
-          <SvgLinearGradient id="centerGrad" x1="0" y1="0" x2="1" y2="1">
-            {gradient.map((c, i) => (
-              <Stop key={i} offset={`${i / Math.max(1, gradient.length - 1)}`} stopColor={c} />
-            ))}
-          </SvgLinearGradient>
-        </Defs>
-
-        <Circle cx={RADAR_CENTER} cy={RADAR_CENTER} r={OUTER_RADIUS + NODE_RADIUS} fill="url(#bg)" />
-
-        <Circle cx={RADAR_CENTER} cy={RADAR_CENTER} r={OUTER_RADIUS}
-          stroke={ringStroke} strokeWidth={1} strokeDasharray="4 4" fill="none" />
-        <Circle cx={RADAR_CENTER} cy={RADAR_CENTER} r={INNER_RADIUS}
-          stroke={ringStroke} strokeWidth={1} strokeDasharray="4 4" fill="none" />
-
-        {positions.map((pos, i) => (
-          <Line key={`spoke-${i}`}
-            x1={RADAR_CENTER} y1={RADAR_CENTER} x2={pos.x} y2={pos.y}
-            stroke={ringStroke} strokeWidth={1} />
-        ))}
-
-        {players.map((player, i) => {
-          const pos = positions[i];
-          const isSelected = player.id === selectedId;
-          const fill = nodeColor(player);
-          const textFill = ['W', 'G'].includes(player.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
-          return (
-            <G key={player.id} onPress={() => onSelectPlayer(player)}>
-              {isSelected && (
-                <Circle cx={pos.x} cy={pos.y} r={NODE_RADIUS + 4}
-                  fill={soft} stroke={accent} strokeWidth={1.5} />
-              )}
-              <Circle cx={pos.x} cy={pos.y} r={NODE_RADIUS} fill={fill} />
-              <SvgText x={pos.x} y={pos.y + 5} textAnchor="middle"
-                fill={textFill} fontSize={13} fontFamily={typography.fontFamily.bold}>
-                {avatarInitial(player.displayName)}
-              </SvgText>
-              {player.metBefore && (
-                <Circle cx={pos.x + NODE_RADIUS - 4} cy={pos.y - NODE_RADIUS + 4}
-                  r={5} fill={colors.success} />
-              )}
-            </G>
-          );
-        })}
-
-        {/* Identity-gradient center node with glow */}
-        <Circle cx={RADAR_CENTER} cy={RADAR_CENTER} r={30} fill={accent} opacity={0.18} />
-        <Circle cx={RADAR_CENTER} cy={RADAR_CENTER} r={22} fill="url(#centerGrad)" />
-        <SvgText x={RADAR_CENTER} y={RADAR_CENTER + 5} textAnchor="middle"
-          fill={onAccent} fontSize={11} fontFamily={typography.fontFamily.semiBold}>
-          You
-        </SvgText>
-      </Svg>
-    </View>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -261,9 +163,10 @@ interface LocationBannerProps {
   playerCount: number;
   todayEventName: string | null;
   theme: IdentityTheme;
+  onLeave: () => void;
 }
 
-function LocationBanner({ storeName, playerCount, todayEventName, theme }: LocationBannerProps) {
+function LocationBanner({ storeName, playerCount, todayEventName, theme, onLeave }: LocationBannerProps) {
   const { gradient, onAccent, accent } = theme;
   const [bW, setBW] = useState(() => Dimensions.get('window').width - spacing.xl * 2);
   const [bH, setBH] = useState(90);
@@ -288,6 +191,10 @@ function LocationBanner({ storeName, playerCount, todayEventName, theme }: Locat
         <View style={locBanner.checkinRow}>
           <Ionicons name="location" size={13} color={onAccent + 'EB'} />
           <Text style={[locBanner.checkinLabel, { color: onAccent + 'EB' }]}>Checked in</Text>
+          <View style={{ flex: 1 }} />
+          <Pressable onPress={onLeave} hitSlop={8}>
+            <Text style={[locBanner.leaveBtn, { color: onAccent + 'CC' }]}>Leave</Text>
+          </Pressable>
         </View>
         <Text style={[locBanner.name, { color: onAccent }]} numberOfLines={1}>{storeName}</Text>
         <Text style={[locBanner.sub, { color: onAccent + 'E6' }]} numberOfLines={1}>
@@ -302,7 +209,8 @@ function LocationBanner({ storeName, playerCount, todayEventName, theme }: Locat
 const locBanner = StyleSheet.create({
   root: {
     marginHorizontal: spacing.xl,
-    marginBottom: 16,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
     borderRadius: radii.lg,
     overflow: 'hidden',
     shadowOffset: { width: 0, height: 6 },
@@ -324,6 +232,12 @@ const locBanner = StyleSheet.create({
     fontFamily: typography.fontFamily.bold,
     fontSize: 12,
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  leaveBtn: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 11,
+    letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
   name: {
@@ -367,16 +281,15 @@ const VIBE_LABELS: Partial<Record<PlayerVibe, string>> = {
 interface PlayerRowProps {
   player: NearbyPlayer;
   onPress: () => void;
-  isSelected: boolean;
 }
 
-function PlayerRow({ player, onPress, isSelected }: PlayerRowProps) {
+function PlayerRow({ player, onPress }: PlayerRowProps) {
   const fill = nodeColor(player);
   const textFill = ['W', 'G'].includes(player.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
 
   return (
     <Pressable
-      style={({ pressed }) => [row.root, isSelected && row.selected, pressed && { opacity: 0.75 }]}
+      style={({ pressed }) => [row.root, pressed && { opacity: 0.75 }]}
       onPress={onPress}
     >
       <View style={[row.avatar, { backgroundColor: fill }]}>
@@ -1294,7 +1207,6 @@ function PodSheet({ visible, mySession, feed, onClose, onLock, isLocking }: PodS
 export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   const { activeStore, setActiveStore } = useActiveStore();
   const [showPicker, setShowPicker] = useState(false);
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   // LFG state
   const [showComposer, setShowComposer] = useState(false);
@@ -1375,6 +1287,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
 
   // Presence heartbeat
   usePresence();
+  const { mutate: checkout } = useCheckout();
 
   // Identity theme
   const identityTheme = useIdentityTheme();
@@ -1446,10 +1359,6 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
 
   const suggestions = suggestionsData?.suggestions ?? [];
 
-  const handleSelectPlayer = useCallback((player: NearbyPlayer) => {
-    setSelectedPlayerId((prev) => (prev === player.id ? null : player.id));
-  }, []);
-
   const handleOpenPreview = useCallback((player: NearbyPlayer) => {
     navigation.navigate('PlayerPreview', {
       profile: player,
@@ -1478,7 +1387,12 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Discover</Text>
+        <View style={styles.titleRow}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          </Pressable>
+          <Text style={styles.title}>Discover</Text>
+        </View>
         <View style={styles.headerSubrow}>
           {activeStore ? (
             <Text style={[styles.storeName, { color: identityTheme.accent }]} numberOfLines={1}>{activeStore.name}</Text>
@@ -1502,30 +1416,28 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
                 color={isInvisible ? colors.textInverse : colors.textSecondary}
               />
             </Pressable>
-            {activeStore && (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.filterToggleBtn,
-                  filtersOpen && { borderColor: identityTheme.accent, backgroundColor: identityTheme.soft },
-                  pressed && { opacity: 0.7 },
-                ]}
-                onPress={() => setFiltersOpen((o) => !o)}
-              >
-                <Ionicons
-                  name="options-outline"
-                  size={15}
-                  color={filtersOpen ? identityTheme.accent : colors.textSecondary}
-                />
-                <Text style={[styles.filterToggleText, filtersOpen && { color: identityTheme.accent }]}>
-                  Filters
-                </Text>
-                {activeFilterCount > 0 && (
-                  <View style={[styles.filterBadge, { backgroundColor: identityTheme.accent }]}>
-                    <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-                  </View>
-                )}
-              </Pressable>
-            )}
+            <Pressable
+              style={({ pressed }) => [
+                styles.filterToggleBtn,
+                filtersOpen && { borderColor: identityTheme.accent, backgroundColor: identityTheme.soft },
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={() => setFiltersOpen((o) => !o)}
+            >
+              <Ionicons
+                name="options-outline"
+                size={15}
+                color={filtersOpen ? identityTheme.accent : colors.textSecondary}
+              />
+              <Text style={[styles.filterToggleText, filtersOpen && { color: identityTheme.accent }]}>
+                Filters
+              </Text>
+              {activeFilterCount > 0 && (
+                <View style={[styles.filterBadge, { backgroundColor: identityTheme.accent }]}>
+                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                </View>
+              )}
+            </Pressable>
             <Pressable
               style={({ pressed }) => [styles.storeBtn, { borderColor: identityTheme.accent }, pressed && { opacity: 0.6 }]}
               onPress={() => setShowPicker(true)}
@@ -1550,7 +1462,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
       )}
 
       {/* Advanced filter panel (outside ScrollView — stays fixed) */}
-      {filtersOpen && activeStore && (
+      {filtersOpen && (
         <AdvancedFilters
           filterFormat={filterFormat}
           onFormatToggle={handleFormatToggle}
@@ -1568,57 +1480,16 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
       )}
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* No store selected — show location-based nearby if available, otherwise prompt */}
-        {!activeStore && (
-          allPlayers.length > 0 ? (
-            <View style={styles.locationNearbySection}>
-              <View style={styles.locationNearbyHeader}>
-                <Ionicons name="navigate-circle-outline" size={16} color={identityTheme.accent} />
-                <Text style={[styles.locationNearbyTitle, { color: identityTheme.accent }]}>
-                  {allPlayers.length} player{allPlayers.length !== 1 ? 's' : ''} nearby
-                </Text>
-              </View>
-              <Text style={styles.locationNearbyHint}>Check in to a store to access LFG and events</Text>
-              <View style={styles.radarCard}>
-                {isLoadingNearby ? (
-                  <View style={styles.radarPlaceholder}>
-                    <ActivityIndicator color={colors.accent} />
-                  </View>
-                ) : (
-                  <Radar
-                    players={allPlayers}
-                    onSelectPlayer={handleSelectPlayer}
-                    selectedId={selectedPlayerId}
-                    theme={identityTheme}
-                  />
-                )}
-              </View>
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <Ionicons name="map-outline" size={40} color={colors.border} />
-              <Text style={styles.emptyTitle}>Check in to a store to see nearby players</Text>
-              <Pressable
-                style={({ pressed }) => [styles.selectBtn, { backgroundColor: identityTheme.accent }, pressed && { opacity: 0.8 }]}
-                onPress={() => setShowPicker(true)}
-              >
-                <Text style={[styles.selectBtnText, { color: identityTheme.onAccent }]}>Choose a store</Text>
-              </Pressable>
-            </View>
-          )
-        )}
-
+        {/* Store-specific: location banner + LFG bar + suggestions */}
         {activeStore && (
           <>
-            {/* Identity gradient location banner */}
             <LocationBanner
               storeName={activeStore.name}
               playerCount={allPlayers.length}
               todayEventName={todayEventName}
               theme={identityTheme}
+              onLeave={() => checkout()}
             />
-
-            {/* LFG status bar */}
             <LFGStatusBar
               session={myLfgSession}
               isLoading={false}
@@ -1628,88 +1499,68 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
               onStop={() => deleteLfg.mutate()}
               onManagePod={() => setShowPodSheet(true)}
             />
-
-            {/* Suggestions carousel — sits above the radar */}
             <SuggestionsCarousel
               suggestions={suggestions}
               onSelectSuggestion={handleOpenSuggestion}
             />
+          </>
+        )}
 
-            {/* Radar card */}
-            <View style={styles.radarCard}>
-              {isLoadingNearby ? (
-                <View style={styles.radarPlaceholder}>
-                  <ActivityIndicator color={colors.accent} />
-                </View>
-              ) : (
-                <Radar
-                  players={allPlayers}
-                  onSelectPlayer={handleSelectPlayer}
-                  selectedId={selectedPlayerId}
-                  theme={identityTheme}
-                />
-              )}
-              <Text style={styles.countText}>
-                <Text style={[styles.countAccent, { color: identityTheme.accent }]}>
-                  {allPlayers.length} player{allPlayers.length !== 1 ? 's' : ''}
-                </Text>
-                {hasActiveFilters ? ' match filters' : ' nearby right now'}
+        {/* No-store hint */}
+        {!activeStore && (
+          <Text style={styles.locationNearbyHint}>
+            Check in to a store to access LFG, pods, and events
+          </Text>
+        )}
+
+        {/* Segment filter — always shown */}
+        <View style={styles.segWrap}>
+          {(['all', 'met'] as const).map((v) => (
+            <Pressable
+              key={v}
+              style={[styles.seg, listFilter === v && { backgroundColor: identityTheme.soft, borderColor: identityTheme.accent }]}
+              onPress={() => setListFilter(v)}
+            >
+              <Text style={[styles.segText, listFilter === v && { color: identityTheme.accent, fontFamily: typography.fontFamily.semiBold }]}>
+                {v === 'all' ? 'Everyone' : 'Met before'}
               </Text>
-            </View>
+            </Pressable>
+          ))}
+        </View>
 
-            {/* Segment filter */}
-            <View style={styles.segWrap}>
-              {(['all', 'met'] as const).map((v) => (
-                <Pressable
-                  key={v}
-                  style={[styles.seg, listFilter === v && { backgroundColor: identityTheme.soft, borderColor: identityTheme.accent }]}
-                  onPress={() => setListFilter(v)}
-                >
-                  <Text style={[styles.segText, listFilter === v && { color: identityTheme.accent, fontFamily: typography.fontFamily.semiBold }]}>
-                    {v === 'all' ? 'Everyone' : 'Met before'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+        {/* Player list — always shown */}
+        {isLoadingNearby ? (
+          <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.accent} />
+        ) : displayedPlayers.length > 0 ? (
+          <View style={styles.list}>
+            {displayedPlayers.map((player) => (
+              <PlayerRow
+                key={player.id}
+                player={player}
+                onPress={() => handleOpenPreview(player)}
+              />
+            ))}
+          </View>
+        ) : listFilter === 'met' ? (
+          <Text style={styles.emptyList}>No players you've met before are here yet.</Text>
+        ) : (
+          <Text style={styles.emptyList}>No players nearby right now.</Text>
+        )}
 
-            {/* Player list */}
-            {displayedPlayers.length > 0 ? (
-              <View style={styles.list}>
-                {displayedPlayers.map((player) => (
-                  <PlayerRow
-                    key={player.id}
-                    player={player}
-                    isSelected={player.id === selectedPlayerId}
-                    onPress={() => {
-                      if (player.id === selectedPlayerId) {
-                        handleOpenPreview(player);
-                      } else {
-                        handleSelectPlayer(player);
-                      }
-                    }}
-                  />
-                ))}
-              </View>
-            ) : listFilter === 'met' ? (
-              <Text style={styles.emptyList}>No players you've met before are here yet.</Text>
-            ) : null}
-
-            {/* Pods forming here */}
+        {/* Store-specific: pods + LFG feed + crossed paths */}
+        {activeStore && (
+          <>
             <PodsSection
               pods={podFeed}
               isCheckedIn={!!activeStore}
               onStartPod={() => setShowPodComposer(true)}
               onOpenPod={handleOpenPod}
             />
-
-            {/* Open to play — LFG feed */}
             <LFGSection
               items={lfgFeed}
               sentInvites={sentInvites}
               onJoin={handleLfgJoin}
             />
-
-            {/* Crossed-paths nudge */}
             {crossedPathsCount > 0 && (
               <Pressable
                 style={({ pressed }) => [styles.nudge, pressed && { opacity: 0.8 }]}
@@ -1778,6 +1629,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  backBtn: {
+    marginLeft: -4,
   },
   title: {
     fontFamily: typography.fontFamily.bold,
@@ -1887,85 +1746,18 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   scroll: { flexGrow: 1, paddingBottom: spacing.xxxl },
-  locationNearbySection: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    gap: spacing.sm,
-  },
-  locationNearbyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  locationNearbyTitle: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.md,
-    letterSpacing: -0.2,
-  },
   locationNearbyHint: {
     fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.sm,
     color: colors.textTertiary,
     marginBottom: spacing.sm,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.lg,
-    paddingTop: spacing.xxxl * 2,
     paddingHorizontal: spacing.xl,
-  },
-  emptyTitle: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
-  },
-  selectBtn: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: radii.lg,
-    ...shadows.md,
-  },
-  selectBtnText: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
-    color: colors.textInverse,
-  },
-  radarCard: {
-    marginHorizontal: spacing.xl,
-    marginBottom: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    paddingTop: 10,
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    ...shadows.sm,
-  },
-  radarPlaceholder: {
-    height: RADAR_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  countText: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: 13.5,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  countAccent: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: 13.5,
   },
   segWrap: {
     flexDirection: 'row',
     marginHorizontal: spacing.xl,
+    marginTop: spacing.md,
     marginBottom: spacing.md,
     gap: spacing.sm,
   },
@@ -2040,10 +1832,6 @@ const banner = StyleSheet.create({
   },
 });
 
-const radar = StyleSheet.create({
-  wrap: { alignItems: 'center', paddingVertical: spacing.lg },
-});
-
 const row = StyleSheet.create({
   root: {
     flexDirection: 'row',
@@ -2056,7 +1844,6 @@ const row = StyleSheet.create({
     borderColor: colors.borderLight,
     ...shadows.sm,
   },
-  selected: { borderColor: colors.accent, backgroundColor: colors.accentLight },
   avatar: {
     width: 52, height: 52, borderRadius: radii.avatar,
     alignItems: 'center', justifyContent: 'center',
@@ -2346,7 +2133,8 @@ const lfgBar = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     marginHorizontal: spacing.xl,
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     backgroundColor: colors.accent,
@@ -2380,7 +2168,8 @@ const lfgBar = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     marginHorizontal: spacing.xl,
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     backgroundColor: colors.surface,

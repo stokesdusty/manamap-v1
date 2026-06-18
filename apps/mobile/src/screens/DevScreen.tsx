@@ -19,6 +19,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Dev'>;
 
 type ActionId =
   | 'populate-store'
+  | 'populate-nearby'
   | 'host-pod'
   | 'request-me'
   | 'accept-mine'
@@ -45,6 +46,12 @@ const ACTIONS: Action[] = [
     label: 'Populate Store',
     desc: 'Check in 4 bots + open LFG sessions at your current store',
     invalidates: [['nearby'], ['lfg', 'feed'], ['pods', 'feed']],
+  },
+  {
+    id: 'populate-nearby',
+    label: 'Populate Nearby (no store)',
+    desc: 'Scatter 4 bots near your GPS location — no store check-in',
+    invalidates: [['nearby']],
   },
   {
     id: 'host-pod',

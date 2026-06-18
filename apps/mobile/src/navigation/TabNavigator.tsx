@@ -1,7 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '../screens/HomeScreen';
@@ -9,65 +7,13 @@ import { StoresScreen } from '../screens/StoresScreen';
 import { ConnectScreen } from '../screens/ConnectScreen';
 import { ScanScreen } from '../screens/ScanScreen';
 import { YouScreen } from '../screens/YouScreen';
-import { useNotificationUnreadCount } from '../hooks/useNotifications';
-import { useAuth } from '../context/AuthContext';
 import { useIdentityTheme } from '../hooks/useIdentityTheme';
 import { colors, radii, shadows, typography } from '../theme';
-import type { TabParamList, RootStackParamList } from './types';
+import type { TabParamList } from './types';
+
+export { BellButton } from '../components/BellButton';
 
 const Tab = createBottomTabNavigator<TabParamList>();
-
-export function BellButton() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { isAuthenticated } = useAuth();
-  const { data: count } = useNotificationUnreadCount(isAuthenticated);
-  const badge = count !== undefined && count > 0;
-
-  return (
-    <Pressable
-      onPress={() => navigation.navigate('Notifications')}
-      style={bellStyles.btn}
-      hitSlop={8}
-    >
-      <View style={bellStyles.iconWrap}>
-        <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
-        {badge && (
-          <View style={bellStyles.badge}>
-            <Text style={bellStyles.badgeText}>{count > 99 ? '99+' : count}</Text>
-          </View>
-        )}
-      </View>
-    </Pressable>
-  );
-}
-
-const bellStyles = StyleSheet.create({
-  btn: {
-    padding: 4,
-  },
-  iconWrap: {
-    width: 22,
-    height: 22,
-  },
-  badge: {
-    position: 'absolute',
-    top: -5,
-    right: -7,
-    minWidth: 16,
-    height: 16,
-    borderRadius: radii.full,
-    backgroundColor: colors.error,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-  },
-  badgeText: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: 9,
-    color: colors.textInverse,
-    lineHeight: 12,
-  },
-});
 
 function ScanButton({ onPress }: BottomTabBarButtonProps) {
   const { accent } = useIdentityTheme();

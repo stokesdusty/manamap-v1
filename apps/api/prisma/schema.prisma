@@ -139,6 +139,7 @@ enum SocialPlatform {
   X
   TIKTOK
   FACEBOOK
+  BLUESKY
   WEBSITE
   PHONE
   EMAIL
@@ -286,7 +287,7 @@ model DeckLink {
   userId    String   @map("user_id")
   site      DeckSite
   name      String
-  url       String
+  url       String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

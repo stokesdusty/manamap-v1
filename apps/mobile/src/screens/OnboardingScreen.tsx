@@ -1,4 +1,4 @@
-import React, { useReducer, useState } from 'react';
+import React, { useEffect, useReducer, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -22,7 +22,7 @@ import { ManaPip } from '../components/ManaPip';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import { useSubmitOnboarding } from '../hooks/useMe';
 import { useStores } from '../hooks/useNearby';
-import { useAddSocial } from '../hooks/useSocials';
+import { useAddSocial, useSocials, useUpdateSocial } from '../hooks/useSocials';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -101,7 +101,6 @@ type Draft = {
   avatarColors: ManaColor[];
   formats: MtgFormat[];
   commander: string;
-  power: number | null;
   vibes: PlayerVibe[];
   bio: string;
   discord: string;
@@ -163,7 +162,6 @@ const INITIAL_DRAFT: Draft = {
   avatarColors: [],
   formats: [],
   commander: '',
-  power: null,
   vibes: [],
   bio: '',
   discord: '',
@@ -172,45 +170,6 @@ const INITIAL_DRAFT: Draft = {
   homeStoreId: null,
   homeStoreName: null,
 };
-
-// ---------------------------------------------------------------------------
-// Power stepper
-// ---------------------------------------------------------------------------
-
-const POWER_LABELS: Record<number, string> = {
-  1: 'Precon', 2: 'Precon+', 3: 'Casual', 4: 'Casual',
-  5: 'Focused', 6: 'Focused', 7: 'Optimized', 8: 'High power',
-  9: 'cEDH-lite', 10: 'cEDH',
-};
-
-function PowerStepper({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
-  const v = value ?? 0;
-  return (
-    <View style={step.powerContainer}>
-      <Pressable
-        style={[step.powerBtn, v === 0 && step.powerBtnDisabled]}
-        onPress={() => {
-          if (v > 1) onChange(v - 1);
-          else if (v === 1) onChange(null);
-        }}
-        disabled={v === 0}
-      >
-        <Text style={step.powerMinus}>−</Text>
-      </Pressable>
-      <View style={{ flex: 1, alignItems: 'center' }}>
-        <Text style={step.powerValue}>{v ? `${v} / 10` : '—'}</Text>
-        <Text style={step.powerLabel}>{v ? POWER_LABELS[v] : 'Optional'}</Text>
-      </View>
-      <Pressable
-        style={[step.powerBtn, v >= 10 && step.powerBtnDisabled]}
-        onPress={() => onChange(Math.min(10, (v || 0) + 1))}
-        disabled={v >= 10}
-      >
-        <Text style={step.powerPlus}>+</Text>
-      </Pressable>
-    </View>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Preview card
@@ -268,11 +227,6 @@ function PreviewCard({ draft }: { draft: Draft }) {
         <View style={preview.commanderRow}>
           <Ionicons name="shield-outline" size={12} color={colors.textTertiary} />
           <Text style={preview.commanderText} numberOfLines={1}>{draft.commander.trim()}</Text>
-          {draft.power ? (
-            <View style={preview.powerBadge}>
-              <Text style={preview.powerText}>P{draft.power}</Text>
-            </View>
-          ) : null}
         </View>
       ) : null}
     </View>
@@ -339,17 +293,6 @@ const preview = StyleSheet.create({
     fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.xs,
     color: colors.textSecondary,
-  },
-  powerBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    backgroundColor: colors.accentLight,
-    borderRadius: radii.full,
-  },
-  powerText: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: 11.5,
-    color: colors.accentInk,
   },
 });
 
@@ -523,14 +466,6 @@ function Step3({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
           />
         </View>
 
-        <View style={step.field}>
-          <Text style={step.label}>Power level <Text style={step.optional}>(optional)</Text></Text>
-          <PowerStepper
-            value={draft.power}
-            onChange={(v) => dispatch({ type: 'SET', key: 'power', value: v })}
-          />
-        </View>
-
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -548,19 +483,21 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
   const [deckUrlError, setDeckUrlError] = useState('');
 
   function addDeck() {
-    try {
-      const host = new URL(deckUrl).hostname.replace(/^www\./, '');
-      const expected = DECK_SITE_HOSTS[deckSite];
-      if (host !== expected && !host.endsWith(`.${expected}`)) {
-        setDeckUrlError(`URL must be a ${expected} link`);
+    if (!deckName.trim()) return;
+    if (deckUrl.trim()) {
+      try {
+        const host = new URL(deckUrl).hostname.replace(/^www\./, '');
+        const expected = DECK_SITE_HOSTS[deckSite];
+        if (host !== expected && !host.endsWith(`.${expected}`)) {
+          setDeckUrlError(`URL must be a ${expected} link`);
+          return;
+        }
+      } catch {
+        setDeckUrlError('Enter a valid URL');
         return;
       }
-    } catch {
-      setDeckUrlError('Enter a valid URL');
-      return;
     }
-    if (!deckName.trim()) return;
-    dispatch({ type: 'ADD_DECK', deck: { site: deckSite, name: deckName.trim(), url: deckUrl.trim() } });
+    dispatch({ type: 'ADD_DECK', deck: { site: deckSite, name: deckName.trim(), ...(deckUrl.trim() ? { url: deckUrl.trim() } : {}) } });
     setDeckName('');
     setDeckUrl('');
     setDeckUrlError('');
@@ -620,6 +557,14 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
           </Pressable>
         ) : (
           <View style={step.addDeckForm}>
+            <TextInput
+              style={step.input}
+              value={deckName}
+              onChangeText={setDeckName}
+              maxLength={64}
+              placeholder="Deck name"
+              placeholderTextColor={colors.textTertiary}
+            />
             <View style={step.siteRow}>
               {(['moxfield', 'archidekt'] as DeckSite[]).map((s) => (
                 <Pressable
@@ -634,21 +579,13 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
               ))}
             </View>
             <TextInput
-              style={step.input}
-              value={deckName}
-              onChangeText={setDeckName}
-              maxLength={64}
-              placeholder="Deck name"
-              placeholderTextColor={colors.textTertiary}
-            />
-            <TextInput
               style={[step.input, deckUrlError ? step.inputError : null]}
               value={deckUrl}
               onChangeText={(v) => { setDeckUrl(v); setDeckUrlError(''); }}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
-              placeholder={`https://${DECK_SITE_HOSTS[deckSite]}/decks/...`}
+              placeholder={`URL (optional) — https://${DECK_SITE_HOSTS[deckSite]}/decks/...`}
               placeholderTextColor={colors.textTertiary}
             />
             {deckUrlError ? <Text style={step.errorText}>{deckUrlError}</Text> : null}
@@ -660,9 +597,9 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
                 <Text style={step.cancelBtnText}>Cancel</Text>
               </Pressable>
               <Pressable
-                style={({ pressed }) => [step.saveBtn, (!deckName.trim() || !deckUrl.trim()) && step.saveBtnDisabled, pressed && { opacity: 0.7 }]}
+                style={({ pressed }) => [step.saveBtn, !deckName.trim() && step.saveBtnDisabled, pressed && { opacity: 0.7 }]}
                 onPress={addDeck}
-                disabled={!deckName.trim() || !deckUrl.trim()}
+                disabled={!deckName.trim()}
               >
                 <Text style={step.saveBtnText}>Add</Text>
               </Pressable>
@@ -791,6 +728,18 @@ export function OnboardingScreen() {
   const [isDone, setIsDone] = useState(false);
   const { mutate: submit, isPending } = useSubmitOnboarding();
   const { mutate: addSocial } = useAddSocial();
+  const { mutate: updateSocial } = useUpdateSocial();
+  const { data: existingSocials } = useSocials();
+  const discordSeededRef = useRef(false);
+
+  useEffect(() => {
+    if (discordSeededRef.current || !existingSocials) return;
+    const link = existingSocials.find((s) => s.platform === 'DISCORD');
+    if (link) {
+      dispatch({ type: 'SET', key: 'discord', value: link.value });
+      discordSeededRef.current = true;
+    }
+  }, [existingSocials]);
 
   const canContinue = STEPS[currentStep].required(draft);
   const isLastStep = currentStep === STEPS.length - 1;
@@ -817,7 +766,6 @@ export function OnboardingScreen() {
         avatarColors: draft.avatarColors,
         formats: draft.formats,
         commander: draft.commander.trim() || null,
-        ...(draft.power !== null ? { powerLevel: draft.power } : {}),
         vibes: draft.vibes,
         bio: draft.bio.trim() || null,
         discoverable: draft.discoverable,
@@ -826,8 +774,14 @@ export function OnboardingScreen() {
       },
       {
         onSuccess: () => {
-          if (draft.discord.trim()) {
-            addSocial({ platform: 'DISCORD', value: draft.discord.trim(), visibility: 'PUBLIC' });
+          const existingDiscord = existingSocials?.find((s) => s.platform === 'DISCORD');
+          const discordValue = draft.discord.trim();
+          if (existingDiscord) {
+            if (discordValue && discordValue !== existingDiscord.value) {
+              updateSocial({ id: existingDiscord.id, value: discordValue, visibility: 'PUBLIC' });
+            }
+          } else if (discordValue) {
+            addSocial({ platform: 'DISCORD', value: discordValue, visibility: 'PUBLIC' });
           }
         },
         onError: () => Alert.alert('Error', 'Something went wrong. Please try again.'),
@@ -1034,38 +988,6 @@ const step = StyleSheet.create({
     color: colors.textSecondary,
   },
   chipTextActive: { color: colors.accentInk },
-  powerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    padding: 10,
-  },
-  powerBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
-    backgroundColor: colors.chipBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  powerBtnDisabled: { opacity: 0.35 },
-  powerMinus: { fontSize: 22, color: colors.textSecondary, lineHeight: 26 },
-  powerPlus: { fontSize: 22, color: colors.textSecondary, lineHeight: 26 },
-  powerValue: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: 20,
-    color: colors.textPrimary,
-  },
-  powerLabel: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: 12,
-    color: colors.textTertiary,
-  },
   deckList: {
     gap: 0,
     borderRadius: radii.md,

@@ -216,7 +216,7 @@ export function PlayerPreviewScreen({
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.5 }]}
           hitSlop={8}
         >
-          <Ionicons name="chevron-down" size={28} color={colors.textSecondary} />
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>Player</Text>
         <Pressable

@@ -7,12 +7,15 @@
       "distribution": "internal",
       "ios": { "simulator": false },
       "android": { "buildType": "apk" },
-      "env": {}
+      "env": {
+        "npm_config_virtual_store_dir": "node_modules/.pnpm"
+      }
     },
     "preview": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "env": {
+        "npm_config_virtual_store_dir": "node_modules/.pnpm",
         "EXPO_PUBLIC_API_URL": "https://manamap-v1-production.up.railway.app",
         "EXPO_PUBLIC_DISCORD_CLIENT_ID": "1510362228526809199"
       }
@@ -21,6 +24,7 @@
       "ios": { "image": "latest" },
       "android": { "buildType": "app-bundle" },
       "env": {
+        "npm_config_virtual_store_dir": "node_modules/.pnpm",
         "EXPO_PUBLIC_API_URL": "https://manamap-v1-production.up.railway.app",
         "EXPO_PUBLIC_DISCORD_CLIENT_ID": "1510362228526809199"
       }

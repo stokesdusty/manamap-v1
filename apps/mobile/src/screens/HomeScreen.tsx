@@ -181,7 +181,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             onPress={() => navigation.navigate('Notifications')}
             hitSlop={8}
           >
-            <Ionicons name="notifications-outline" size={20} color={onAccent} />
+            <Ionicons name="notifications" size={25} color={onAccent} />
             {bellCount > 0 && <View style={styles.bellDot} />}
           </Pressable>
 
@@ -448,11 +448,13 @@ const styles = StyleSheet.create({
   // Banner
   banner: {
     overflow: 'hidden',
-    minHeight: 175,
+    minHeight: 200,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
   },
   bellWrap: {
     position: 'absolute',
-    top: 14,
+    bottom: 22,
     right: 16,
     zIndex: 2,
     width: 40,
@@ -474,8 +476,9 @@ const styles = StyleSheet.create({
   },
   bannerContent: {
     paddingHorizontal: 18,
-    paddingTop: 18,
+    paddingTop: 0,
     paddingBottom: 22,
+    paddingRight: 62,
     gap: 0,
   },
   bannerSub: {

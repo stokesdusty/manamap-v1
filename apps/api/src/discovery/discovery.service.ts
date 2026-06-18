@@ -117,106 +117,35 @@ export class DiscoveryService {
   }
 
   async nearby(callerId: string, filters?: NearbyFilters) {
-    const [presenceData, blockedIds, callerPrivacy] = await Promise.all([
+    const [presenceData, blockedIds, callerPrivacy, { ids: locIds }] = await Promise.all([
       this._getPresence(callerId),
       this.safety.getBlockedIds(callerId),
       this.prisma.privacySettings.findUnique({
         where: { userId: callerId },
         select: { discoverable: true },
       }),
+      this._locationNearbyIds(callerId),
     ]);
-    const { storeId, storeName, validIds: rawValidIds } = presenceData;
+    const { storeId, storeName, validIds: storeMemberIds } = presenceData;
 
-    // If user is not at a store, fall back to location-based nearby
-    if (!storeId) {
-      const { ids: locIds } = await this._locationNearbyIds(callerId);
-      const validIds = locIds.filter((id) => !blockedIds.has(id));
-      if (!validIds.length) return { storeId: null, storeName: null, players: [] };
-
-      const users = await this.prisma.user.findMany({
-        where: { id: { in: validIds }, moderationStatus: ModerationStatus.ACTIVE },
-        select: { ...PROFILE_SELECT, privacySettings: { select: { discoverable: true } } },
-      });
-      const [encounters, connections] = await Promise.all([
-        this.prisma.encounter.findMany({
-          where: {
-            OR: [
-              { userId: callerId, opponentId: { in: validIds } },
-              { userId: { in: validIds }, opponentId: callerId },
-            ],
-          },
-          select: { userId: true, opponentId: true, store: { select: { name: true } }, createdAt: true },
-          orderBy: { createdAt: 'desc' },
-        }),
-        this.prisma.connection.findMany({
-          where: {
-            status: ConnectionStatus.ACCEPTED,
-            OR: [
-              { requesterId: callerId, addresseeId: { in: validIds } },
-              { requesterId: { in: validIds }, addresseeId: callerId },
-            ],
-          },
-          select: { requesterId: true, addresseeId: true },
-        }),
-      ]);
-
-      const metBeforeSet = new Set<string>();
-      const lastMetStoreByPeer = new Map<string, string | null>();
-      for (const e of encounters) {
-        const peerId = e.userId === callerId ? e.opponentId : e.userId;
-        metBeforeSet.add(peerId);
-        if (!lastMetStoreByPeer.has(peerId)) {
-          lastMetStoreByPeer.set(peerId, (e as { store?: { name: string } | null }).store?.name ?? null);
-        }
-      }
-      for (const c of connections) {
-        metBeforeSet.add(c.requesterId === callerId ? c.addresseeId : c.requesterId);
-      }
-
-      const discoverableUsers = users.filter((u) => u.privacySettings?.discoverable !== false);
-      const socialsBatch = await this.socialsService.publicSocialsBatch(discoverableUsers.map((u) => u.id));
-
-      let players = discoverableUsers.map(({ privacySettings: _ps, ...u }) => {
-        const sd = socialsBatch.get(u.id) ?? { socials: [], friendsOnlyCount: 0 };
-        return {
-          ...u,
-          pronouns: u.pronouns ?? null,
-          bio: u.bio ?? null,
-          commander: u.commander ?? null,
-          powerLevel: u.powerLevel ?? null,
-          vibes: u.vibes ?? [],
-          metBefore: metBeforeSet.has(u.id),
-          lastMetStoreName: lastMetStoreByPeer.get(u.id) ?? null,
-          sharedEvent: null,
-          socials: sd.socials,
-          socialsSummary: { publicCount: sd.socials.length, friendsOnlyCount: sd.friendsOnlyCount },
-        };
-      });
-
-      if (filters?.format) players = players.filter((p) => (p.formats as string[]).includes(filters.format!));
-      if (filters?.colors?.length) players = players.filter((p) => (p.avatarColors as string[]).some((c) => filters.colors!.includes(c)));
-      if (filters?.powerMin != null && !isNaN(filters.powerMin)) players = players.filter((p) => p.powerLevel != null && p.powerLevel >= filters.powerMin!);
-      if (filters?.powerMax != null && !isNaN(filters.powerMax)) players = players.filter((p) => p.powerLevel != null && p.powerLevel <= filters.powerMax!);
-      if (filters?.vibe) players = players.filter((p) => p.vibes.includes(filters.vibe!));
-
-      return { storeId: null, storeName: null, players };
-    }
-
-    const validIds = rawValidIds.filter((id) => !blockedIds.has(id));
-    if (!validIds.length) return { storeId, storeName, players: [] };
+    // Always union location-based + store members; both sources contribute
+    const allIds = [...new Set([...locIds, ...storeMemberIds])].filter(
+      (id) => !blockedIds.has(id),
+    );
+    if (!allIds.length) return { storeId: storeId ?? null, storeName: storeName ?? null, players: [] };
 
     const windowStart = new Date(Date.now() - 60 * 60 * 1000);
 
     const [users, encounters, connections, upcomingEvents] = await Promise.all([
       this.prisma.user.findMany({
-        where: { id: { in: validIds }, moderationStatus: ModerationStatus.ACTIVE },
+        where: { id: { in: allIds }, moderationStatus: ModerationStatus.ACTIVE },
         select: { ...PROFILE_SELECT, privacySettings: { select: { discoverable: true } } },
       }),
       this.prisma.encounter.findMany({
         where: {
           OR: [
-            { userId: callerId, opponentId: { in: validIds } },
-            { userId: { in: validIds }, opponentId: callerId },
+            { userId: callerId, opponentId: { in: allIds } },
+            { userId: { in: allIds }, opponentId: callerId },
           ],
         },
         select: { userId: true, opponentId: true, store: { select: { name: true } }, createdAt: true },
@@ -226,17 +155,19 @@ export class DiscoveryService {
         where: {
           status: ConnectionStatus.ACCEPTED,
           OR: [
-            { requesterId: callerId, addresseeId: { in: validIds } },
-            { requesterId: { in: validIds }, addresseeId: callerId },
+            { requesterId: callerId, addresseeId: { in: allIds } },
+            { requesterId: { in: allIds }, addresseeId: callerId },
           ],
         },
         select: { requesterId: true, addresseeId: true },
       }),
-      this.prisma.event.findMany({
-        where: { storeId, startsAt: { gte: windowStart } },
-        select: { id: true, name: true, startsAt: true },
-        take: 20,
-      }),
+      storeId
+        ? this.prisma.event.findMany({
+            where: { storeId, startsAt: { gte: windowStart } },
+            select: { id: true, name: true, startsAt: true },
+            take: 20,
+          })
+        : Promise.resolve([]),
     ]);
 
     const metBeforeSet = new Set<string>();
@@ -252,15 +183,17 @@ export class DiscoveryService {
       metBeforeSet.add(c.requesterId === callerId ? c.addresseeId : c.requesterId);
     }
 
+    // Events + shared-event lookup only apply to store co-presence
     const eventIds = upcomingEvents.map((e) => e.id);
     const eventMap = new Map(upcomingEvents.map((e) => [e.id, e]));
 
-    const attendeeRecords = eventIds.length
-      ? await this.prisma.eventAttendee.findMany({
-          where: { eventId: { in: eventIds }, userId: { in: [callerId, ...validIds] } },
-          select: { userId: true, eventId: true },
-        })
-      : [];
+    const attendeeRecords =
+      eventIds.length && storeId
+        ? await this.prisma.eventAttendee.findMany({
+            where: { eventId: { in: eventIds }, userId: { in: [callerId, ...storeMemberIds] } },
+            select: { userId: true, eventId: true },
+          })
+        : [];
 
     const attendeeByUser = new Map<string, Set<string>>();
     for (const a of attendeeRecords) {
@@ -283,28 +216,31 @@ export class DiscoveryService {
     const discoverableUsers = users.filter((u) => u.privacySettings?.discoverable !== false);
     const socialsBatch = await this.socialsService.publicSocialsBatch(discoverableUsers.map((u) => u.id));
 
-    let players = discoverableUsers
-      .map(({ privacySettings: _ps, ...u }) => {
-        const sd = socialsBatch.get(u.id) ?? { socials: [], friendsOnlyCount: 0 };
-        return {
-          ...u,
-          pronouns: u.pronouns ?? null,
-          bio: u.bio ?? null,
-          commander: u.commander ?? null,
-          powerLevel: u.powerLevel ?? null,
-          vibes: u.vibes ?? [],
-          metBefore: metBeforeSet.has(u.id),
-          lastMetStoreName: lastMetStoreByPeer.get(u.id) ?? null,
-          sharedEvent: sharedEventFor(u.id),
-          socials: sd.socials,
-          socialsSummary: { publicCount: sd.socials.length, friendsOnlyCount: sd.friendsOnlyCount },
-        };
-      });
+    let players = discoverableUsers.map(({ privacySettings: _ps, ...u }) => {
+      const sd = socialsBatch.get(u.id) ?? { socials: [], friendsOnlyCount: 0 };
+      return {
+        ...u,
+        pronouns: u.pronouns ?? null,
+        bio: u.bio ?? null,
+        commander: u.commander ?? null,
+        powerLevel: u.powerLevel ?? null,
+        vibes: u.vibes ?? [],
+        metBefore: metBeforeSet.has(u.id),
+        lastMetStoreName: lastMetStoreByPeer.get(u.id) ?? null,
+        sharedEvent: storeId ? sharedEventFor(u.id) : null,
+        socials: sd.socials,
+        socialsSummary: { publicCount: sd.socials.length, friendsOnlyCount: sd.friendsOnlyCount },
+      };
+    });
 
-    // Write PRESENCE encounters only when caller is discoverable (invisible = no co-presence record)
+    // Write PRESENCE encounters only for store co-presence (not location-only players)
     const callerDiscoverable = callerPrivacy?.discoverable !== false;
-    const discoverableIds = players.map((p) => p.id);
-    if (callerDiscoverable && discoverableIds.length > 0) {
+    const storeCoPresenceIds = storeMemberIds.filter((id) => !blockedIds.has(id));
+    const discoverableStoreIds = discoverableUsers
+      .filter((u) => storeCoPresenceIds.includes(u.id))
+      .map((u) => u.id);
+
+    if (storeId && callerDiscoverable && discoverableStoreIds.length > 0) {
       const dayStart = new Date();
       dayStart.setUTCHours(0, 0, 0, 0);
       const dayEnd = new Date(dayStart.getTime() + 86_400_000);
@@ -315,8 +251,8 @@ export class DiscoveryService {
           storeId,
           createdAt: { gte: dayStart, lt: dayEnd },
           OR: [
-            { userId: callerId, opponentId: { in: discoverableIds } },
-            { userId: { in: discoverableIds }, opponentId: callerId },
+            { userId: callerId, opponentId: { in: discoverableStoreIds } },
+            { userId: { in: discoverableStoreIds }, opponentId: callerId },
           ],
         },
         select: { userId: true, opponentId: true },
@@ -325,7 +261,7 @@ export class DiscoveryService {
       const seenToday = new Set<string>();
       for (const e of alreadyToday) seenToday.add(e.userId === callerId ? e.opponentId : e.userId);
 
-      const newIds = discoverableIds.filter((id) => !seenToday.has(id));
+      const newIds = discoverableStoreIds.filter((id) => !seenToday.has(id));
       if (newIds.length > 0) {
         await this.prisma.encounter.createMany({
           data: newIds.map((opponentId) => ({
@@ -340,26 +276,13 @@ export class DiscoveryService {
       }
     }
 
-    // Apply filters
-    if (filters?.format) {
-      players = players.filter((p) => (p.formats as string[]).includes(filters.format!));
-    }
-    if (filters?.colors?.length) {
-      players = players.filter((p) =>
-        (p.avatarColors as string[]).some((c) => filters.colors!.includes(c)),
-      );
-    }
-    if (filters?.powerMin != null && !isNaN(filters.powerMin)) {
-      players = players.filter((p) => p.powerLevel != null && p.powerLevel >= filters.powerMin!);
-    }
-    if (filters?.powerMax != null && !isNaN(filters.powerMax)) {
-      players = players.filter((p) => p.powerLevel != null && p.powerLevel <= filters.powerMax!);
-    }
-    if (filters?.vibe) {
-      players = players.filter((p) => p.vibes.includes(filters.vibe!));
-    }
+    if (filters?.format) players = players.filter((p) => (p.formats as string[]).includes(filters.format!));
+    if (filters?.colors?.length) players = players.filter((p) => (p.avatarColors as string[]).some((c) => filters.colors!.includes(c)));
+    if (filters?.powerMin != null && !isNaN(filters.powerMin)) players = players.filter((p) => p.powerLevel != null && p.powerLevel >= filters.powerMin!);
+    if (filters?.powerMax != null && !isNaN(filters.powerMax)) players = players.filter((p) => p.powerLevel != null && p.powerLevel <= filters.powerMax!);
+    if (filters?.vibe) players = players.filter((p) => p.vibes.includes(filters.vibe!));
 
-    return { storeId, storeName, players };
+    return { storeId: storeId ?? null, storeName: storeName ?? null, players };
   }
 
   async suggestions(callerId: string) {

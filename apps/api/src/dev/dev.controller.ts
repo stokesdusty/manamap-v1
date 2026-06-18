@@ -23,6 +23,10 @@ const LogGameSchema = z.object({
   winnerId: z.string().optional(),
 });
 
+const PopulateNearbySchema = z.object({
+  count: z.number().int().min(1).max(8).default(4),
+});
+
 const PodForTrackerSchema = z.object({
   seats: z.number().int().min(2).max(4).default(4),
 });
@@ -40,6 +44,16 @@ export class DevController {
     body: z.infer<typeof PopulateStoreSchema>,
   ) {
     return this.dev.populateStore(req.user.sub, body.storeId, body.count);
+  }
+
+  @Post('populate-nearby')
+  @HttpCode(200)
+  populateNearby(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(PopulateNearbySchema))
+    body: z.infer<typeof PopulateNearbySchema>,
+  ) {
+    return this.dev.populateNearby(req.user.sub, body.count);
   }
 
   @Post('host-pod')

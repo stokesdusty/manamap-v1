@@ -95,6 +95,14 @@ export const SOCIAL_META: Record<SocialPlatform, PlatformMeta> = {
     isUrl: false,
     isPhone: false,
   },
+  BLUESKY: {
+    label: 'Bluesky',
+    color: '#0085FF',
+    iconName: 'at-outline',
+    placeholder: '@handle.bsky.social',
+    isUrl: false,
+    isPhone: false,
+  },
   WEBSITE: {
     label: 'Website',
     color: '#14B8A6',
@@ -173,6 +181,7 @@ function getProfileUrl(platform: SocialPlatform, value: string): string | null {
     case 'X':         return `https://x.com/${handle}`;
     case 'TIKTOK':    return `https://www.tiktok.com/@${handle}`;
     case 'FACEBOOK':  return value.startsWith('http') ? value : `https://www.facebook.com/${handle}`;
+    case 'BLUESKY':   return `https://bsky.app/profile/${handle}`;
     case 'WEBSITE':   return value;
     case 'PHONE':     return `tel:${value}`;
     case 'EMAIL':     return `mailto:${value}`;
@@ -307,10 +316,10 @@ function ManageSocialsSheet({ visible, onClose }: ManageSheetProps) {
     >
       <SafeAreaView style={ms.safe}>
         <View style={ms.topBar}>
-          <Text style={ms.title}>Your socials</Text>
-          <Pressable onPress={onClose} hitSlop={8}>
-            <Ionicons name="close" size={24} color={colors.textSecondary} />
+          <Pressable onPress={onClose} hitSlop={8} style={ms.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </Pressable>
+          <Text style={ms.title}>Your Socials</Text>
         </View>
 
         <KeyboardAvoidingView
@@ -524,11 +533,14 @@ const ms = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.xs,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
+  },
+  backBtn: {
+    marginLeft: -4,
   },
   title: {
     fontFamily: typography.fontFamily.bold,

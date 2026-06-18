@@ -51,7 +51,7 @@ import { useBadges, useStreaksSummary } from '../hooks/useGamification';
 import { useQuests } from '../hooks/useQuests';
 import { useRivalries } from '../hooks/useRivalries';
 import type { ActiveQuest, Rivalry } from '@manamap/shared';
-import { BellButton } from '../navigation/TabNavigator';
+import { BellButton } from '../components/BellButton';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -90,7 +90,7 @@ const SITE_LABELS: Record<DeckSite, string> = {
 // IdentityHero — replaces ProfileCard
 // ---------------------------------------------------------------------------
 
-const BANNER_H = 160;
+const BANNER_H = 220;
 
 function IdentityHero({ profile, onEdit }: { profile: Profile; onEdit: () => void }) {
   const { gradient, onAccent, accent, soft, ink } = useIdentityTheme();
@@ -214,10 +214,10 @@ const hero = StyleSheet.create({
   bannerContent: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     gap: spacing.xs,
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.xl,
   },
   avatar: {
     borderRadius: radii.xl,
@@ -241,6 +241,7 @@ const hero = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radii.full,
     marginTop: spacing.xs,
+    marginBottom: spacing.xl,
   },
   guildLabel: {
     fontFamily: typography.fontFamily.semiBold,
@@ -473,9 +474,11 @@ function DecksCard() {
             <Text style={section.deckName} numberOfLines={1}>
               {deck.name}
             </Text>
-            <Text style={section.deckUrl} numberOfLines={1}>
-              {deck.url}
-            </Text>
+            {deck.url && (
+              <Text style={section.deckUrl} numberOfLines={1}>
+                {deck.url}
+              </Text>
+            )}
           </View>
           <Pressable
             style={({ pressed }) => [section.deleteBtn, pressed && { opacity: 0.5 }]}
@@ -1311,12 +1314,14 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
   }
 
   function handleSave() {
-    const err = validateUrl(url);
-    if (err) { setUrlError(err); return; }
     if (!name.trim()) { return; }
+    if (url.trim()) {
+      const err = validateUrl(url);
+      if (err) { setUrlError(err); return; }
+    }
 
     createDeck(
-      { site, name: name.trim(), url: url.trim() },
+      { site, name: name.trim(), ...(url.trim() ? { url: url.trim() } : {}) },
       {
         onSuccess: () => {
           reset();
@@ -1365,6 +1370,17 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
             contentContainerStyle={addDeck.scroll}
             keyboardShouldPersistTaps="handled"
           >
+            <FormField label="Deck name">
+              <TextInput
+                style={form.input}
+                value={name}
+                onChangeText={setName}
+                maxLength={64}
+                placeholder="My Commander Deck"
+                placeholderTextColor={colors.textTertiary}
+              />
+            </FormField>
+
             <FormField label="Site">
               <View style={addDeck.siteRow}>
                 {(['moxfield', 'archidekt'] as DeckSite[]).map((s) => (
@@ -1381,18 +1397,7 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
               </View>
             </FormField>
 
-            <FormField label="Deck name">
-              <TextInput
-                style={form.input}
-                value={name}
-                onChangeText={setName}
-                maxLength={64}
-                placeholder="My Commander Deck"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </FormField>
-
-            <FormField label="URL">
+            <FormField label="URL (optional)">
               <TextInput
                 style={[form.input, urlError ? addDeck.inputError : null]}
                 value={url}
@@ -1930,12 +1935,17 @@ export function YouScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Pressable
-          onLongPress={__DEV__ ? () => navigation.navigate('Dev') : undefined}
-          delayLongPress={800}
-        >
-          <Text style={styles.title}>You</Text>
-        </Pressable>
+        <View style={styles.titleRow}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          </Pressable>
+          <Pressable
+            onLongPress={__DEV__ ? () => navigation.navigate('Dev') : undefined}
+            delayLongPress={800}
+          >
+            <Text style={styles.title}>Your Profile</Text>
+          </Pressable>
+        </View>
         <BellButton />
       </View>
 
@@ -2013,6 +2023,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  backBtn: {
+    marginLeft: -4,
   },
   title: {
     fontFamily: typography.fontFamily.bold,

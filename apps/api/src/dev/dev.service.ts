@@ -295,6 +295,46 @@ export class DevService {
     return { sent: true, platform, roomLink, fromBot: bot.displayName };
   }
 
+  async populateNearby(callerId: string, count = 4) {
+    const caller = await this.prisma.user.findUnique({
+      where: { id: callerId },
+      select: { lastLat: true, lastLng: true },
+    });
+    if (caller?.lastLat == null || caller?.lastLng == null) {
+      throw new BadRequestException(
+        'No location on file — send a heartbeat with lat/lng first',
+      );
+    }
+
+    const bots = await this.getBots(Math.min(count, BOT_IDS.length));
+    if (!bots.length) throw new NotFoundException('No bot accounts found — run db:seed first');
+
+    // Remove any store presence so bots appear location-only (not checked in)
+    for (const bot of bots) {
+      const prevStoreId = await this.redis.get(`presence:${bot.id}`);
+      if (prevStoreId) {
+        await this.redis.zrem(`store_members:${prevStoreId}`, bot.id);
+        await this.redis.del(`presence:${bot.id}`);
+      }
+    }
+
+    // Scatter bots within ~300 m of caller (0.003° ≈ 333 m at equator)
+    for (const bot of bots) {
+      const latDelta = (Math.random() - 0.5) * 0.006;
+      const lngDelta = (Math.random() - 0.5) * 0.006;
+      await this.prisma.user.update({
+        where: { id: bot.id },
+        data: {
+          lastLat: caller.lastLat + latDelta,
+          lastLng: caller.lastLng + lngDelta,
+          lastLocatedAt: new Date(),
+        },
+      });
+    }
+
+    return { populated: bots.length, lat: caller.lastLat, lng: caller.lastLng };
+  }
+
   async reset(callerId: string) {
     const botIds = [...BOT_IDS] as string[];
 
@@ -327,6 +367,12 @@ export class DevService {
         await this.redis.del(`user_pod:${botId}`);
       }
     }
+
+    // Expire bot location data so they don't linger in location-based nearby
+    await this.prisma.user.updateMany({
+      where: { id: { in: botIds } },
+      data: { lastLocatedAt: new Date(0) },
+    });
 
     // Delete PENDING connections between bots and the caller
     await this.prisma.connection.deleteMany({

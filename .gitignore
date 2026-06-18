@@ -9,3 +9,4 @@ dist/
 .DS_Store
 .expo/
 **/.xcode.env.local
+**/android/local.properties

@@ -53,6 +53,14 @@ export class PresenceService {
     };
   }
 
+  async checkout(userId: string): Promise<void> {
+    const storeId = await this.redis.get(presenceKey(userId));
+    if (storeId) {
+      await this.redis.zrem(storeMembersKey(storeId), userId);
+    }
+    await this.redis.del(presenceKey(userId));
+  }
+
   async getStoreMembers(storeId: string): Promise<string[]> {
     const allIds = await this.redis.zrange(storeMembersKey(storeId), 0, -1);
     if (!allIds.length) return [];

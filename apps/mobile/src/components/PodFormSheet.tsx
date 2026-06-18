@@ -7,6 +7,7 @@
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import type { ConnectionsList } from '@manamap/shared';
@@ -103,10 +104,15 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
-      <View style={s.root}>
+      <SafeAreaView style={s.root} edges={['top']}>
         <View style={s.header}>
           <View style={s.handle} />
-          <Text style={s.title}>Form a Pod</Text>
+          <View style={s.titleRow}>
+            <Pressable onPress={handleClose} hitSlop={8} style={s.backBtn}>
+              <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+            </Pressable>
+            <Text style={s.title}>Form a Pod</Text>
+          </View>
           <Text style={s.sub}>Add from your contacts or invite a guest.</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.rosterScroll} contentContainerStyle={s.rosterContent}>
             {podPlayers.map((p) => (
@@ -203,7 +209,7 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
             </Text>
           </Pressable>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -215,6 +221,8 @@ const s = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight,
   },
   handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, marginBottom: spacing.md },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  backBtn: { marginLeft: -4 },
   title: { fontFamily: typography.fontFamily.bold, fontSize: 22, color: colors.textPrimary, letterSpacing: -0.5 },
   sub: { fontFamily: typography.fontFamily.semiBold, fontSize: 14, color: colors.textSecondary, marginTop: 4, marginBottom: 14, lineHeight: 20 },
   rosterScroll: { flexGrow: 0 },

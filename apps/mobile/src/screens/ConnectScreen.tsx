@@ -13,7 +13,8 @@ import { useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ConnectionItem, Game, ManaColor } from '@manamap/shared';
-import { BellButton } from '../navigation/TabNavigator';
+import { BellButton } from '../components/BellButton';
+import { useAddContact } from '../hooks/useContacts';
 import { ManaPip } from '../components/ManaPip';
 import {
   useAcceptConnection,
@@ -42,12 +43,14 @@ function ConnectionCard({
   onAccept,
   onDecline,
   onPress,
+  onAddContact,
   isPending,
 }: {
   item: ConnectionItem;
   onAccept?: () => void;
   onDecline?: () => void;
   onPress?: () => void;
+  onAddContact?: () => void;
   isPending: boolean;
 }) {
   const initial = item.peer.displayName.charAt(0).toUpperCase();
@@ -130,6 +133,11 @@ function ConnectionCard({
             {sub ? <Text style={row.connSub} numberOfLines={1}> · {sub}</Text> : null}
           </View>
         </View>
+        {onAddContact && (
+          <Pressable onPress={onAddContact} hitSlop={8} style={row.addContactBtn}>
+            <Ionicons name="person-add-outline" size={18} color={colors.textTertiary} />
+          </Pressable>
+        )}
         <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
       </Pressable>
     );
@@ -309,6 +317,7 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
   const { mutate: accept, isPending: accepting, variables: acceptingId } = useAcceptConnection();
   const { mutate: decline } = useDeclineConnection();
   const { data: profile } = useProfile();
+  const { mutate: addContact } = useAddContact();
 
   useFocusEffect(
     useCallback(() => {
@@ -343,7 +352,12 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <Text style={styles.title}>Connections</Text>
+        <View style={styles.titleRow}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          </Pressable>
+          <Text style={styles.title}>Connections</Text>
+        </View>
         <BellButton />
       </View>
 
@@ -390,6 +404,7 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
                   item={item}
                   isPending={false}
                   onPress={() => navigation.navigate('Connected', { connectionId: item.id })}
+                  onAddContact={() => addContact(item.peer.displayName)}
                 />
               ))}
             </View>
@@ -433,6 +448,14 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  backBtn: {
+    marginLeft: -4,
   },
   title: {
     fontFamily: typography.fontFamily.bold,
@@ -604,6 +627,9 @@ const row = StyleSheet.create({
     fontSize: 12,
     color: colors.textTertiary,
     flexShrink: 1,
+  },
+  addContactBtn: {
+    padding: 4,
   },
   sentBadge: {
     paddingHorizontal: spacing.sm,

@@ -53,7 +53,7 @@ export const DECK_SITE_HOSTS: Record<DeckSite, string> = {
 // --- Social links ---
 
 export const SocialPlatformSchema = z.enum([
-  'DISCORD', 'INSTAGRAM', 'TWITCH', 'YOUTUBE', 'X', 'TIKTOK', 'FACEBOOK', 'WEBSITE', 'PHONE', 'EMAIL',
+  'DISCORD', 'INSTAGRAM', 'TWITCH', 'YOUTUBE', 'X', 'TIKTOK', 'FACEBOOK', 'BLUESKY', 'WEBSITE', 'PHONE', 'EMAIL',
 ]);
 export type SocialPlatform = z.infer<typeof SocialPlatformSchema>;
 
@@ -214,7 +214,7 @@ export const DeckLinkSchema = z.object({
   id: IdSchema,
   site: DeckSiteSchema,
   name: z.string().min(1).max(64),
-  url: z.string().url(),
+  url: z.string().url().optional(),
 });
 export type DeckLink = z.infer<typeof DeckLinkSchema>;
 
@@ -222,9 +222,9 @@ export const CreateDeckLinkSchema = z
   .object({
     site: DeckSiteSchema,
     name: z.string().min(1).max(64),
-    url: z.string().url(),
+    url: z.string().url().optional(),
   })
-  .refine((d) => deckUrlHostValid(d.site, d.url), {
+  .refine((d) => !d.url || deckUrlHostValid(d.site, d.url), {
     message: 'URL host does not match the selected site',
     path: ['url'],
   });

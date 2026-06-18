@@ -17,6 +17,8 @@ const config: ExpoConfig = {
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
         '$(PRODUCT_NAME) uses your location to confirm you\'re at the store before checking in.',
+      NSContactsUsageDescription:
+        '$(PRODUCT_NAME) lets you save ManaMap connections to your phone contacts.',
       ITSAppUsesNonExemptEncryption: false
     },
   },
@@ -42,6 +44,10 @@ const config: ExpoConfig = {
     [
       'expo-notifications',
       { androidMode: 'default' },
+    ],
+    [
+      'expo-contacts',
+      { contactsPermission: '$(PRODUCT_NAME) lets you save ManaMap connections to your phone contacts.' },
     ],
     [
       'expo-location',
