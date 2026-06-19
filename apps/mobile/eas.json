@@ -13,6 +13,7 @@
     },
     "preview": {
       "distribution": "internal",
+      "ios": { "image": "latest" },
       "android": { "buildType": "apk" },
       "env": {
         "npm_config_virtual_store_dir": "node_modules/.pnpm",
