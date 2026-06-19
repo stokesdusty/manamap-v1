@@ -91,7 +91,9 @@
       "Bash(git -C c:/m ls-files apps/mobile/android/.gitignore)",
       "Bash(git -C c:/m ls-files --others --exclude-standard apps/mobile/android/local.properties)",
       "Bash(mkdir -p \"c:/m/apps/api/prisma/migrations/20260618000000_social_bluesky\")",
-      "Bash(echo \"\" >> \"c:/m/apps/mobile/src/screens/ConnectScreen.tsx\")"
+      "Bash(echo \"\" >> \"c:/m/apps/mobile/src/screens/ConnectScreen.tsx\")",
+      "Bash(xargs grep -l \"bundleIdentifier\")",
+      "Bash(xargs grep \"PRODUCT_BUNDLE_IDENTIFIER\")"
     ]
   }
 }

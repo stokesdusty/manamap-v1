@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "3497a3d5-7a81-4da9-89a3-5108ce4a69ee"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.manamap.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}
