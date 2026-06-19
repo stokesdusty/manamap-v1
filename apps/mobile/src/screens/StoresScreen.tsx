@@ -879,12 +879,14 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('map');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Seed the initial region from the DB-stored last location so the map
-  // always opens near the user even before the live GPS fix arrives.
-  const storedRegion: Region =
+  // Capture the initial region once at mount. Using a ref keeps the value
+  // stable so changing profile data never resets the map's viewport after
+  // animateToRegion has already zoomed to the user's GPS location.
+  const initialRegionRef = useRef<Region>(
     profile?.lastLat != null && profile?.lastLng != null
       ? { latitude: profile.lastLat, longitude: profile.lastLng, latitudeDelta: 0.15, longitudeDelta: 0.15 }
-      : DEFAULT_REGION;
+      : DEFAULT_REGION,
+  );
 
   const [region, setRegion] = useState<Region>(DEFAULT_REGION);
   const [pendingRegion, setPendingRegion] = useState<Region | null>(null);
@@ -1022,7 +1024,7 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
           <MapView
             ref={mapRef}
             style={styles.map}
-            initialRegion={storedRegion}
+            initialRegion={initialRegionRef.current}
             onRegionChangeComplete={handleRegionChangeComplete}
             showsUserLocation
             showsMyLocationButton={false}

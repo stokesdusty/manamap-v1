@@ -18,6 +18,7 @@ const KEYS = {
   privacy: ['me', 'privacy'] as const,
   decks: ['me', 'decks'] as const,
   homeStore: ['me', 'home-store'] as const,
+  recentStores: ['me', 'recent-stores'] as const,
 };
 
 // --- Profile ---
@@ -113,6 +114,16 @@ export function useDeleteDeck() {
   return useMutation({
     mutationFn: (id: string) => api.delete(`/v1/me/decks/${id}`),
     onSuccess: () => void qc.invalidateQueries({ queryKey: KEYS.decks }),
+  });
+}
+
+// --- Recent checkin stores ---
+
+export function useRecentCheckinStores() {
+  return useQuery<{ stores: Array<{ id: string; name: string; city: string | null; state: string | null }> }>({
+    queryKey: KEYS.recentStores,
+    queryFn: () =>
+      api.get('/v1/me/recent-stores').then((r) => r.data),
   });
 }
 

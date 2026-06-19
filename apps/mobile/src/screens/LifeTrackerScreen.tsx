@@ -144,7 +144,7 @@ const cds = StyleSheet.create({
   },
   title: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.lg,
     color: colors.textPrimary,
     marginBottom: spacing.sm,
   },
@@ -160,12 +160,12 @@ const cds = StyleSheet.create({
   name: {
     flex: 1,
     fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.md,
     color: colors.textPrimary,
   },
   dmg: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.xl,
     color: colors.textPrimary,
     minWidth: 32,
     textAlign: 'center',
@@ -173,14 +173,14 @@ const cds = StyleSheet.create({
   dmgDanger: { color: colors.error },
   btns: { flexDirection: 'row', gap: spacing.sm },
   adjBtn: {
-    width: 36, height: 36,
+    width: 44, height: 44,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
   adjBtnPlus: { backgroundColor: colors.accent, borderColor: colors.accent },
-  adjText: { fontSize: typography.fontSize.lg, color: colors.textPrimary },
-  adjTextPlus: { fontSize: typography.fontSize.lg, color: colors.textInverse },
+  adjText: { fontSize: typography.fontSize.xl, color: colors.textPrimary },
+  adjTextPlus: { fontSize: typography.fontSize.xl, color: colors.textInverse },
   doneBtn: {
     marginTop: spacing.md,
     backgroundColor: colors.accent,
@@ -190,7 +190,7 @@ const cds = StyleSheet.create({
   },
   doneText: {
     fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.lg,
     color: colors.textInverse,
   },
 });
@@ -219,12 +219,12 @@ function CounterRow({ player, compact, onDelta }: CounterRowProps) {
         if (compact && val === 0 && key !== 'poison') return null;
         return (
           <View key={key} style={cr.item}>
-            <Pressable onPress={() => onDelta(key, -1)} hitSlop={6} style={cr.adjMin}>
+            <Pressable onPress={() => onDelta(key, -1)} hitSlop={8} style={cr.adjMin}>
               <Text style={cr.adjText}>−</Text>
             </Pressable>
             <Text style={[cr.icon, compact && cr.iconCompact, danger && cr.iconDanger]}>{icon}</Text>
             <Text style={[cr.val, danger && cr.valDanger]}>{val}</Text>
-            <Pressable onPress={() => onDelta(key, 1)} hitSlop={6} style={cr.adjPlus}>
+            <Pressable onPress={() => onDelta(key, 1)} hitSlop={8} style={cr.adjPlus}>
               <Text style={[cr.adjText, cr.adjPlusText]}>+</Text>
             </Pressable>
           </View>
@@ -242,18 +242,18 @@ const cr = StyleSheet.create({
   adjPlus: { paddingHorizontal: 4 },
   adjText: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.md,
     color: colors.textTertiary,
   },
   adjPlusText: { color: colors.accent },
-  icon: { fontSize: 14 },
-  iconCompact: { fontSize: 12 },
+  icon: { fontSize: 17 },
+  iconCompact: { fontSize: 14 },
   iconDanger: { color: colors.error },
   val: {
     fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.md,
     color: colors.textSecondary,
-    minWidth: 14,
+    minWidth: 16,
     textAlign: 'center',
   },
   valDanger: { color: colors.error },
@@ -291,7 +291,7 @@ function PlayerPanel({
   const hasCmdDamage = Object.keys(player.commanderDamage).length > 0;
   const cmdTotal = Object.values(player.commanderDamage).reduce((s, v) => s + v, 0);
   const fill = playerColor(player.avatarColors);
-  const lifeFontSize = compact ? 58 : 82;
+  const lifeFontSize = compact ? 64 : 90;
 
   const content = (
     <View
@@ -319,7 +319,7 @@ function PlayerPanel({
         <Pressable onPress={onEliminateToggle} hitSlop={8} style={pp.xBtn}>
           <Ionicons
             name={player.isEliminated ? 'refresh-circle' : 'close-circle-outline'}
-            size={compact ? 18 : 22}
+            size={compact ? 20 : 26}
             color={player.isEliminated ? colors.success : colors.textTertiary}
           />
         </Pressable>
@@ -384,7 +384,7 @@ function PlayerPanel({
             </View>
           );
         })}
-        <Ionicons name="chevron-forward" size={12} color={colors.textTertiary} />
+        <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
       </Pressable>
 
       {/* Eliminated overlay */}
@@ -427,21 +427,21 @@ const pp = StyleSheet.create({
     backgroundColor: colors.error + '15',
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  dot: { width: 10, height: 10, borderRadius: 5 },
+  dot: { width: 12, height: 12, borderRadius: 6 },
   name: {
     flex: 1,
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.md,
     color: colors.textPrimary,
   },
-  nameCompact: { fontSize: typography.fontSize.xs },
+  nameCompact: { fontSize: typography.fontSize.sm },
   castCount: {
     fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.xs,
+    fontSize: typography.fontSize.sm,
     color: colors.textTertiary,
   },
   badges: { flexDirection: 'row', gap: 2 },
-  badge: { fontSize: 14 },
+  badge: { fontSize: 16 },
   xBtn: { padding: 2 },
   lifeSection: {
     flex: 1,
@@ -471,19 +471,19 @@ const pp = StyleSheet.create({
   btnRowCompact: { gap: 2 },
   bigBtn: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 54,
     backgroundColor: colors.chipBg,
     borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bigBtnCompact: { minHeight: 32 },
+  bigBtnCompact: { minHeight: 40 },
   bigBtnText: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.lg,
     color: colors.textSecondary,
   },
-  bigBtnTextCompact: { fontSize: typography.fontSize.sm },
+  bigBtnTextCompact: { fontSize: typography.fontSize.md },
   cmdRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -495,17 +495,17 @@ const pp = StyleSheet.create({
   },
   cmdLabel: {
     fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
+    fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
     marginRight: spacing.xs,
   },
-  cmdLabelCompact: { fontSize: 10 },
+  cmdLabelCompact: { fontSize: 11 },
   cmdLabelActive: { color: colors.error },
   cmdChip: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  cmdDot: { width: 8, height: 8, borderRadius: 4 },
+  cmdDot: { width: 9, height: 9, borderRadius: 5 },
   cmdChipText: {
     fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
+    fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
   },
   cmdChipDanger: { color: colors.error },
@@ -533,7 +533,7 @@ function GameBar({ state, allPlayers, canUndo, onUndo, onNextTurn, onReset, onCl
   return (
     <View style={gb.bar}>
       <Pressable onPress={onClose} hitSlop={8} style={gb.closeBtn}>
-        <Ionicons name="close" size={20} color={colors.textSecondary} />
+        <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
       </Pressable>
 
       <View style={gb.chips}>
@@ -569,13 +569,13 @@ function GameBar({ state, allPlayers, canUndo, onUndo, onNextTurn, onReset, onCl
           hitSlop={8}
           style={[gb.actionBtn, !canUndo && gb.actionDisabled]}
         >
-          <Ionicons name="arrow-undo" size={18} color={canUndo ? colors.textSecondary : colors.border} />
+          <Ionicons name="arrow-undo" size={20} color={canUndo ? colors.textSecondary : colors.border} />
         </Pressable>
         <Pressable onPress={onNextTurn} hitSlop={8} style={[gb.actionBtn, gb.actionBtnNext]}>
-          <Ionicons name="play-skip-forward" size={18} color={colors.accentInk} />
+          <Ionicons name="play-skip-forward" size={20} color={colors.accentInk} />
         </Pressable>
         <Pressable onPress={onReset} hitSlop={8} style={gb.actionBtn}>
-          <Ionicons name="refresh" size={18} color={colors.textTertiary} />
+          <Ionicons name="refresh" size={20} color={colors.textTertiary} />
         </Pressable>
       </View>
     </View>
@@ -594,8 +594,8 @@ const gb = StyleSheet.create({
     gap: spacing.sm,
   },
   closeBtn: {
-    width: 34,
-    height: 34,
+    width: 38,
+    height: 38,
     borderRadius: radii.full,
     backgroundColor: colors.chipBg,
     alignItems: 'center',
@@ -613,19 +613,19 @@ const gb = StyleSheet.create({
   },
   activeChip: { backgroundColor: colors.accent + '18' },
   tokenChip: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderLight },
-  dot: { width: 7, height: 7, borderRadius: 4 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
   chipLabel: {
     fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.xs,
+    fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
-    maxWidth: 80,
+    maxWidth: 90,
   },
   activeLabel: { color: colors.accent },
-  tokenIcon: { fontSize: 12 },
+  tokenIcon: { fontSize: 14 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   actionBtn: {
-    width: 34,
-    height: 34,
+    width: 38,
+    height: 38,
     borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
@@ -949,11 +949,11 @@ function FirstPlayerPicker({
 }
 
 const fpp = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 20, paddingTop: 28, paddingBottom: 24, backgroundColor: colors.paper },
-  top: { alignItems: 'center', marginBottom: 28 },
+  container: { flex: 1, paddingHorizontal: 20, paddingVertical: 24, backgroundColor: colors.paper, justifyContent: 'center', gap: 28 },
+  top: { alignItems: 'center' },
   title: { fontFamily: typography.fontFamily.bold, fontSize: 22, color: colors.textPrimary, letterSpacing: -0.5, textAlign: 'center' },
   sub: { fontFamily: typography.fontFamily.semiBold, fontSize: 14, color: colors.textSecondary, marginTop: 6 },
-  list: { flex: 1, gap: 10 },
+  list: { gap: 10 },
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 14,
     borderRadius: 16, borderWidth: 1.5, borderColor: colors.borderLight,

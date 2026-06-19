@@ -36,9 +36,9 @@ export function RootNavigator() {
           <>
             <Stack.Screen name="Main" component={TabNavigator} />
             <Stack.Screen name="History" component={HistoryScreen} options={{ presentation: 'modal' }} />
-            <Stack.Screen name="StoresMap" component={StoresScreen} options={{ presentation: 'modal' }} />
+            <Stack.Screen name="StoresMap" component={StoresScreen} options={{ presentation: 'fullScreenModal' }} />
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <Stack.Screen name="Discover" component={DiscoverScreen as any} options={{ presentation: 'modal' }} />
+            <Stack.Screen name="Discover" component={DiscoverScreen as any} options={{ presentation: 'fullScreenModal' }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen name="PlayerPreview" component={PlayerPreviewScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="Connected" component={ConnectedRevealScreen} options={{ presentation: 'modal' }} />

@@ -169,6 +169,21 @@ export class MeService {
     };
   }
 
+  async getRecentStores(userId: string) {
+    type RecentStoreRow = {
+      id: string; name: string; city: string | null; state: string | null;
+    };
+    return this.prisma.$queryRaw<RecentStoreRow[]>`
+      SELECT DISTINCT ON (c.store_id)
+        s.id, s.name, s.city, s.state
+      FROM checkins c
+      JOIN stores s ON s.id = c.store_id
+      WHERE c.user_id = ${userId}
+      ORDER BY c.store_id, c.checked_in_at DESC
+      LIMIT 10
+    `.then((rows) => ({ stores: rows }));
+  }
+
   async getBadges(userId: string) {
     return this.prisma.userBadge.findMany({
       where: { userId },

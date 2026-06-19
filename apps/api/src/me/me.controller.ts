@@ -114,6 +114,11 @@ export class MeController {
     return this.me.getStreaksSummary(req.user.sub);
   }
 
+  @Get('recent-stores')
+  getRecentStores(@Req() req: AuthRequest) {
+    return this.me.getRecentStores(req.user.sub);
+  }
+
   @Get('home-store')
   getHomeStore(@Req() req: AuthRequest) {
     return this.me.getHomeStore(req.user.sub);

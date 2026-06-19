@@ -40,6 +40,7 @@ import {
   useHomeStore,
   usePrivacy,
   useProfile,
+  useRecentCheckinStores,
   useSetHomeStore,
   useUpdatePrivacy,
   useUpdateProfile,
@@ -782,16 +783,21 @@ function HomeStorePicker({
   onSelect: (id: string) => void;
 }) {
   const [query, setQuery] = useState('');
-  const { data: stores = [], isLoading } = useStores(query.length >= 2 ? query : undefined);
+  const { data: recent, isLoading: recentLoading } = useRecentCheckinStores();
+  const { data: searchResults = [], isLoading: searchLoading } = useStores(query.length >= 2 ? query : undefined);
+
+  const showingSearch = query.length >= 2;
+  const isLoading = showingSearch ? searchLoading : recentLoading;
+  const stores = showingSearch ? searchResults : (recent?.stores ?? []);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.paper }}>
         <View style={section.pickerHeader}>
-          <Text style={section.pickerTitle}>Set home store</Text>
-          <Pressable onPress={onClose} hitSlop={8}>
-            <Ionicons name="close" size={24} color={colors.textSecondary} />
+          <Pressable onPress={onClose} hitSlop={8} style={section.pickerBack}>
+            <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
           </Pressable>
+          <Text style={section.pickerTitle}>Set home store</Text>
         </View>
         <View style={section.pickerSearchWrap}>
           <Ionicons name="search-outline" size={16} color={colors.textTertiary} />
@@ -801,8 +807,12 @@ function HomeStorePicker({
             placeholderTextColor={colors.textTertiary}
             value={query}
             onChangeText={setQuery}
-            autoFocus
           />
+          {query.length > 0 && (
+            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+              <Ionicons name="close-circle" size={16} color={colors.textTertiary} />
+            </Pressable>
+          )}
         </View>
         {isLoading ? (
           <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
@@ -810,6 +820,11 @@ function HomeStorePicker({
           <FlatList
             data={stores}
             keyExtractor={(s) => s.id}
+            ListHeaderComponent={
+              !showingSearch && stores.length > 0 ? (
+                <Text style={section.pickerSectionLabel}>Recently visited</Text>
+              ) : null
+            }
             renderItem={({ item }) => (
               <Pressable
                 style={({ pressed }) => [section.pickerRow, pressed && { opacity: 0.6 }]}
@@ -827,9 +842,14 @@ function HomeStorePicker({
               </Pressable>
             )}
             ListEmptyComponent={
-              <Text style={section.empty}>
-                {query.length < 2 ? 'Type to search' : 'No stores found'}
-              </Text>
+              <View style={section.pickerEmptyWrap}>
+                <Ionicons name="storefront-outline" size={32} color={colors.border} />
+                <Text style={section.pickerEmptyText}>
+                  {showingSearch
+                    ? 'No stores found'
+                    : 'Recently visited stores will appear here\nor use the search bar above'}
+                </Text>
+              </View>
             }
           />
         )}
@@ -1016,16 +1036,20 @@ const section = StyleSheet.create({
   pickerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
+  },
+  pickerBack: {
+    padding: 2,
   },
   pickerTitle: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.xl,
     color: colors.textPrimary,
+    flex: 1,
   },
   pickerSearchWrap: {
     flexDirection: 'row',
@@ -1054,6 +1078,29 @@ const section = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.borderLight,
     backgroundColor: colors.surface,
+  },
+  pickerSectionLabel: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 11,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
+  },
+  pickerEmptyWrap: {
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingTop: spacing.xxxl,
+    paddingHorizontal: spacing.xl,
+  },
+  pickerEmptyText: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 
