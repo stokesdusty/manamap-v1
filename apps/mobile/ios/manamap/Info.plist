@@ -61,6 +61,8 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>$(PRODUCT_NAME) needs camera access to scan player QR codes.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>$(PRODUCT_NAME) lets you save ManaMap connections to your phone contacts.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
 	<key>NSLocalNetworkUsageDescription</key>
