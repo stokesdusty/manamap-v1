@@ -1,3 +1,4 @@
+import { StatusBar } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { ConnectedRevealScreen } from '../screens/ConnectedRevealScreen';
@@ -28,6 +29,8 @@ export function RootNavigator() {
   const needsOnboarding = isAuthenticated && (profile == null || profile.onboardedAt == null);
 
   return (
+    <>
+      <StatusBar barStyle="light-content" />
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {isAuthenticated ? (
         needsOnboarding ? (
@@ -57,5 +60,6 @@ export function RootNavigator() {
         <Stack.Screen name="SignIn" component={SignInScreen} />
       )}
     </Stack.Navigator>
+    </>
   );
 }

@@ -13,7 +13,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Location from 'expo-location';
 import axios from 'axios';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Circle, Marker, type Region } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -929,6 +929,7 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
   );
 
   const { activeStore } = useActiveStore();
+  const insets = useSafeAreaInsets();
 
   // Debounce region changes to avoid spamming the bbox query
   function handleRegionChangeComplete(r: Region) {
@@ -957,9 +958,9 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
   }, []);
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.headerCloseBtn} hitSlop={8}>
           <Ionicons name="chevron-back" size={26} color={colors.textSecondary} />
         </Pressable>

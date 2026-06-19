@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,13 +19,14 @@ import type { TabParamList, RootStackParamList } from '../navigation/types';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import { useAuth } from '../context/AuthContext';
 import { useIdentityTheme } from '../hooks/useIdentityTheme';
-import { useProfile } from '../hooks/useMe';
+import { useProfile, usePrivacy, useUpdatePrivacy } from '../hooks/useMe';
 import { useNearby, useStoreEvents } from '../hooks/useNearby';
 import { useStreaksSummary } from '../hooks/useGamification';
 import { usePendingGames, useMyGameStats } from '../hooks/useGames';
 import { useConnections } from '../hooks/useConnections';
 import { useQuests } from '../hooks/useQuests';
 import { useLfgMe } from '../hooks/useLfg';
+import { useNearestStore } from '../hooks/useNearestStore';
 import { useNotificationUnreadCount } from '../hooks/useNotifications';
 import { LogGameSheet } from '../components/LogGameSheet';
 import { PodFormSheet } from '../components/PodFormSheet';
@@ -133,7 +134,14 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
   const { data: connections } = useConnections();
   const { data: quests = [] } = useQuests();
   const { data: lfgSession } = useLfgMe();
+  const { store: nearestStore, distanceKm: nearestDistKm } = useNearestStore();
   const { data: bellCount = 0 } = useNotificationUnreadCount(isAuthenticated);
+  const { data: privacy } = usePrivacy();
+  const { mutate: updatePrivacy } = useUpdatePrivacy();
+  const isInvisible = privacy?.discoverable === false;
+  const handleToggleInvisible = useCallback(() => {
+    updatePrivacy({ discoverable: isInvisible });
+  }, [isInvisible, updatePrivacy]);
 
   const [showLogGame, setShowLogGame] = useState(false);
   const [showPodForm, setShowPodForm] = useState(false);
@@ -177,15 +185,25 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             <Rect x="0" y="0" width={bannerW} height={bannerH} fill="url(#hbg)" />
           </Svg>
 
-          {/* Bell — absolute top-right */}
-          <Pressable
-            style={[styles.bellWrap, { backgroundColor: onAccent + '38' }]}
-            onPress={() => navigation.navigate('Notifications')}
-            hitSlop={8}
-          >
-            <Ionicons name="notifications" size={25} color={onAccent} />
-            {bellCount > 0 && <View style={styles.bellDot} />}
-          </Pressable>
+          {/* Eye + Bell — absolute top-right */}
+          <View style={styles.bannerTopRight}>
+            <Pressable
+              style={[styles.bellWrap, { backgroundColor: onAccent + '38' }, isInvisible && styles.bellWrapActive]}
+              onPress={handleToggleInvisible}
+              hitSlop={8}
+              accessibilityLabel={isInvisible ? 'Go visible' : 'Go invisible'}
+            >
+              <Ionicons name={isInvisible ? 'eye-off' : 'eye-outline'} size={22} color={onAccent} />
+            </Pressable>
+            <Pressable
+              style={[styles.bellWrap, { backgroundColor: onAccent + '38' }]}
+              onPress={() => navigation.navigate('Notifications')}
+              hitSlop={8}
+            >
+              <Ionicons name="notifications" size={22} color={onAccent} />
+              {bellCount > 0 && <View style={styles.bellDot} />}
+            </Pressable>
+          </View>
 
           {/* Text content */}
           <View style={styles.bannerContent}>
@@ -227,6 +245,14 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                 <View style={styles.bannerPill}>
                   <Text style={[styles.bannerPillText, { color: onAccent }]}>
                     🔥 {currentStreak}w streak
+                  </Text>
+                </View>
+              )}
+              {!activeStore && nearestStore && nearestDistKm != null && (
+                <View style={styles.bannerPill}>
+                  <Ionicons name="location" size={11} color={onAccent} />
+                  <Text style={[styles.bannerPillText, { color: onAccent }]} numberOfLines={1}>
+                    {nearestStore.name} · {nearestDistKm < 1.6 ? `${Math.round(nearestDistKm * 1000)}m` : `${(nearestDistKm * 0.621371).toFixed(1)}mi`}
                   </Text>
                 </View>
               )}
@@ -448,16 +474,24 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'flex-end',
   },
-  bellWrap: {
+  bannerTopRight: {
     position: 'absolute',
     bottom: 22,
     right: 16,
     zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bellWrap: {
     width: 40,
     height: 40,
     borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  bellWrapActive: {
+    backgroundColor: 'rgba(0,0,0,0.25)',
   },
   bellDot: {
     position: 'absolute',
@@ -474,7 +508,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 0,
     paddingBottom: 22,
-    paddingRight: 62,
+    paddingRight: 104,
     gap: 0,
   },
   bannerGreetRow: {

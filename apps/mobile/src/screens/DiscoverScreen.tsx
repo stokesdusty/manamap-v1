@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type {
   ManaColor as SharedManaColor,
@@ -47,7 +47,7 @@ import { usePresence, useCheckout } from '../hooks/usePresence';
 import { useCrossedPathsCount } from '../hooks/useEncounters';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import { usePrivacy, useProfile, useUpdatePrivacy } from '../hooks/useMe';
-import { BellButton } from '../components/BellButton';
+import { useNearestStore } from '../hooks/useNearestStore';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import { useIdentityTheme } from '../hooks/useIdentityTheme';
 
@@ -1201,6 +1201,8 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   usePresence();
   const { mutate: checkout } = useCheckout();
 
+  const insets = useSafeAreaInsets();
+
   // Identity theme
   const identityTheme = useIdentityTheme();
 
@@ -1246,6 +1248,9 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   const handleToggleInvisible = useCallback(() => {
     updatePrivacy({ discoverable: isInvisible });
   }, [isInvisible, updatePrivacy]);
+
+  // Nearest store (for header when not checked in)
+  const { store: nearestStore, distanceKm: nearestDistKm } = useNearestStore();
 
   // Nearby players (filtered)
   // Always enabled — API returns store-based players when checked in,
@@ -1307,7 +1312,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   }, [navigation]);
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
       {showOnboardBanner && (
         <Pressable style={({ pressed }) => [banner.root, pressed && { opacity: 0.85 }]}>
           <Ionicons name="person-outline" size={16} color={colors.accent} />
@@ -1317,7 +1322,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
       )}
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
         <View style={styles.titleRow}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
@@ -1326,59 +1331,52 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
         </View>
         <View style={styles.titleDivider} />
         <View style={styles.headerSubrow}>
-          {activeStore ? (
-            <Text style={[styles.storeName, { color: identityTheme.accent }]} numberOfLines={1}>{activeStore.name}</Text>
-          ) : (
-            <Text style={styles.storeHint}>No store selected</Text>
-          )}
-          <View style={styles.headerActions}>
-            {/* Go invisible toggle */}
-            <Pressable
-              style={({ pressed }) => [
-                styles.invisibleBtn,
-                isInvisible && styles.invisibleBtnActive,
-                pressed && { opacity: 0.7 },
-              ]}
-              onPress={handleToggleInvisible}
-              accessibilityLabel={isInvisible ? 'Go visible' : 'Go invisible'}
-            >
-              <Ionicons
-                name={isInvisible ? 'eye-off' : 'eye-outline'}
-                size={15}
-                color={isInvisible ? colors.textInverse : colors.textSecondary}
-              />
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.filterToggleBtn,
-                filtersOpen && { borderColor: identityTheme.accent, backgroundColor: identityTheme.soft },
-                pressed && { opacity: 0.7 },
-              ]}
-              onPress={() => setFiltersOpen((o) => !o)}
-            >
-              <Ionicons
-                name="options-outline"
-                size={15}
-                color={filtersOpen ? identityTheme.accent : colors.textSecondary}
-              />
-              <Text style={[styles.filterToggleText, filtersOpen && { color: identityTheme.accent }]}>
-                Filters
-              </Text>
-              {activeFilterCount > 0 && (
-                <View style={[styles.filterBadge, { backgroundColor: identityTheme.accent }]}>
-                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-                </View>
-              )}
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [styles.storeBtn, { borderColor: identityTheme.accent }, pressed && { opacity: 0.6 }]}
-              onPress={() => setShowPicker(true)}
-            >
-              <Ionicons name="storefront-outline" size={16} color={identityTheme.accent} />
-              <Text style={[styles.storeBtnText, { color: identityTheme.accent }]}>{activeStore ? 'Change' : 'Select store'}</Text>
-            </Pressable>
-            <BellButton />
-          </View>
+          {/* Tappable store info */}
+          <Pressable
+            style={({ pressed }) => [styles.storeInfoBtn, pressed && { opacity: 0.75 }]}
+            onPress={() => navigation.navigate('StoresMap', activeStore ? { storeId: activeStore.id } : nearestStore ? { storeId: nearestStore.id } : undefined)}
+          >
+            {activeStore ? (
+              <>
+                <View style={styles.storeGlowDot} />
+                <Text style={[styles.storeName, { color: identityTheme.accent }]} numberOfLines={1}>{activeStore.name}</Text>
+              </>
+            ) : nearestStore && nearestDistKm != null ? (
+              <>
+                <Ionicons name="location-outline" size={13} color={colors.textTertiary} />
+                <Text style={styles.storeName} numberOfLines={1}>
+                  {nearestStore.name} · {nearestDistKm < 1.6 ? `${Math.round(nearestDistKm * 1000)}m` : `${(nearestDistKm * 0.621371).toFixed(1)}mi`}
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.storeHint}>No store selected</Text>
+            )}
+            <Ionicons name="chevron-forward" size={13} color={colors.textTertiary} style={{ flexShrink: 0 }} />
+          </Pressable>
+
+          {/* Filters */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.filterToggleBtn,
+              filtersOpen && { borderColor: identityTheme.accent, backgroundColor: identityTheme.soft },
+              pressed && { opacity: 0.7 },
+            ]}
+            onPress={() => setFiltersOpen((o) => !o)}
+          >
+            <Ionicons
+              name="options-outline"
+              size={15}
+              color={filtersOpen ? identityTheme.accent : colors.textSecondary}
+            />
+            <Text style={[styles.filterToggleText, filtersOpen && { color: identityTheme.accent }]}>
+              Filters
+            </Text>
+            {activeFilterCount > 0 && (
+              <View style={[styles.filterBadge, { backgroundColor: identityTheme.accent }]}>
+                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+              </View>
+            )}
+          </Pressable>
         </View>
       </View>
 
@@ -1600,11 +1598,25 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xxl,
     color: colors.textPrimary,
   },
+  storeInfoBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    minWidth: 0,
+  },
+  storeGlowDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radii.full,
+    backgroundColor: '#4ade80',
+    flexShrink: 0,
+  },
   storeName: {
     flex: 1,
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.sm,
-    color: colors.accent,
+    color: colors.textSecondary,
   },
   storeHint: {
     flex: 1,
