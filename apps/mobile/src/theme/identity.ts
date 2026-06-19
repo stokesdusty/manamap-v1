@@ -1,10 +1,9 @@
 import type { ManaColor } from './colors';
 import { colors } from './colors';
 
-// Vivid UI-ready accent per mana color. Black → violet, White → gold so both
-// read on the Dusk dark theme. C = colorless/fallback.
+// Vivid UI-ready accent per mana color. C = colorless/fallback.
 export const MANA_ACCENT: Record<string, string> = {
-  W: '#D7A93C',
+  W: '#D4D0CB',
   U: '#3E8FE6',
   B: '#8E63D6',
   R: '#EC5B47',

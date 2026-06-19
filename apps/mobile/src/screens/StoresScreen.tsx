@@ -958,11 +958,9 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        {route.name === 'StoresMap' && (
-          <Pressable onPress={() => navigation.goBack()} style={styles.headerCloseBtn} hitSlop={8}>
-            <Ionicons name="close" size={22} color={colors.textSecondary} />
-          </Pressable>
-        )}
+        <Pressable onPress={() => navigation.goBack()} style={styles.headerCloseBtn} hitSlop={8}>
+          <Ionicons name="chevron-back" size={26} color={colors.textSecondary} />
+        </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Stores</Text>
           {activeStore && (

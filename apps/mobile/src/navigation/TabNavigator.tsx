@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
@@ -22,6 +22,7 @@ function ScanButton({ onPress }: BottomTabBarButtonProps) {
       <View style={[styles.scanPip, { backgroundColor: accent }]}>
         <Ionicons name="scan-outline" size={24} color={colors.textInverse} />
       </View>
+      <Text style={styles.scanLabel}>Scan QR</Text>
     </Pressable>
   );
 }
@@ -100,7 +101,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: 8,
+    paddingBottom: 2,
   },
   scanPip: {
     width: 52,
@@ -110,5 +111,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.md,
+  },
+  scanLabel: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    marginTop: 4,
   },
 });

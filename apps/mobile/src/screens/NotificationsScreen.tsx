@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, TabActions } from '@react-navigation/native';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -122,8 +122,9 @@ function NotifRow({ id, kind, title, body, readAt, createdAt, data: _data, onPre
 export function NotificationsScreen({ navigation }: Props) {
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useNotifications();
   const markRead = useMarkNotificationsRead();
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
-  const allItems = data?.pages.flatMap((p) => p.items) ?? [];
+  const allItems = (data?.pages.flatMap((p) => p.items) ?? []).filter((n) => !dismissed.has(n.id));
   const newItems = allItems.filter((n) => n.readAt === null);
   const earlierItems = allItems.filter((n) => n.readAt !== null);
 
@@ -137,6 +138,7 @@ export function NotificationsScreen({ navigation }: Props) {
     const item = allItems.find((n) => n.id === id);
     if (!item) return;
     markRead.mutate([id]);
+    setDismissed((prev) => new Set(prev).add(id));
     navigation.goBack();
     deepLinkByKind(item.kind, item.data);
   }

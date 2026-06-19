@@ -29,23 +29,23 @@ export const colors = {
 
   // WUBRG mana pip fills — unchanged across themes (prototype MANA.fill)
   mana: {
-    W: '#F2E6BE', U: '#4FA9E6', B: '#574F5E', R: '#F0705B', G: '#5FB97E',
+    W: '#F0EFED', U: '#4FA9E6', B: '#574F5E', R: '#F0705B', G: '#5FB97E',
     C: '#B8AEA0', M: '#E6C36A',
   },
   manaLight: {
-    W: '#F5ECCC', U: '#76BCEC', B: '#7C7681', R: '#F38F7F', G: '#82C89A',
+    W: '#F7F6F4', U: '#76BCEC', B: '#7C7681', R: '#F38F7F', G: '#82C89A',
     C: '#C8C0B5', M: '#ECD08B',
   },
   manaDark: {
-    W: '#D0C6A3', U: '#4491C6', B: '#4B4451', R: '#CE604E', G: '#529F6C',
+    W: '#D8D6D3', U: '#4491C6', B: '#4B4451', R: '#CE604E', G: '#529F6C',
     C: '#9E968A', M: '#C6A85B',
   },
   manaBorder: {
-    W: '#E4D199', U: '#3F97D6', B: '#6B6276', R: '#E25E4A', G: '#4FA96E',
+    W: '#C8C6C2', U: '#3F97D6', B: '#6B6276', R: '#E25E4A', G: '#4FA96E',
     C: '#A89E90', M: '#C9A227',
   },
   manaLetter: {
-    W: '#6E5E27', U: '#FFFFFF', B: '#FFFFFF', R: '#FFFFFF', G: '#FFFFFF',
+    W: '#4A4845', U: '#FFFFFF', B: '#FFFFFF', R: '#FFFFFF', G: '#FFFFFF',
     C: '#3A3340', M: '#6E5A1E',
   },
 

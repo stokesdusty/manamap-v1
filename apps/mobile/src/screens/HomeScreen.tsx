@@ -1,5 +1,6 @@
 import {
   Dimensions,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -92,14 +93,9 @@ interface QuickTileProps {
 function QuickTile({ icon, label, sub, iconBg, iconColor, badge, live, onPress }: QuickTileProps) {
   return (
     <Pressable
-      style={({ pressed }) => [qtStyles.tile, pressed && { transform: [{ scale: 0.96 }] }]}
+      style={({ pressed }) => [qtStyles.tile, pressed && { opacity: 0.75 }]}
       onPress={onPress}
     >
-      {badge != null && badge > 0 && (
-        <View style={qtStyles.badge}>
-          <Text style={qtStyles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
-        </View>
-      )}
       <View style={[qtStyles.iconWell, { backgroundColor: iconBg }]}>
         <Ionicons name={icon} size={22} color={iconColor} />
         {live && <View style={qtStyles.liveDot} />}
@@ -108,6 +104,12 @@ function QuickTile({ icon, label, sub, iconBg, iconColor, badge, live, onPress }
         <Text style={qtStyles.label}>{label}</Text>
         <Text style={qtStyles.sub} numberOfLines={1}>{sub}</Text>
       </View>
+      {badge != null && badge > 0 && (
+        <View style={qtStyles.badge}>
+          <Text style={qtStyles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+        </View>
+      )}
+      <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
     </Pressable>
   );
 }
@@ -187,10 +189,15 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
 
           {/* Text content */}
           <View style={styles.bannerContent}>
-            <Text style={[styles.bannerSub, { color: onAccent + 'B8' }]}>{greet()},</Text>
-            <Text style={[styles.bannerName, { color: onAccent }]} numberOfLines={1}>
-              {profile?.displayName ?? 'Planeswalker'}
-            </Text>
+            <View style={styles.bannerGreetRow}>
+              <Image source={require('../../assets/icon.png')} style={styles.bannerIcon} />
+              <View style={styles.bannerGreetText}>
+                <Text style={[styles.bannerSub, { color: onAccent + 'B8' }]}>{greet()},</Text>
+                <Text style={[styles.bannerName, { color: onAccent }]} numberOfLines={1}>
+                  {profile?.displayName ?? 'Planeswalker'}
+                </Text>
+              </View>
+            </View>
 
             {activeStore ? (
               <Pressable
@@ -240,63 +247,52 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         </View>
 
-        {/* ── Quick actions (2 × 2) ── */}
+        {/* ── Quick actions ── */}
         <View style={styles.qaGrid}>
-          <View style={styles.qaRow}>
-            <QuickTile
-              icon="radio-outline"
-              label="Open to Play"
-              sub={lfgSession ? 'Live now' : 'Tap to go live'}
-              iconBg={colors.success + '1E'}
-              iconColor={colors.success}
-              live={!!lfgSession}
-              onPress={() => navigation.navigate('Discover')}
-            />
-            <QuickTile
-              icon="game-controller-outline"
-              label="Log a Game"
-              sub="Record a result"
-              iconBg={accent + '1E'}
-              iconColor={accent}
-              onPress={() => setShowLogGame(true)}
-            />
-          </View>
-          <View style={styles.qaRow}>
-            <QuickTile
-              icon="navigate-outline"
-              label="Meet Players"
-              sub={playerCount > 0 ? `${playerCount} nearby now` : 'Find opponents'}
-              iconBg={accent + '1E'}
-              iconColor={accent}
-              onPress={() => navigation.navigate('Discover')}
-            />
-            <QuickTile
-              icon="people-outline"
-              label="Connections"
-              sub={pendingRequests > 0
-                ? `${pendingRequests} pending request${pendingRequests > 1 ? 's' : ''}`
-                : 'Your network'}
-              iconBg={accent + '1E'}
-              iconColor={accent}
-              onPress={() => navigation.navigate('Connections')}
-            />
-          </View>
-        </View>
+          <QuickTile
+            icon="storefront-outline"
+            label="Find / Check into Store"
+            sub={activeStore ? activeStore.name : 'Find a nearby store'}
+            iconBg={accent + '1E'}
+            iconColor={accent}
+            onPress={() => navigation.navigate('StoresMap')}
+          />
+          <QuickTile
+            icon="navigate-outline"
+            label="Discover"
+            sub="Find nearby or checked in players"
+            iconBg={accent + '1E'}
+            iconColor={accent}
+            onPress={() => navigation.navigate('Discover')}
+          />
 
-        {/* ── Form a Pod row ── */}
-        <Pressable
-          style={({ pressed }) => [styles.podRow, pressed && { opacity: 0.75 }]}
-          onPress={() => setShowPodForm(true)}
-        >
-          <View style={[styles.podIcon, { backgroundColor: accent + '1E' }]}>
-            <Ionicons name="people" size={22} color={accent} />
-          </View>
-          <View style={styles.podText}>
-            <Text style={styles.podLabel}>Form a Pod</Text>
-            <Text style={styles.podSub}>Build your table, start a game</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-        </Pressable>
+          <QuickTile
+            icon="people-outline"
+            label="Connections"
+            sub={pendingRequests > 0
+              ? `${pendingRequests} pending request${pendingRequests > 1 ? 's' : ''}`
+              : 'Your network'}
+            iconBg={accent + '1E'}
+            iconColor={accent}
+            badge={attentionCount > 0 ? attentionCount : null}
+            onPress={() => navigation.navigate('Connections')}
+          />
+
+          {/* ── Form a Pod row ── */}
+          <Pressable
+            style={({ pressed }) => [styles.podRow, pressed && { opacity: 0.75 }]}
+            onPress={() => setShowPodForm(true)}
+          >
+            <View style={[styles.podIcon, { backgroundColor: accent + '1E' }]}>
+              <Ionicons name="people" size={22} color={accent} />
+            </View>
+            <View style={styles.podText}>
+              <Text style={styles.podLabel}>Form a Pod and Track Life</Text>
+              <Text style={styles.podSub}>Build your table, start a game, track your life</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+          </Pressable>
+        </View>
 
         {/* ── Needs attention ── */}
         {attentionCount > 0 && (
@@ -481,11 +477,26 @@ const styles = StyleSheet.create({
     paddingRight: 62,
     gap: 0,
   },
+  bannerGreetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 1,
+  },
+  bannerIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    flexShrink: 0,
+  },
+  bannerGreetText: {
+    flex: 1,
+    minWidth: 0,
+  },
   bannerSub: {
     fontFamily: typography.fontFamily.semiBold,
     fontSize: 13,
     letterSpacing: -0.1,
-    marginBottom: 1,
   },
   bannerName: {
     fontFamily: typography.fontFamily.bold,
@@ -562,14 +573,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
 
-  // Quick actions grid
+  // Quick actions list
   qaGrid: {
-    paddingHorizontal: 16,
     paddingTop: 16,
-    gap: 10,
-  },
-  qaRow: {
-    flexDirection: 'row',
     gap: 10,
   },
 
@@ -579,7 +585,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     marginHorizontal: 16,
-    marginTop: 10,
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
@@ -767,15 +772,16 @@ const styles = StyleSheet.create({
 
 const qtStyles = StyleSheet.create({
   tile: {
-    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginHorizontal: 16,
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
-    padding: 15,
-    paddingBottom: 14,
-    gap: 11,
     borderWidth: 1,
     borderColor: colors.borderLight,
-    position: 'relative',
+    padding: 14,
+    paddingHorizontal: 16,
     ...shadows.sm,
   },
   iconWell: {
@@ -784,6 +790,7 @@ const qtStyles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
     position: 'relative',
   },
   liveDot: {
@@ -798,27 +805,22 @@ const qtStyles = StyleSheet.create({
     borderColor: colors.surface,
   },
   textBlock: {
+    flex: 1,
     minWidth: 0,
-    width: '100%',
   },
   label: {
     fontFamily: typography.fontFamily.bold,
     fontSize: 14.5,
     color: colors.textPrimary,
     letterSpacing: -0.15,
-    lineHeight: 18,
   },
   sub: {
     fontFamily: typography.fontFamily.semiBold,
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 3,
-    lineHeight: 16,
   },
   badge: {
-    position: 'absolute',
-    top: 11,
-    right: 11,
     minWidth: 18,
     height: 18,
     borderRadius: radii.full,
@@ -828,7 +830,6 @@ const qtStyles = StyleSheet.create({
     paddingHorizontal: 4,
     borderWidth: 2,
     borderColor: colors.surface,
-    zIndex: 1,
   },
   badgeText: {
     fontFamily: typography.fontFamily.bold,

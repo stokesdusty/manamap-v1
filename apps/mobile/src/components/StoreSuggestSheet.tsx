@@ -134,10 +134,11 @@ export function StoreSuggestSheet({ visible, onClose }: Props) {
         >
           {/* Header */}
           <View style={s.header}>
-            <Text style={s.title}>Suggest a Store</Text>
-            <Pressable onPress={onClose} hitSlop={8} style={s.closeBtn}>
-              <Ionicons name="close" size={22} color={colors.textSecondary} />
+            <Pressable onPress={onClose} hitSlop={8} style={s.backBtn}>
+              <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
             </Pressable>
+            <Text style={s.title}>Suggest a Store</Text>
+            <View style={s.backBtn} />
           </View>
 
           <ScrollView
@@ -257,19 +258,21 @@ const s = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
   title: {
     flex: 1,
+    textAlign: 'center',
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.xl,
     color: colors.textPrimary,
   },
-  closeBtn: {
-    padding: 2,
+  backBtn: {
+    width: 36,
+    alignItems: 'flex-start',
   },
   scroll: {
     padding: spacing.xl,

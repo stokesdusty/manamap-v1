@@ -1,6 +1,5 @@
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
   Modal,
   Pressable,
@@ -13,7 +12,6 @@ import {
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'react-native-svg';
 import type {
   ManaColor as SharedManaColor,
   MtgFormat,
@@ -44,14 +42,14 @@ import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { TabParamList, RootStackParamList } from '../navigation/types';
-import { useNearby, useSuggestions, useStores, useStoreEvents, type DiscoveryFilters } from '../hooks/useNearby';
+import { useNearby, useSuggestions, useStores, useStorePins, type DiscoveryFilters } from '../hooks/useNearby';
 import { usePresence, useCheckout } from '../hooks/usePresence';
 import { useCrossedPathsCount } from '../hooks/useEncounters';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import { usePrivacy, useProfile, useUpdatePrivacy } from '../hooks/useMe';
 import { BellButton } from '../components/BellButton';
 import { colors, radii, shadows, spacing, typography } from '../theme';
-import { useIdentityTheme, type IdentityTheme } from '../hooks/useIdentityTheme';
+import { useIdentityTheme } from '../hooks/useIdentityTheme';
 
 type DiscoverScreenProps = {
   navigation: CompositeNavigationProp<
@@ -62,6 +60,22 @@ type DiscoverScreenProps = {
 
 function avatarInitial(name: string) {
   return name.charAt(0).toUpperCase();
+}
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDist(km: number) {
+  if (km < 0.05) return 'You\'re here';
+  if (km < 1) return `${Math.round(km * 1000)} m away`;
+  return `${km.toFixed(1)} km away`;
 }
 
 const MANA_FILL: Record<string, string> = {
@@ -154,106 +168,6 @@ function StorePicker({ visible, onClose, onSelect }: StorePickerProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Location banner — rounded gradient card showing store + player count
-// ---------------------------------------------------------------------------
-
-interface LocationBannerProps {
-  storeName: string;
-  playerCount: number;
-  todayEventName: string | null;
-  theme: IdentityTheme;
-  onLeave: () => void;
-}
-
-function LocationBanner({ storeName, playerCount, todayEventName, theme, onLeave }: LocationBannerProps) {
-  const { gradient, onAccent, accent } = theme;
-  const [bW, setBW] = useState(() => Dimensions.get('window').width - spacing.xl * 2);
-  const [bH, setBH] = useState(90);
-
-  return (
-    <View
-      style={[locBanner.root, { shadowColor: accent }]}
-      onLayout={(e) => { setBW(e.nativeEvent.layout.width); setBH(e.nativeEvent.layout.height); }}
-    >
-      <Svg style={StyleSheet.absoluteFill} width={bW} height={bH}>
-        <Defs>
-          <SvgLinearGradient id="locGrad" x1="0" y1="0" x2="1" y2="1">
-            {gradient.map((c, i) => (
-              <Stop key={i} offset={`${i / Math.max(1, gradient.length - 1)}`} stopColor={c} />
-            ))}
-          </SvgLinearGradient>
-        </Defs>
-        <Rect x="0" y="0" width={bW} height={bH} fill="url(#locGrad)" />
-      </Svg>
-
-      <View style={locBanner.content}>
-        <View style={locBanner.checkinRow}>
-          <Ionicons name="location" size={13} color={onAccent + 'EB'} />
-          <Text style={[locBanner.checkinLabel, { color: onAccent + 'EB' }]}>Checked in</Text>
-          <View style={{ flex: 1 }} />
-          <Pressable onPress={onLeave} hitSlop={8}>
-            <Text style={[locBanner.leaveBtn, { color: onAccent + 'CC' }]}>Leave</Text>
-          </Pressable>
-        </View>
-        <Text style={[locBanner.name, { color: onAccent }]} numberOfLines={1}>{storeName}</Text>
-        <Text style={[locBanner.sub, { color: onAccent + 'E6' }]} numberOfLines={1}>
-          {todayEventName ? `${todayEventName} · ` : ''}
-          {playerCount === 0 ? 'No players here yet' : `${playerCount} player${playerCount !== 1 ? 's' : ''} here`}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-const locBanner = StyleSheet.create({
-  root: {
-    marginHorizontal: spacing.xl,
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.32,
-    shadowRadius: 22,
-    elevation: 8,
-  },
-  content: {
-    padding: 16,
-    gap: 3,
-  },
-  checkinRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
-  },
-  checkinLabel: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: 12,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  leaveBtn: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: 11,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  name: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: 22,
-    letterSpacing: -0.55,
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  sub: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: 13,
-    marginTop: 1,
-  },
-});
 
 // ---------------------------------------------------------------------------
 // Player row
@@ -1216,8 +1130,6 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   // Pod state
   const [showPodComposer, setShowPodComposer] = useState(false);
 
-  // Player list filter
-  const [listFilter, setListFilter] = useState<'all' | 'met'>('all');
 
   // LFG hooks
   const { data: myLfgSession } = useLfgMe();
@@ -1348,14 +1260,33 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
 
 
   // Banner event sub-line
-  const { data: eventDays = [] } = useStoreEvents(activeStore?.id ?? null);
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const todayEventName = eventDays.find((d) => d.date === todayStr)?.events[0]?.name ?? null;
 
   const allPlayers = nearby?.players ?? [];
-  const displayedPlayers = listFilter === 'met'
-    ? allPlayers.filter((p) => p.metBefore)
-    : allPlayers;
+
+  // When not checked in, fetch pins near the user's last known location to find the closest store
+  const userLat = profile?.lastLat ?? null;
+  const userLng = profile?.lastLng ?? null;
+  const nearbyBbox = !activeStore && userLat && userLng
+    ? `${userLng - 0.15},${userLat - 0.15},${userLng + 0.15},${userLat + 0.15}`
+    : null;
+  const { data: nearbyPins = [] } = useStorePins(nearbyBbox);
+
+  const closestPin = useMemo(() => {
+    if (!userLat || !userLng || nearbyPins.length === 0) return null;
+    let best = nearbyPins[0];
+    let bestDist = haversineKm(userLat, userLng, best.lat, best.lng);
+    for (const pin of nearbyPins.slice(1)) {
+      const d = haversineKm(userLat, userLng, pin.lat, pin.lng);
+      if (d < bestDist) { best = pin; bestDist = d; }
+    }
+    return { name: best.name, distLabel: formatDist(bestDist) };
+  }, [nearbyPins, userLat, userLng]);
+
+  const distLabel: string | null = (() => {
+    if (!activeStore?.lat || !activeStore?.lng) return null;
+    if (!userLat || !userLng) return null;
+    return formatDist(haversineKm(userLat, userLng, activeStore.lat, activeStore.lng));
+  })();
 
   const suggestions = suggestionsData?.suggestions ?? [];
 
@@ -1393,6 +1324,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
           </Pressable>
           <Text style={styles.title}>Discover</Text>
         </View>
+        <View style={styles.titleDivider} />
         <View style={styles.headerSubrow}>
           {activeStore ? (
             <Text style={[styles.storeName, { color: identityTheme.accent }]} numberOfLines={1}>{activeStore.name}</Text>
@@ -1480,16 +1412,57 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
       )}
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Store-specific: location banner + LFG bar + suggestions */}
+
+        {/* ── Store context ── */}
+        <View style={styles.storeSection}>
+          {activeStore ? (
+            <>
+              <View style={styles.storeSectionRow}>
+                <Ionicons name="storefront-outline" size={16} color={identityTheme.accent} />
+                <Text style={[styles.storeSectionName, { color: identityTheme.accent }]} numberOfLines={1}>
+                  {activeStore.name}
+                </Text>
+                <Pressable
+                  onPress={() => checkout()}
+                  hitSlop={8}
+                  style={styles.leaveBtn}
+                >
+                  <Text style={styles.leaveBtnText}>Leave</Text>
+                </Pressable>
+              </View>
+              {distLabel && (
+                <Text style={styles.storeSectionDist}>{distLabel}</Text>
+              )}
+            </>
+          ) : closestPin ? (
+            <Pressable
+              style={styles.storeSectionEmpty}
+              onPress={() => navigation.navigate('StoresMap')}
+            >
+              <View style={styles.storeSectionRow}>
+                <Ionicons name="storefront-outline" size={16} color={colors.textSecondary} />
+                <Text style={[styles.storeSectionName, { color: colors.textPrimary }]} numberOfLines={1}>
+                  {closestPin.name}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+              </View>
+              <Text style={styles.storeSectionDist}>{closestPin.distLabel} · Tap to check in</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={styles.storeSectionEmpty}
+              onPress={() => navigation.navigate('StoresMap')}
+            >
+              <Ionicons name="location-outline" size={15} color={colors.textTertiary} />
+              <Text style={styles.storeSectionEmptyText}>Find a nearby store to check in</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+            </Pressable>
+          )}
+        </View>
+
+        {/* LFG bar + suggestions (store only) */}
         {activeStore && (
           <>
-            <LocationBanner
-              storeName={activeStore.name}
-              playerCount={allPlayers.length}
-              todayEventName={todayEventName}
-              theme={identityTheme}
-              onLeave={() => checkout()}
-            />
             <LFGStatusBar
               session={myLfgSession}
               isLoading={false}
@@ -1506,34 +1479,12 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
           </>
         )}
 
-        {/* No-store hint */}
-        {!activeStore && (
-          <Text style={styles.locationNearbyHint}>
-            Check in to a store to access LFG, pods, and events
-          </Text>
-        )}
-
-        {/* Segment filter — always shown */}
-        <View style={styles.segWrap}>
-          {(['all', 'met'] as const).map((v) => (
-            <Pressable
-              key={v}
-              style={[styles.seg, listFilter === v && { backgroundColor: identityTheme.soft, borderColor: identityTheme.accent }]}
-              onPress={() => setListFilter(v)}
-            >
-              <Text style={[styles.segText, listFilter === v && { color: identityTheme.accent, fontFamily: typography.fontFamily.semiBold }]}>
-                {v === 'all' ? 'Everyone' : 'Met before'}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* Player list — always shown */}
+        {/* ── Player list or empty state ── */}
         {isLoadingNearby ? (
           <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.accent} />
-        ) : displayedPlayers.length > 0 ? (
+        ) : allPlayers.length > 0 ? (
           <View style={styles.list}>
-            {displayedPlayers.map((player) => (
+            {allPlayers.map((player) => (
               <PlayerRow
                 key={player.id}
                 player={player}
@@ -1541,10 +1492,10 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
               />
             ))}
           </View>
-        ) : listFilter === 'met' ? (
-          <Text style={styles.emptyList}>No players you've met before are here yet.</Text>
         ) : (
-          <Text style={styles.emptyList}>No players nearby right now.</Text>
+          <Text style={styles.emptyBlurb}>
+            Players who are nearby or checked into the same store as you will appear here.
+          </Text>
         )}
 
         {/* Store-specific: pods + LFG feed + crossed paths */}
@@ -1634,6 +1585,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+  },
+  titleDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
   },
   backBtn: {
     marginLeft: -4,
@@ -1746,48 +1703,70 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   scroll: { flexGrow: 1, paddingBottom: spacing.xxxl },
-  locationNearbyHint: {
-    fontFamily: typography.fontFamily.regular,
+  storeSection: {
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+    gap: 4,
+  },
+  storeSectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  storeSectionName: {
+    flex: 1,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 18,
+    letterSpacing: -0.4,
+    color: colors.textPrimary,
+  },
+  storeSectionDist: {
+    fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.sm,
     color: colors.textTertiary,
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    textAlign: 'center',
+    marginLeft: 23,
   },
-  segWrap: {
-    flexDirection: 'row',
-    marginHorizontal: spacing.xl,
-    marginTop: spacing.md,
-    marginBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  seg: {
-    flex: 1,
-    paddingVertical: spacing.sm,
+  leaveBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: radii.full,
     borderWidth: 1,
     borderColor: colors.borderLight,
     backgroundColor: colors.surface,
-    alignItems: 'center',
   },
-  segText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
+  leaveBtnText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 11,
     color: colors.textSecondary,
+  },
+  storeSectionEmpty: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingVertical: spacing.sm,
+  },
+  storeSectionEmptyText: {
+    flex: 1,
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 14,
+    color: colors.textTertiary,
   },
   list: {
     marginHorizontal: spacing.xl,
+    marginTop: spacing.sm,
     gap: 9,
     marginBottom: spacing.sm,
   },
-  emptyList: {
-    fontFamily: typography.fontFamily.semiBold,
+  emptyBlurb: {
+    fontFamily: typography.fontFamily.regular,
     fontSize: 14,
     color: colors.textTertiary,
     textAlign: 'center',
-    padding: 32,
-    paddingHorizontal: 20,
+    lineHeight: 21,
     marginHorizontal: spacing.xl,
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.md,
   },
   nudge: {
     flexDirection: 'row',
