@@ -13,6 +13,7 @@ import { StoreSubmissionsPage } from './pages/StoreSubmissionsPage';
 import { BroadcastPage } from './pages/BroadcastPage';
 import { EventsPage } from './pages/EventsPage';
 import { RedeemPage } from './pages/RedeemPage';
+import { SupportPage } from './pages/SupportPage';
 
 const qc = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 60_000 } },
@@ -35,6 +36,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/stores" replace /> : <LoginPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route path="/support" element={<SupportPage />} />
       <Route
         element={
           <RequireAuth>
