@@ -132,7 +132,9 @@ function CelebrationCard({ peer, myDisplayName, myColors, via, onDismiss }: Cele
       <Text style={[celeb.connLabel, { color: on + 'E6' }]}>CONNECTED</Text>
       <Text style={[celeb.title, { color: on }]}>You & {peer.displayName}</Text>
       {via ? (
-        <Text style={[celeb.sub, { color: on + 'EB' }]}>Cards swapped at {via}</Text>
+        <Text style={[celeb.sub, { color: on + 'EB' }]}>
+          {via === 'qr' ? 'Met via QR scan' : `Cards swapped at ${via}`}
+        </Text>
       ) : null}
     </View>
   );
@@ -338,7 +340,7 @@ export function ConnectedRevealScreen({
               <View style={styles.metChip}>
                 <Ionicons name="pin-outline" size={16} color={colors.accentInk} />
                 <Text style={styles.metChipText}>
-                  Met at {data.via} · {relativeDate(data.createdAt)}
+                  {data.via === 'qr' ? 'Met via QR scan' : `Met at ${data.via}`} · {relativeDate(data.createdAt)}
                 </Text>
               </View>
             ) : null}

@@ -4,6 +4,7 @@ import type {
   ConnectionItem,
   ConnectionsList,
   CreateConnection,
+  UpdateConnectionNote,
 } from '@manamap/shared';
 import { api } from '../api/client';
 
@@ -64,6 +65,18 @@ export function useAcceptConnection() {
       void qc.invalidateQueries({ queryKey: KEYS.list });
       void qc.invalidateQueries({ queryKey: KEYS.detail(connectionId) });
       void qc.invalidateQueries({ queryKey: ['quests'] });
+    },
+  });
+}
+
+export function useUpdateConnectionNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ connectionId, text }: { connectionId: string; text: string | null }) =>
+      api.patch<{ myNote: string | null }>(`/v1/connections/${connectionId}/note`, { text } satisfies UpdateConnectionNote).then((r) => r.data),
+    onSuccess: (_data, { connectionId }) => {
+      void qc.invalidateQueries({ queryKey: KEYS.list });
+      void qc.invalidateQueries({ queryKey: KEYS.detail(connectionId) });
     },
   });
 }

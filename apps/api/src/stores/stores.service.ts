@@ -14,7 +14,7 @@ import { WizardsConnector } from './connectors/wizards.connector';
 import type { IEventConnector } from './connectors/event-connector.interface';
 import { QuestsService } from '../quests/quests.service';
 
-const DEFAULT_CHECKIN_RADIUS_M = 250;
+const DEFAULT_CHECKIN_RADIUS_M = 1000;
 const ACCURACY_CAP_M = 150;
 
 function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {

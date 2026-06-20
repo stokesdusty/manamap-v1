@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -11,6 +12,8 @@ import {
 import {
   CreateConnectionSchema,
   type CreateConnection,
+  UpdateConnectionNoteSchema,
+  type UpdateConnectionNote,
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
@@ -58,5 +61,15 @@ export class ConnectionsController {
   @Get(':id')
   getDetail(@Req() req: AuthRequest, @Param('id') id: string) {
     return this.connections.getDetail(req.user.sub, id);
+  }
+
+  @Patch(':id/note')
+  @HttpCode(200)
+  updateNote(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(UpdateConnectionNoteSchema)) body: UpdateConnectionNote,
+  ) {
+    return this.connections.updateNote(req.user.sub, id, body);
   }
 }

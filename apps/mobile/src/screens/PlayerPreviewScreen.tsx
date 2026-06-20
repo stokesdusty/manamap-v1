@@ -9,6 +9,7 @@ import { ManaPip } from '../components/ManaPip';
 import { SocialsCard } from '../components/SocialsCard';
 import { useSendConnectionRequest } from '../hooks/useConnections';
 import { useBlockUser, useReportUser } from '../hooks/useSafety';
+import { useActiveStore } from '../context/ActiveStoreContext';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import { guildName, identityGradientStops, manaAccent, readableOn } from '../theme/identity';
 import type { RootStackScreenProps } from '../navigation/types';
@@ -134,6 +135,7 @@ export function PlayerPreviewScreen({
   const { profile, sharedEvent, lastMetStoreName } = route.params;
   const [sent, setSent] = useState(false);
   const { mutate: sendRequest, isPending } = useSendConnectionRequest();
+  const { activeStore } = useActiveStore();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -188,7 +190,7 @@ export function PlayerPreviewScreen({
 
   function handleConnect() {
     sendRequest(
-      { addresseeId: profile.id, via: 'qr' },
+      { addresseeId: profile.id, via: activeStore?.name ?? 'QR scan' },
       {
         onSuccess: () => setSent(true),
         onError: (err: unknown) => {

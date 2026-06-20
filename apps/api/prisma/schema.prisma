@@ -304,10 +304,12 @@ model Connection {
   requesterId String           @map("requester_id")
   addresseeId String           @map("addressee_id")
   status      ConnectionStatus @default(PENDING)
-  via         String?
-  note        String?
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
+  via           String?
+  note          String?
+  requesterNote String?  @map("requester_note")
+  addresseeNote String?  @map("addressee_note")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   requester User @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
   addressee User @relation("Addressee", fields: [addresseeId], references: [id], onDelete: Cascade)

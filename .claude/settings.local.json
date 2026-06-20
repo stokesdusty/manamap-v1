@@ -93,7 +93,14 @@
       "Bash(mkdir -p \"c:/m/apps/api/prisma/migrations/20260618000000_social_bluesky\")",
       "Bash(echo \"\" >> \"c:/m/apps/mobile/src/screens/ConnectScreen.tsx\")",
       "Bash(xargs grep -l \"bundleIdentifier\")",
-      "Bash(xargs grep \"PRODUCT_BUNDLE_IDENTIFIER\")"
+      "Bash(xargs grep \"PRODUCT_BUNDLE_IDENTIFIER\")",
+      "Bash(node -e ' *)",
+      "Bash(where magick *)",
+      "Bash(where ffmpeg *)",
+      "Bash(where convert *)",
+      "Bash(ffmpeg -f lavfi -i \"color=c=#191420:s=1024x1024:r=1\" -i \"C:/Users/NoUse/Downloads2/ChatGPT Image Jun 19, 2026, 02_20_21 PM.png\" -filter_complex \"[0:v][1:v]overlay=format=rgb24[out]\" -map \"[out]\" -frames:v 1 -y \"C:/m/apps/mobile/ios/manamap/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png\")",
+      "Bash(ffmpeg -f lavfi -i \"color=c=#191420:s=1024x1024:r=1\" -i \"C:/Users/NoUse/Downloads2/ChatGPT Image Jun 19, 2026, 02_20_21 PM.png\" -filter_complex \"[0:v][1:v]overlay[out]\" -map \"[out]\" -pix_fmt rgb24 -frames:v 1 -y \"C:/m/apps/mobile/ios/manamap/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png\")",
+      "Bash(mkdir -p \"c:/m/apps/api/prisma/migrations/20260619000000_connection_private_notes\")"
     ]
   }
 }

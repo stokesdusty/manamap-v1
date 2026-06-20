@@ -262,11 +262,17 @@ export const ConnectionItemSchema = z.object({
   direction: z.enum(['sent', 'received']),
   via: z.string().nullable(),
   note: z.string().nullable(),
+  myNote: z.string().nullable(),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
   peer: PublicProfileSchema,
 });
 export type ConnectionItem = z.infer<typeof ConnectionItemSchema>;
+
+export const UpdateConnectionNoteSchema = z.object({
+  text: z.string().max(500).nullable(),
+});
+export type UpdateConnectionNote = z.infer<typeof UpdateConnectionNoteSchema>;
 
 export const ConnectionsListSchema = z.object({
   incoming: z.array(ConnectionItemSchema),

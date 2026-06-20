@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConnectionStatus, EncounterResult, EncounterSource, NotificationKind } from '@prisma/client';
-import type { CreateConnection } from '@manamap/shared';
+import type { CreateConnection, UpdateConnectionNote } from '@manamap/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafetyService } from '../safety/safety.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -109,6 +109,7 @@ export class ConnectionsService {
         direction: isSender ? 'sent' : 'received',
         via: c.via,
         note: c.note,
+        myNote: (isSender ? c.requesterNote : c.addresseeNote) ?? null,
         createdAt: c.createdAt.toISOString(),
         updatedAt: c.updatedAt.toISOString(),
         peer: { ...peerBase, homeStoreName: homeStore?.name ?? null },
@@ -241,6 +242,7 @@ export class ConnectionsService {
       direction: isSender ? 'sent' : 'received',
       via: conn.via,
       note: conn.note,
+      myNote: (isSender ? conn.requesterNote : conn.addresseeNote) ?? null,
       createdAt: conn.createdAt.toISOString(),
       updatedAt: conn.updatedAt.toISOString(),
       peer: {
@@ -255,5 +257,19 @@ export class ConnectionsService {
         },
       },
     };
+  }
+
+  async updateNote(userId: string, connectionId: string, dto: UpdateConnectionNote) {
+    const conn = await this.prisma.connection.findUnique({ where: { id: connectionId } });
+    if (!conn) throw new NotFoundException('Connection not found');
+    if (conn.requesterId !== userId && conn.addresseeId !== userId) throw new ForbiddenException();
+    if (conn.status !== ConnectionStatus.ACCEPTED) throw new BadRequestException('Connection is not accepted');
+
+    const field = conn.requesterId === userId ? 'requesterNote' : 'addresseeNote';
+    await this.prisma.connection.update({
+      where: { id: connectionId },
+      data: { [field]: dto.text ?? null },
+    });
+    return { myNote: dto.text ?? null };
   }
 }

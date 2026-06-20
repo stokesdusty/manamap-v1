@@ -1,15 +1,17 @@
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import type { ConnectionItem, Game, ManaColor } from '@manamap/shared';
@@ -20,6 +22,7 @@ import {
   useAcceptConnection,
   useConnections,
   useDeclineConnection,
+  useUpdateConnectionNote,
 } from '../hooks/useConnections';
 import { useConfirmGame, useDisputeGame, usePendingGames } from '../hooks/useGames';
 import { colors, radii, shadows, spacing, typography } from '../theme';
@@ -43,6 +46,7 @@ function ConnectionCard({
   onDecline,
   onPress,
   onAddContact,
+  onEditNote,
   isPending,
 }: {
   item: ConnectionItem;
@@ -50,6 +54,7 @@ function ConnectionCard({
   onDecline?: () => void;
   onPress?: () => void;
   onAddContact?: () => void;
+  onEditNote?: () => void;
   isPending: boolean;
 }) {
   const initial = item.peer.displayName.charAt(0).toUpperCase();
@@ -123,7 +128,7 @@ function ConnectionCard({
         <View style={row.avatar}>
           <Text style={row.avatarText}>{initial}</Text>
         </View>
-        <View style={{ flex: 1, gap: 5 }}>
+        <View style={{ flex: 1, gap: 5, minWidth: 0 }}>
           <Text style={row.connName} numberOfLines={1}>{item.peer.displayName}</Text>
           <View style={row.pipsRow}>
             {(item.peer.avatarColors as ManaColor[]).slice(0, 5).map((c) => (
@@ -131,12 +136,18 @@ function ConnectionCard({
             ))}
             {sub ? <Text style={row.connSub} numberOfLines={1}> · {sub}</Text> : null}
           </View>
+          {item.myNote ? (
+            <Text style={row.myNoteText} numberOfLines={1}>📝 {item.myNote}</Text>
+          ) : null}
         </View>
         {onAddContact && (
           <Pressable onPress={onAddContact} hitSlop={8} style={row.addContactBtn}>
             <Ionicons name="person-add-outline" size={18} color={colors.textTertiary} />
           </Pressable>
         )}
+        <Pressable onPress={onEditNote} hitSlop={8} style={row.noteBtn}>
+          <Ionicons name="create-outline" size={18} color={colors.textTertiary} />
+        </Pressable>
         <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
       </Pressable>
     );
@@ -316,6 +327,10 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
   const { mutate: accept, isPending: accepting, variables: acceptingId } = useAcceptConnection();
   const { mutate: decline } = useDeclineConnection();
   const { mutate: addContact } = useAddContact();
+  const { mutate: saveNote, isPending: savingNote } = useUpdateConnectionNote();
+
+  const [noteModal, setNoteModal] = useState<{ connectionId: string; current: string | null } | null>(null);
+  const [noteText, setNoteText] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -340,6 +355,17 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Decline', style: 'destructive', onPress: () => decline(connectionId) },
     ]);
+  }
+
+  function handleOpenNoteModal(item: ConnectionItem) {
+    setNoteText(item.myNote ?? '');
+    setNoteModal({ connectionId: item.id, current: item.myNote });
+  }
+
+  function handleSaveNote() {
+    if (!noteModal) return;
+    const text = noteText.trim() || null;
+    saveNote({ connectionId: noteModal.connectionId, text }, { onSuccess: () => setNoteModal(null) });
   }
 
   const incoming = data?.incoming ?? [];
@@ -401,6 +427,7 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
                   isPending={false}
                   onPress={() => navigation.navigate('Connected', { connectionId: item.id })}
                   onAddContact={() => addContact(item.peer.displayName)}
+                  onEditNote={() => handleOpenNoteModal(item)}
                 />
               ))}
             </View>
@@ -425,6 +452,41 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
           )}
         </ScrollView>
       )}
+
+      {/* Note edit modal */}
+      <Modal
+        visible={noteModal !== null}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setNoteModal(null)}
+      >
+        <SafeAreaView style={noteStyles.safe}>
+          <View style={noteStyles.header}>
+            <Pressable onPress={() => setNoteModal(null)} hitSlop={8}>
+              <Text style={noteStyles.cancel}>Cancel</Text>
+            </Pressable>
+            <Text style={noteStyles.title}>Private note</Text>
+            <Pressable onPress={handleSaveNote} hitSlop={8} disabled={savingNote}>
+              {savingNote
+                ? <ActivityIndicator size="small" color={colors.accent} />
+                : <Text style={noteStyles.save}>Save</Text>}
+            </Pressable>
+          </View>
+          <View style={noteStyles.body}>
+            <TextInput
+              style={noteStyles.input}
+              value={noteText}
+              onChangeText={setNoteText}
+              placeholder="e.g. cEDH player, loves combo decks…"
+              placeholderTextColor={colors.textTertiary}
+              multiline
+              maxLength={500}
+              autoFocus
+            />
+            <Text style={noteStyles.hint}>Only visible to you · {noteText.length}/500</Text>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -627,6 +689,14 @@ const row = StyleSheet.create({
   addContactBtn: {
     padding: 4,
   },
+  myNoteText: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+  noteBtn: {
+    padding: 4,
+  },
   sentBadge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
@@ -635,6 +705,52 @@ const row = StyleSheet.create({
   },
   sentText: {
     fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+  },
+});
+
+const noteStyles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.paper },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  title: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  cancel: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textSecondary,
+  },
+  save: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.accent,
+  },
+  body: {
+    flex: 1,
+    padding: spacing.xl,
+    gap: spacing.sm,
+  },
+  input: {
+    flex: 1,
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+    textAlignVertical: 'top',
+  },
+  hint: {
+    fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.xs,
     color: colors.textTertiary,
   },
