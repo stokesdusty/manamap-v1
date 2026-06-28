@@ -20,6 +20,8 @@ const PROFILE_SELECT = {
   powerLevel: true,
   vibes: true,
   formats: true,
+  tradeWants: true,
+  tradeHaves: true,
 } as const;
 
 const FORMAT_LABELS: Record<string, string> = {
@@ -33,7 +35,7 @@ const COLOR_NAMES: Record<string, string> = {
 
 const VIBE_LABELS: Record<string, string> = {
   competitive: 'Competitive', casual: 'Casual', spike: 'Spike',
-  timmy: 'Timmy', johnny: 'Johnny', vorthos: 'Vorthos',
+  timmy: 'Timmy', johnny: 'Johnny', vorthos: 'Vorthos', influencer: 'Influencer',
 };
 
 const MAX_SUGGESTIONS = 5;

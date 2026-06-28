@@ -15,7 +15,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Main: undefined;
   History: undefined;
-  Notifications: undefined;
+  Notifications: { openBroadcast?: { title: string; body: string; storeName: string } } | undefined;
   StoresMap: { storeId?: string } | undefined;
   Discover: undefined;
   PlayerPreview: {

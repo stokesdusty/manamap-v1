@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
+import { EVENT_RECURRENCE_WEEKS } from '@manamap/shared';
 
 interface Format {
   id: string;
@@ -30,6 +31,7 @@ interface FormState {
   endsAt: string;
   description: string;
   eventChannelUrl: string;
+  repeatWeekly: boolean;
 }
 
 const BLANK: FormState = {
@@ -39,6 +41,7 @@ const BLANK: FormState = {
   endsAt: '',
   description: '',
   eventChannelUrl: '',
+  repeatWeekly: false,
 };
 
 function toInputValue(iso: string): string {
@@ -95,10 +98,16 @@ export function EventsPage() {
       editingId
         ? api.patch(`/v1/partner/stores/${storeId}/events/${editingId}`, payload)
         : api.post(`/v1/partner/stores/${storeId}/events`, payload),
-    onSuccess: () => {
+    onSuccess: (_data, payload) => {
       qc.invalidateQueries({ queryKey: ['partner', 'events', storeId] });
       setModalOpen(false);
-      showToast(editingId ? 'Event updated.' : 'Event created.');
+      showToast(
+        editingId
+          ? 'Event updated.'
+          : payload.repeatWeekly
+            ? `Event created. It will repeat weekly for the next ${EVENT_RECURRENCE_WEEKS} weeks.`
+            : 'Event created.',
+      );
     },
     onError: (err: any) => {
       setFormError(err.response?.data?.message ?? 'Save failed. Check your inputs.');
@@ -135,6 +144,7 @@ export function EventsPage() {
       endsAt: e.endsAt ? toInputValue(e.endsAt) : '',
       description: e.description ?? '',
       eventChannelUrl: e.eventChannelUrl ?? '',
+      repeatWeekly: false,
     });
     setFormError('');
     setModalOpen(true);
@@ -171,6 +181,7 @@ export function EventsPage() {
         startsAt,
         ...(endsAtVal ? { endsAt: endsAtVal } : {}),
         ...(form.eventChannelUrl.trim() ? { eventChannelUrl: form.eventChannelUrl.trim() } : {}),
+        ...(form.repeatWeekly ? { repeatWeekly: true } : {}),
       };
       save.mutate(payload);
     }
@@ -313,6 +324,20 @@ export function EventsPage() {
                   />
                 </div>
               </div>
+
+              {!editingId && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    id="repeatWeekly"
+                    type="checkbox"
+                    checked={form.repeatWeekly}
+                    onChange={(e) => setForm((f) => ({ ...f, repeatWeekly: e.target.checked }))}
+                  />
+                  <label htmlFor="repeatWeekly" className="label" style={{ marginBottom: 0 }}>
+                    Repeat weekly for the next {EVENT_RECURRENCE_WEEKS} weeks
+                  </label>
+                </div>
+              )}
 
               <div>
                 <label className="label">Description</label>

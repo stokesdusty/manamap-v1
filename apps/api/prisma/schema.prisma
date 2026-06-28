@@ -115,6 +115,12 @@ enum StoreStatus {
   REJECTED
 }
 
+enum StoreClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum NotificationKind {
   CONNECT_REQUEST
   CONNECT_ACCEPTED
@@ -220,6 +226,8 @@ model User {
   socialLinks         SocialLink[]
   submittedStores     Store[]            @relation("SubmittedStores")
   storeConfirmations  StoreConfirmation[]
+  storeClaims         StoreClaim[]        @relation("StoreClaimUser")
+  reviewedStoreClaims StoreClaim[]        @relation("StoreClaimReviewer")
 
   @@map("users")
 }
@@ -344,6 +352,7 @@ model Store {
   status         StoreStatus @default(ACTIVE)
   submittedById  String?     @map("submitted_by_id")
   submitterNote  String?     @map("submitter_note")
+  claimCode      String?     @unique @map("claim_code")
   // geom is a PostGIS geography(Point,4326) — managed via $queryRaw / $executeRaw
   geom                 Unsupported("geography(Point,4326)")?
   checkinRadiusMeters  Int?     @map("checkin_radius_meters")
@@ -363,6 +372,7 @@ model Store {
   offerRedemptions OfferRedemption[]
   confirmations StoreConfirmation[]
   submittedBy   User?              @relation("SubmittedStores", fields: [submittedById], references: [id], onDelete: SetNull)
+  claims        StoreClaim[]
 
   @@unique([name, city])
   @@map("stores")
@@ -625,6 +635,28 @@ model ModerationAction {
   admin      User @relation("AdminActions", fields: [adminId], references: [id], onDelete: Cascade)
 
   @@map("moderation_actions")
+}
+
+model StoreClaim {
+  id              String           @id @default(uuid())
+  storeId         String           @map("store_id")
+  userId          String           @map("user_id")
+  status          StoreClaimStatus @default(PENDING)
+  viaCode         Boolean          @default(false) @map("via_code")
+  note            String?
+  rejectionReason String?          @map("rejection_reason")
+  reviewedById    String?          @map("reviewed_by_id")
+  reviewedAt      DateTime?        @map("reviewed_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  store    Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user     User  @relation("StoreClaimUser", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("StoreClaimReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([storeId])
+  @@index([userId])
+  @@index([status])
+  @@map("store_claims")
 }
 
 model Broadcast {

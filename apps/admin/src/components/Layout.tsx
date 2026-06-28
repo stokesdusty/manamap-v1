@@ -8,12 +8,23 @@ export function Layout() {
   const isAdmin = role === 'ADMIN';
   const storeMatch = useMatch('/stores/:storeId/*');
   const currentStoreId = storeMatch?.params?.storeId;
-  const inStore = currentStoreId && currentStoreId !== 'claim' && currentStoreId !== 'submissions';
+  const inStore = currentStoreId && currentStoreId !== 'claim' && currentStoreId !== 'submissions' && currentStoreId !== 'claims';
 
   const { data: submissionCount = 0 } = useQuery<number>({
     queryKey: ['store-submissions-count'],
     queryFn: async () => {
       const r = await api.get('/v1/admin/stores/submissions');
+      return (r.data as unknown[]).length;
+    },
+    enabled: isAdmin,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+
+  const { data: claimCount = 0 } = useQuery<number>({
+    queryKey: ['store-claims-count'],
+    queryFn: async () => {
+      const r = await api.get('/v1/admin/store-claims');
       return (r.data as unknown[]).length;
     },
     enabled: isAdmin,
@@ -70,6 +81,27 @@ export function Layout() {
                   textAlign: 'center',
                 }}>
                   {submissionCount}
+                </span>
+              )}
+            </NavLink>
+            <NavLink
+              to="/stores/claims"
+              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <span>Store Claims</span>
+              {claimCount > 0 && (
+                <span style={{
+                  background: 'var(--accent)',
+                  color: 'white',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: '1px 7px',
+                  minWidth: 20,
+                  textAlign: 'center',
+                }}>
+                  {claimCount}
                 </span>
               )}
             </NavLink>

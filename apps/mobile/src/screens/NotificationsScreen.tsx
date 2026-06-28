@@ -8,16 +8,23 @@ import {
   View,
 } from 'react-native';
 import { useFocusEffect, TabActions } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { useNotifications, useMarkNotificationsRead } from '../hooks/useNotifications';
 import { navigationRef } from '../lib/navigationRef';
+import { BroadcastSheet } from '../components/BroadcastSheet';
 import { colors, radii, spacing, typography } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Notifications'>;
+
+interface OpenBroadcast {
+  title: string;
+  body: string;
+  storeName: string;
+}
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -77,7 +84,6 @@ function deepLinkByKind(
       }
       break;
     case 'NEARBY':
-    case 'BROADCAST':
     case 'EVENT_REMINDER':
     case 'QUEST':
     default:
@@ -97,8 +103,9 @@ interface NotifRowProps {
   onPress: (id: string) => void;
 }
 
-function NotifRow({ id, kind, title, body, readAt, createdAt, data: _data, onPress }: NotifRowProps) {
+function NotifRow({ id, kind, title, body, data, readAt, createdAt, onPress }: NotifRowProps) {
   const unread = readAt === null;
+  const storeName = kind === 'BROADCAST' ? (data?.storeName as string | undefined) : undefined;
   return (
     <Pressable
       style={({ pressed }) => [styles.row, unread && styles.rowUnread, pressed && { opacity: 0.75 }]}
@@ -108,6 +115,9 @@ function NotifRow({ id, kind, title, body, readAt, createdAt, data: _data, onPre
         <Ionicons name={kindIcon(kind)} size={21} color={colors.accentInk} />
       </View>
       <View style={styles.rowContent}>
+        {storeName && (
+          <Text style={styles.rowStore} numberOfLines={1}>From {storeName}</Text>
+        )}
         <Text style={styles.rowTitle} numberOfLines={1}>
           {title}
         </Text>
@@ -119,10 +129,11 @@ function NotifRow({ id, kind, title, body, readAt, createdAt, data: _data, onPre
   );
 }
 
-export function NotificationsScreen({ navigation }: Props) {
+export function NotificationsScreen({ navigation, route }: Props) {
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useNotifications();
   const markRead = useMarkNotificationsRead();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [openBroadcast, setOpenBroadcast] = useState<OpenBroadcast | null>(null);
 
   const allItems = (data?.pages.flatMap((p) => p.items) ?? []).filter((n) => !dismissed.has(n.id));
   const newItems = allItems.filter((n) => n.readAt === null);
@@ -134,10 +145,24 @@ export function NotificationsScreen({ navigation }: Props) {
     }, []),
   );
 
+  useEffect(() => {
+    if (route.params?.openBroadcast) {
+      setOpenBroadcast(route.params.openBroadcast);
+    }
+  }, [route.params?.openBroadcast]);
+
   function handlePress(id: string) {
     const item = allItems.find((n) => n.id === id);
     if (!item) return;
     markRead.mutate([id]);
+    if (item.kind === 'BROADCAST') {
+      setOpenBroadcast({
+        title: item.title,
+        body: item.body,
+        storeName: (item.data?.storeName as string | undefined) ?? 'A store',
+      });
+      return;
+    }
     setDismissed((prev) => new Set(prev).add(id));
     navigation.goBack();
     deepLinkByKind(item.kind, item.data);
@@ -230,6 +255,13 @@ export function NotificationsScreen({ navigation }: Props) {
           contentContainerStyle={styles.listContent}
         />
       )}
+      <BroadcastSheet
+        visible={!!openBroadcast}
+        storeName={openBroadcast?.storeName ?? ''}
+        title={openBroadcast?.title ?? ''}
+        body={openBroadcast?.body ?? ''}
+        onClose={() => setOpenBroadcast(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -311,6 +343,12 @@ const styles = StyleSheet.create({
   },
   rowContent: {
     flex: 1,
+  },
+  rowStore: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 11.5,
+    color: colors.accent,
+    marginBottom: 1,
   },
   rowTitle: {
     fontFamily: typography.fontFamily.bold,

@@ -90,7 +90,6 @@ export class SafetyService {
     });
     if (!target) throw new NotFoundException('User not found');
 
-    // TODO: admin moderation dashboard — reports are stored as OPEN for future review
     await this.prisma.report.create({
       data: {
         reporterId,

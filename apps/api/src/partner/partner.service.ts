@@ -1,8 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { EventSource } from '@prisma/client';
+import { EventSource, StoreClaimStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventRemindersService } from '../event-reminders/event-reminders.service';
+import { generateCode } from '../common/codes';
+import { EVENT_RECURRENCE_WEEKS } from '@manamap/shared';
 import type {
   CreateEvent,
   CreateRewardOffer,
@@ -11,12 +13,7 @@ import type {
   UpdateStoreProfile,
 } from '@manamap/shared';
 
-function generateRedemptionCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return Array.from(randomBytes(8))
-    .map((b) => chars[b % chars.length])
-    .join('');
-}
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class PartnerService {
@@ -29,23 +26,63 @@ export class PartnerService {
   // Store ownership
   // ---------------------------------------------------------------------------
 
-  async claimStore(userId: string, storeId: string) {
-    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { id: true, name: true } });
+  async claimStore(userId: string, storeId: string, dto: { code?: string; note?: string }) {
+    const store = await this.prisma.store.findUnique({
+      where: { id: storeId },
+      select: { id: true, name: true, claimCode: true },
+    });
     if (!store) throw new NotFoundException('Store not found');
 
-    await this.prisma.$transaction([
-      this.prisma.storeOwnership.upsert({
-        where: { userId_storeId: { userId, storeId } },
-        create: { id: randomBytes(16).toString('hex'), userId, storeId },
-        update: {},
-      }),
-      this.prisma.user.update({
-        where: { id: userId },
-        data: { role: { set: 'PARTNER' } as any },
-      }),
-    ]);
+    const existingOwner = await this.prisma.storeOwnership.findFirst({
+      where: { storeId },
+      select: { id: true },
+    });
+    if (existingOwner) {
+      await this.prisma.storeClaim.create({
+        data: { storeId, userId, status: StoreClaimStatus.REJECTED, rejectionReason: 'already_claimed' },
+      });
+      throw new ConflictException({ code: 'already_claimed' });
+    }
 
-    return { storeId: store.id, storeName: store.name };
+    if (dto.code) {
+      const codeMatches = !!store.claimCode && dto.code.trim().toUpperCase() === store.claimCode.toUpperCase();
+      if (!codeMatches) {
+        await this.prisma.storeClaim.create({
+          data: { storeId, userId, status: StoreClaimStatus.REJECTED, rejectionReason: 'invalid_code' },
+        });
+        throw new BadRequestException({ code: 'invalid_claim_code' });
+      }
+
+      await this.prisma.$transaction([
+        this.prisma.storeClaim.create({
+          data: { storeId, userId, status: StoreClaimStatus.APPROVED, viaCode: true, reviewedAt: new Date() },
+        }),
+        this.prisma.storeOwnership.upsert({
+          where: { userId_storeId: { userId, storeId } },
+          create: { id: randomBytes(16).toString('hex'), userId, storeId },
+          update: {},
+        }),
+        this.prisma.user.update({
+          where: { id: userId },
+          data: { role: { set: 'PARTNER' } as any },
+        }),
+        this.prisma.store.update({ where: { id: storeId }, data: { claimCode: null } }),
+      ]);
+
+      return { status: 'APPROVED' as const, storeId: store.id, storeName: store.name };
+    }
+
+    const existingPending = await this.prisma.storeClaim.findFirst({
+      where: { storeId, userId, status: StoreClaimStatus.PENDING },
+      select: { id: true },
+    });
+    if (existingPending) throw new ConflictException({ code: 'claim_already_pending' });
+
+    await this.prisma.storeClaim.create({
+      data: { storeId, userId, status: StoreClaimStatus.PENDING, note: dto.note ?? null },
+    });
+
+    return { status: 'PENDING' as const, storeId: store.id, storeName: store.name };
   }
 
   async getMyStores(userId: string) {
@@ -122,7 +159,7 @@ export class PartnerService {
 
     let code: string;
     for (;;) {
-      code = generateRedemptionCode();
+      code = generateCode();
       const existing = await this.prisma.rewardOffer.findUnique({ where: { redemptionCode: code }, select: { id: true } });
       if (!existing) break;
     }
@@ -222,6 +259,9 @@ export class PartnerService {
   async createPartnerEvent(userId: string, storeId: string, dto: CreateEvent) {
     await this.assertOwner(userId, storeId);
 
+    const startsAt = new Date(dto.startsAt);
+    const endsAt = dto.endsAt ? new Date(dto.endsAt) : null;
+
     const event = await this.prisma.event.create({
       data: {
         storeId,
@@ -229,8 +269,8 @@ export class PartnerService {
         name: dto.name,
         ...(dto.formatId !== undefined ? { formatId: dto.formatId } : {}),
         ...(dto.description !== undefined ? { description: dto.description } : {}),
-        startsAt: new Date(dto.startsAt),
-        ...(dto.endsAt !== undefined ? { endsAt: new Date(dto.endsAt) } : {}),
+        startsAt,
+        ...(endsAt ? { endsAt } : {}),
         ...(dto.eventChannelUrl !== undefined ? { eventChannelUrl: dto.eventChannelUrl } : {}),
       },
       select: {
@@ -246,6 +286,21 @@ export class PartnerService {
         format: { select: { name: true } },
       },
     });
+
+    if (dto.repeatWeekly) {
+      await this.prisma.event.createMany({
+        data: Array.from({ length: EVENT_RECURRENCE_WEEKS - 1 }, (_, i) => ({
+          storeId,
+          source: EventSource.STORE,
+          name: dto.name,
+          formatId: dto.formatId ?? null,
+          description: dto.description ?? null,
+          startsAt: new Date(startsAt.getTime() + WEEK_MS * (i + 1)),
+          endsAt: endsAt ? new Date(endsAt.getTime() + WEEK_MS * (i + 1)) : null,
+          eventChannelUrl: dto.eventChannelUrl ?? null,
+        })),
+      });
+    }
 
     return {
       id: event.id,

@@ -7,7 +7,7 @@ import type { ManaColor, MtgFormat, PlayerVibe, ReportReason } from '@manamap/sh
 import { Avatar } from '../components/Avatar';
 import { ManaPip } from '../components/ManaPip';
 import { SocialsCard } from '../components/SocialsCard';
-import { useSendConnectionRequest } from '../hooks/useConnections';
+import { useConnections, useSendConnectionRequest } from '../hooks/useConnections';
 import { useBlockUser, useReportUser } from '../hooks/useSafety';
 import { useActiveStore } from '../context/ActiveStoreContext';
 import { colors, radii, shadows, spacing, typography } from '../theme';
@@ -33,6 +33,7 @@ const VIBE_LABELS: Record<PlayerVibe, string> = {
   timmy: 'Timmy',
   johnny: 'Johnny',
   vorthos: 'Vorthos',
+  influencer: 'Influencer',
 };
 
 const FORMAT_LABELS: Record<MtgFormat, string> = {
@@ -136,6 +137,16 @@ export function PlayerPreviewScreen({
   const [sent, setSent] = useState(false);
   const { mutate: sendRequest, isPending } = useSendConnectionRequest();
   const { activeStore } = useActiveStore();
+  const { data: connections } = useConnections();
+
+  const relationship: 'connected' | 'pending_sent' | 'pending_received' | 'none' =
+    connections?.accepted.some((c) => c.peer.id === profile.id)
+      ? 'connected'
+      : connections?.outgoing.some((c) => c.peer.id === profile.id) || sent
+      ? 'pending_sent'
+      : connections?.incoming.some((c) => c.peer.id === profile.id)
+      ? 'pending_received'
+      : 'none';
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -280,13 +291,42 @@ export function PlayerPreviewScreen({
           </View>
         )}
 
+        {/* Trade list — read-only */}
+        {(profile.tradeWants?.trim() || profile.tradeHaves?.trim()) && (
+          <View style={trade.card}>
+            <Text style={trade.heading}>Trade list</Text>
+            {!!profile.tradeWants?.trim() && (
+              <View style={trade.section}>
+                <Text style={trade.sectionLabel}>Looking for</Text>
+                <Text style={trade.body}>{profile.tradeWants}</Text>
+              </View>
+            )}
+            {!!profile.tradeHaves?.trim() && (
+              <View style={[trade.section, !!profile.tradeWants?.trim() && trade.sectionBorder]}>
+                <Text style={trade.sectionLabel}>Have / For trade</Text>
+                <Text style={trade.body}>{profile.tradeHaves}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* CTA */}
-        {sent ? (
+        {relationship === 'connected' ? (
+          <View style={styles.sentRow}>
+            <Ionicons name="checkmark-circle" size={18} color={colors.accentInk} />
+            <Text style={styles.sentText}>You're connected with {profile.displayName}</Text>
+          </View>
+        ) : relationship === 'pending_sent' ? (
           <View style={styles.sentRow}>
             <Ionicons name="checkmark" size={18} color={colors.accentInk} />
             <Text style={styles.sentText}>
               Request sent — waiting for {profile.displayName}
             </Text>
+          </View>
+        ) : relationship === 'pending_received' ? (
+          <View style={styles.sentRow}>
+            <Ionicons name="person-add" size={18} color={colors.accentInk} />
+            <Text style={styles.sentText}>{profile.displayName} sent you a request</Text>
           </View>
         ) : (
           <Pressable
@@ -615,6 +655,38 @@ const lock = StyleSheet.create({
     width: '70%',
     backgroundColor: colors.border,
     borderRadius: radii.full,
+  },
+});
+
+const trade = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    padding: spacing.xl,
+    gap: spacing.md,
+    ...shadows.sm,
+  },
+  heading: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  section: { gap: spacing.xs },
+  sectionBorder: { borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: spacing.md },
+  sectionLabel: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.accent,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  body: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
   },
 });
 

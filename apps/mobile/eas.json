@@ -18,7 +18,8 @@
       "env": {
         "npm_config_virtual_store_dir": "node_modules/.pnpm",
         "EXPO_PUBLIC_API_URL": "https://manamap-v1-production.up.railway.app",
-        "EXPO_PUBLIC_DISCORD_CLIENT_ID": "1510362228526809199"
+        "EXPO_PUBLIC_DISCORD_CLIENT_ID": "1510362228526809199",
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a,x86,x86_64"
       }
     },
     "production": {
@@ -27,7 +28,8 @@
       "env": {
         "npm_config_virtual_store_dir": "node_modules/.pnpm",
         "EXPO_PUBLIC_API_URL": "https://manamap-v1-production.up.railway.app",
-        "EXPO_PUBLIC_DISCORD_CLIENT_ID": "1510362228526809199"
+        "EXPO_PUBLIC_DISCORD_CLIENT_ID": "1510362228526809199",
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a,x86,x86_64"
       }
     }
   },

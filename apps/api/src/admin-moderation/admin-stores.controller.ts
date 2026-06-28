@@ -38,4 +38,10 @@ export class AdminStoresController {
   ) {
     return this.svc.rejectStore(id, body.reason);
   }
+
+  @Post(':id/claim-code')
+  @HttpCode(200)
+  generateClaimCode(@Param('id') id: string) {
+    return this.svc.generateClaimCode(id);
+  }
 }

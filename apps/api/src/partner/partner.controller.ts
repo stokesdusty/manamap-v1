@@ -9,6 +9,8 @@ import {
 } from '@manamap/shared';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
+import { Throttle } from '../throttle/throttle.decorator';
+import { THROTTLE_CLAIM_LIMIT, THROTTLE_CLAIM_TTL } from '../throttle/throttle.constants';
 import { PartnerService } from './partner.service';
 import { BroadcastService } from './broadcast.service';
 import { RedemptionsService } from '../redemptions/redemptions.service';
@@ -28,11 +30,15 @@ export class PartnerController {
 
   @Post('stores/claim')
   @HttpCode(200)
+  @Throttle({ name: 'claim', limit: THROTTLE_CLAIM_LIMIT, ttl: THROTTLE_CLAIM_TTL })
   claimStore(
     @Req() req: AuthRequest,
     @Body(new ZodValidationPipe(ClaimStoreSchema)) body: ClaimStore,
   ) {
-    return this.partner.claimStore(req.user.sub, body.storeId);
+    return this.partner.claimStore(req.user.sub, body.storeId, {
+      ...(body.code !== undefined ? { code: body.code } : {}),
+      ...(body.note !== undefined ? { note: body.note } : {}),
+    });
   }
 
   @Get('stores')

@@ -126,7 +126,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
   const { data: profile } = useProfile();
   const storeId = activeStore?.id ?? null;
 
-  const { data: nearby } = useNearby(!!activeStore);
+  useNearby(!!activeStore);
   const { data: eventDays = [] } = useStoreEvents(storeId);
   const { data: streaks } = useStreaksSummary();
   const { data: pendingGames = [] } = usePendingGames();
@@ -148,7 +148,6 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
   const [bannerW, setBannerW] = useState(() => Dimensions.get('window').width);
   const [bannerH, setBannerH] = useState(175);
 
-  const playerCount = nearby?.players.length ?? 0;
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayEvents = eventDays.find((d) => d.date === todayStr)?.events ?? [];
   const currentStreak = streaks?.bestCurrentStreak ?? 0;

@@ -34,6 +34,7 @@ const VIBE_LABELS: Record<PlayerVibe, string> = {
   timmy: 'Timmy',
   johnny: 'Johnny',
   vorthos: 'Vorthos',
+  influencer: 'Influencer',
 };
 
 const FORMAT_LABELS: Record<MtgFormat, string> = {
@@ -148,8 +149,9 @@ function DeckRow({ deck }: { deck: DeckLink }) {
   const siteLabel = (deck.site !== null ? (DECK_SITE_LABELS[deck.site] ?? deck.site) : deck.name).toUpperCase();
   return (
     <Pressable
-      style={({ pressed }) => [drow.root, pressed && { opacity: 0.75 }]}
+      style={({ pressed }) => [drow.root, pressed && deck.url != null && { opacity: 0.75 }]}
       onPress={() => deck.url != null && void Linking.openURL(deck.url)}
+      disabled={deck.url == null}
     >
       <View style={drow.iconWell}>
         <Ionicons name="layers-outline" size={20} color={colors.accentInk} />
@@ -157,11 +159,13 @@ function DeckRow({ deck }: { deck: DeckLink }) {
       <View style={drow.info}>
         <Text style={drow.label}>{siteLabel}</Text>
         <Text style={drow.value} numberOfLines={1}>{deck.name}</Text>
-        <Text style={drow.sub} numberOfLines={1}>{deck.url}</Text>
+        {deck.url != null && (
+          <Text style={drow.sub} numberOfLines={1}>{deck.url}</Text>
+        )}
       </View>
-      <View style={drow.action}>
-        <Text style={drow.actionText}>Open</Text>
-      </View>
+      {deck.url != null && (
+        <Ionicons name="chevron-forward" size={15} color={colors.textSecondary} />
+      )}
     </Pressable>
   );
 }
@@ -399,11 +403,34 @@ export function ConnectedRevealScreen({
 
             {/* Deck links — ContactRow style */}
             {data.peer.deckLinks.length > 0 && (
-              <View style={decks.root}>
+              <View style={decks.card}>
                 <Text style={decks.heading}>Decks</Text>
-                {(data.peer.deckLinks as DeckLink[]).map((deck) => (
-                  <DeckRow key={deck.id} deck={deck} />
-                ))}
+                <View style={decks.rows}>
+                  {(data.peer.deckLinks as DeckLink[]).map((deck, i) => (
+                    <View key={deck.id} style={i > 0 ? decks.rowDivider : undefined}>
+                      <DeckRow deck={deck} />
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Trade list — read-only */}
+            {(data.peer.tradeWants?.trim() || data.peer.tradeHaves?.trim()) && (
+              <View style={trade.card}>
+                <Text style={trade.heading}>Trade list</Text>
+                {!!data.peer.tradeWants?.trim() && (
+                  <View style={trade.section}>
+                    <Text style={trade.sectionLabel}>Looking for</Text>
+                    <Text style={trade.body}>{data.peer.tradeWants}</Text>
+                  </View>
+                )}
+                {!!data.peer.tradeHaves?.trim() && (
+                  <View style={[trade.section, !!data.peer.tradeWants?.trim() && trade.sectionBorder]}>
+                    <Text style={trade.sectionLabel}>Have / For trade</Text>
+                    <Text style={trade.body}>{data.peer.tradeHaves}</Text>
+                  </View>
+                )}
               </View>
             )}
           </ScrollView>
@@ -508,13 +535,7 @@ const drow = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    borderRadius: radii.md,
-    padding: 12,
-    paddingRight: 14,
-    ...shadows.sm,
+    paddingVertical: spacing.sm,
   },
   iconWell: {
     width: 38,
@@ -546,18 +567,6 @@ const drow = StyleSheet.create({
     fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.xs,
     color: colors.textTertiary,
-  },
-  action: {
-    backgroundColor: colors.chipBg,
-    borderRadius: radii.full,
-    paddingHorizontal: 13,
-    paddingVertical: 8,
-    flexShrink: 0,
-  },
-  actionText: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.sm,
-    color: colors.textPrimary,
   },
 });
 
@@ -656,14 +665,60 @@ const hero = StyleSheet.create({
 });
 
 const decks = StyleSheet.create({
-  root: {
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
     marginHorizontal: spacing.xl,
-    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    gap: spacing.md,
+    ...shadows.sm,
   },
   heading: {
     fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.md,
     color: colors.textPrimary,
+  },
+  rows: { gap: 0 },
+  rowDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.borderLight,
+  },
+});
+
+const trade = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    marginHorizontal: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    gap: spacing.md,
+    ...shadows.sm,
+  },
+  heading: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  section: { gap: spacing.xs },
+  sectionBorder: { borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: spacing.md },
+  sectionLabel: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.xs,
+    color: colors.accent,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  body: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
   },
 });
 

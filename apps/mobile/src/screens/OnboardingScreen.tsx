@@ -37,6 +37,7 @@ const VIBE_LABELS: Record<PlayerVibe, string> = {
   timmy: 'Timmy',
   johnny: 'Johnny',
   vorthos: 'Vorthos',
+  influencer: 'Influencer',
 };
 
 const FORMAT_LABELS: Record<MtgFormat, string> = {

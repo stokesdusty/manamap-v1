@@ -11,3 +11,6 @@ export const THROTTLE_REPORTS_TTL = 10 * 60_000; // 10 min
 
 export const THROTTLE_EXCHANGE_LIMIT = 20;
 export const THROTTLE_EXCHANGE_TTL = 5 * 60_000; // 5 min
+
+export const THROTTLE_CLAIM_LIMIT = 5;
+export const THROTTLE_CLAIM_TTL = 10 * 60_000; // 10 min

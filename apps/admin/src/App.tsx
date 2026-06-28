@@ -10,6 +10,7 @@ import { StoreDashboardPage } from './pages/StoreDashboardPage';
 import { OfferFormPage } from './pages/OfferFormPage';
 import { ModerationPage } from './pages/ModerationPage';
 import { StoreSubmissionsPage } from './pages/StoreSubmissionsPage';
+import { StoreClaimsPage } from './pages/StoreClaimsPage';
 import { BroadcastPage } from './pages/BroadcastPage';
 import { EventsPage } from './pages/EventsPage';
 import { RedeemPage } from './pages/RedeemPage';
@@ -66,6 +67,14 @@ function AppRoutes() {
           element={
             <RequireAdmin>
               <StoreSubmissionsPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/stores/claims"
+          element={
+            <RequireAdmin>
+              <StoreClaimsPage />
             </RequireAdmin>
           }
         />

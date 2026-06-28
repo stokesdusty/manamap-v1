@@ -185,11 +185,11 @@ const FORMAT_FULL_LABELS: Partial<Record<MtgFormat, string>> = {
 
 const ALL_FORMATS: MtgFormat[] = ['commander', 'modern', 'standard', 'pioneer', 'legacy', 'vintage', 'draft'];
 const ALL_COLORS: SharedManaColor[] = ['W', 'U', 'B', 'R', 'G'];
-const ALL_VIBES: PlayerVibe[] = ['casual', 'competitive', 'spike', 'timmy', 'johnny', 'vorthos'];
+const ALL_VIBES: PlayerVibe[] = ['casual', 'competitive', 'spike', 'timmy', 'johnny', 'vorthos', 'influencer'];
 
 const VIBE_LABELS: Partial<Record<PlayerVibe, string>> = {
   competitive: 'Competitive', casual: 'Casual', spike: 'Spike',
-  timmy: 'Timmy', johnny: 'Johnny', vorthos: 'Vorthos',
+  timmy: 'Timmy', johnny: 'Johnny', vorthos: 'Vorthos', influencer: 'Influencer',
 };
 
 interface PlayerRowProps {

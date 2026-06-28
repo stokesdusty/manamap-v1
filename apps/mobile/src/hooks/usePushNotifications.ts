@@ -76,9 +76,15 @@ export function usePushNotifications(isAuthenticated: boolean) {
           navigationRef.navigate('Main');
           break;
         case 'event_reminder':
-        case 'store_broadcast':
           navigationRef.navigate('Main');
           break;
+        case 'store_broadcast': {
+          const storeName = (data.storeName as string | undefined) ?? 'A store';
+          const title = response.notification.request.content.title ?? '';
+          const body = response.notification.request.content.body ?? '';
+          navigationRef.navigate('Notifications', { openBroadcast: { title, body, storeName } });
+          break;
+        }
         default:
           break;
       }

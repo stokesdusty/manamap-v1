@@ -6,10 +6,12 @@ import { AdminModerationController } from './admin-moderation.controller';
 import { AdminModerationService } from './admin-moderation.service';
 import { AdminStoresController } from './admin-stores.controller';
 import { AdminStoresService } from './admin-stores.service';
+import { AdminStoreClaimsController } from './admin-store-claims.controller';
+import { AdminStoreClaimsService } from './admin-store-claims.service';
 
 @Module({
   imports: [AuthModule, NotificationsModule],
-  controllers: [AdminModerationController, AdminStoresController],
-  providers: [AdminModerationService, AdminStoresService, RolesGuard],
+  controllers: [AdminModerationController, AdminStoresController, AdminStoreClaimsController],
+  providers: [AdminModerationService, AdminStoresService, AdminStoreClaimsService, RolesGuard],
 })
 export class AdminModerationModule {}

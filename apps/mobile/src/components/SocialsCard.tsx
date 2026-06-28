@@ -667,15 +667,15 @@ export function SocialsCard({ mode, links, publicCount = 0, friendsOnlyCount = 0
         <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.sm }} />
       ) : (
         <>
-          {/* Colorful icon rail */}
-          {(isOwner ? ownLinks : displayLinks).length > 0 && (
+          {/* Colorful icon rail — owner only; non-owner views use the detailed row list below */}
+          {isOwner && ownLinks.length > 0 && (
             <View style={sc.rail}>
-              {(isOwner ? ownLinks : displayLinks).map((link) => (
+              {ownLinks.map((link) => (
                 <PlatformTile
                   key={link.id}
                   platform={link.platform}
                   size={44}
-                  dim={isOwner && link.visibility === 'HIDDEN'}
+                  dim={link.visibility === 'HIDDEN'}
                 />
               ))}
             </View>

@@ -29,7 +29,7 @@ export class ExchangeService {
     if (!userId) throw new GoneException('Token expired or invalid');
 
     const [user, blockedIds, socialsData] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, displayName: true, pronouns: true, bio: true, avatarColors: true, commander: true, powerLevel: true, vibes: true, formats: true, moderationStatus: true } }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, displayName: true, pronouns: true, bio: true, avatarColors: true, commander: true, powerLevel: true, vibes: true, formats: true, moderationStatus: true, tradeWants: true, tradeHaves: true } }),
       this.safety.getBlockedIds(callerId),
       this.socials.visibleSocials(userId, callerId),
     ]);
@@ -47,6 +47,8 @@ export class ExchangeService {
       powerLevel: user.powerLevel,
       vibes: user.vibes,
       formats: user.formats,
+      tradeWants: user.tradeWants,
+      tradeHaves: user.tradeHaves,
       socials: socialsData.socials,
       socialsSummary: {
         publicCount: socialsData.publicCount,

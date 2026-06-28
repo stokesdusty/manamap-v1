@@ -53,84 +53,74 @@ export class SocialsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(userId: string): Promise<SocialLinkRow[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (this.prisma as any).socialLink.findMany({
+    return this.prisma.socialLink.findMany({
       where: { userId },
       orderBy: { sort: 'asc' },
       select: SOCIAL_SELECT,
-    }) as Promise<SocialLinkRow[]>;
+    });
   }
 
   async add(userId: string, dto: SocialLinkInput): Promise<SocialLinkRow> {
-    const platform = dto.platform as string;
-    const visibility = (dto.visibility ?? 'PUBLIC') as string;
+    const platform = dto.platform;
+    const visibility = dto.visibility ?? 'PUBLIC';
     const value = normalizeValue(platform, dto.value);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existing = await (this.prisma as any).socialLink.findUnique({
+    const existing = await this.prisma.socialLink.findUnique({
       where: { userId_platform: { userId, platform } },
       select: { id: true },
     });
     if (existing) throw new ConflictException(`${platform} link already exists`);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const maxResult = await (this.prisma as any).socialLink.aggregate({
+    const maxResult = await this.prisma.socialLink.aggregate({
       where: { userId },
       _max: { sort: true },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (this.prisma as any).socialLink.create({
-      data: { userId, platform, value, visibility, sort: ((maxResult as any)._max.sort ?? -1) + 1 },
+    return this.prisma.socialLink.create({
+      data: { userId, platform, value, visibility, sort: (maxResult._max.sort ?? -1) + 1 },
       select: SOCIAL_SELECT,
-    }) as Promise<SocialLinkRow>;
+    });
   }
 
   async update(userId: string, linkId: string, dto: UpdateSocialLink): Promise<SocialLinkRow> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existing = await (this.prisma as any).socialLink.findFirst({
+    const existing = await this.prisma.socialLink.findFirst({
       where: { id: linkId, userId },
     });
     if (!existing) throw new NotFoundException('Social link not found');
 
-    const value = dto.value !== undefined ? normalizeValue(existing.platform as string, dto.value) : undefined;
-    const visibility = dto.visibility as string | undefined;
+    const value = dto.value !== undefined ? normalizeValue(existing.platform, dto.value) : undefined;
+    const visibility = dto.visibility;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (this.prisma as any).socialLink.update({
+    return this.prisma.socialLink.update({
       where: { id: linkId },
       data: {
         ...(value !== undefined ? { value } : {}),
         ...(visibility !== undefined ? { visibility } : {}),
       },
       select: SOCIAL_SELECT,
-    }) as Promise<SocialLinkRow>;
+    });
   }
 
   async remove(userId: string, linkId: string): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existing = await (this.prisma as any).socialLink.findFirst({
+    const existing = await this.prisma.socialLink.findFirst({
       where: { id: linkId, userId },
       select: { id: true },
     });
     if (!existing) throw new NotFoundException('Social link not found');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (this.prisma as any).socialLink.delete({ where: { id: linkId } });
+    await this.prisma.socialLink.delete({ where: { id: linkId } });
   }
 
   async reorder(userId: string, order: string[]): Promise<SocialLinkRow[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const links = await (this.prisma as any).socialLink.findMany({
+    const links = await this.prisma.socialLink.findMany({
       where: { userId, id: { in: order } },
       select: { id: true },
-    }) as Array<{ id: string }>;
+    });
     if (links.length !== order.length) {
       throw new BadRequestException('Some link IDs not found or do not belong to you');
     }
 
     await this.prisma.$transaction(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      order.map((id, i) => (this.prisma as any).socialLink.update({ where: { id }, data: { sort: i } })),
+      order.map((id, i) => this.prisma.socialLink.update({ where: { id }, data: { sort: i } })),
     );
 
     return this.list(userId);
@@ -140,12 +130,11 @@ export class SocialsService {
     targetUserId: string,
     viewerId: string,
   ): Promise<{ socials: SocialLinkRow[]; publicCount: number; friendsOnlyCount: number }> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const allLinks = await (this.prisma as any).socialLink.findMany({
+    const allLinks = await this.prisma.socialLink.findMany({
       where: { userId: targetUserId },
       orderBy: { sort: 'asc' },
       select: SOCIAL_SELECT,
-    }) as SocialLinkRow[];
+    });
 
     const publicCount = allLinks.filter((l) => l.visibility === 'PUBLIC').length;
     const friendsOnlyCount = allLinks.filter((l) => l.visibility === 'FRIENDS').length;
@@ -177,20 +166,17 @@ export class SocialsService {
   ): Promise<Map<string, { socials: SocialLinkRow[]; friendsOnlyCount: number }>> {
     if (!userIds.length) return new Map();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [publicLinks, friendsCounts] = await Promise.all([
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (this.prisma as any).socialLink.findMany({
+      this.prisma.socialLink.findMany({
         where: { userId: { in: userIds }, visibility: 'PUBLIC' },
         orderBy: { sort: 'asc' },
         select: { id: true, userId: true, platform: true, value: true, visibility: true, sort: true },
-      }) as Promise<Array<SocialLinkRow & { userId: string }>>,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (this.prisma as any).socialLink.groupBy({
+      }),
+      this.prisma.socialLink.groupBy({
         by: ['userId'],
         where: { userId: { in: userIds }, visibility: 'FRIENDS' },
         _count: { id: true },
-      }) as Promise<Array<{ userId: string; _count: { id: number } }>>,
+      }),
     ]);
 
     const result = new Map<string, { socials: SocialLinkRow[]; friendsOnlyCount: number }>();

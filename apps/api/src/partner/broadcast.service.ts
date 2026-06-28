@@ -83,6 +83,7 @@ export class BroadcastService {
     }
 
     const recipientIds = await this.resolveRecipients(storeId, dto.audience, dto.eventId, userId);
+    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { name: true } });
 
     const broadcast = await this.prisma.broadcast.create({
       data: {
@@ -101,7 +102,7 @@ export class BroadcastService {
       kind: NotificationKind.BROADCAST,
       title: dto.title,
       body: dto.body,
-      data: { type: 'store_broadcast', storeId },
+      data: { type: 'store_broadcast', storeId, storeName: store?.name ?? 'A store' },
     }).catch(() => {});
 
     return { id: broadcast.id, recipientCount: recipientIds.length };

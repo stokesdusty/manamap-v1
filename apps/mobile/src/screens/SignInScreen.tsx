@@ -81,7 +81,7 @@ export function SignInScreen() {
     if (!code) return;
     setLoading('discord');
     try {
-      const { data } = await api.post<AuthTokens>('/v1/auth/discord', { code, codeVerifier });
+      const { data } = await api.post<AuthTokens>('/v1/auth/discord', { code, codeVerifier, redirectUri });
       await signIn(data);
     } catch (err: unknown) {
       const msg =

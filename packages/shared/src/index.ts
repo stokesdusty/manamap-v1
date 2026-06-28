@@ -39,6 +39,7 @@ export const PlayerVibeSchema = z.enum([
   'timmy',
   'johnny',
   'vorthos',
+  'influencer',
 ]);
 export type PlayerVibe = z.infer<typeof PlayerVibeSchema>;
 
@@ -120,6 +121,8 @@ export const PublicProfileSchema = z.object({
   socialsSummary: SocialsSummarySchema.optional(),
   spelltable: z.boolean().optional(),
   convokeGames: z.boolean().optional(),
+  tradeWants: z.string().nullable().optional(),
+  tradeHaves: z.string().nullable().optional(),
 });
 export type PublicProfile = z.infer<typeof PublicProfileSchema>;
 
@@ -712,8 +715,31 @@ export type StoreOwnership = z.infer<typeof StoreOwnershipSchema>;
 
 export const ClaimStoreSchema = z.object({
   storeId: IdSchema,
+  code: z.string().min(1).max(32).optional(),
+  note: z.string().max(1000).optional(),
 });
 export type ClaimStore = z.infer<typeof ClaimStoreSchema>;
+
+export const ClaimStoreResultSchema = z.object({
+  status: z.enum(['APPROVED', 'PENDING']),
+  storeId: IdSchema,
+  storeName: z.string(),
+});
+export type ClaimStoreResult = z.infer<typeof ClaimStoreResultSchema>;
+
+export const StoreClaimStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED']);
+export type StoreClaimStatus = z.infer<typeof StoreClaimStatusSchema>;
+
+export const PendingStoreClaimSchema = z.object({
+  id: IdSchema,
+  storeId: IdSchema,
+  storeName: z.string(),
+  userId: IdSchema,
+  claimantName: z.string(),
+  note: z.string().nullable(),
+  createdAt: TimestampSchema,
+});
+export type PendingStoreClaim = z.infer<typeof PendingStoreClaimSchema>;
 
 export const UpdateStoreProfileSchema = z.object({
   name: z.string().min(1).max(128).optional(),
@@ -1159,6 +1185,8 @@ export const PartnerEventSchema = z.object({
 });
 export type PartnerEvent = z.infer<typeof PartnerEventSchema>;
 
+export const EVENT_RECURRENCE_WEEKS = 12;
+
 export const CreateEventSchema = z
   .object({
     name: z.string().min(1).max(256),
@@ -1167,6 +1195,7 @@ export const CreateEventSchema = z
     startsAt: z.string().datetime(),
     endsAt: z.string().datetime().optional(),
     eventChannelUrl: z.string().url().optional(),
+    repeatWeekly: z.boolean().optional(),
   })
   .refine((d) => !d.endsAt || new Date(d.endsAt) > new Date(d.startsAt), {
     message: 'endsAt must be after startsAt',

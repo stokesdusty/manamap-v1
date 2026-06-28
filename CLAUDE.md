@@ -230,10 +230,10 @@ Located at `apps/api/prisma/migrations/`. Applied in timestamp order. Key notes:
 ## Infrastructure
 
 Assumed running locally:
-- **PostgreSQL 15 + PostGIS** on `localhost:5432`
+- **PostgreSQL 16 + PostGIS** on `localhost:5432`
 - **Redis** on `localhost:6379`
 
-No Docker config is in the repo — run them directly or via Docker outside the repo.
+`docker-compose.yml` at the repo root brings up both (Postgres 16 + PostGIS 3.4, Redis 7) with healthchecks — run `docker compose up -d`.
 
 ---
 
@@ -272,7 +272,7 @@ No Docker config is in the repo — run them directly or via Docker outside the 
 - **GamesService vs MeService for stats**: `getGameStats` lives in `MeService` (not `GamesService`) to avoid a circular dependency chain. `MeService` queries `gameLog` directly via Prisma.
 - **Event reminder job idempotency**: `EventRemindersService.scheduleReminders` uses deterministic BullMQ jobIds (`${eventId}:${userId}:morning|hour`). Re-RSVPing is safe — BullMQ silently ignores adds for existing jobIds. `cancelReminders` calls `job.remove()` which is also safe when the job doesn't exist.
 - **Event reminder timezone**: `morningOfAt()` in `event-reminders.service.ts` uses an `Intl` probe to find the UTC time corresponding to 9am in the store's timezone. Falls back to `America/Los_Angeles` when `Store.timezone` is null.
-- **Notification opt-out**: no preference field exists yet — reminders always send. When a field is added to `PrivacySettings`, gate it in `EventRemindersProcessor.process()` before the `sendPush` call.
+- **Notification opt-out**: `PrivacySettings.eventReminders` (default `true`) gates this — `EventRemindersProcessor.process()` returns early when it's `false`.
 
 ---
 
@@ -339,7 +339,7 @@ Push notifications when a user RSVPs to a store event — morning-of (9am store 
 1. Event `startsAt` already passed → skip
 2. `EventAttendee` row no longer exists → skip
 3. `Event` row deleted → skip
-4. Notification opt-out (TODO — no field yet)
+4. Notification opt-out — `PrivacySettings.eventReminders === false` → skip
 
 ### Push payload
 ```json

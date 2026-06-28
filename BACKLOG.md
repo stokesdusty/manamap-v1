@@ -49,10 +49,11 @@ through or delete when shipped.
   visiting the same store.
 
 ## ⚙️ Platform & quality
-- [ ] **docker-compose** in-repo for Postgres+PostGIS+Redis (CLAUDE.md notes none
-  exists).
-- [ ] **Push delivery** for the social loop (request / accept / nearby) via the
-  existing Expo push tokens.
+- [x] **docker-compose** in-repo for Postgres+PostGIS+Redis — `docker-compose.yml` at repo root.
+- [ ] **Push delivery** for the social loop — connection request/accept already push via
+  Expo tokens (`NotificationsService.sendPush`, wired from `ConnectionsService`). Proximity
+  ("nearby") alerts still don't push anything — no `notifications.create`/`sendPush` calls
+  exist in `discovery`/`presence`.
 - [ ] **E2E tests** for the core flows (auth → onboarding → check-in → connect).
 - [ ] **Observability** — structured logging + error tracking on the API.
 
@@ -253,24 +254,24 @@ Work items 2A and 2C in parallel (both are registration steps with waiting perio
 
 #### 2B — Google Play Console
 1. [x] Go to **play.google.com/console** → "Create account" → pay the $25 one-time fee.
-2. [ ] "Create app" → App name: `ManaMap` → Default language: English → App / Game: App → Free / Paid: Free → accept policies.
-3. [ ] In Google Play Console → left sidebar → "Testing" → "Internal testing" → "Create new release". Leave it open — you'll upload the AAB here in Phase 3.
+2. [x] "Create app" → App name: `ManaMap` → Default language: English → App / Game: App → Free / Paid: Free → accept policies.
+3. [x] In Google Play Console → left sidebar → "Testing" → "Internal testing" → "Create new release". Leave it open — you'll upload the AAB here in Phase 3.
 
 #### 2C — Google Maps API key (for Android)
-1. [ ] Go to **console.cloud.google.com** → select or create a project → "APIs & Services" → "Enable APIs" → search for "Maps SDK for Android" → Enable.
-2. [ ] "APIs & Services" → "Credentials" → "Create Credentials" → "API Key". Copy it.
-3. [ ] Click "Restrict Key" → "Application restrictions" → "Android apps" → add your package name `com.manamap.app`. Save.
-4. [ ] Store this key as an EAS secret (from `apps/mobile/` directory):
+1. [x] Go to **console.cloud.google.com** → select or create a project → "APIs & Services" → "Enable APIs" → search for "Maps SDK for Android" → Enable.
+2. [x] "APIs & Services" → "Credentials" → "Create Credentials" → "API Key". Copy it.
+3. [x] Click "Restrict Key" → "Application restrictions" → "Android apps" → add your package name `com.manamap.app`. Save.
+4. [x] Store this key as an EAS secret (from `apps/mobile/` directory):
    ```bash
    npx eas-cli secret:create --scope project --name MAPS_API_KEY --value "YOUR_GOOGLE_MAPS_KEY"
    ```
-5. [ ] In `apps/mobile/app.config.ts`, change the `googleMaps` line to read from the secret (EAS injects secrets as env vars at build time — the existing `process.env['MAPS_API_KEY']` reference is already correct).
+5. [x] In `apps/mobile/app.config.ts`, change the `googleMaps` line to read from the secret (EAS injects secrets as env vars at build time — the existing `process.env['MAPS_API_KEY']` reference is already correct).
 
 #### 2D — EAS credentials setup
 Run these from the `apps/mobile/` directory. EAS walks you through each step interactively.
 
 1. [x] Install EAS CLI if not already: `npm install -g eas-cli`
-2. [xeas] Log in: `eas login` (uses your Expo account — create one at expo.dev if needed)
+2. [x] Log in: `eas login` (uses your Expo account — create one at expo.dev if needed)
 3. [x] **iOS credentials** — certificates + provisioning profile:
    ```bash
    cd apps/mobile
@@ -282,7 +283,7 @@ Run these from the `apps/mobile/` directory. EAS walks you through each step int
    eas credentials --platform ios
    ```
    Navigate to "Push Notifications" → "Add an APNs key" → enter the `.p8` file path, Key ID, and Team ID from step 2A.
-5. [ ] **Android credentials** — keystore:
+5. [x] **Android credentials** — keystore:
    ```bash
    eas credentials --platform android
    ```

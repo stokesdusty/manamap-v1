@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '../screens/HomeScreen';
 import { StoresScreen } from '../screens/StoresScreen';
@@ -27,13 +28,19 @@ function ScanButton({ onPress }: BottomTabBarButtonProps) {
   );
 }
 
+const TAB_BAR_BASE_HEIGHT = 56;
+
 export function TabNavigator() {
   const { accent } = useIdentityTheme();
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          { height: TAB_BAR_BASE_HEIGHT + insets.bottom, paddingBottom: insets.bottom },
+        ],
         tabBarActiveTintColor: accent,
         tabBarInactiveTintColor: colors.textTertiary,
         tabBarLabelStyle: {
@@ -101,7 +108,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: 2,
+    paddingBottom: 6,
   },
   scanPip: {
     width: 52,

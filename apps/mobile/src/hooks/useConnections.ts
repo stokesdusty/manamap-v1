@@ -33,7 +33,10 @@ export function useSendConnectionRequest() {
   return useMutation({
     mutationFn: (body: CreateConnection) =>
       api.post<{ id: string; status: string }>('/v1/connections', body).then((r) => r.data),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: KEYS.list }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: KEYS.list });
+      void qc.invalidateQueries({ queryKey: ['discovery'] });
+    },
   });
 }
 

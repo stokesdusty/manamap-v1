@@ -56,6 +56,7 @@ const config: ExpoConfig = {
           '$(PRODUCT_NAME) uses your location to confirm you\'re at the store before checking in.',
       },
     ],
+    './plugins/withXcodeEnvFix',
   ],
   extra: {
     eas: { projectId: '3497a3d5-7a81-4da9-89a3-5108ce4a69ee' },

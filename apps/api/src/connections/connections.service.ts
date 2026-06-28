@@ -25,6 +25,8 @@ const PEER_SELECT = {
   formats: true,
   spelltable: true,
   convokeGames: true,
+  tradeWants: true,
+  tradeHaves: true,
   homeStore: { select: { name: true } },
 } as const;
 
