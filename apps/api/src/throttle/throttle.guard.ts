@@ -1,6 +1,6 @@
 import type { CanActivate, ExecutionContext } from '@nestjs/common';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import type { Reflector } from '@nestjs/core';
+import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { SKIP_THROTTLE_KEY, THROTTLE_KEY, type ThrottleOptions } from './throttle.decorator';
 import { ThrottleService } from './throttle.service';
