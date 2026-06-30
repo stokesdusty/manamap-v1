@@ -1,6 +1,6 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import type { EncountersService } from './encounters.service';
+import { EncountersService } from './encounters.service';
 
 @Controller('v1/encounters')
 @UseGuards(AuthGuard)

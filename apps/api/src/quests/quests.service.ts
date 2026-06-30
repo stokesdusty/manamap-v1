@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConnectionStatus, GameStatus, NotificationKind } from '@prisma/client';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { NotificationsService } from '../notifications/notifications.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 export type QuestCriteria =
   | { type: 'meet_new_players'; count: number }

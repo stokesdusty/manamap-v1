@@ -14,17 +14,17 @@ import type {
 import type { PinoLogger } from 'nestjs-pino';
 import { InjectPinoLogger } from 'nestjs-pino';
 import { ModerationStatus, NotificationKind, Prisma, StoreStatus } from '@prisma/client';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { PresenceService } from '../presence/presence.service';
-import type { GamificationService } from '../gamification/gamification.service';
-import type { EventRemindersService } from '../event-reminders/event-reminders.service';
-import type { SafetyService } from '../safety/safety.service';
-import type { NotificationsService } from '../notifications/notifications.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { PresenceService } from '../presence/presence.service';
+import { GamificationService } from '../gamification/gamification.service';
+import { EventRemindersService } from '../event-reminders/event-reminders.service';
+import { SafetyService } from '../safety/safety.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { StoreConnector } from './connectors/store.connector';
 import { DiscordConnector } from './connectors/discord.connector';
 import { WizardsConnector } from './connectors/wizards.connector';
 import type { IEventConnector } from './connectors/event-connector.interface';
-import type { QuestsService } from '../quests/quests.service';
+import { QuestsService } from '../quests/quests.service';
 
 const DEFAULT_CHECKIN_RADIUS_M = 1000;
 const ACCURACY_CAP_M = 150;

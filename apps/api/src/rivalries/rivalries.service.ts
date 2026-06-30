@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EncounterResult, EncounterSource, ModerationStatus } from '@prisma/client';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { SafetyService } from '../safety/safety.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
 
 const PROFILE_SELECT = {
   id: true,

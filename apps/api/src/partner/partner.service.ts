@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { EventSource, StoreClaimStatus, UserRole } from '@prisma/client';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { EventRemindersService } from '../event-reminders/event-reminders.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { EventRemindersService } from '../event-reminders/event-reminders.service';
 import { generateCode } from '../common/codes';
 import { EVENT_RECURRENCE_WEEKS } from '@manamap/shared';
 import type {

@@ -12,7 +12,7 @@ import {
 import { CreateGameSchema, type CreateGame } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import type { GamesService } from './games.service';
+import { GamesService } from './games.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

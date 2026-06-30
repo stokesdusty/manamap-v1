@@ -14,7 +14,7 @@ import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import type { AdminModerationService } from './admin-moderation.service';
+import { AdminModerationService } from './admin-moderation.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

@@ -33,9 +33,9 @@ import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { Throttle } from '../throttle/throttle.decorator';
 import { THROTTLE_CLAIM_LIMIT, THROTTLE_CLAIM_TTL } from '../throttle/throttle.constants';
-import type { PartnerService } from './partner.service';
-import type { BroadcastService } from './broadcast.service';
-import type { RedemptionsService } from '../redemptions/redemptions.service';
+import { PartnerService } from './partner.service';
+import { BroadcastService } from './broadcast.service';
+import { RedemptionsService } from '../redemptions/redemptions.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

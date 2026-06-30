@@ -2,9 +2,9 @@ import { GoneException, Inject, Injectable, NotFoundException } from '@nestjs/co
 import { randomBytes } from 'crypto';
 import type Redis from 'ioredis';
 import { REDIS } from '../redis/redis.module';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { SafetyService } from '../safety/safety.service';
-import type { SocialsService } from '../socials/socials.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
+import { SocialsService } from '../socials/socials.service';
 
 const TTL_SECONDS = 60;
 

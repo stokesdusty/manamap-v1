@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { NotificationKind, Prisma } from '@prisma/client';
 import { Expo } from 'expo-server-sdk';
 import type { ExpoPushMessage } from 'expo-server-sdk';
-import type { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface NotificationInput {
   kind: NotificationKind;

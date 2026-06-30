@@ -15,9 +15,9 @@ import {
 } from '@prisma/client';
 import type { CreatePod, PodMemberAction } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { SafetyService } from '../safety/safety.service';
-import type { NotificationsService } from '../notifications/notifications.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const presenceKey = (userId: string) => `presence:${userId}`;
 const storeMembersKey = (storeId: string) => `store_members:${storeId}`;

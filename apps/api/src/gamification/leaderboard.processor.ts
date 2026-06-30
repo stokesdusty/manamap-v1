@@ -1,6 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
-import type { GamificationService } from './gamification.service';
+import { GamificationService } from './gamification.service';
 
 @Processor('gamification')
 export class LeaderboardProcessor extends WorkerHost {

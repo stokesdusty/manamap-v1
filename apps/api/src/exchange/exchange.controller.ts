@@ -4,7 +4,7 @@ import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { Throttle } from '../throttle/throttle.decorator';
 import { THROTTLE_EXCHANGE_LIMIT, THROTTLE_EXCHANGE_TTL } from '../throttle/throttle.constants';
-import type { ExchangeService } from './exchange.service';
+import { ExchangeService } from './exchange.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

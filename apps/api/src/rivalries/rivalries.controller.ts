@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import type { RivalriesService } from './rivalries.service';
+import { RivalriesService } from './rivalries.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

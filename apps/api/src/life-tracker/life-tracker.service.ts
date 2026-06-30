@@ -10,7 +10,7 @@ import type {
   EliminatePayload,
 } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
-import type { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import type { PodSession } from '../pods/pods.service';
 
 const TRACKER_TTL_SECS = 8 * 60 * 60;

@@ -19,7 +19,7 @@ import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { Throttle } from '../throttle/throttle.decorator';
 import { THROTTLE_REPORTS_LIMIT, THROTTLE_REPORTS_TTL } from '../throttle/throttle.constants';
-import type { SafetyService } from './safety.service';
+import { SafetyService } from './safety.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

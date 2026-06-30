@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { GameStatus, ModerationStatus } from '@prisma/client';
 import type { EndorseInput, EndorsementSummary } from '@manamap/shared';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { SafetyService } from '../safety/safety.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
 
 @Injectable()
 export class EndorsementsService {

@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import type { PlayOnlineService } from './play-online.service';
+import { PlayOnlineService } from './play-online.service';
 import { PlayOnlineInviteSchema, type PlayOnlineInvite } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 

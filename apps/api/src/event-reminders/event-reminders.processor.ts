@@ -1,8 +1,8 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
 import { NotificationKind } from '@prisma/client';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { NotificationsService } from '../notifications/notifications.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { ReminderJobData } from './event-reminders.service';
 
 @Processor('event-reminders')

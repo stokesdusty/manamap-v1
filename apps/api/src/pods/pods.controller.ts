@@ -17,7 +17,7 @@ import {
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import type { PodsService } from './pods.service';
+import { PodsService } from './pods.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

@@ -7,7 +7,7 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Inject } from '@nestjs/common';
-import type { JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 import type { Server, Socket } from 'socket.io';
 import type Redis from 'ioredis';
 import type {
@@ -19,7 +19,7 @@ import type {
   EliminatePayload,
 } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
-import type { LifeTrackerService } from './life-tracker.service';
+import { LifeTrackerService } from './life-tracker.service';
 import type { PodSession } from '../pods/pods.service';
 
 @WebSocketGateway({

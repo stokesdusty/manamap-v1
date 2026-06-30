@@ -218,7 +218,12 @@
       "Bash(grep -rn \">manamap<\\\\|>manamap \\\\|manamap</\\\\| manamap\\\\.\\\\|\\\\\"manamap\\\\\"\\\\|'manamap'\" design/*.html design/app/*.jsx)",
       "Bash(pnpm typecheck *)",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(npx turbo *)"
+      "Bash(npx turbo *)",
+      "Bash(git -C c:/m log --all --full-history -- \"apps/api/.env\" \"apps/admin/.env.local\" \"apps/mobile/.env\")",
+      "Bash(git -C c:/m log --oneline --all -- \"*.env\" \"**/.env\" \"**/.env.local\")",
+      "Bash(git -C c:/m show de2d0ee --name-only)",
+      "Bash(git -C c:/m show ace6202 --name-only)",
+      "Bash(git -C c:/m diff --stat HEAD)"
     ]
   }
 }

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConnectionStatus } from '@prisma/client';
 import type { SocialLinkInput, UpdateSocialLink } from '@manamap/shared';
-import type { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 export type SocialLinkRow = {
   id: string;

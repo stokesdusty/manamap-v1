@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConnectionStatus } from '@prisma/client';
-import type { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 const PEER_SELECT = {
   id: true,

@@ -4,7 +4,7 @@ import type { ModerationActionType } from '@prisma/client';
 import { ConnectionStatus, ModerationStatus, ReportStatus } from '@prisma/client';
 import type { ResolveReport } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
-import type { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AdminModerationService {

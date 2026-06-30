@@ -2,7 +2,7 @@ import { Body, Controller, HttpCode, Param, Post, Req, UseGuards } from '@nestjs
 import { EndorseInputSchema, type EndorseInput } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import type { EndorsementsService } from './endorsements.service';
+import { EndorsementsService } from './endorsements.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

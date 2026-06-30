@@ -3,8 +3,8 @@ import type Redis from 'ioredis';
 import { NotificationKind } from '@prisma/client';
 import type { HeartbeatBody } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { NotificationsService } from '../notifications/notifications.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const PRESENCE_TTL = 300; // 5 minutes — heartbeat interval should be well under this
 const NOTIFY_THRESHOLD_TTL = 6 * 60 * 60; // 6 hours — one-shot subscription expires if never triggered

@@ -9,8 +9,8 @@ import {
   type UpdatePrivacy,
   type UpdateProfile,
 } from '@manamap/shared';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { EndorsementsService } from '../endorsements/endorsements.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { EndorsementsService } from '../endorsements/endorsements.service';
 
 @Injectable()
 export class MeService {

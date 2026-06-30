@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import type { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 const CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 

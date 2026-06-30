@@ -1,5 +1,5 @@
 import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
-import type { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { PinoLogger } from 'nestjs-pino';
 import { InjectPinoLogger } from 'nestjs-pino';

@@ -12,12 +12,12 @@ import {
   NotificationKind,
 } from '@prisma/client';
 import type { CreateConnection, UpdateConnectionNote } from '@manamap/shared';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { SafetyService } from '../safety/safety.service';
-import type { NotificationsService } from '../notifications/notifications.service';
-import type { QuestsService } from '../quests/quests.service';
-import type { SocialsService } from '../socials/socials.service';
-import type { EndorsementsService } from '../endorsements/endorsements.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { QuestsService } from '../quests/quests.service';
+import { SocialsService } from '../socials/socials.service';
+import { EndorsementsService } from '../endorsements/endorsements.service';
 
 const PEER_SELECT = {
   id: true,

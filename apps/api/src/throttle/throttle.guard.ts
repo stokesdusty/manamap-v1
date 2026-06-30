@@ -1,9 +1,9 @@
 import type { CanActivate, ExecutionContext } from '@nestjs/common';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import type { Reflector } from '@nestjs/core';
-import type { JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 import { SKIP_THROTTLE_KEY, THROTTLE_KEY, type ThrottleOptions } from './throttle.decorator';
-import type { ThrottleService } from './throttle.service';
+import { ThrottleService } from './throttle.service';
 import { THROTTLE_GLOBAL_LIMIT, THROTTLE_GLOBAL_TTL } from './throttle.constants';
 
 const GLOBAL_DEFAULT: ThrottleOptions = {

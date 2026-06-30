@@ -7,9 +7,9 @@ import {
   ModerationStatus,
 } from '@prisma/client';
 import { REDIS } from '../redis/redis.module';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { SafetyService } from '../safety/safety.service';
-import type { SocialsService } from '../socials/socials.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
+import { SocialsService } from '../socials/socials.service';
 import { SUGGESTION_WEIGHTS, VIBE_COMPAT } from './suggestion-weights';
 
 const presenceKey = (userId: string) => `presence:${userId}`;

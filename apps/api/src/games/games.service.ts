@@ -12,11 +12,11 @@ import {
   NotificationKind,
 } from '@prisma/client';
 import type { CreateGame } from '@manamap/shared';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { SafetyService } from '../safety/safety.service';
-import type { GamificationService } from '../gamification/gamification.service';
-import type { NotificationsService } from '../notifications/notifications.service';
-import type { QuestsService } from '../quests/quests.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { SafetyService } from '../safety/safety.service';
+import { GamificationService } from '../gamification/gamification.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { QuestsService } from '../quests/quests.service';
 
 @Injectable()
 export class GamesService {

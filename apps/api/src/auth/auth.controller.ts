@@ -11,7 +11,7 @@ import {
   type RefreshBody,
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import type { AuthService } from './auth.service';
+import { AuthService } from './auth.service';
 
 @Controller('v1/auth')
 export class AuthController {

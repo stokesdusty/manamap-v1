@@ -22,7 +22,7 @@ import {
   THROTTLE_CONNECTIONS_LIMIT,
   THROTTLE_CONNECTIONS_TTL,
 } from '../throttle/throttle.constants';
-import type { ConnectionsService } from './connections.service';
+import { ConnectionsService } from './connections.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

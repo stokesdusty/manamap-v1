@@ -1,6 +1,6 @@
 import { Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import type { RedemptionsService } from './redemptions.service';
+import { RedemptionsService } from './redemptions.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

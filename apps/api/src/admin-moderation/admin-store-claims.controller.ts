@@ -4,7 +4,7 @@ import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import type { AdminStoreClaimsService } from './admin-store-claims.service';
+import { AdminStoreClaimsService } from './admin-store-claims.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

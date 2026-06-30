@@ -2,8 +2,8 @@ import { ForbiddenException, HttpException, Inject, Injectable } from '@nestjs/c
 import type Redis from 'ioredis';
 import { NotificationKind } from '@prisma/client';
 import { REDIS } from '../redis/redis.module';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { NotificationsService } from '../notifications/notifications.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { SendBroadcast } from '@manamap/shared';
 
 const BROADCAST_DAILY_CAP = 3;

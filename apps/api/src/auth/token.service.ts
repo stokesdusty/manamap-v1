@@ -1,8 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import type { JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'crypto';
 import type { AuthTokens } from '@manamap/shared';
-import type { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 const ACCESS_EXPIRY_SECS = 15 * 60; // 15 minutes
 const REFRESH_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
