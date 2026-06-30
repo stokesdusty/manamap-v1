@@ -5,7 +5,9 @@ import { Server, type ServerOptions } from 'socket.io';
 export class WsAdapter extends IoAdapter {
   private ioServer: Server | null = null;
 
-  constructor(app: INestApplication) { super(app); }
+  constructor(app: INestApplication) {
+    super(app);
+  }
 
   createIOServer(_port: number, options?: ServerOptions): Server {
     if (!this.ioServer) {

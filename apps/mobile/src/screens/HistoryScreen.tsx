@@ -1,11 +1,4 @@
-import {
-  ActivityIndicator,
-  Pressable,
-  SectionList,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { EncounterItem, ManaColor } from '@manamap/shared';
@@ -73,7 +66,9 @@ function EncounterCard({ item, onPress }: { item: EncounterItem; onPress: () => 
     item.peer.avatarColors.length > 0
       ? (MANA_COLORS[item.peer.avatarColors[0] as ManaColor] ?? colors.border)
       : colors.border;
-  const textFill = ['W', 'G'].includes(item.peer.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(item.peer.avatarColors[0])
+    ? colors.textPrimary
+    : colors.textInverse;
 
   return (
     <Pressable style={({ pressed }) => [card.root, pressed && { opacity: 0.75 }]} onPress={onPress}>
@@ -86,7 +81,9 @@ function EncounterCard({ item, onPress }: { item: EncounterItem; onPress: () => 
 
       {/* Info */}
       <View style={card.info}>
-        <Text style={card.name} numberOfLines={1}>{item.peer.displayName}</Text>
+        <Text style={card.name} numberOfLines={1}>
+          {item.peer.displayName}
+        </Text>
 
         <View style={card.metaRow}>
           <Ionicons name={src.icon} size={12} color={src.color} />
@@ -95,13 +92,17 @@ function EncounterCard({ item, onPress }: { item: EncounterItem; onPress: () => 
             <>
               <Text style={card.atText}> · </Text>
               <Ionicons name="storefront-outline" size={12} color={colors.textTertiary} />
-              <Text style={card.atText} numberOfLines={1}>{item.storeName}</Text>
+              <Text style={card.atText} numberOfLines={1}>
+                {item.storeName}
+              </Text>
             </>
           )}
         </View>
 
         {item.peer.commander && (
-          <Text style={card.sub} numberOfLines={1}>{item.peer.commander}</Text>
+          <Text style={card.sub} numberOfLines={1}>
+            {item.peer.commander}
+          </Text>
         )}
       </View>
 
@@ -137,9 +138,10 @@ export function HistoryScreen({ navigation }: RootStackScreenProps<'History'>) {
     if (!sectionMap.has(label)) sectionMap.set(label, []);
     sectionMap.get(label)!.push(e);
   }
-  const sections = GROUP_ORDER
-    .filter((g) => sectionMap.has(g))
-    .map((g) => ({ title: g, data: sectionMap.get(g)! }));
+  const sections = GROUP_ORDER.filter((g) => sectionMap.has(g)).map((g) => ({
+    title: g,
+    data: sectionMap.get(g)!,
+  }));
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -162,8 +164,7 @@ export function HistoryScreen({ navigation }: RootStackScreenProps<'History'>) {
           <Ionicons name="radio-outline" size={18} color={colors.accentInk} />
           <View style={{ flex: 1 }}>
             <Text style={styles.nudgeText}>
-              You've crossed paths with{' '}
-              <Text style={styles.nudgeCount}>{crossedPathsCount}</Text>
+              You've crossed paths with <Text style={styles.nudgeCount}>{crossedPathsCount}</Text>
               {` player${crossedPathsCount !== 1 ? 's' : ''} you haven't connected with yet`}
             </Text>
             <Pressable

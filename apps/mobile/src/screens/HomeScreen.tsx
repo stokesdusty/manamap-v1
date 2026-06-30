@@ -1,12 +1,4 @@
-import {
-  Dimensions,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Dimensions, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useCallback, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'react-native-svg';
@@ -62,10 +54,10 @@ function EventItem({ event, accent }: { event: StoreEvent; accent: string }) {
   return (
     <View style={evtStyles.row}>
       <View style={[evtStyles.dot, { backgroundColor: sourceColor }]} />
-      <Text style={evtStyles.name} numberOfLines={1}>{event.name}</Text>
-      {event.formatName ? (
-        <Text style={evtStyles.format}>{event.formatName}</Text>
-      ) : null}
+      <Text style={evtStyles.name} numberOfLines={1}>
+        {event.name}
+      </Text>
+      {event.formatName ? <Text style={evtStyles.format}>{event.formatName}</Text> : null}
       <Text style={evtStyles.time}>{formatTime(event.startsAt)}</Text>
       {event.isAttending && (
         <View style={[evtStyles.rsvpBadge, { backgroundColor: accent + '22' }]}>
@@ -77,40 +69,88 @@ function EventItem({ event, accent }: { event: StoreEvent; accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Quick action tile (2×2 grid)
+// Hero action — the single state-driven primary CTA
 // ---------------------------------------------------------------------------
 
-interface QuickTileProps {
+interface HeroActionProps {
+  eyebrow: string;
   icon: React.ComponentProps<typeof Ionicons>['name'];
-  label: string;
+  title: string;
   sub: string;
-  iconBg: string;
-  iconColor: string;
-  badge?: number | null;
-  live?: boolean;
+  accent: string;
+  soft: string;
+  onAccent: string;
   onPress: () => void;
 }
 
-function QuickTile({ icon, label, sub, iconBg, iconColor, badge, live, onPress }: QuickTileProps) {
+function HeroAction({
+  eyebrow,
+  icon,
+  title,
+  sub,
+  accent,
+  soft,
+  onAccent,
+  onPress,
+}: HeroActionProps) {
   return (
     <Pressable
-      style={({ pressed }) => [qtStyles.tile, pressed && { opacity: 0.75 }]}
+      style={({ pressed }) => [
+        heroStyles.card,
+        { backgroundColor: soft, borderColor: accent + '33' },
+        pressed && { opacity: 0.85 },
+      ]}
       onPress={onPress}
     >
-      <View style={[qtStyles.iconWell, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={22} color={iconColor} />
-        {live && <View style={qtStyles.liveDot} />}
+      <View style={[heroStyles.iconWell, { backgroundColor: accent + '22' }]}>
+        <Ionicons name={icon} size={26} color={accent} />
       </View>
-      <View style={qtStyles.textBlock}>
-        <Text style={qtStyles.label}>{label}</Text>
-        <Text style={qtStyles.sub} numberOfLines={1}>{sub}</Text>
+      <View style={heroStyles.textBlock}>
+        <Text style={[heroStyles.eyebrow, { color: accent }]}>{eyebrow}</Text>
+        <Text style={heroStyles.title}>{title}</Text>
+        <Text style={heroStyles.sub} numberOfLines={2}>
+          {sub}
+        </Text>
       </View>
+      <View style={[heroStyles.arrowWell, { backgroundColor: accent }]}>
+        <Ionicons name="arrow-forward" size={18} color={onAccent} />
+      </View>
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Secondary action tile (compact 2-col grid, demoted weight)
+// ---------------------------------------------------------------------------
+
+interface SecondaryTileProps {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  sub: string;
+  badge?: number | null;
+  onPress: () => void;
+}
+
+function SecondaryTile({ icon, label, sub, badge, onPress }: SecondaryTileProps) {
+  return (
+    <Pressable
+      style={({ pressed }) => [stStyles.tile, pressed && { opacity: 0.75 }]}
+      onPress={onPress}
+    >
       {badge != null && badge > 0 && (
-        <View style={qtStyles.badge}>
-          <Text style={qtStyles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+        <View style={stStyles.badge}>
+          <Text style={stStyles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
         </View>
       )}
-      <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+      <View style={stStyles.iconWell}>
+        <Ionicons name={icon} size={18} color={colors.textSecondary} />
+      </View>
+      <Text style={stStyles.label} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text style={stStyles.sub} numberOfLines={1}>
+        {sub}
+      </Text>
     </Pressable>
   );
 }
@@ -126,7 +166,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
   const { data: profile } = useProfile();
   const storeId = activeStore?.id ?? null;
 
-  useNearby(!!activeStore);
+  const { data: nearby } = useNearby(!!activeStore);
   const { data: eventDays = [] } = useStoreEvents(storeId);
   const { data: streaks } = useStreaksSummary();
   const { data: pendingGames = [] } = usePendingGames();
@@ -156,11 +196,12 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
   const attentionCount = pendingGames.length + pendingRequests;
   const topQuest = activeQuests[0] ?? null;
   const hasStats = (gameStats?.wins ?? 0) > 0 || (gameStats?.losses ?? 0) > 0;
+  const nearbyCount = nearby?.players.length ?? 0;
+  const isQuietStore = !!activeStore && nearbyCount === 0;
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
         {/* ── Identity gradient banner ── */}
         <View
           style={styles.banner}
@@ -173,11 +214,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             <Defs>
               <SvgLinearGradient id="hbg" x1="0" y1="0" x2="1" y2="1">
                 {gradient.map((c, i) => (
-                  <Stop
-                    key={i}
-                    offset={`${i / Math.max(1, gradient.length - 1)}`}
-                    stopColor={c}
-                  />
+                  <Stop key={i} offset={`${i / Math.max(1, gradient.length - 1)}`} stopColor={c} />
                 ))}
               </SvgLinearGradient>
             </Defs>
@@ -187,7 +224,11 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           {/* Eye + Bell — absolute top-right */}
           <View style={styles.bannerTopRight}>
             <Pressable
-              style={[styles.bellWrap, { backgroundColor: onAccent + '38' }, isInvisible && styles.bellWrapActive]}
+              style={[
+                styles.bellWrap,
+                { backgroundColor: onAccent + '38' },
+                isInvisible && styles.bellWrapActive,
+              ]}
               onPress={handleToggleInvisible}
               hitSlop={8}
               accessibilityLabel={isInvisible ? 'Go visible' : 'Go invisible'}
@@ -217,25 +258,23 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             </View>
 
             {activeStore ? (
-              <Pressable
-                style={styles.storeRow}
-                onPress={() => navigation.navigate('StoresMap')}
-              >
+              <Pressable style={styles.storeRow} onPress={() => navigation.navigate('StoresMap')}>
                 <View style={styles.storeGlowDot} />
                 <Text style={[styles.storeRowName, { color: onAccent }]} numberOfLines={1}>
                   {activeStore.name}
                 </Text>
                 <View style={styles.checkinPill}>
-                  <Text style={[styles.checkinPillText, { color: onAccent + 'D8' }]}>Checked in ›</Text>
+                  <Text style={[styles.checkinPillText, { color: onAccent + 'D8' }]}>
+                    Checked in ›
+                  </Text>
                 </View>
               </Pressable>
             ) : (
-              <Pressable
-                style={styles.storeRow}
-                onPress={() => navigation.navigate('StoresMap')}
-              >
+              <Pressable style={styles.storeRow} onPress={() => navigation.navigate('StoresMap')}>
                 <Ionicons name="location-outline" size={13} color={onAccent + '99'} />
-                <Text style={[styles.storeRowMuted, { color: onAccent + '99' }]}>Find a store →</Text>
+                <Text style={[styles.storeRowMuted, { color: onAccent + '99' }]}>
+                  Find a store →
+                </Text>
               </Pressable>
             )}
 
@@ -251,7 +290,10 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                 <View style={styles.bannerPill}>
                   <Ionicons name="location" size={11} color={onAccent} />
                   <Text style={[styles.bannerPillText, { color: onAccent }]} numberOfLines={1}>
-                    {nearestStore.name} · {nearestDistKm < 1.6 ? `${Math.round(nearestDistKm * 1000)}m` : `${(nearestDistKm * 0.621371).toFixed(1)}mi`}
+                    {nearestStore.name} ·{' '}
+                    {nearestDistKm < 1.6
+                      ? `${Math.round(nearestDistKm * 1000)}m`
+                      : `${(nearestDistKm * 0.621371).toFixed(1)}mi`}
                   </Text>
                 </View>
               )}
@@ -272,51 +314,83 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         </View>
 
-        {/* ── Quick actions ── */}
-        <View style={styles.qaGrid}>
-          <QuickTile
-            icon="storefront-outline"
-            label="Find / Check into Store"
-            sub={activeStore ? activeStore.name : 'Find a nearby store'}
-            iconBg={accent + '1E'}
-            iconColor={accent}
-            onPress={() => navigation.navigate('StoresMap')}
-          />
-          <QuickTile
-            icon="navigate-outline"
-            label="Discover"
-            sub="Find nearby or checked in players"
-            iconBg={accent + '1E'}
-            iconColor={accent}
+        {/* ── Hero action (single, state-driven primary CTA) ── */}
+        <View style={styles.heroWrap}>
+          {activeStore ? (
+            <HeroAction
+              eyebrow="OPEN TO PLAY"
+              icon="people"
+              title="Form a Pod"
+              sub={
+                lfgSession
+                  ? 'You’re open — tap to manage your table'
+                  : 'Build your table, start a game, track your life'
+              }
+              accent={accent}
+              soft={soft}
+              onAccent={onAccent}
+              onPress={() => setShowPodForm(true)}
+            />
+          ) : (
+            <HeroAction
+              eyebrow="GET STARTED"
+              icon="storefront-outline"
+              title="Find a Store"
+              sub={
+                nearestStore && nearestDistKm != null
+                  ? `${nearestStore.name} is ${nearestDistKm < 1.6 ? `${Math.round(nearestDistKm * 1000)}m` : `${(nearestDistKm * 0.621371).toFixed(1)}mi`} away`
+                  : 'Check in nearby to find your table'
+              }
+              accent={accent}
+              soft={soft}
+              onAccent={onAccent}
+              onPress={() => navigation.navigate('StoresMap')}
+            />
+          )}
+        </View>
+
+        {/* ── Secondary actions (demoted, 2-col grid) ── */}
+        <View style={styles.secondaryGrid}>
+          {activeStore ? (
+            <SecondaryTile
+              icon="storefront-outline"
+              label="Switch Store"
+              sub={activeStore.name}
+              onPress={() => navigation.navigate('StoresMap')}
+            />
+          ) : (
+            <SecondaryTile
+              icon="people-outline"
+              label="Form a Pod"
+              sub="Build your table"
+              onPress={() => setShowPodForm(true)}
+            />
+          )}
+          <SecondaryTile
+            icon={isQuietStore ? 'flash-outline' : 'navigate-outline'}
+            label={isQuietStore ? 'Be the First' : 'Discover'}
+            sub={
+              activeStore
+                ? nearbyCount > 0
+                  ? `${nearbyCount} nearby`
+                  : 'No one here yet'
+                : 'Nearby players'
+            }
             onPress={() => navigation.navigate('Discover')}
           />
-
-          <QuickTile
-            icon="people-outline"
+          <SecondaryTile
+            icon="people-circle-outline"
             label="Connections"
-            sub={pendingRequests > 0
-              ? `${pendingRequests} pending request${pendingRequests > 1 ? 's' : ''}`
-              : 'Your network'}
-            iconBg={accent + '1E'}
-            iconColor={accent}
+            sub={pendingRequests > 0 ? `${pendingRequests} pending` : 'Your network'}
             badge={attentionCount > 0 ? attentionCount : null}
             onPress={() => navigation.navigate('Connections')}
           />
-
-          {/* ── Form a Pod row ── */}
-          <Pressable
-            style={({ pressed }) => [styles.podRow, pressed && { opacity: 0.75 }]}
-            onPress={() => setShowPodForm(true)}
-          >
-            <View style={[styles.podIcon, { backgroundColor: accent + '1E' }]}>
-              <Ionicons name="people" size={22} color={accent} />
-            </View>
-            <View style={styles.podText}>
-              <Text style={styles.podLabel}>Form a Pod and Track Life</Text>
-              <Text style={styles.podSub}>Build your table, start a game, track your life</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-          </Pressable>
+          <SecondaryTile
+            icon="dice-outline"
+            label="Log a Game"
+            sub="Record a result"
+            onPress={() => setShowLogGame(true)}
+          />
         </View>
 
         {/* ── Needs attention ── */}
@@ -331,7 +405,8 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                 >
                   <View style={[styles.attentionDot, { backgroundColor: accent }]} />
                   <Text style={styles.attentionText}>
-                    {pendingGames.length} game result{pendingGames.length !== 1 ? 's' : ''} to confirm
+                    {pendingGames.length} game result{pendingGames.length !== 1 ? 's' : ''} to
+                    confirm
                   </Text>
                   <Ionicons name="chevron-forward" size={14} color={colors.border} />
                 </Pressable>
@@ -406,8 +481,12 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
               <View style={styles.questBlock}>
                 <View style={styles.questRow}>
                   <Ionicons name="flash-outline" size={15} color={colors.warning} />
-                  <Text style={styles.questTitle} numberOfLines={1}>{topQuest.quest.title}</Text>
-                  <Text style={styles.questCounter}>{topQuest.progress}/{topQuest.goal}</Text>
+                  <Text style={styles.questTitle} numberOfLines={1}>
+                    {topQuest.quest.title}
+                  </Text>
+                  <Text style={styles.questCounter}>
+                    {topQuest.progress}/{topQuest.goal}
+                  </Text>
                 </View>
                 <View style={styles.questBarBg}>
                   <View
@@ -415,7 +494,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                       styles.questBarFill,
                       {
                         backgroundColor: accent,
-                        width: `${Math.round(100 * Math.min(topQuest.progress, topQuest.goal) / topQuest.goal)}%`,
+                        width: `${Math.round((100 * Math.min(topQuest.progress, topQuest.goal)) / topQuest.goal)}%`,
                       },
                     ]}
                   />
@@ -433,7 +512,6 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             )}
           </View>
         </View>
-
       </ScrollView>
 
       <LogGameSheet
@@ -606,46 +684,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
 
-  // Quick actions list
-  qaGrid: {
+  // Hero action
+  heroWrap: {
     paddingTop: 16,
-    gap: 10,
+    paddingHorizontal: 16,
   },
 
-  // Form a Pod row
-  podRow: {
+  // Secondary actions grid
+  secondaryGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginHorizontal: 16,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    padding: 14,
+    flexWrap: 'wrap',
+    gap: 10,
+    paddingTop: 10,
     paddingHorizontal: 16,
-    ...shadows.sm,
-  },
-  podIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  podText: { flex: 1, minWidth: 0 },
-  podLabel: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: 14.5,
-    color: colors.textPrimary,
-    letterSpacing: -0.15,
-  },
-  podSub: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 3,
   },
 
   // Sections
@@ -803,57 +854,94 @@ const styles = StyleSheet.create({
   },
 });
 
-const qtStyles = StyleSheet.create({
-  tile: {
+const heroStyles = StyleSheet.create({
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    marginHorizontal: 16,
-    backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.borderLight,
-    padding: 14,
-    paddingHorizontal: 16,
+    padding: 16,
     ...shadows.sm,
   },
   iconWell: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    position: 'relative',
-  },
-  liveDot: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 11,
-    height: 11,
-    borderRadius: radii.full,
-    backgroundColor: '#4ade80',
-    borderWidth: 2.5,
-    borderColor: colors.surface,
   },
   textBlock: {
     flex: 1,
     minWidth: 0,
   },
-  label: {
+  eyebrow: {
     fontFamily: typography.fontFamily.bold,
-    fontSize: 14.5,
+    fontSize: 11,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  title: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 19,
     color: colors.textPrimary,
-    letterSpacing: -0.15,
+    letterSpacing: -0.3,
+    marginTop: 2,
   },
   sub: {
     fontFamily: typography.fontFamily.semiBold,
-    fontSize: 12,
+    fontSize: 12.5,
     color: colors.textSecondary,
     marginTop: 3,
   },
+  arrowWell: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+});
+
+const stStyles = StyleSheet.create({
+  tile: {
+    flexBasis: '47%',
+    flexGrow: 1,
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: colors.paper,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    padding: 12,
+    position: 'relative',
+  },
+  iconWell: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+  },
+  label: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 13,
+    color: colors.textPrimary,
+    letterSpacing: -0.1,
+  },
+  sub: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: 11,
+    color: colors.textTertiary,
+    marginTop: -4,
+  },
   badge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
     minWidth: 18,
     height: 18,
     borderRadius: radii.full,
@@ -862,7 +950,7 @@ const qtStyles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
     borderWidth: 2,
-    borderColor: colors.surface,
+    borderColor: colors.paper,
   },
   badgeText: {
     fontFamily: typography.fontFamily.bold,

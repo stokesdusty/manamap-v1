@@ -26,7 +26,10 @@ export function useLifeTracker(podId: string | null) {
 
     const connect = async () => {
       const tokens = await getTokens();
-      if (!tokens?.accessToken) { setIsLoading(false); return; }
+      if (!tokens?.accessToken) {
+        setIsLoading(false);
+        return;
+      }
 
       socket = io(`${WS_URL}/life-tracker`, {
         path: '/ws/socket.io',
@@ -76,8 +79,7 @@ export function useLifeTracker(podId: string | null) {
 
   const actions = useMemo(
     () => ({
-      startTracker: (startingLife: number) =>
-        emit('start_tracker', { podId, startingLife }),
+      startTracker: (startingLife: number) => emit('start_tracker', { podId, startingLife }),
 
       lifeDelta: (targetUserId: string, delta: number, note?: string) => {
         // optimistic update
@@ -103,9 +105,7 @@ export function useLifeTracker(podId: string | null) {
           return {
             ...prev,
             players: prev.players.map((p) =>
-              p.userId === targetUserId
-                ? { ...p, [counter]: Math.max(0, p[counter] + delta) }
-                : p,
+              p.userId === targetUserId ? { ...p, [counter]: Math.max(0, p[counter] + delta) } : p,
             ),
           };
         });

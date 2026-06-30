@@ -37,11 +37,12 @@ export type TabParamList = {
   You: undefined;
 };
 
-export type RootStackScreenProps<T extends keyof RootStackParamList> =
-  NativeStackScreenProps<RootStackParamList, T>;
+export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<
+  RootStackParamList,
+  T
+>;
 
-export type TabScreenProps<T extends keyof TabParamList> =
-  BottomTabScreenProps<TabParamList, T>;
+export type TabScreenProps<T extends keyof TabParamList> = BottomTabScreenProps<TabParamList, T>;
 
 // Composite type for screens inside a tab that also need to push root-stack screens
 export type ScanScreenProps = CompositeScreenProps<

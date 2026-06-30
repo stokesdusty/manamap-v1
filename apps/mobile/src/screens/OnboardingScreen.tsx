@@ -3,8 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,12 +11,14 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import type { ManaColor, MtgFormat, PlayerVibe } from '@manamap/shared';
+import type { ManaColor, MtgFormat, PlayerVibe, SocialPlatform } from '@manamap/shared';
 import { DECK_SITE_HOSTS } from '@manamap/shared';
 import { Avatar } from '../components/Avatar';
 import { ManaPip } from '../components/ManaPip';
+import { ALL_PLATFORMS, SOCIAL_META, socialKeyboardType } from '../components/SocialsCard';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import { useSubmitOnboarding } from '../hooks/useMe';
 import { useStores } from '../hooks/useNearby';
@@ -104,7 +104,7 @@ type Draft = {
   commander: string;
   vibes: PlayerVibe[];
   bio: string;
-  discord: string;
+  socials: Partial<Record<SocialPlatform, string>>;
   discoverable: boolean;
   decks: DeckDraft[];
   homeStoreId: string | null;
@@ -136,7 +136,9 @@ function draftReducer(state: Draft, action: DraftAction): Draft {
       const has = state.formats.includes(action.format);
       return {
         ...state,
-        formats: has ? state.formats.filter((f) => f !== action.format) : [...state.formats, action.format],
+        formats: has
+          ? state.formats.filter((f) => f !== action.format)
+          : [...state.formats, action.format],
       };
     }
     case 'TOGGLE_VIBE': {
@@ -165,7 +167,7 @@ const INITIAL_DRAFT: Draft = {
   commander: '',
   vibes: [],
   bio: '',
-  discord: '',
+  socials: {},
   discoverable: true,
   decks: [],
   homeStoreId: null,
@@ -185,29 +187,36 @@ function PreviewCard({ draft }: { draft: Draft }) {
       <View style={preview.header}>
         <Avatar name={name} manaColors={draft.avatarColors} size={56} />
         <View style={preview.nameBlock}>
-          <Text style={preview.name} numberOfLines={1}>{name}</Text>
+          <Text style={preview.name} numberOfLines={1}>
+            {name}
+          </Text>
           {draft.pronouns.trim() ? (
-            <Text style={preview.pronouns}>{draft.pronouns.trim()}</Text>
+            <Text style={preview.pronouns} numberOfLines={1} ellipsizeMode="tail">
+              {draft.pronouns.trim()}
+            </Text>
           ) : null}
           <View style={preview.comboRow}>
             {draft.avatarColors.map((c) => (
               <ManaPip key={c} color={c} size={14} showLetter={false} ring={false} />
             ))}
             {draft.avatarColors.length > 0 && (
-              <Text style={preview.comboName}>{comboName}</Text>
+              <Text style={preview.comboName} numberOfLines={1} ellipsizeMode="tail">
+                {comboName}
+              </Text>
             )}
           </View>
         </View>
-        {draft.vibes.length > 0 && (
-          <View style={preview.vibeRow}>
-            {draft.vibes.map((v) => (
-              <View key={v} style={preview.vibePill}>
-                <Text style={preview.vibeText}>{VIBE_LABELS[v]}</Text>
-              </View>
-            ))}
-          </View>
-        )}
       </View>
+
+      {draft.vibes.length > 0 && (
+        <View style={preview.vibeRow}>
+          {draft.vibes.map((v) => (
+            <View key={v} style={preview.vibePill}>
+              <Text style={preview.vibeText}>{VIBE_LABELS[v]}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {draft.formats.length > 0 && (
         <View style={preview.chips}>
@@ -227,7 +236,9 @@ function PreviewCard({ draft }: { draft: Draft }) {
       {draft.commander.trim() ? (
         <View style={preview.commanderRow}>
           <Ionicons name="shield-outline" size={12} color={colors.textTertiary} />
-          <Text style={preview.commanderText} numberOfLines={1}>{draft.commander.trim()}</Text>
+          <Text style={preview.commanderText} numberOfLines={1}>
+            {draft.commander.trim()}
+          </Text>
         </View>
       ) : null}
     </View>
@@ -258,6 +269,7 @@ const preview = StyleSheet.create({
   },
   comboRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
   comboName: {
+    flexShrink: 1,
     fontFamily: typography.fontFamily.medium,
     fontSize: typography.fontSize.xs,
     color: colors.textTertiary,
@@ -303,65 +315,75 @@ const preview = StyleSheet.create({
 
 function Step1({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<DraftAction> }) {
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={step.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={step.heading}>What should we call you?</Text>
-        <Text style={step.sub}>Your display name is how other players see you in Magic contexts.</Text>
+    <KeyboardAwareScrollView
+      contentContainerStyle={step.scroll}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={spacing.xl}
+    >
+      <Text style={step.heading}>What should we call you?</Text>
+      <Text style={step.sub}>
+        Your display name is how other players see you in Magic contexts.
+      </Text>
 
-        <View style={step.field}>
-          <Text style={step.label}>Display name</Text>
-          <TextInput
-            style={step.input}
-            value={draft.displayName}
-            onChangeText={(v) => dispatch({ type: 'SET', key: 'displayName', value: v })}
-            maxLength={64}
-            placeholder="e.g. Jace Beleren"
-            placeholderTextColor={colors.textTertiary}
-            autoFocus
-            autoCapitalize="words"
-          />
-        </View>
+      <View style={step.field}>
+        <Text style={step.label}>Display name</Text>
+        <TextInput
+          style={step.input}
+          value={draft.displayName}
+          onChangeText={(v) => dispatch({ type: 'SET', key: 'displayName', value: v })}
+          maxLength={64}
+          placeholder="e.g. Jace Beleren"
+          placeholderTextColor={colors.textTertiary}
+          autoFocus
+          autoCapitalize="words"
+        />
+      </View>
 
-        <View style={step.field}>
-          <Text style={step.label}>Pronouns <Text style={step.optional}>(optional)</Text></Text>
-          <TextInput
-            style={step.input}
-            value={draft.pronouns}
-            onChangeText={(v) => dispatch({ type: 'SET', key: 'pronouns', value: v })}
-            maxLength={32}
-            placeholder="e.g. they/them"
-            placeholderTextColor={colors.textTertiary}
-          />
-        </View>
+      <View style={step.field}>
+        <Text style={step.label}>
+          Pronouns <Text style={step.optional}>(optional)</Text>
+        </Text>
+        <TextInput
+          style={step.input}
+          value={draft.pronouns}
+          onChangeText={(v) => dispatch({ type: 'SET', key: 'pronouns', value: v })}
+          maxLength={32}
+          placeholder="e.g. they/them"
+          placeholderTextColor={colors.textTertiary}
+        />
+      </View>
 
-        <View style={step.field}>
-          <Text style={step.label}>Real / chosen name <Text style={step.optional}>(optional)</Text></Text>
-          <TextInput
-            style={step.input}
-            value={draft.name}
-            onChangeText={(v) => dispatch({ type: 'SET', key: 'name', value: v })}
-            maxLength={80}
-            placeholder="e.g. Alex Smith or Alex S."
-            placeholderTextColor={colors.textTertiary}
-            autoCapitalize="words"
-          />
-          {draft.name.trim().length > 0 && (
-            <View style={step.nameShareRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={step.nameShareTitle}>Share with contacts</Text>
-                <Text style={step.nameShareSub}>Your connections can see this name</Text>
-              </View>
-              <Switch
-                value={draft.shareNameWithContacts}
-                onValueChange={(v) => dispatch({ type: 'SET', key: 'shareNameWithContacts', value: v })}
-                trackColor={{ true: colors.accent, false: colors.border }}
-                thumbColor={colors.surface}
-              />
+      <View style={step.field}>
+        <Text style={step.label}>
+          Real / chosen name <Text style={step.optional}>(optional)</Text>
+        </Text>
+        <TextInput
+          style={step.input}
+          value={draft.name}
+          onChangeText={(v) => dispatch({ type: 'SET', key: 'name', value: v })}
+          maxLength={80}
+          placeholder="e.g. Alex Smith or Alex S."
+          placeholderTextColor={colors.textTertiary}
+          autoCapitalize="words"
+        />
+        {draft.name.trim().length > 0 && (
+          <View style={step.nameShareRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={step.nameShareTitle}>Share with contacts</Text>
+              <Text style={step.nameShareSub}>Your connections can see this name</Text>
             </View>
-          )}
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <Switch
+              value={draft.shareNameWithContacts}
+              onValueChange={(v) =>
+                dispatch({ type: 'SET', key: 'shareNameWithContacts', value: v })
+              }
+              trackColor={{ true: colors.accent, false: colors.border }}
+              thumbColor={colors.surface}
+            />
+          </View>
+        )}
+      </View>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -410,65 +432,70 @@ function Step2({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
 
 function Step3({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<DraftAction> }) {
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={step.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={step.heading}>How do you play?</Text>
-        <Text style={step.sub}>Help others find the right game with you.</Text>
+    <KeyboardAwareScrollView
+      contentContainerStyle={step.scroll}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={spacing.xl}
+    >
+      <Text style={step.heading}>How do you play?</Text>
+      <Text style={step.sub}>Help others find the right game with you.</Text>
 
-        <View style={step.field}>
-          <Text style={step.label}>Formats <Text style={step.required}>*</Text></Text>
-          <View style={step.chips}>
-            {ALL_FORMATS.map((f) => {
-              const active = draft.formats.includes(f);
-              return (
-                <Pressable
-                  key={f}
-                  onPress={() => dispatch({ type: 'TOGGLE_FORMAT', format: f })}
-                  style={[step.chip, active && step.chipActive]}
-                >
-                  <Text style={[step.chipText, active && step.chipTextActive]}>
-                    {FORMAT_LABELS[f]}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+      <View style={step.field}>
+        <Text style={step.label}>
+          Formats <Text style={step.required}>*</Text>
+        </Text>
+        <View style={step.chips}>
+          {ALL_FORMATS.map((f) => {
+            const active = draft.formats.includes(f);
+            return (
+              <Pressable
+                key={f}
+                onPress={() => dispatch({ type: 'TOGGLE_FORMAT', format: f })}
+                style={[step.chip, active && step.chipActive]}
+              >
+                <Text style={[step.chipText, active && step.chipTextActive]}>
+                  {FORMAT_LABELS[f]}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
+      </View>
 
-        <View style={step.field}>
-          <Text style={step.label}>Vibe <Text style={step.optional}>(optional, select all that apply)</Text></Text>
-          <View style={step.chips}>
-            {ALL_VIBES.map((v) => {
-              const active = draft.vibes.includes(v);
-              return (
-                <Pressable
-                  key={v}
-                  onPress={() => dispatch({ type: 'TOGGLE_VIBE', vibe: v })}
-                  style={[step.chip, active && step.chipActive]}
-                >
-                  <Text style={[step.chipText, active && step.chipTextActive]}>
-                    {VIBE_LABELS[v]}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+      <View style={step.field}>
+        <Text style={step.label}>
+          Vibe <Text style={step.optional}>(optional, select all that apply)</Text>
+        </Text>
+        <View style={step.chips}>
+          {ALL_VIBES.map((v) => {
+            const active = draft.vibes.includes(v);
+            return (
+              <Pressable
+                key={v}
+                onPress={() => dispatch({ type: 'TOGGLE_VIBE', vibe: v })}
+                style={[step.chip, active && step.chipActive]}
+              >
+                <Text style={[step.chipText, active && step.chipTextActive]}>{VIBE_LABELS[v]}</Text>
+              </Pressable>
+            );
+          })}
         </View>
+      </View>
 
-        <View style={step.field}>
-          <Text style={step.label}>Favorite Commander <Text style={step.optional}>(optional)</Text></Text>
-          <TextInput
-            style={step.input}
-            value={draft.commander}
-            onChangeText={(v) => dispatch({ type: 'SET', key: 'commander', value: v })}
-            maxLength={128}
-            placeholder="e.g. Atraxa, Praetors' Voice"
-            placeholderTextColor={colors.textTertiary}
-          />
-        </View>
-
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <View style={step.field}>
+        <Text style={step.label}>
+          Favorite Commander <Text style={step.optional}>(optional)</Text>
+        </Text>
+        <TextInput
+          style={step.input}
+          value={draft.commander}
+          onChangeText={(v) => dispatch({ type: 'SET', key: 'commander', value: v })}
+          maxLength={128}
+          placeholder="e.g. Atraxa, Praetors' Voice"
+          placeholderTextColor={colors.textTertiary}
+        />
+      </View>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -490,13 +517,19 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
         const valid = Object.values(DECK_SITE_HOSTS).some(
           (h) => host === h || host.endsWith(`.${h}`),
         );
-        if (!valid) { setDeckUrlError('Only Moxfield or Archidekt links are supported'); return; }
+        if (!valid) {
+          setDeckUrlError('Only Moxfield or Archidekt links are supported');
+          return;
+        }
       } catch {
         setDeckUrlError('Enter a valid URL');
         return;
       }
     }
-    dispatch({ type: 'ADD_DECK', deck: { name: deckName.trim(), ...(deckUrl.trim() ? { url: deckUrl.trim() } : {}) } });
+    dispatch({
+      type: 'ADD_DECK',
+      deck: { name: deckName.trim(), ...(deckUrl.trim() ? { url: deckUrl.trim() } : {}) },
+    });
     setDeckName('');
     setDeckUrl('');
     setDeckUrlError('');
@@ -504,94 +537,125 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={step.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={step.heading}>How do people reach you?</Text>
-        <Text style={step.sub}>Shared only after you both approve a connection.</Text>
+    <KeyboardAwareScrollView
+      contentContainerStyle={step.scroll}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={spacing.xl}
+    >
+      <Text style={step.heading}>How do people reach you?</Text>
+      <Text style={step.sub}>Shared only after you both approve a connection.</Text>
 
-        <View style={step.field}>
-          <Text style={step.label}>Discord <Text style={step.optional}>(optional)</Text></Text>
-          <TextInput
-            style={step.input}
-            value={draft.discord}
-            onChangeText={(v) => dispatch({ type: 'SET', key: 'discord', value: v })}
-            maxLength={64}
-            placeholder="your_handle"
-            placeholderTextColor={colors.textTertiary}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
-
-        {draft.decks.length > 0 && (
-          <View style={step.deckList}>
-            {draft.decks.map((d, i) => (
-              <View key={i} style={step.deckRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={step.deckName} numberOfLines={1}>{d.name}</Text>
-                  {d.url && <Text style={step.deckSite} numberOfLines={1}>{d.url}</Text>}
-                </View>
-                <Pressable
-                  onPress={() => dispatch({ type: 'REMOVE_DECK', index: i })}
-                  hitSlop={8}
-                >
-                  <Ionicons name="trash-outline" size={18} color={colors.error} />
-                </Pressable>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <Text style={[step.label, { marginBottom: spacing.sm }]}>Deck links <Text style={step.optional}>(optional)</Text></Text>
-
-        {!showAddDeck ? (
-          <Pressable
-            style={({ pressed }) => [step.addDeckBtn, pressed && { opacity: 0.7 }]}
-            onPress={() => setShowAddDeck(true)}
-          >
-            <Ionicons name="add-circle-outline" size={20} color={colors.accent} />
-            <Text style={step.addDeckText}>Add a deck link</Text>
-          </Pressable>
-        ) : (
-          <View style={step.addDeckForm}>
+      {ALL_PLATFORMS.map((platform) => {
+        const meta = SOCIAL_META[platform];
+        return (
+          <View key={platform} style={step.field}>
+            <Text style={step.label}>
+              {meta.label} <Text style={step.optional}>(optional)</Text>
+            </Text>
             <TextInput
               style={step.input}
-              value={deckName}
-              onChangeText={setDeckName}
-              maxLength={64}
-              placeholder="Deck name"
+              value={draft.socials[platform] ?? ''}
+              onChangeText={(v) =>
+                dispatch({
+                  type: 'SET',
+                  key: 'socials',
+                  value: { ...draft.socials, [platform]: v },
+                })
+              }
+              maxLength={256}
+              placeholder={meta.placeholder}
               placeholderTextColor={colors.textTertiary}
-            />
-            <TextInput
-              style={[step.input, deckUrlError ? step.inputError : null]}
-              value={deckUrl}
-              onChangeText={(v) => { setDeckUrl(v); setDeckUrlError(''); }}
               autoCapitalize="none"
               autoCorrect={false}
-              keyboardType="url"
-              placeholder="URL (optional) — Moxfield or Archidekt only"
-              placeholderTextColor={colors.textTertiary}
+              keyboardType={socialKeyboardType(platform)}
             />
-            {deckUrlError ? <Text style={step.errorText}>{deckUrlError}</Text> : null}
-            <View style={step.formBtns}>
-              <Pressable
-                style={({ pressed }) => [step.cancelBtn, pressed && { opacity: 0.6 }]}
-                onPress={() => { setShowAddDeck(false); setDeckUrlError(''); }}
-              >
-                <Text style={step.cancelBtnText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [step.saveBtn, !deckName.trim() && step.saveBtnDisabled, pressed && { opacity: 0.7 }]}
-                onPress={addDeck}
-                disabled={!deckName.trim()}
-              >
-                <Text style={step.saveBtnText}>Add</Text>
+          </View>
+        );
+      })}
+
+      {draft.decks.length > 0 && (
+        <View style={step.deckList}>
+          {draft.decks.map((d, i) => (
+            <View key={i} style={step.deckRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={step.deckName} numberOfLines={1}>
+                  {d.name}
+                </Text>
+                {d.url && (
+                  <Text style={step.deckSite} numberOfLines={1}>
+                    {d.url}
+                  </Text>
+                )}
+              </View>
+              <Pressable onPress={() => dispatch({ type: 'REMOVE_DECK', index: i })} hitSlop={8}>
+                <Ionicons name="trash-outline" size={18} color={colors.error} />
               </Pressable>
             </View>
+          ))}
+        </View>
+      )}
+
+      <Text style={[step.label, { marginBottom: spacing.sm }]}>
+        Deck links <Text style={step.optional}>(optional)</Text>
+      </Text>
+
+      {!showAddDeck ? (
+        <Pressable
+          style={({ pressed }) => [step.addDeckBtn, pressed && { opacity: 0.7 }]}
+          onPress={() => setShowAddDeck(true)}
+        >
+          <Ionicons name="add-circle-outline" size={20} color={colors.accent} />
+          <Text style={step.addDeckText}>Add a deck link</Text>
+        </Pressable>
+      ) : (
+        <View style={step.addDeckForm}>
+          <TextInput
+            style={step.input}
+            value={deckName}
+            onChangeText={setDeckName}
+            maxLength={64}
+            placeholder="Deck name"
+            placeholderTextColor={colors.textTertiary}
+          />
+          <TextInput
+            style={[step.input, deckUrlError ? step.inputError : null]}
+            value={deckUrl}
+            onChangeText={(v) => {
+              setDeckUrl(v);
+              setDeckUrlError('');
+            }}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            placeholder="URL (optional) — Moxfield or Archidekt only"
+            placeholderTextColor={colors.textTertiary}
+          />
+          {deckUrlError ? <Text style={step.errorText}>{deckUrlError}</Text> : null}
+          <View style={step.formBtns}>
+            <Pressable
+              style={({ pressed }) => [step.cancelBtn, pressed && { opacity: 0.6 }]}
+              onPress={() => {
+                setShowAddDeck(false);
+                setDeckUrlError('');
+              }}
+            >
+              <Text style={step.cancelBtnText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                step.saveBtn,
+                !deckName.trim() && step.saveBtnDisabled,
+                pressed && { opacity: 0.7 },
+              ]}
+              onPress={addDeck}
+              disabled={!deckName.trim()}
+            >
+              <Text style={step.saveBtnText}>Add</Text>
+            </Pressable>
           </View>
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </View>
+      )}
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -605,18 +669,27 @@ function Step5({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={[step.scroll, { paddingBottom: 0 }]} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[step.scroll, { paddingBottom: 0 }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={step.heading}>Find your home store</Text>
-        <Text style={step.sub}>Your home store appears on your card and helps others find you.</Text>
+        <Text style={step.sub}>
+          Your home store appears on your card and helps others find you.
+        </Text>
 
         {draft.homeStoreName && (
           <View style={step.selectedStore}>
             <Ionicons name="storefront" size={20} color={colors.accent} />
-            <Text style={step.selectedStoreName} numberOfLines={1}>{draft.homeStoreName}</Text>
-            <Pressable onPress={() => {
-              dispatch({ type: 'SET', key: 'homeStoreId', value: null });
-              dispatch({ type: 'SET', key: 'homeStoreName', value: null });
-            }}>
+            <Text style={step.selectedStoreName} numberOfLines={1}>
+              {draft.homeStoreName}
+            </Text>
+            <Pressable
+              onPress={() => {
+                dispatch({ type: 'SET', key: 'homeStoreId', value: null });
+                dispatch({ type: 'SET', key: 'homeStoreName', value: null });
+              }}
+            >
               <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
             </Pressable>
           </View>
@@ -656,7 +729,9 @@ function Step5({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
                   <View style={{ flex: 1 }}>
                     <Text style={step.storeTitle}>{item.name}</Text>
                     {(item.city || item.state) && (
-                      <Text style={step.storeSub}>{[item.city, item.state].filter(Boolean).join(', ')}</Text>
+                      <Text style={step.storeSub}>
+                        {[item.city, item.state].filter(Boolean).join(', ')}
+                      </Text>
                     )}
                   </View>
                   {draft.homeStoreId === item.id && (
@@ -664,9 +739,7 @@ function Step5({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
                   )}
                 </Pressable>
               )}
-              ListEmptyComponent={
-                <Text style={step.empty}>No stores found</Text>
-              }
+              ListEmptyComponent={<Text style={step.empty}>No stores found</Text>}
             />
           )}
         </View>
@@ -676,7 +749,9 @@ function Step5({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
         <View style={step.discoverRow}>
           <View style={{ flex: 1 }}>
             <Text style={step.discoverTitle}>Appear in nearby search</Text>
-            <Text style={step.discoverSub}>Other players at the same store can find you. You can change this anytime.</Text>
+            <Text style={step.discoverSub}>
+              Other players at the same store can find you. You can change this anytime.
+            </Text>
           </View>
           <Switch
             value={draft.discoverable}
@@ -714,15 +789,16 @@ export function OnboardingScreen() {
   const { mutate: addSocial } = useAddSocial();
   const { mutate: updateSocial } = useUpdateSocial();
   const { data: existingSocials } = useSocials();
-  const discordSeededRef = useRef(false);
+  const socialsSeededRef = useRef(false);
 
   useEffect(() => {
-    if (discordSeededRef.current || !existingSocials) return;
-    const link = existingSocials.find((s) => s.platform === 'DISCORD');
-    if (link) {
-      dispatch({ type: 'SET', key: 'discord', value: link.value });
-      discordSeededRef.current = true;
+    if (socialsSeededRef.current || !existingSocials) return;
+    const seeded: Partial<Record<SocialPlatform, string>> = {};
+    for (const link of existingSocials) {
+      seeded[link.platform] = link.value;
     }
+    dispatch({ type: 'SET', key: 'socials', value: seeded });
+    socialsSeededRef.current = true;
   }, [existingSocials]);
 
   const canContinue = STEPS[currentStep].required(draft);
@@ -758,14 +834,16 @@ export function OnboardingScreen() {
       },
       {
         onSuccess: () => {
-          const existingDiscord = existingSocials?.find((s) => s.platform === 'DISCORD');
-          const discordValue = draft.discord.trim();
-          if (existingDiscord) {
-            if (discordValue && discordValue !== existingDiscord.value) {
-              updateSocial({ id: existingDiscord.id, value: discordValue, visibility: 'PUBLIC' });
+          for (const platform of ALL_PLATFORMS) {
+            const value = (draft.socials[platform] ?? '').trim();
+            const existing = existingSocials?.find((s) => s.platform === platform);
+            if (existing) {
+              if (value && value !== existing.value) {
+                updateSocial({ id: existing.id, value, visibility: 'PUBLIC' });
+              }
+            } else if (value) {
+              addSocial({ platform, value, visibility: 'PUBLIC' });
             }
-          } else if (discordValue) {
-            addSocial({ platform: 'DISCORD', value: discordValue, visibility: 'PUBLIC' });
           }
         },
         onError: () => Alert.alert('Error', 'Something went wrong. Please try again.'),
@@ -789,9 +867,7 @@ export function OnboardingScreen() {
             <Ionicons name="sparkles" size={15} color={colors.accentInk} />
             <Text style={ob.doneBadgeText}>YOUR CARD IS READY</Text>
           </View>
-          <Text style={ob.doneTitle}>
-            Welcome, {draft.displayName.trim() || 'Planeswalker'}!
-          </Text>
+          <Text style={ob.doneTitle}>Welcome, {draft.displayName.trim() || 'Planeswalker'}!</Text>
           <Text style={ob.doneSub}>This is what other players see when you meet.</Text>
           <PreviewCard draft={draft} />
         </ScrollView>
@@ -809,7 +885,7 @@ export function OnboardingScreen() {
               <ActivityIndicator color={colors.textInverse} />
             ) : (
               <>
-                <Text style={ob.continueBtnText}>Enter manamap</Text>
+                <Text style={ob.continueBtnText}>Enter ManaMap</Text>
                 <Ionicons name="arrow-forward" size={18} color={colors.textInverse} />
               </>
             )}
@@ -823,7 +899,10 @@ export function OnboardingScreen() {
     <SafeAreaView style={ob.safe}>
       <View style={ob.topBar}>
         {currentStep > 0 ? (
-          <Pressable onPress={handleBack} style={({ pressed }) => [ob.backBtn, pressed && { opacity: 0.6 }]}>
+          <Pressable
+            onPress={handleBack}
+            style={({ pressed }) => [ob.backBtn, pressed && { opacity: 0.6 }]}
+          >
             <Ionicons name="chevron-back" size={20} color={colors.accent} />
             <Text style={ob.backText}>Back</Text>
           </Pressable>
@@ -832,7 +911,10 @@ export function OnboardingScreen() {
         )}
         <View style={ob.dots}>
           {STEPS.map((_, i) => (
-            <View key={i} style={[ob.dot, i === currentStep && ob.dotActive, i < currentStep && ob.dotDone]} />
+            <View
+              key={i}
+              style={[ob.dot, i === currentStep && ob.dotActive, i < currentStep && ob.dotDone]}
+            />
           ))}
         </View>
         <View style={{ width: 60 }} />
@@ -842,9 +924,7 @@ export function OnboardingScreen() {
         <PreviewCard draft={draft} />
       </View>
 
-      <View style={ob.stepContent}>
-        {stepComponents[currentStep]}
-      </View>
+      <View style={ob.stepContent}>{stepComponents[currentStep]}</View>
 
       <View style={ob.footer}>
         {currentStep === 3 && (
@@ -864,9 +944,7 @@ export function OnboardingScreen() {
           onPress={handleNext}
           disabled={!canContinue}
         >
-          <Text style={ob.continueBtnText}>
-            {isLastStep ? 'Finish' : 'Continue'}
-          </Text>
+          <Text style={ob.continueBtnText}>{isLastStep ? 'Finish' : 'Continue'}</Text>
           <Ionicons
             name={isLastStep ? 'checkmark' : 'arrow-forward'}
             size={17}
@@ -1171,7 +1249,13 @@ const ob = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: spacing.xs, paddingVertical: spacing.sm },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.sm,
+  },
   backText: {
     fontFamily: typography.fontFamily.bold,
     fontSize: typography.fontSize.md,

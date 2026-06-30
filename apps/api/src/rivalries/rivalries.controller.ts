@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import { RivalriesService } from './rivalries.service';
+import type { RivalriesService } from './rivalries.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 
@@ -12,7 +12,10 @@ export class RivalriesController {
   @Get('v1/me/rivalries')
   getMyRivalries(@Req() req: AuthRequest, @Query('limit') limit?: string) {
     const parsed = limit ? parseInt(limit, 10) : undefined;
-    return this.rivalries.getMyRivalries(req.user.sub, Number.isFinite(parsed) ? parsed : undefined);
+    return this.rivalries.getMyRivalries(
+      req.user.sub,
+      Number.isFinite(parsed) ? parsed : undefined,
+    );
   }
 
   @Get('v1/rivalries/:opponentId')

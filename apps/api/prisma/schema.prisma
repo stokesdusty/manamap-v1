@@ -96,6 +96,15 @@ enum GameStatus {
   DISPUTED
 }
 
+enum EndorsementTag {
+  GREAT_HOST
+  GOOD_SPORT
+  TAUGHT_THE_FORMAT
+  FAST_PLAYER
+  WELL_BREWED_DECK
+  GENEROUS
+}
+
 enum BroadcastAudience {
   CHECKED_IN_NOW
   TODAY
@@ -218,6 +227,8 @@ model User {
   gamesCreated        GameLog[]          @relation("GamesCreated")
   gamesWon            GameLog[]          @relation("GamesWon")
   gamePlayers         GamePlayer[]
+  endorsementsGiven   Endorsement[]      @relation("EndorsementsGiven")
+  endorsementsReceived Endorsement[]     @relation("EndorsementsReceived")
   broadcastsSent      Broadcast[]        @relation("BroadcastsSent")
   offerRedemptions    OfferRedemption[]
   staffRedemptions    OfferRedemption[]  @relation("RedemptionStaff")
@@ -602,8 +613,9 @@ model GameLog {
   createdBy  User        @relation("GamesCreated", fields: [createdById], references: [id], onDelete: Cascade)
   winner     User        @relation("GamesWon", fields: [winnerId], references: [id], onDelete: Cascade)
   store      Store?      @relation(fields: [storeId], references: [id], onDelete: SetNull)
-  players    GamePlayer[]
-  encounters Encounter[]
+  players      GamePlayer[]
+  encounters   Encounter[]
+  endorsements Endorsement[]
 
   @@map("game_logs")
 }
@@ -620,6 +632,23 @@ model GamePlayer {
 
   @@unique([gameLogId, userId])
   @@map("game_players")
+}
+
+model Endorsement {
+  id          String         @id @default(uuid())
+  fromUserId  String         @map("from_user_id")
+  toUserId    String         @map("to_user_id")
+  gameLogId   String         @map("game_log_id")
+  tag         EndorsementTag
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  fromUser User    @relation("EndorsementsGiven", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User    @relation("EndorsementsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  gameLog  GameLog @relation(fields: [gameLogId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId, gameLogId])
+  @@index([toUserId])
+  @@map("endorsements")
 }
 
 model ModerationAction {

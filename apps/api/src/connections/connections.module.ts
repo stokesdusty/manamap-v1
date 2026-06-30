@@ -4,11 +4,19 @@ import { SafetyModule } from '../safety/safety.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { QuestsModule } from '../quests/quests.module';
 import { SocialsModule } from '../socials/socials.module';
+import { EndorsementsModule } from '../endorsements/endorsements.module';
 import { ConnectionsController } from './connections.controller';
 import { ConnectionsService } from './connections.service';
 
 @Module({
-  imports: [AuthModule, SafetyModule, NotificationsModule, QuestsModule, SocialsModule],
+  imports: [
+    AuthModule,
+    SafetyModule,
+    NotificationsModule,
+    QuestsModule,
+    SocialsModule,
+    EndorsementsModule,
+  ],
   controllers: [ConnectionsController],
   providers: [ConnectionsService],
   exports: [ConnectionsService],

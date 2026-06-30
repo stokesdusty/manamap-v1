@@ -21,7 +21,16 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 function rgbToHex(r: number, g: number, b: number): string {
-  return '#' + [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+  return (
+    '#' +
+    [r, g, b]
+      .map((v) =>
+        Math.max(0, Math.min(255, Math.round(v)))
+          .toString(16)
+          .padStart(2, '0'),
+      )
+      .join('')
+  );
 }
 
 // Lighten (delta > 0) or darken (delta < 0) a hex color by percentage points.
@@ -99,16 +108,36 @@ function sortColors(cs: ManaColor[]): ManaColor[] {
 }
 
 const GUILD_NAMES: Record<string, string> = {
-  W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green',
-  WU: 'Azorius', WB: 'Orzhov', WR: 'Boros', WG: 'Selesnya',
-  UB: 'Dimir', UR: 'Izzet', UG: 'Simic',
-  BR: 'Rakdos', BG: 'Golgari', RG: 'Gruul',
-  WUB: 'Esper', WUR: 'Jeskai', WUG: 'Bant',
-  WBR: 'Mardu', WBG: 'Abzan', WRG: 'Naya',
-  UBR: 'Grixis', UBG: 'Sultai', URG: 'Temur',
+  W: 'White',
+  U: 'Blue',
+  B: 'Black',
+  R: 'Red',
+  G: 'Green',
+  WU: 'Azorius',
+  WB: 'Orzhov',
+  WR: 'Boros',
+  WG: 'Selesnya',
+  UB: 'Dimir',
+  UR: 'Izzet',
+  UG: 'Simic',
+  BR: 'Rakdos',
+  BG: 'Golgari',
+  RG: 'Gruul',
+  WUB: 'Esper',
+  WUR: 'Jeskai',
+  WUG: 'Bant',
+  WBR: 'Mardu',
+  WBG: 'Abzan',
+  WRG: 'Naya',
+  UBR: 'Grixis',
+  UBG: 'Sultai',
+  URG: 'Temur',
   BRG: 'Jund',
-  WUBR: 'Non-Green', WUBG: 'Non-Red', WURG: 'Non-Black',
-  WBRG: 'Non-Blue', UBRG: 'Non-White',
+  WUBR: 'Non-Green',
+  WUBG: 'Non-Red',
+  WURG: 'Non-Black',
+  WBRG: 'Non-Blue',
+  UBRG: 'Non-White',
   WUBRG: 'Five-Color',
 };
 

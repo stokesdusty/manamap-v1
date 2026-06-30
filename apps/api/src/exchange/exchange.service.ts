@@ -2,9 +2,9 @@ import { GoneException, Inject, Injectable, NotFoundException } from '@nestjs/co
 import { randomBytes } from 'crypto';
 import type Redis from 'ioredis';
 import { REDIS } from '../redis/redis.module';
-import { PrismaService } from '../prisma/prisma.service';
-import { SafetyService } from '../safety/safety.service';
-import { SocialsService } from '../socials/socials.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { SafetyService } from '../safety/safety.service';
+import type { SocialsService } from '../socials/socials.service';
 
 const TTL_SECONDS = 60;
 
@@ -29,7 +29,23 @@ export class ExchangeService {
     if (!userId) throw new GoneException('Token expired or invalid');
 
     const [user, blockedIds, socialsData] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, displayName: true, pronouns: true, bio: true, avatarColors: true, commander: true, powerLevel: true, vibes: true, formats: true, moderationStatus: true, tradeWants: true, tradeHaves: true } }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          displayName: true,
+          pronouns: true,
+          bio: true,
+          avatarColors: true,
+          commander: true,
+          powerLevel: true,
+          vibes: true,
+          formats: true,
+          moderationStatus: true,
+          tradeWants: true,
+          tradeHaves: true,
+        },
+      }),
       this.safety.getBlockedIds(callerId),
       this.socials.visibleSocials(userId, callerId),
     ]);

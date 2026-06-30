@@ -71,9 +71,9 @@ describe('RivalriesService', () => {
   describe('getMyRivalries', () => {
     it('returns shaped rivalry with correct win/loss counts', async () => {
       prisma.encounter.findMany.mockResolvedValue([
-        makeEncounter({ result: EncounterResult.WIN,  gameId: 'g1' }),
+        makeEncounter({ result: EncounterResult.WIN, gameId: 'g1' }),
         makeEncounter({ result: EncounterResult.LOSS, gameId: 'g2' }),
-        makeEncounter({ result: EncounterResult.WIN,  gameId: 'g3' }),
+        makeEncounter({ result: EncounterResult.WIN, gameId: 'g3' }),
       ]);
       prisma.user.findMany.mockResolvedValue([makeOpponent()]);
 
@@ -134,11 +134,11 @@ describe('RivalriesService', () => {
 
     it('sorts by gamesTogether descending, then lastPlayedAt descending', async () => {
       const earlier = new Date('2026-01-01T00:00:00Z');
-      const later   = new Date('2026-06-01T00:00:00Z');
+      const later = new Date('2026-06-01T00:00:00Z');
       prisma.encounter.findMany.mockResolvedValue([
         makeEncounter({ opponentId: 'oppA', gameId: 'g1', createdAt: earlier }),
-        makeEncounter({ opponentId: 'oppB', gameId: 'g2', createdAt: later  }),
-        makeEncounter({ opponentId: 'oppB', gameId: 'g3', createdAt: later  }),
+        makeEncounter({ opponentId: 'oppB', gameId: 'g2', createdAt: later }),
+        makeEncounter({ opponentId: 'oppB', gameId: 'g3', createdAt: later }),
       ]);
       prisma.user.findMany.mockResolvedValue([
         makeOpponent({ id: 'oppA', displayName: 'A' }),
@@ -201,9 +201,7 @@ describe('RivalriesService', () => {
     });
 
     it('returns shaped rivalry detail when opponent is active', async () => {
-      prisma.encounter.findMany.mockResolvedValue([
-        makeEncounter({ result: EncounterResult.WIN }),
-      ]);
+      prisma.encounter.findMany.mockResolvedValue([makeEncounter({ result: EncounterResult.WIN })]);
       prisma.user.findFirst.mockResolvedValue(makeOpponent());
 
       const result = await service.getRivalryDetail('u1', 'opp1');

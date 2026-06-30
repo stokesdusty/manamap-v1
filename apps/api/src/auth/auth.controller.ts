@@ -11,7 +11,7 @@ import {
   type RefreshBody,
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import { AuthService } from './auth.service';
+import type { AuthService } from './auth.service';
 
 @Controller('v1/auth')
 export class AuthController {
@@ -19,7 +19,9 @@ export class AuthController {
 
   @Post('apple')
   @HttpCode(200)
-  apple(@Body(new ZodValidationPipe(AppleAuthBodySchema)) body: AppleAuthBody): Promise<AuthTokens> {
+  apple(
+    @Body(new ZodValidationPipe(AppleAuthBodySchema)) body: AppleAuthBody,
+  ): Promise<AuthTokens> {
     return this.auth.signInWithApple(body.identityToken);
   }
 

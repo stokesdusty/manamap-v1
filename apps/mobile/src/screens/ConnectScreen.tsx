@@ -17,6 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { ConnectionItem, Game, ManaColor } from '@manamap/shared';
 import { BellButton } from '../components/BellButton';
 import { useAddContact } from '../hooks/useContacts';
+import { useProfile } from '../hooks/useMe';
 import { ManaPip } from '../components/ManaPip';
 import {
   useAcceptConnection,
@@ -25,6 +26,10 @@ import {
   useUpdateConnectionNote,
 } from '../hooks/useConnections';
 import { useConfirmGame, useDisputeGame, usePendingGames } from '../hooks/useGames';
+import {
+  EndorsementPromptSheet,
+  type EndorsableCoPlayer,
+} from '../components/EndorsementPromptSheet';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -62,9 +67,7 @@ function ConnectionCard({
   const isSent = item.direction === 'sent' && item.status === 'pending';
   const isAccepted = item.status === 'accepted';
 
-  const sub = item.peer.commander
-    ?? (item.peer.vibes ?? []).slice(0, 2).join(' · ')
-    ?? null;
+  const sub = item.peer.commander ?? (item.peer.vibes ?? []).slice(0, 2).join(' · ') ?? null;
 
   // ── Incoming request — full card with accept/decline buttons ──
   if (isIncoming) {
@@ -75,7 +78,9 @@ function ConnectionCard({
             <Text style={row.avatarText}>{initial}</Text>
           </View>
           <View style={{ flex: 1, gap: 4 }}>
-            <Text style={row.name} numberOfLines={1}>{item.peer.displayName}</Text>
+            <Text style={row.name} numberOfLines={1}>
+              {item.peer.displayName}
+            </Text>
             {item.peer.avatarColors.length > 0 && (
               <View style={row.pipsRow}>
                 {(item.peer.avatarColors as ManaColor[]).slice(0, 5).map((c) => (
@@ -100,7 +105,11 @@ function ConnectionCard({
             <Text style={row.declineText}>Decline</Text>
           </Pressable>
           <Pressable
-            style={({ pressed }) => [row.acceptBtn, isPending && { opacity: 0.6 }, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [
+              row.acceptBtn,
+              isPending && { opacity: 0.6 },
+              pressed && { opacity: 0.8 },
+            ]}
             onPress={isPending ? undefined : onAccept}
             disabled={isPending}
           >
@@ -129,15 +138,24 @@ function ConnectionCard({
           <Text style={row.avatarText}>{initial}</Text>
         </View>
         <View style={{ flex: 1, gap: 5, minWidth: 0 }}>
-          <Text style={row.connName} numberOfLines={1}>{item.peer.displayName}</Text>
+          <Text style={row.connName} numberOfLines={1}>
+            {item.peer.displayName}
+          </Text>
           <View style={row.pipsRow}>
             {(item.peer.avatarColors as ManaColor[]).slice(0, 5).map((c) => (
               <ManaPip key={c} color={c} size={15} />
             ))}
-            {sub ? <Text style={row.connSub} numberOfLines={1}> · {sub}</Text> : null}
+            {sub ? (
+              <Text style={row.connSub} numberOfLines={1}>
+                {' '}
+                · {sub}
+              </Text>
+            ) : null}
           </View>
           {item.myNote ? (
-            <Text style={row.myNoteText} numberOfLines={1}>📝 {item.myNote}</Text>
+            <Text style={row.myNoteText} numberOfLines={1}>
+              📝 {item.myNote}
+            </Text>
           ) : null}
         </View>
         {onAddContact && (
@@ -161,7 +179,9 @@ function ConnectionCard({
           <Text style={row.avatarText}>{initial}</Text>
         </View>
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={row.connName} numberOfLines={1}>{item.peer.displayName}</Text>
+          <Text style={row.connName} numberOfLines={1}>
+            {item.peer.displayName}
+          </Text>
           {item.peer.avatarColors.length > 0 && (
             <View style={row.pipsRow}>
               {(item.peer.avatarColors as ManaColor[]).slice(0, 5).map((c) => (
@@ -184,22 +204,49 @@ function ConnectionCard({
 // ConfirmResultsSection
 // ---------------------------------------------------------------------------
 
-function _ConfirmResultsSection({ myId }: { myId: string }) {
+function ConfirmResultsSection({ myId }: { myId: string }) {
   const { data: pending = [], isLoading } = usePendingGames();
   const { mutate: confirmGame, isPending: confirming, variables: confirmingId } = useConfirmGame();
   const { mutate: disputeGame, isPending: disputing, variables: disputingId } = useDisputeGame();
+  const [endorsePrompt, setEndorsePrompt] = useState<{
+    gameLogId: string;
+    coPlayers: EndorsableCoPlayer[];
+  } | null>(null);
 
   if (isLoading || pending.length === 0) return null;
 
   function handleDispute(gameId: string) {
-    Alert.alert('Dispute game?', 'This marks the result as disputed and no Encounters are recorded.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Dispute',
-        style: 'destructive',
-        onPress: () => disputeGame(gameId),
+    Alert.alert(
+      'Dispute game?',
+      'This marks the result as disputed and no Encounters are recorded.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Dispute',
+          style: 'destructive',
+          onPress: () => disputeGame(gameId),
+        },
+      ],
+    );
+  }
+
+  function handleConfirm(game: Game) {
+    confirmGame(game.id, {
+      onSuccess: (result) => {
+        if (result.allConfirmed) {
+          const coPlayers = game.players
+            .filter((p) => p.userId !== myId)
+            .map((p) => ({
+              userId: p.userId,
+              displayName: p.displayName,
+              avatarColors: p.avatarColors,
+            }));
+          if (coPlayers.length > 0) {
+            setEndorsePrompt({ gameLogId: game.id, coPlayers });
+          }
+        }
       },
-    ]);
+    });
   }
 
   return (
@@ -225,14 +272,15 @@ function _ConfirmResultsSection({ myId }: { myId: string }) {
               <Text style={cr.detail}>
                 Winner: <Text style={cr.detailBold}>{winner?.displayName ?? '?'}</Text>
               </Text>
-              {myPlayer?.deck ? (
-                <Text style={cr.detail}>Your deck: {myPlayer.deck}</Text>
-              ) : null}
+              {myPlayer?.deck ? <Text style={cr.detail}>Your deck: {myPlayer.deck}</Text> : null}
             </View>
 
             <View style={cr.actions}>
               <Pressable
-                style={({ pressed }) => [cr.disputeBtn, (pressed || isDisputing) && { opacity: 0.6 }]}
+                style={({ pressed }) => [
+                  cr.disputeBtn,
+                  (pressed || isDisputing) && { opacity: 0.6 },
+                ]}
                 onPress={() => handleDispute(game.id)}
                 disabled={isDisputing || isConfirming}
               >
@@ -243,8 +291,11 @@ function _ConfirmResultsSection({ myId }: { myId: string }) {
                 )}
               </Pressable>
               <Pressable
-                style={({ pressed }) => [cr.confirmBtn, (pressed || isConfirming) && { opacity: 0.8 }]}
-                onPress={() => confirmGame(game.id)}
+                style={({ pressed }) => [
+                  cr.confirmBtn,
+                  (pressed || isConfirming) && { opacity: 0.8 },
+                ]}
+                onPress={() => handleConfirm(game)}
                 disabled={isConfirming || isDisputing}
               >
                 {isConfirming ? (
@@ -257,6 +308,15 @@ function _ConfirmResultsSection({ myId }: { myId: string }) {
           </View>
         );
       })}
+
+      {endorsePrompt && (
+        <EndorsementPromptSheet
+          visible
+          onClose={() => setEndorsePrompt(null)}
+          gameLogId={endorsePrompt.gameLogId}
+          coPlayers={endorsePrompt.coPlayers}
+        />
+      )}
     </View>
   );
 }
@@ -323,13 +383,17 @@ const cr = StyleSheet.create({
 
 export function ConnectScreen({ navigation }: ConnectScreenProps) {
   const qc = useQueryClient();
+  const { data: profile } = useProfile();
   const { data, isLoading } = useConnections();
   const { mutate: accept, isPending: accepting, variables: acceptingId } = useAcceptConnection();
   const { mutate: decline } = useDeclineConnection();
   const { mutate: addContact } = useAddContact();
   const { mutate: saveNote, isPending: savingNote } = useUpdateConnectionNote();
 
-  const [noteModal, setNoteModal] = useState<{ connectionId: string; current: string | null } | null>(null);
+  const [noteModal, setNoteModal] = useState<{
+    connectionId: string;
+    current: string | null;
+  } | null>(null);
   const [noteText, setNoteText] = useState('');
 
   useFocusEffect(
@@ -365,7 +429,10 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
   function handleSaveNote() {
     if (!noteModal) return;
     const text = noteText.trim() || null;
-    saveNote({ connectionId: noteModal.connectionId, text }, { onSuccess: () => setNoteModal(null) });
+    saveNote(
+      { connectionId: noteModal.connectionId, text },
+      { onSuccess: () => setNoteModal(null) },
+    );
   }
 
   const incoming = data?.incoming ?? [];
@@ -391,6 +458,8 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {profile && <ConfirmResultsSection myId={profile.id} />}
+
           {/* Requests — always rendered */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>
@@ -467,9 +536,11 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
             </Pressable>
             <Text style={noteStyles.title}>Private note</Text>
             <Pressable onPress={handleSaveNote} hitSlop={8} disabled={savingNote}>
-              {savingNote
-                ? <ActivityIndicator size="small" color={colors.accent} />
-                : <Text style={noteStyles.save}>Save</Text>}
+              {savingNote ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <Text style={noteStyles.save}>Save</Text>
+              )}
             </Pressable>
           </View>
           <View style={noteStyles.body}>
@@ -755,7 +826,3 @@ const noteStyles = StyleSheet.create({
     color: colors.textTertiary,
   },
 });
-
-// Hidden game feature — see README "Hidden / future features"
-export type _HiddenGameFeature = typeof _ConfirmResultsSection;
-

@@ -1,12 +1,5 @@
-﻿import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+﻿import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -103,7 +96,12 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={handleClose}
+    >
       <SafeAreaView style={s.root} edges={['top']}>
         <View style={s.header}>
           <View style={s.handle} />
@@ -114,7 +112,12 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
             <Text style={s.title}>Form a Pod</Text>
           </View>
           <Text style={s.sub}>Add from your contacts or invite a guest.</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.rosterScroll} contentContainerStyle={s.rosterContent}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={s.rosterScroll}
+            contentContainerStyle={s.rosterContent}
+          >
             {podPlayers.map((p) => (
               <View key={p.id} style={s.chip}>
                 <Avatar name={p.displayName} manaColors={p.avatarColors as ManaColor[]} size={26} />
@@ -133,7 +136,11 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
           </ScrollView>
         </View>
 
-        <ScrollView style={s.body} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView
+          style={s.body}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={spacing.xl}
+        >
           <TextInput
             style={s.searchInput}
             value={search}
@@ -156,7 +163,11 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
                     style={[s.row, i > 0 && s.rowBorder, disabled && s.rowDisabled]}
                     onPress={() => !disabled && toggle(p.id)}
                   >
-                    <Avatar name={p.displayName} manaColors={p.avatarColors as ManaColor[]} size={42} />
+                    <Avatar
+                      name={p.displayName}
+                      manaColors={p.avatarColors as ManaColor[]}
+                      size={42}
+                    />
                     <View style={s.rowText}>
                       <Text style={s.rowName}>{p.displayName}</Text>
                     </View>
@@ -186,29 +197,43 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
                 onPress={addGuest}
                 disabled={!guestInput.trim() || isFull}
               >
-                <Text style={[s.addBtnText, (!guestInput.trim() || isFull) && s.addBtnTextDisabled]}>Add</Text>
+                <Text
+                  style={[s.addBtnText, (!guestInput.trim() || isFull) && s.addBtnTextDisabled]}
+                >
+                  Add
+                </Text>
               </Pressable>
             </View>
             {guests.map((g) => (
               <View key={g.id} style={s.guestItem}>
                 <View style={s.guestDot} />
                 <Text style={s.guestItemName}>{g.displayName}</Text>
-                <View style={s.guestTag}><Text style={s.guestTagText}>Guest</Text></View>
+                <View style={s.guestTag}>
+                  <Text style={s.guestTagText}>Guest</Text>
+                </View>
                 <Pressable onPress={() => removePlayer(g.id)} hitSlop={8}>
                   <Ionicons name="close" size={16} color={colors.textTertiary} />
                 </Pressable>
               </View>
             ))}
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
-        <View style={s.footer}>
-          <Pressable style={[s.startBtn, !canStart && s.startBtnDisabled]} onPress={handleStart} disabled={!canStart}>
-            <Text style={[s.startBtnText, !canStart && s.startBtnTextDisabled]}>
-              {canStart ? `Start Game · ${podPlayers.length} players →` : 'Add at least 2 players'}
-            </Text>
-          </Pressable>
-        </View>
+        <KeyboardStickyView>
+          <View style={s.footer}>
+            <Pressable
+              style={[s.startBtn, !canStart && s.startBtnDisabled]}
+              onPress={handleStart}
+              disabled={!canStart}
+            >
+              <Text style={[s.startBtnText, !canStart && s.startBtnTextDisabled]}>
+                {canStart
+                  ? `Start Game · ${podPlayers.length} players →`
+                  : 'Add at least 2 players'}
+              </Text>
+            </Pressable>
+          </View>
+        </KeyboardStickyView>
       </SafeAreaView>
     </Modal>
   );
@@ -217,45 +242,168 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.paper },
   header: {
-    paddingTop: spacing.md, paddingHorizontal: spacing.xl, paddingBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.borderLight,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderLight,
   },
-  handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: colors.border, marginBottom: spacing.md },
+  handle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+    marginBottom: spacing.md,
+  },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   backBtn: { marginLeft: -4 },
-  title: { fontFamily: typography.fontFamily.bold, fontSize: 22, color: colors.textPrimary, letterSpacing: -0.5 },
-  sub: { fontFamily: typography.fontFamily.semiBold, fontSize: 14, color: colors.textSecondary, marginTop: 4, marginBottom: 14, lineHeight: 20 },
+  title: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 22,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  sub: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
+    marginBottom: 14,
+    lineHeight: 20,
+  },
   rosterScroll: { flexGrow: 0 },
   rosterContent: { flexDirection: 'row', gap: 8, alignItems: 'center', minHeight: 38 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.accent + '22', borderWidth: 1.5, borderColor: colors.accent, borderRadius: radii.full, paddingLeft: 6, paddingRight: 10, paddingVertical: 5 },
-  chipName: { fontFamily: typography.fontFamily.bold, fontSize: 13, color: colors.accent, maxWidth: 80 },
-  rosterHint: { fontFamily: typography.fontFamily.semiBold, fontSize: 13, color: colors.textTertiary, alignSelf: 'center' },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.accent + '22',
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    borderRadius: radii.full,
+    paddingLeft: 6,
+    paddingRight: 10,
+    paddingVertical: 5,
+  },
+  chipName: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 13,
+    color: colors.accent,
+    maxWidth: 80,
+  },
+  rosterHint: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 13,
+    color: colors.textTertiary,
+    alignSelf: 'center',
+  },
   body: { flex: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.md },
-  searchInput: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.border, borderRadius: radii.md, paddingHorizontal: 15, paddingVertical: 13, fontFamily: typography.fontFamily.semiBold, fontSize: 15, color: colors.textPrimary, marginBottom: spacing.md },
-  emptyHint: { textAlign: 'center', fontFamily: typography.fontFamily.semiBold, fontSize: 13.5, color: colors.textTertiary, paddingVertical: 10 },
+  searchInput: {
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 15,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+  emptyHint: {
+    textAlign: 'center',
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 13.5,
+    color: colors.textTertiary,
+    paddingVertical: 10,
+  },
   list: { marginBottom: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 11 },
   rowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.borderLight },
   rowDisabled: { opacity: 0.4 },
   rowText: { flex: 1, minWidth: 0 },
   rowName: { fontFamily: typography.fontFamily.bold, fontSize: 14.5, color: colors.textPrimary },
-  check: { width: 26, height: 26, borderRadius: radii.full, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  check: {
+    width: 26,
+    height: 26,
+    borderRadius: radii.full,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   checkActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   guestSection: { paddingBottom: 80 },
-  guestLabel: { fontFamily: typography.fontFamily.bold, fontSize: 12, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: spacing.sm },
+  guestLabel: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 12,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: spacing.sm,
+  },
   guestRow: { flexDirection: 'row', gap: 9 },
   guestInput: { flex: 1, marginBottom: 0 },
-  addBtn: { height: 50, paddingHorizontal: 18, backgroundColor: colors.accent, borderRadius: radii.lg, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  addBtn: {
+    height: 50,
+    paddingHorizontal: 18,
+    backgroundColor: colors.accent,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   addBtnDisabled: { backgroundColor: colors.chipBg },
   addBtnText: { fontFamily: typography.fontFamily.bold, fontSize: 14, color: colors.textInverse },
   addBtnTextDisabled: { color: colors.textTertiary },
-  guestItem: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, padding: spacing.md, backgroundColor: colors.chipBg, borderRadius: radii.md },
-  guestDot: { width: 8, height: 8, borderRadius: radii.full, backgroundColor: colors.accent, flexShrink: 0 },
-  guestItemName: { flex: 1, fontFamily: typography.fontFamily.bold, fontSize: 14, color: colors.textPrimary },
-  guestTag: { backgroundColor: colors.border, borderRadius: radii.full, paddingHorizontal: 8, paddingVertical: 2 },
-  guestTagText: { fontFamily: typography.fontFamily.bold, fontSize: 11.5, color: colors.textTertiary },
+  guestItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 10,
+    padding: spacing.md,
+    backgroundColor: colors.chipBg,
+    borderRadius: radii.md,
+  },
+  guestDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radii.full,
+    backgroundColor: colors.accent,
+    flexShrink: 0,
+  },
+  guestItemName: {
+    flex: 1,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  guestTag: {
+    backgroundColor: colors.border,
+    borderRadius: radii.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  guestTagText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 11.5,
+    color: colors.textTertiary,
+  },
   footer: { padding: spacing.xl, paddingBottom: 48 },
-  startBtn: { height: 54, backgroundColor: colors.accent, borderRadius: radii.lg, alignItems: 'center', justifyContent: 'center', shadowColor: colors.accent, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6 },
+  startBtn: {
+    height: 54,
+    backgroundColor: colors.accent,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
   startBtnDisabled: { backgroundColor: colors.chipBg, shadowOpacity: 0, elevation: 0 },
   startBtnText: { fontFamily: typography.fontFamily.bold, fontSize: 16, color: colors.textInverse },
   startBtnTextDisabled: { color: colors.textTertiary },

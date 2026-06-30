@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DeckSite } from '@prisma/client';
+import type { DeckSite } from '@prisma/client';
 import {
   siteFromUrl,
   type CreateDeckLink,
@@ -9,16 +9,21 @@ import {
   type UpdatePrivacy,
   type UpdateProfile,
 } from '@manamap/shared';
-import { PrismaService } from '../prisma/prisma.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { EndorsementsService } from '../endorsements/endorsements.service';
 
 @Injectable()
 export class MeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly endorsements: EndorsementsService,
+  ) {}
 
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    return user;
+    const endorsements = await this.endorsements.getSummary(userId);
+    return { ...user, endorsements };
   }
 
   async updateProfile(userId: string, dto: UpdateProfile) {
@@ -64,7 +69,9 @@ export class MeService {
       ...(dto.showDecks !== undefined ? { showDecks: dto.showDecks } : {}),
       ...(dto.showMetHistory !== undefined ? { showMetHistory: dto.showMetHistory } : {}),
       ...(dto.storeMessages !== undefined ? { storeMessages: dto.storeMessages } : {}),
-      ...(dto.shareNameWithContacts !== undefined ? { shareNameWithContacts: dto.shareNameWithContacts } : {}),
+      ...(dto.shareNameWithContacts !== undefined
+        ? { shareNameWithContacts: dto.shareNameWithContacts }
+        : {}),
       ...(dto.eventReminders !== undefined ? { eventReminders: dto.eventReminders } : {}),
     };
     return this.prisma.privacySettings.upsert({
@@ -94,7 +101,12 @@ export class MeService {
   async createDeck(userId: string, dto: CreateDeckLink) {
     const site = dto.url ? siteFromUrl(dto.url) : null;
     const deck = await this.prisma.deckLink.create({
-      data: { userId, name: dto.name, url: dto.url ?? null, site: site ? site.toUpperCase() as DeckSite : null },
+      data: {
+        userId,
+        name: dto.name,
+        url: dto.url ?? null,
+        site: site ? (site.toUpperCase() as DeckSite) : null,
+      },
     });
     return { ...deck, site: deck.site?.toLowerCase() ?? null };
   }
@@ -107,10 +119,12 @@ export class MeService {
       where: { id: deckId },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
-        ...(dto.url !== undefined ? {
-          url: dto.url,
-          site: dto.url ? (siteFromUrl(dto.url)?.toUpperCase() as DeckSite ?? null) : null,
-        } : {}),
+        ...(dto.url !== undefined
+          ? {
+              url: dto.url,
+              site: dto.url ? ((siteFromUrl(dto.url)?.toUpperCase() as DeckSite) ?? null) : null,
+            }
+          : {}),
       },
     });
     return { ...deck, site: deck.site?.toLowerCase() ?? null };
@@ -143,9 +157,15 @@ export class MeService {
     if (!user || !user.homeStoreId) return { store: null };
 
     type HomeStoreRow = {
-      id: string; name: string; address: string | null; city: string | null;
-      state: string | null; zip: string | null; discordUrl: string | null;
-      lat: number | null; lng: number | null;
+      id: string;
+      name: string;
+      address: string | null;
+      city: string | null;
+      state: string | null;
+      zip: string | null;
+      discordUrl: string | null;
+      lat: number | null;
+      lng: number | null;
     };
 
     const rows = await this.prisma.$queryRaw<HomeStoreRow[]>`
@@ -171,7 +191,10 @@ export class MeService {
 
   async getRecentStores(userId: string) {
     type RecentStoreRow = {
-      id: string; name: string; city: string | null; state: string | null;
+      id: string;
+      name: string;
+      city: string | null;
+      state: string | null;
     };
     return this.prisma.$queryRaw<RecentStoreRow[]>`
       SELECT DISTINCT ON (c.store_id)
@@ -268,7 +291,10 @@ export class MeService {
 
   async setHomeStore(userId: string, dto: SetHomeStore) {
     if (dto.storeId) {
-      const exists = await this.prisma.store.findUnique({ where: { id: dto.storeId }, select: { id: true } });
+      const exists = await this.prisma.store.findUnique({
+        where: { id: dto.storeId },
+        select: { id: true },
+      });
       if (!exists) throw new NotFoundException('Store not found');
     }
 
@@ -311,7 +337,9 @@ export class MeService {
         where: { userId },
         update: {
           discoverable: dto.discoverable ?? true,
-          ...(dto.shareNameWithContacts !== undefined ? { shareNameWithContacts: dto.shareNameWithContacts } : {}),
+          ...(dto.shareNameWithContacts !== undefined
+            ? { shareNameWithContacts: dto.shareNameWithContacts }
+            : {}),
         },
         create: {
           userId,
@@ -329,7 +357,7 @@ export class MeService {
             userId,
             name: d.name,
             url: d.url ?? null,
-            site: d.url ? (siteFromUrl(d.url)?.toUpperCase() as DeckSite ?? null) : null,
+            site: d.url ? ((siteFromUrl(d.url)?.toUpperCase() as DeckSite) ?? null) : null,
           })),
           skipDuplicates: true,
         });

@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
-import type {
-  ModerationReport,
-  ModerationDetail,
-  ModerationStats,
-} from '@manamap/shared';
+import type { ModerationReport, ModerationDetail, ModerationStats } from '@manamap/shared';
 
 const MANA_COLORS: Record<string, string> = {
   W: '#f9fafb',
@@ -21,7 +17,11 @@ function AvatarPill({ colors }: { colors: string[] }) {
   return (
     <span className="avatar-pill">
       {colors.slice(0, 5).map((c, i) => (
-        <span key={i} className="avatar-dot" style={{ background: MANA_COLORS[c] ?? '#aaa', border: '1px solid #d1d5db' }} />
+        <span
+          key={i}
+          className="avatar-dot"
+          style={{ background: MANA_COLORS[c] ?? '#aaa', border: '1px solid #d1d5db' }}
+        />
       ))}
     </span>
   );
@@ -50,7 +50,12 @@ function ModerationStatusBadge({ status }: { status: string }) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function StatsRow({ stats }: { stats: ModerationStats }) {
@@ -61,15 +66,21 @@ function StatsRow({ stats }: { stats: ModerationStats }) {
         <div className="mod-stat-lbl">Open</div>
       </div>
       <div className="mod-stat">
-        <div className="mod-stat-val" style={{ color: '#b91c1c' }}>{stats.repeatOffenders}</div>
+        <div className="mod-stat-val" style={{ color: '#b91c1c' }}>
+          {stats.repeatOffenders}
+        </div>
         <div className="mod-stat-lbl">Repeat</div>
       </div>
       <div className="mod-stat">
-        <div className="mod-stat-val" style={{ color: '#3730a3' }}>{stats.reviewed}</div>
+        <div className="mod-stat-val" style={{ color: '#3730a3' }}>
+          {stats.reviewed}
+        </div>
         <div className="mod-stat-lbl">Reviewed</div>
       </div>
       <div className="mod-stat">
-        <div className="mod-stat-val" style={{ color: '#15803d' }}>{stats.actionedAllTime}</div>
+        <div className="mod-stat-val" style={{ color: '#15803d' }}>
+          {stats.actionedAllTime}
+        </div>
         <div className="mod-stat-lbl">Actioned</div>
       </div>
     </div>
@@ -103,7 +114,12 @@ function DetailPanel({
       qc.invalidateQueries({ queryKey: ['mod-reports'] });
       qc.invalidateQueries({ queryKey: ['mod-stats'] });
       qc.invalidateQueries({ queryKey: ['mod-report', reportId] });
-      const labels: Record<string, string> = { DISMISS: 'Dismissed', WARN: 'Warning logged', SUSPEND: 'User suspended', BAN: 'User banned' };
+      const labels: Record<string, string> = {
+        DISMISS: 'Dismissed',
+        WARN: 'Warning logged',
+        SUSPEND: 'User suspended',
+        BAN: 'User banned',
+      };
       setToast(labels[vars.action] ?? 'Done');
       setTimeout(() => setToast(null), 2500);
       onResolved(null);
@@ -116,7 +132,15 @@ function DetailPanel({
 
   if (isLoading || !detail) {
     return (
-      <div className="mod-detail" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
+      <div
+        className="mod-detail"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--text-tertiary)',
+        }}
+      >
         Loading…
       </div>
     );
@@ -130,12 +154,26 @@ function DetailPanel({
       {toast && <div className="toast">{toast}</div>}
 
       <div className="mod-detail-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginBottom: 12,
+          }}
+        >
           <div>
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>
               {detail.reported.displayName}
               {detail.reported.handle && (
-                <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-tertiary)', marginLeft: 8 }}>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 400,
+                    color: 'var(--text-tertiary)',
+                    marginLeft: 8,
+                  }}
+                >
                   @{detail.reported.handle}
                 </span>
               )}
@@ -143,14 +181,22 @@ function DetailPanel({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <AvatarPill colors={detail.reported.avatarColors} />
               <ModerationStatusBadge status={detail.reported.moderationStatus} />
-              {isRepeat && <span className="repeat-flag">⚠ Repeat Offender ({detail.reported.priorReports} reports)</span>}
+              {isRepeat && (
+                <span className="repeat-flag">
+                  ⚠ Repeat Offender ({detail.reported.priorReports} reports)
+                </span>
+              )}
             </div>
           </div>
           <StatusBadge status={detail.status} />
         </div>
         <div style={{ display: 'flex', gap: 16, fontSize: 13, color: 'var(--text-secondary)' }}>
-          <span>Prior reports: <strong>{detail.reported.priorReports}</strong></span>
-          <span>Prior actions: <strong>{detail.reported.priorActions}</strong></span>
+          <span>
+            Prior reports: <strong>{detail.reported.priorReports}</strong>
+          </span>
+          <span>
+            Prior actions: <strong>{detail.reported.priorActions}</strong>
+          </span>
         </div>
       </div>
 
@@ -158,7 +204,9 @@ function DetailPanel({
         <div className="mod-detail-title">Report</div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
           <ReasonBadge reason={detail.reason} />
-          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{formatDate(detail.createdAt)}</span>
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+            {formatDate(detail.createdAt)}
+          </span>
         </div>
         {detail.context && (
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
@@ -166,7 +214,16 @@ function DetailPanel({
           </div>
         )}
         {detail.detail && (
-          <div style={{ background: 'var(--paper)', borderRadius: 'var(--radius-md)', padding: '12px 14px', fontSize: 14, fontStyle: 'italic', color: 'var(--text-primary)' }}>
+          <div
+            style={{
+              background: 'var(--paper)',
+              borderRadius: 'var(--radius-md)',
+              padding: '12px 14px',
+              fontSize: 14,
+              fontStyle: 'italic',
+              color: 'var(--text-primary)',
+            }}
+          >
             "{detail.detail}"
           </div>
         )}
@@ -175,15 +232,19 @@ function DetailPanel({
       {detail.signals.length > 0 && (
         <div className="mod-detail-card">
           <div className="mod-detail-title">Signals</div>
-          {detail.signals.map((s: { type: string; label: string; createdAt: string }, i: number) => (
-            <div key={i} className="mod-signal">
-              <span style={{ fontSize: 16 }}>{s.type === 'open_report' ? '🚨' : '⚡'}</span>
-              <div>
-                <div style={{ fontWeight: 500 }}>{s.label}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{formatDate(s.createdAt)}</div>
+          {detail.signals.map(
+            (s: { type: string; label: string; createdAt: string }, i: number) => (
+              <div key={i} className="mod-signal">
+                <span style={{ fontSize: 16 }}>{s.type === 'open_report' ? '🚨' : '⚡'}</span>
+                <div>
+                  <div style={{ fontWeight: 500 }}>{s.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+                    {formatDate(s.createdAt)}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            ),
+          )}
         </div>
       )}
 
@@ -191,7 +252,11 @@ function DetailPanel({
         <div className="mod-detail-card">
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
             Resolved {detail.resolvedAt ? formatDate(detail.resolvedAt) : ''}
-            {detail.resolutionNote && <div style={{ marginTop: 6 }}><strong>Note:</strong> {detail.resolutionNote}</div>}
+            {detail.resolutionNote && (
+              <div style={{ marginTop: 6 }}>
+                <strong>Note:</strong> {detail.resolutionNote}
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -301,7 +366,10 @@ export function ModerationPage() {
               <button
                 key={t.value}
                 className={`mod-tab${filter === t.value ? ' active' : ''}`}
-                onClick={() => { setFilter(t.value); setSelectedId(null); }}
+                onClick={() => {
+                  setFilter(t.value);
+                  setSelectedId(null);
+                }}
               >
                 {t.label}
               </button>
@@ -309,7 +377,9 @@ export function ModerationPage() {
           </div>
           <div className="mod-queue-list">
             {isLoading && (
-              <div style={{ padding: 24, color: 'var(--text-tertiary)', fontSize: 14 }}>Loading…</div>
+              <div style={{ padding: 24, color: 'var(--text-tertiary)', fontSize: 14 }}>
+                Loading…
+              </div>
             )}
             {!isLoading && reports.length === 0 && (
               <div className="empty-state">
@@ -325,10 +395,18 @@ export function ModerationPage() {
                   className={`mod-queue-item${selectedId === r.id ? ' selected' : ''}`}
                   onClick={() => setSelectedId(r.id)}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                    }}
+                  >
                     <div className="mod-queue-item-name">
                       {r.reported.displayName}
-                      {isRepeat && <span style={{ marginLeft: 6, fontSize: 11, color: '#b91c1c' }}>⚠</span>}
+                      {isRepeat && (
+                        <span style={{ marginLeft: 6, fontSize: 11, color: '#b91c1c' }}>⚠</span>
+                      )}
                     </div>
                     <ReasonBadge reason={r.reason} />
                   </div>
@@ -338,7 +416,8 @@ export function ModerationPage() {
                   </div>
                   {r.reported.priorReports > 0 && (
                     <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 3 }}>
-                      {r.reported.priorReports} prior report{r.reported.priorReports !== 1 ? 's' : ''}
+                      {r.reported.priorReports} prior report
+                      {r.reported.priorReports !== 1 ? 's' : ''}
                     </div>
                   )}
                 </div>
@@ -350,7 +429,10 @@ export function ModerationPage() {
         {selectedId ? (
           <DetailPanel key={selectedId} reportId={selectedId} onResolved={handleResolved} />
         ) : (
-          <div className="mod-detail" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div
+            className="mod-detail"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
             <div className="empty-state">
               <div className="empty-state-icon">🛡️</div>
               <div className="empty-state-text">Select a report to review</div>

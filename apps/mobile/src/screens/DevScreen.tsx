@@ -81,7 +81,13 @@ const ACTIONS: Action[] = [
     id: 'full-scene',
     label: 'Full Scene',
     desc: 'Populate store + host pod + send request + log game',
-    invalidates: [['nearby'], ['lfg', 'feed'], ['pods', 'feed'], ['connections'], ['games', 'pending']],
+    invalidates: [
+      ['nearby'],
+      ['lfg', 'feed'],
+      ['pods', 'feed'],
+      ['connections'],
+      ['games', 'pending'],
+    ],
   },
   {
     id: 'pod-for-tracker',
@@ -107,7 +113,13 @@ const ACTIONS: Action[] = [
     id: 'reset',
     label: 'Reset',
     desc: 'Clear all bot presence/LFG/pods/pending connections/pending games',
-    invalidates: [['nearby'], ['lfg', 'feed'], ['pods', 'feed'], ['connections'], ['games', 'pending']],
+    invalidates: [
+      ['nearby'],
+      ['lfg', 'feed'],
+      ['pods', 'feed'],
+      ['connections'],
+      ['games', 'pending'],
+    ],
     danger: true,
   },
 ];
@@ -203,9 +215,7 @@ export function DevScreen({ navigation }: Props) {
         ) : null}
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            DEV_TOOLS mode — not visible in production
-          </Text>
+          <Text style={styles.footerText}>DEV_TOOLS mode — not visible in production</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

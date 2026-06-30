@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>manamap — Growth &amp; Monetization Prompts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#F4ECE0; --surface:#FFFCF6; --surface-2:#FBF4E9;
+    --ink:#2A211B; --ink-2:#5B5048; --muted:#9C8E7F;
+    --line:#E7DBCB; --line-strong:#D6C7B2; --chip-bg:#EFE6D8;
+    --brand:#5AA452; --brand-soft:#E8F0DF; --brand-ink:#48723D;
+    --code-bg:#251F1A; --code-ink:#EFE7DC; --code-dim:#A99D8C;
+    --U:#4FA9E6; --G:#5FB97E; --R:#F0705B; --P:#9B7BE0; --gold:#C9962E;
+    --maxw:1000px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5;}
+  ::selection{background:var(--brand);color:#fff;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px;}
+
+  .hero{padding:54px 0 26px;}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;
+    letter-spacing:0.08em;text-transform:uppercase;color:var(--brand-ink);background:var(--brand-soft);
+    padding:6px 13px;border-radius:999px;white-space:nowrap;}
+  .hero h1{font-size:clamp(34px,5vw,52px);line-height:1.04;letter-spacing:-0.03em;margin:18px 0 0;font-weight:800;}
+  .hero .lede{font-size:18px;line-height:1.55;color:var(--ink-2);max-width:660px;margin:16px 0 0;text-wrap:pretty;}
+  .hero .lede a{color:var(--brand-ink);font-weight:700;}
+
+  /* index */
+  .toc{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:30px 0 8px;}
+  @media(max-width:780px){.toc{grid-template-columns:1fr 1fr;}}
+  .toccol h4{font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:0 0 9px;}
+  .toccol ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+  .toccol a{font-size:13px;color:var(--ink-2);text-decoration:none;display:flex;gap:7px;line-height:1.35;}
+  .toccol a:hover{color:var(--brand-ink);}
+  .toccol a .c{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);flex-shrink:0;}
+
+  section{padding:26px 0;}
+  .secband{display:flex;align-items:baseline;gap:14px;border-bottom:2px solid var(--ink);padding-bottom:12px;margin:20px 0 6px;}
+  .secband .sn{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--brand-ink);}
+  .secband h2{font-size:26px;font-weight:800;letter-spacing:-0.025em;margin:0;text-transform:none;color:var(--ink);}
+  .secband .sd{margin-left:auto;font-size:13px;color:var(--muted);font-weight:600;}
+  .secintro{font-size:14.5px;color:var(--ink-2);max-width:680px;margin:14px 0 4px;line-height:1.55;}
+
+  /* milestone (matches hardening page) */
+  .ms{background:var(--surface);border:1px solid var(--line);border-radius:18px;margin:20px 0;overflow:hidden;
+    box-shadow:0 1px 2px rgba(80,55,30,0.04),0 8px 22px rgba(80,55,30,0.05);scroll-margin-top:18px;}
+  .mhead{display:flex;align-items:flex-start;gap:14px;padding:20px 22px 14px;}
+  .mcode{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:#fff;background:var(--brand);
+    padding:6px 11px;border-radius:8px;flex-shrink:0;}
+  .mcode.u{background:var(--U);} .mcode.f{background:var(--P);} .mcode.m{background:var(--gold);}
+  .mtitle{font-size:20px;font-weight:800;letter-spacing:-0.02em;display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+  .star{font-size:10px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#fff;background:var(--P);
+    padding:3px 8px;border-radius:99px;}
+  .star.rev{background:var(--gold);} .star.win{background:var(--brand);}
+  .mgoal{font-size:14.5px;color:var(--ink-2);margin-top:5px;line-height:1.5;}
+  .mdeps{font-size:12px;color:var(--muted);font-weight:700;margin-top:8px;font-family:'JetBrains Mono',monospace;}
+  .promptbox{margin:0 22px;background:var(--code-bg);border-radius:13px;overflow:hidden;}
+  .ptop{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.08);}
+  .plabel{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--code-dim);letter-spacing:0.04em;text-transform:uppercase;}
+  .copybtn{font-family:'Plus Jakarta Sans';font-size:12.5px;font-weight:700;color:var(--code-ink);
+    background:rgba(255,255,255,0.1);border:none;border-radius:7px;padding:7px 13px;cursor:pointer;transition:background .15s;}
+  .copybtn:hover{background:rgba(255,255,255,0.18);}
+  .copybtn.done{background:var(--G);color:#fff;}
+  .promptbox pre{margin:0;padding:16px 17px;overflow-x:auto;max-height:330px;overflow-y:auto;}
+  .promptbox code{font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7;color:var(--code-ink);white-space:pre-wrap;}
+  .mlists{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:18px 22px 22px;}
+  @media(max-width:640px){.mlists{grid-template-columns:1fr;}}
+  .mlist .lh{font-size:11px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;}
+  .mlist ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;}
+  .mlist li{font-size:13.5px;color:var(--ink-2);line-height:1.45;display:flex;gap:9px;align-items:flex-start;}
+  .mlist li::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--brand);margin-top:6px;flex-shrink:0;}
+  .mlist.acc li::before{background:var(--G);border-radius:50%;}
+
+  footer{padding:30px 0 70px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line);margin-top:24px;}
+  footer b{color:var(--ink-2);}
+</style>
+</head>
+<body>
+  <header class="hero wrap">
+    <span class="eyebrow">Growth &amp; Monetization · grounded in your codebase</span>
+    <h1>Build prompts for the audit.</h1>
+    <p class="lede">Every recommendation from the <a href="manamap-audit.html">product audit</a>, turned into a paste-ready build prompt written against the actual modules, models, and file paths in the manamap monorepo. Grouped by the audit's four tracks. Pick what you want to ship; each prompt names its schema changes, endpoints, mobile/portal work, and acceptance checks. Copy → paste into the coding agent.</p>
+
+    <div class="toc">
+      <div class="toccol">
+        <h4>01 · Design</h4>
+        <ul>
+          <li><a href="#g1"><span class="c">G1</span> Home hierarchy</a></li>
+          <li><a href="#g2"><span class="c">G2</span> De-dupe Needs Attention</a></li>
+          <li><a href="#g3"><span class="c">G3</span> Calm the socials row</a></li>
+          <li><a href="#g4"><span class="c">G4</span> Reward modal polish</a></li>
+        </ul>
+      </div>
+      <div class="toccol">
+        <h4>02 · UX</h4>
+        <ul>
+          <li><a href="#g5"><span class="c">G5</span> Unified "Play tonight"</a></li>
+          <li><a href="#g6"><span class="c">G6</span> Pod Agreement card ★</a></li>
+          <li><a href="#g7"><span class="c">G7</span> Pod &amp; connection threads</a></li>
+          <li><a href="#g8"><span class="c">G8</span> Auto-confirm results</a></li>
+          <li><a href="#g9"><span class="c">G9</span> Empty / low-density states</a></li>
+        </ul>
+      </div>
+      <div class="toccol">
+        <h4>03 · Features</h4>
+        <ul>
+          <li><a href="#g10"><span class="c">G10</span> Deck shelf + affiliate</a></li>
+          <li><a href="#g11"><span class="c">G11</span> Travel / visiting mode</a></li>
+          <li><a href="#g12"><span class="c">G12</span> Post-game endorsements</a></li>
+          <li><a href="#g13"><span class="c">G13</span> Store leagues &amp; seasons</a></li>
+        </ul>
+      </div>
+      <div class="toccol">
+        <h4>04 · Monetize</h4>
+        <ul>
+          <li><a href="#g14"><span class="c">G14</span> Store partner tiers ★</a></li>
+          <li><a href="#g15"><span class="c">G15</span> Sponsored placement</a></li>
+          <li><a href="#g16"><span class="c">G16</span> manamap Plus</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- ══════════════ 01 · DESIGN ══════════════ -->
+    <div class="secband"><span class="sn">01</span><h2>Design</h2><span class="sd">mostly apps/mobile</span></div>
+    <p class="secintro">Hierarchy and restraint on screens that already exist. These are front-end-only — no schema, no API. Each names the prototype file and the real screen to change.</p>
+
+    <!-- G1 -->
+    <div class="ms" id="g1">
+      <div class="mhead"><span class="mcode">G1</span><div>
+        <div class="mtitle">Home hierarchy — one hero action <span class="star win">Quick win</span></div>
+        <div class="mgoal">Home stacks 5+ equal-weight CTAs (Open to Play, Log a Game, Meet Players, Connections, Form a Pod). Give the screen a single state-driven hero and demote the rest.</div>
+        <div class="mdeps">touches: apps/mobile/src/screens/HomeScreen.tsx · prototype app/screens-home.jsx · theme tokens</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G1 · build prompt</span><button class="copybtn" data-src="g1">⧉ Copy</button></div><pre><code id="code-g1"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>State-driven hero: checked-in → Open-to-Play/Form-a-Pod; not → Find a store</li>
+          <li>Secondary actions collapse to a compact 2-col grid</li>
+          <li>Single most-urgent item as inline banner (not a list)</li>
+          <li>Prototype app/screens-home.jsx updated to match</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>One clear primary action above the fold per state</li>
+          <li>No two CTAs share the same visual weight</li>
+          <li>Checked-out state points to the store finder</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G2 -->
+    <div class="ms" id="g2">
+      <div class="mhead"><span class="mcode">G2</span><div>
+        <div class="mtitle">De-dupe "Needs Attention" vs the Connect badge <span class="star win">Quick win</span></div>
+        <div class="mgoal">Pending confirms + requests show on Home and again as the Connect tab badge. Make Connect the source of truth; Home shows only the single most time-sensitive item.</div>
+        <div class="mdeps">touches: apps/mobile/src/screens/HomeScreen.tsx · ConnectScreen.tsx · games + connections hooks</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G2 · build prompt</span><button class="copybtn" data-src="g2">⧉ Copy</button></div><pre><code id="code-g2"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>Home surfaces only the top-priority action item as one banner</li>
+          <li>Connect tab badge stays the canonical count</li>
+          <li>Tapping the Home banner deep-links to the exact item</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>No duplicated standing list of pending items</li>
+          <li>Badge count and Home banner never disagree</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G3 -->
+    <div class="ms" id="g3">
+      <div class="mhead"><span class="mcode">G3</span><div>
+        <div class="mtitle">Calm the socials row <span class="star win">Quick win</span></div>
+        <div class="mgoal">The You-tab socials rail is a rainbow of full-saturation brand chips — the loudest thing on an otherwise restrained profile. Default to monochrome glyphs; reveal brand color only on press/active.</div>
+        <div class="mdeps">touches: apps/mobile/src/screens/YouScreen.tsx · SocialsCard · prototype app/socials.jsx · SOCIAL_META</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G3 · build prompt</span><button class="copybtn" data-src="g3">⧉ Copy</button></div><pre><code id="code-g3"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>Monochrome glyph tiles by default (neutral chip bg)</li>
+          <li>Brand color on press/active only, or as a thin accent</li>
+          <li>Mana identity remains the profile's color story</li>
+          <li>Prototype app/socials.jsx updated</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>Profile reads calm; identity gradient is the focal color</li>
+          <li>Platforms still recognizable; copy/open unchanged</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G4 -->
+    <div class="ms" id="g4">
+      <div class="mhead"><span class="mcode">G4</span><div>
+        <div class="mtitle">Reward modal polish <span class="star win">Quick win</span></div>
+        <div class="mgoal">The "🎁 You unlocked a reward!" modal uses an emoji in an app full of crafted icons — and it's the most commercially important moment. Replace with a branded reward glyph in the store's color.</div>
+        <div class="mdeps">touches: apps/mobile/src/screens/StoresScreen.tsx (reward modal) · prototype app/screens-stores.jsx</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G4 · build prompt</span><button class="copybtn" data-src="g4">⧉ Copy</button></div><pre><code id="code-g4"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>Custom reward glyph (react-native-svg) replaces the emoji</li>
+          <li>Store accent color drives the celebration</li>
+          <li>Claim-code + QR state gets matching polish</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>No emoji in the reward / redemption flow</li>
+          <li>Modal matches the app's icon + type system</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 02 · UX ══════════════ -->
+    <div class="secband"><span class="sn">02</span><h2>User experience</h2><span class="sd">api + mobile</span></div>
+    <p class="secintro">Close the gap between matching and actually playing, and keep coordination inside the app. G6 is the signature one — the trust layer no competitor has.</p>
+
+    <!-- G5 -->
+    <div class="ms" id="g5">
+      <div class="mhead"><span class="mcode u">G5</span><div>
+        <div class="mtitle">Unify the "Play tonight" funnel</div>
+        <div class="mgoal">"Open to play," LFG, "Form a Pod," and "Meet players" are four overlapping doors to one goal: get into a game tonight. Collapse them under a single entry that branches.</div>
+        <div class="mdeps">touches: HomeScreen + DiscoverScreen (mobile) · existing lfg + pods modules (no new backend) · prototype app/lfg.jsx, app/pods.jsx</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G5 · build prompt</span><button class="copybtn" data-src="g5">⧉ Copy</button></div><pre><code id="code-g5"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>One "Play tonight" entry → branch: broadcast open · join pod · start pod</li>
+          <li>Remove the duplicate Open-to-Play surfaces</li>
+          <li>Reuses existing LFG + pods endpoints unchanged</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>A new user reaches a game in one obvious funnel</li>
+          <li>No conceptual overlap between LFG / pods / "open"</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G6 -->
+    <div class="ms" id="g6">
+      <div class="mhead"><span class="mcode u">G6</span><div>
+        <div class="mtitle">Pod Agreement / Rule 0 card <span class="star">Signature</span></div>
+        <div class="mgoal">Power level and vibe live on the profile, but the pre-game expectation-setting — bracket, combos, "I'm on my janky deck" — happens nowhere. Add a lightweight table-consensus card when a pod fills. The trust layer no competitor has.</div>
+        <div class="mdeps">touches: Redis pod sessions (pods.service.ts PodSession) · PodScreen.tsx · prototype app/pods.jsx · shared zod</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G6 · build prompt</span><button class="copybtn" data-src="g6">⧉ Copy</button></div><pre><code id="code-g6"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>Per-member bracket pick (1–4 / cEDH) + a few flags on the pod session</li>
+          <li>Shared consensus view shown before shuffle-up</li>
+          <li>Bracket data feeds back into power-matching</li>
+          <li>Stored on the Redis PodSession (no Prisma change)</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>Every seat sees the table's agreed bracket + flags</li>
+          <li>Mismatch is visible before the game, not after</li>
+          <li>Expires with the pod TTL; no orphaned state</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G7 -->
+    <div class="ms" id="g7">
+      <div class="mhead"><span class="mcode u">G7</span><div>
+        <div class="mtitle">Minimal pod &amp; connection threads</div>
+        <div class="mgoal">The moment two players connect, coordination leaves for Discord and never returns. Add a tiny in-app thread (not a chat product) so "running 20 late / meet at table 4 / here's my list" stays in manamap.</div>
+        <div class="mdeps">touches: new Message model + thread on Connection / pod session · presence WS (ws-adapter, life-tracker pattern) · push via sendPushToUser</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G7 · build prompt</span><button class="copybtn" data-src="g7">⧉ Copy</button></div><pre><code id="code-g7"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>Message model (threadId, senderId, body, createdAt)</li>
+          <li>Thread per accepted Connection + per live pod</li>
+          <li>Send/list endpoints + WS push for new messages</li>
+          <li>Light thread UI from connection detail + PodScreen</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>Only accepted connections / pod members can post</li>
+          <li>Blocked/moderated users can't message</li>
+          <li>New message pushes + deep-links to the thread</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G8 -->
+    <div class="ms" id="g8">
+      <div class="mhead"><span class="mcode u">G8</span><div>
+        <div class="mtitle">Auto-confirm game results + a nudge</div>
+        <div class="mgoal">Unconfirmed GameLogs leave stats permanently incomplete and erode trust in the leaderboard. Auto-confirm pending games after 48h (disputable within 7 days), with one gentle push.</div>
+        <div class="mdeps">touches: GameLog/GamePlayer (GameStatus) · games module · BullMQ (gamification queue pattern) · push</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G8 · build prompt</span><button class="copybtn" data-src="g8">⧉ Copy</button></div><pre><code id="code-g8"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>Delayed BullMQ job auto-confirms PENDING games at 48h</li>
+          <li>Single reminder push before auto-confirm</li>
+          <li>7-day dispute window flips status back + recomputes stats</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>No game sits PENDING forever; stats settle</li>
+          <li>Auto-confirmed games are clearly labeled + disputable</li>
+          <li>Dispute within 7 days reverses cleanly</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G9 -->
+    <div class="ms" id="g9">
+      <div class="mhead"><span class="mcode u">G9</span><div>
+        <div class="mtitle">Empty / low-density states as invitations</div>
+        <div class="mgoal">The seeded demo hides the real cold-start: empty store, no one nearby on a Tuesday. Design the low-density states deliberately — "be the first," one-tap broadcast, "ping me when 2+ check in."</div>
+        <div class="mdeps">touches: DiscoverScreen + HomeScreen empty states · presence + a new "notify when N here" subscription · push</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G9 · build prompt</span><button class="copybtn" data-src="g9">⧉ Copy</button></div><pre><code id="code-g9"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>Designed empty states for Discover / Nearby / Home</li>
+          <li>"Be the first — go Open to Play" one-tap CTA</li>
+          <li>"Ping me when 2+ players check in here" subscription + push</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>An empty store feels like an invite, not a dead end</li>
+          <li>The ping fires once when the threshold is crossed</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 03 · FEATURES ══════════════ -->
+    <div class="secband"><span class="sn">03</span><h2>New features</h2><span class="sd">full-stack</span></div>
+    <p class="secintro">High-leverage additions that either close the play loop or open a revenue line. Built on data models you already have (DeckLink, GameLog, Encounter, Streak).</p>
+
+    <!-- G10 -->
+    <div class="ms" id="g10">
+      <div class="mhead"><span class="mcode f">G10</span><div>
+        <div class="mtitle">Deck shelf + affiliate buy-links <span class="star rev">Revenue</span></div>
+        <div class="mgoal">Players already link Moxfield/Archidekt decks (DeckLink). Make decks first-class: a deck shelf on the profile, per-deck win rate (already derivable from GameLog), and affiliate buy-links for cards — the cleanest path to transaction revenue.</div>
+        <div class="mdeps">touches: DeckLink model · me/socials-style CRUD · GamePlayer.deck for win-rate join · TCGplayer/Card Kingdom affiliate</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G10 · build prompt</span><button class="copybtn" data-src="g10">⧉ Copy</button></div><pre><code id="code-g10"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>Deck shelf on the profile (DeckLink, with cover/colors)</li>
+          <li>Per-deck win rate joined from GamePlayer.deck + GameLog</li>
+          <li>Affiliate-tagged buy-links (config-driven partner + tag)</li>
+          <li>Click tracking for affiliate attribution</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>Decks render with real win rate where games exist</li>
+          <li>Buy-links carry the affiliate tag; clicks are logged</li>
+          <li>No affiliate code hard-coded in the bundle</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G11 -->
+    <div class="ms" id="g11">
+      <div class="mhead"><span class="mcode f">G11</span><div>
+        <div class="mtitle">Travel / visiting mode <span class="star">Plus driver</span></div>
+        <div class="mgoal">"I'm in a new city this weekend — who's playing, which store, can I get into a pod?" The location graph already exists; this is mostly a mode flip over discovery + a great reason to pay for Plus.</div>
+        <div class="mdeps">touches: discovery module (PostGIS nearby) · presence · a "visiting {city}" override on discovery queries · gated by Plus (see G16)</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G11 · build prompt</span><button class="copybtn" data-src="g11">⧉ Copy</button></div><pre><code id="code-g11"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>"Visiting" toggle: set a temporary location/store</li>
+          <li>Discovery + stores + nearby resolve against it</li>
+          <li>Expires automatically; clearly labeled while active</li>
+          <li>Entitlement check (Plus) with a graceful upsell</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>A visiting user sees the destination's stores + players</li>
+          <li>GPS check-in still gates the real reward-grade actions</li>
+          <li>Mode auto-clears; home location is restored</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G12 -->
+    <div class="ms" id="g12">
+      <div class="mhead"><span class="mcode f">G12</span><div>
+        <div class="mtitle">Post-game endorsements</div>
+        <div class="mgoal">After a confirmed game, optional one-tap positive endorsements ("great host," "good sport," "taught me the format," "fast player"). A positive-reputation signal that improves matching and complements moderation. Strictly positive — no negative reviews.</div>
+        <div class="mdeps">touches: GameLog confirm flow · new Endorsement model (fromUser, toUser, gameId, tag) · profile aggregate · respects blocks</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G12 · build prompt</span><button class="copybtn" data-src="g12">⧉ Copy</button></div><pre><code id="code-g12"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>Endorsement model + fixed positive-only tag set</li>
+          <li>Prompt after a confirmed game; one per player per game</li>
+          <li>Aggregated counts on the profile / connection detail</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>Only co-players of a confirmed game can endorse</li>
+          <li>No free-text, no negative options, no review-bombing</li>
+          <li>Blocked users can't endorse; counts respect privacy</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G13 -->
+    <div class="ms" id="g13">
+      <div class="mhead"><span class="mcode f">G13</span><div>
+        <div class="mtitle">Store leagues &amp; seasons (owner-run) <span class="star rev">Portal premium</span></div>
+        <div class="mgoal">Extend Log-a-Game into multi-week store leagues with standings — a recurring reason to check in, and a premium store-portal feature. The Encounter / GameLog model is already there; this is a season construct + standings.</div>
+        <div class="mdeps">touches: new League + LeagueStanding models · GameLog tagged with leagueId · partner portal (owner-guarded) · mobile standings view</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G13 · build prompt</span><button class="copybtn" data-src="g13">⧉ Copy</button></div><pre><code id="code-g13"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>League + season model owned by a store (StoreOwnership)</li>
+          <li>Games logged "in league" feed standings (W/L/points)</li>
+          <li>Portal CRUD for leagues; mobile standings + my rank</li>
+          <li>Gated to paid partner tiers (see G14)</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>Owner runs a season; standings update on game confirm</li>
+          <li>Players see the league + their rank at that store</li>
+          <li>Only entitled stores can create leagues</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 04 · MONETIZATION ══════════════ -->
+    <div class="secband"><span class="sn">04</span><h2>Monetization</h2><span class="sd">stores first, then players</span></div>
+    <p class="secintro">Three revenue lines, sequenced so each funds the next. <b>Build G14 + G15 first</b> (stores already pay for foot traffic); G16 (player Plus) lands once density is real. Keep the core free forever.</p>
+
+    <!-- G14 -->
+    <div class="ms" id="g14">
+      <div class="mhead"><span class="mcode m">G14</span><div>
+        <div class="mtitle">Store partner tiers (SaaS entitlements) <span class="star win">Primary</span></div>
+        <div class="mgoal">Your partner portal + reward offers are the wedge. Add subscription tiers that gate the high-value owner tools (broadcast, event mgmt, analytics, leagues, "verified store" badge) behind a paid plan, billed via Stripe.</div>
+        <div class="mdeps">touches: Store.isPartner · StoreOwnership · new StoreSubscription (tier, status, stripeCustomerId) · Stripe webhooks · entitlement guard on /v1/partner/*</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G14 · build prompt</span><button class="copybtn" data-src="g14">⧉ Copy</button></div><pre><code id="code-g14"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>StoreSubscription model + tier enum (Free / Plus / Pro)</li>
+          <li>Stripe Checkout + customer portal + webhook sync</li>
+          <li>Entitlement guard gating broadcast / events / leagues / analytics</li>
+          <li>Portal billing page + "verified store" badge for paid tiers</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>Owner subscribes; entitlements unlock immediately on webhook</li>
+          <li>Downgrade/cancel re-locks gated tools at period end</li>
+          <li>Free tier keeps check-in + basic presence (never paywalled)</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G15 -->
+    <div class="ms" id="g15">
+      <div class="mhead"><span class="mcode m">G15</span><div>
+        <div class="mtitle">Sponsored placement &amp; promoted events <span class="star win">Primary</span></div>
+        <div class="mgoal">Let stores pay to be featured in Discover ("Featured tonight") or boost an event to nearby players. Native to existing surfaces, high margin, scales with store density.</div>
+        <div class="mdeps">touches: new Promotion model (storeId/eventId, kind, window, budget) · discovery + stores feed insertion · partner portal · clearly-labeled "Featured"</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G15 · build prompt</span><button class="copybtn" data-src="g15">⧉ Copy</button></div><pre><code id="code-g15"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>Promotion model + active-window resolution</li>
+          <li>Featured store / boosted event slot in Discover + stores</li>
+          <li>Portal: buy a boost (date window, audience radius)</li>
+          <li>Impression/tap logging for billing + reporting</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>Featured items are clearly labeled "Featured" / "Promoted"</li>
+          <li>Only one sponsored slot per feed view; never spammy</li>
+          <li>Impressions/taps logged; respects entitlements (G14)</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <!-- G16 -->
+    <div class="ms" id="g16">
+      <div class="mhead"><span class="mcode m">G16</span><div>
+        <div class="mtitle">manamap Plus (player subscription) <span class="star rev">Secondary</span></div>
+        <div class="mgoal">A light consumer tier once density is real: travel mode (G11), advanced stats &amp; matchup analytics, custom card themes/foils, "who viewed your card," unlimited LFG, priority pod seats. Core stays free forever.</div>
+        <div class="mdeps">touches: new UserSubscription (RevenueCat/StoreKit + Play Billing) · entitlement helper · gate Plus-only features · You-tab paywall</div>
+      </div></div>
+      <div class="promptbox"><div class="ptop"><span class="plabel">G16 · build prompt</span><button class="copybtn" data-src="g16">⧉ Copy</button></div><pre><code id="code-g16"></code></pre></div>
+      <div class="mlists">
+        <div class="mlist"><div class="lh">Deliverables</div><ul>
+          <li>UserSubscription model + RevenueCat (IAP) integration</li>
+          <li>isPlus entitlement helper used across gated features</li>
+          <li>Plus features: travel mode, advanced stats, card themes, card-view list</li>
+          <li>You-tab paywall + restore purchases</li>
+        </ul></div>
+        <div class="mlist acc"><div class="lh">Acceptance</div><ul>
+          <li>Purchase unlocks entitlements on both platforms; restore works</li>
+          <li>Core check-in / connect / safety never gated</li>
+          <li>Gated features upsell gracefully when locked</li>
+        </ul></div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="wrap">
+    <div>Grounded in the <b>manamap</b> monorepo as of this audit. Companion to <b>manamap-audit.html</b> and the existing <b>hardening-prompts.html</b> (M19–M36). Numbered G1–G16 to avoid colliding with the M-series.</div>
+    <div style="margin-top:6px;"><b>Suggested order:</b> G1 → G5 → G6 → G14 → G15, then the rest. <b>Revenue path:</b> G14 + G15 (stores) before G16 (players); G10 affiliate is pure-margin upside any time.</div>
+  </footer>
+
+  <!-- prompt sources (raw text, no escaping needed) -->
+  <script type="text/plain" id="src-g1">Improve the Home screen information hierarchy in manamap. Work in apps/mobile (Expo/React Native); mirror the change in the prototype design/app/screens-home.jsx. Follow CLAUDE.md conventions. PROBLEM: HomeScreen.tsx currently stacks 5+ equal-weight quick actions (Open to Play, Log a Game, Meet Players, Connections, Form a Pod) plus a "Needs Attention" list — the eye has no entry point. GOAL: a single, state-driven hero action with everything else demoted.
+
+IMPLEMENTATION:
+- Compute a primary action from current state (use the existing ActiveStoreContext / check-in + presence state): if CHECKED IN → primary = "Open to Play / Form a Pod"; if NOT checked in → primary = "Find a store" (opens Stores). Render it as one prominent hero card/CTA above the fold.
+- Demote the remaining actions into a compact 2-column secondary grid (smaller tiles, lower contrast) below the hero. Keep Scan in the tab bar where it is.
+- Keep the greeting + check-in/streak/RSVP status band, but make sure the hero is the clear focal point under it.
+- Apply the same hierarchy to design/app/screens-home.jsx so the prototype and app agree.
+
+ACCEPTANCE: exactly one primary action above the fold per state; no two CTAs share the same visual weight; the checked-out state routes to the store finder; secondary actions still reachable in the 2-col grid.
+
+OUT OF SCOPE: changing what each action does, new endpoints, or the tab bar.</script>
+
+  <script type="text/plain" id="src-g2">Remove the duplicated pending-items surface on manamap's Home screen. Work in apps/mobile. Follow CLAUDE.md conventions. PROBLEM: "1 game result to confirm" and "N new connection requests" appear as a "Needs Attention" list on HomeScreen.tsx AND as the Connect tab badge — training users to ignore one. GOAL: Connect is the source of truth; Home shows only the single most time-sensitive item.
+
+IMPLEMENTATION:
+- Keep the Connect tab badge as the canonical unread/pending count (game confirms + incoming connection requests). Do not change how it's computed.
+- On Home, replace the standing "Needs Attention" list with at most ONE inline banner showing the highest-priority item (priority order: a game result awaiting MY confirmation > a new connection request > nothing). Copy like "Confirm Wrenfield's game →".
+- Tapping the banner deep-links straight to that item (the specific confirm card in Connect, or the request), not just the tab.
+- If nothing is pending, render no banner (reclaim the space for the G1 hero).
+
+ACCEPTANCE: no duplicated list of pending items on Home; the Connect badge and the Home banner never disagree; tapping the banner lands on the exact item; empty state shows no banner.
+
+OUT OF SCOPE: changing the Connect screen itself or the confirm/accept logic.</script>
+
+  <script type="text/plain" id="src-g3">Calm the socials rail on manamap's You tab. Work in apps/mobile; mirror in design/app/socials.jsx. Follow CLAUDE.md conventions. PROBLEM: the SocialsCard renders full-saturation brand-colored tiles (Discord, Twitch, YouTube, Instagram, X, phone, web) — the loudest element on an otherwise restrained, mana-identity-led profile. GOAL: monochrome by default, brand color only on interaction.
+
+IMPLEMENTATION:
+- Change the default social tile to a MONOCHROME glyph on a neutral chip background (use theme tokens, not the brand color). Keep the platform glyph recognizable.
+- Reveal the platform's brand color only on press/active (or as a thin 2px accent edge), not at rest. Keep the SOCIAL_META brand colors in the map — just don't fill the whole tile with them by default.
+- Ensure the identity gradient / mana pips remain the strongest color on the profile.
+- Preserve all behavior: copy handle, open URL, the owner Manage sheet, and the public/friends/hidden visibility summary.
+- Apply the same restrained treatment to design/app/socials.jsx.
+
+ACCEPTANCE: the profile reads calm with the identity gradient as the focal color; platforms still recognizable; copy/open + visibility management unchanged; brand color appears only on press/active.
+
+OUT OF SCOPE: changing visibility logic, adding platforms, or the API.</script>
+
+  <script type="text/plain" id="src-g4">Polish manamap's reward / redemption modal so it matches the app's crafted icon + type system. Work in apps/mobile (StoresScreen.tsx reward modal); mirror in design/app/screens-stores.jsx. Follow CLAUDE.md conventions. PROBLEM: the "🎁 You unlocked a reward!" modal uses an emoji in an app otherwise built on a consistent custom icon set — and this is the most commercially important moment (it drives store foot traffic). GOAL: a branded, store-colored celebration.
+
+IMPLEMENTATION:
+- Replace the 🎁 emoji with a custom reward glyph drawn in react-native-svg (a gift/badge/sparkle mark consistent with the existing icon set + stroke weights).
+- Drive the celebration color from the store's accent (fall back to brand). Apply it to the offer header, the glyph, and the primary "Redeem at counter" button.
+- Carry the same polish into the claim-code state (large code + QR): consistent type scale, spacing, and the store color, with the BadgeEarnedSheet styling language.
+- Keep the existing flow + states (offer → code/QR → redeemed) and copy intact.
+
+ACCEPTANCE: no emoji anywhere in the reward/redemption flow; the modal matches the app's icon + typographic system; the store accent color is used consistently; flow + redemption logic unchanged.
+
+OUT OF SCOPE: changing eligibility, the redemption API (M29), or the offer model.</script>
+
+  <script type="text/plain" id="src-g5">Unify the "play a game tonight" funnel in manamap so LFG, "Open to play," "Form a Pod," and "Meet players" stop competing as four separate doors. Work in apps/mobile (HomeScreen + DiscoverScreen); reference design/app/lfg.jsx + design/app/pods.jsx. Follow CLAUDE.md conventions. NO BACKEND CHANGES — reuse the existing lfg + pods modules and their hooks as-is. PROBLEM: a user can "go open to play," "join a forming pod," "start a pod," or "browse players" — all roughly meaning "get into a game now" — and can't tell them apart; "Open to play" is even duplicated on Home and Discover.
+
+IMPLEMENTATION:
+- Introduce ONE "Play tonight" entry point (from the G1 Home hero when checked in, and the top of Discover). Tapping it opens a single branching sheet with three clear paths: (1) Broadcast I'm open → existing LFG compose; (2) Join a forming pod → list of pods at this store (existing pods feed); (3) Start a pod → existing pod create.
+- Remove the now-duplicate standalone "Open to play now" surfaces (keep the underlying LFG status; just route to it through the unified entry). "Meet players" stays as passive browsing, clearly separated from the active "play now" funnel.
+- Keep all existing endpoints + hooks; this is IA + navigation only.
+
+ACCEPTANCE: a first-time user reaches a game through one obvious funnel; LFG / join-pod / start-pod are three labeled branches of it; no duplicated "open to play" entries; passive player-browsing is visibly distinct from "play now".
+
+OUT OF SCOPE: changing LFG/pod backend behavior, matchmaking, or the pod data model.</script>
+
+  <script type="text/plain" id="src-g6">Add a POD AGREEMENT ("Rule 0") step to manamap so a table aligns on bracket + house rules before the game starts. Work in apps/api (pods module) + apps/mobile (PodScreen.tsx); reference design/app/pods.jsx. Follow CLAUDE.md conventions. CONTEXT: pods are EPHEMERAL Redis sessions, not Prisma — see apps/api/src/pods/pods.service.ts (PodSession interface; keys pod:{id}, pod_store:{storeId}, user_pod:{userId}; POD_TTL_SECS = 90*60). targetPower + tolerance already exist on the session. NO Prisma migration — extend the Redis session JSON only.
+
+IMPLEMENTATION:
+- Extend PodSession with an `agreement` block: per-member `{ userId, bracket (1|2|3|4|'cedh'), flags: string[] }` plus a derived `consensus` (the table's modal/most-conservative bracket + the union of flags). Define a small fixed flag set in shared (e.g. NO_INFINITE_COMBOS, NO_MASS_LAND_DESTRUCTION, PROXIES_OK, FAST_MANA_OK, NEW_PLAYER_FRIENDLY, SPICY_OK).
+- API (pods.service + controller): POST /v1/pods/:id/agreement { bracket, flags } upserts the caller's pick on the session (must be a pod member); GET returns the agreement + computed consensus inside the existing pod fetch. Persist by rewriting the session JSON with the same TTL (don't reset expiry semantics). Broadcast/notify members on change via the existing notifications pattern.
+- Shared zod: PodBracketSchema, PodAgreementFlagSchema, PodAgreementInputSchema, plus the agreement shape on the pod response type.
+- MOBILE: when a pod is full (or host taps "Set the table"), show an Agreement card on PodScreen — each member taps a bracket (1–4 / cEDH) + toggles flags; everyone sees the live consensus ("Table agreed: Bracket 3 · no infinite combos") before "Start". Use existing pod polling/WS; optimistic local update.
+- Feed the chosen brackets back as a hint into power-matching display (show how each member's bracket compares to the pod targetPower).
+
+ACCEPTANCE: every seat can set a bracket + flags and sees the table consensus before the game; mismatches are visible pre-game; only pod members can post an agreement; the agreement lives on the Redis session and expires with the pod (no orphaned rows); no Prisma migration added.
+
+OUT OF SCOPE: enforcing the agreement, persisting it to game history, and per-card/banlist rules (brackets + flags only).</script>
+
+  <script type="text/plain" id="src-g7">Add minimal in-app THREADS to manamap so coordination between connected players (and within a live pod) stays in the app instead of leaving for Discord. Work in apps/api + apps/mobile. Follow CLAUDE.md conventions. This is NOT a chat product — keep it intentionally small. CONTEXT: Connection model (ConnectionStatus ACCEPTED) already pairs users; pods are Redis sessions (pods.service.ts); real-time WS is wired (apps/api/src/ws-adapter.ts + the life-tracker gateway pattern); push via the sendPushToUser pattern (prisma.pushToken.findMany + Expo); SafetyService/Block already exist.
+
+SCHEMA (+ migration): MessageThread { id, kind (enum: CONNECTION|POD), connectionId? (unique when CONNECTION), podId? (the Redis pod id when POD), createdAt }; Message { id, threadId, senderId, body (<=500 chars), createdAt, @@index([threadId, createdAt]) }. A CONNECTION thread is lazily created for an ACCEPTED connection; a POD thread keyed by pod id, messages purged when the pod expires (or TTL the thread).
+
+API:
+- GET /v1/threads/:id/messages (paginated) and POST /v1/threads/:id/messages { body } — sender MUST be a participant: for CONNECTION, one of the two accepted users (not blocked, not moderated); for POD, a current member of that Redis pod. Resolve-or-create the connection thread by connectionId.
+- On send: persist + emit over WS to the other participant(s) and sendPushToUser (data: { type:'message', threadId }) when they're not actively in the thread.
+- Respect Block + ModerationStatus everywhere (no messaging blocked/suspended users).
+- Shared zod: SendMessageSchema, MessageSchema, ThreadSchema.
+
+MOBILE: a lightweight thread screen reachable from connection detail ("Message") and from PodScreen ("Pod chat"); list + composer, optimistic send, WS live updates, unread indicator on the connection row + pod. Keep it plain — no media, reactions, or typing indicators.
+
+ACCEPTANCE: only accepted connections / current pod members can read+post; blocked or moderated users are excluded; a new message pushes and deep-links to the thread; pod threads disappear with the pod; messages cap at 500 chars.
+
+OUT OF SCOPE: group DMs beyond pods, media/attachments, reactions, read receipts, and message editing/deletion (note moderation reporting of a message as a follow-on).</script>
+
+  <script type="text/plain" id="src-g8">Add auto-confirmation for pending game results in manamap so stats don't stall on unconfirmed games. Work in apps/api. Follow CLAUDE.md conventions. CONTEXT: GameLog { status GameStatus PENDING|..., createdAt, confirmedAt } + GamePlayer { confirmed } in the games module; stats (W/L, per-deck win rate, leaderboard) derive from CONFIRMED games. BullMQ is wired (gamification queue/processor + Redis); push via sendPushToUser.
+
+IMPLEMENTATION:
+- On game log creation, enqueue a DELAYED BullMQ job (jobId `game-autoconfirm:{gameLogId}`) to fire at +48h. Also schedule a single reminder push at +24h (jobId `game-remind:{gameLogId}`) to players who haven't confirmed.
+- Processor at 48h: if the game is still PENDING, mark it AUTO_CONFIRMED (extend GameStatus enum with AUTO_CONFIRMED, or set status=CONFIRMED with a `autoConfirmed Boolean` flag — pick one, migrate). Set confirmedAt. Recompute/allow stats to include it. Mark remaining GamePlayer.confirmed where appropriate or track auto separately.
+- Dispute window: allow any participant to DISPUTE within 7 days of (auto)confirmation → flips status back to PENDING/DISPUTED, removes it from stats, and notifies the creator. After 7 days it's locked.
+- When a player manually confirms before 48h, cancel the autoconfirm + reminder jobs by jobId. On dispute/void, cancel pending jobs too.
+- Reminder/auto pushes use sendPushToUser with deep-link data { type:'game_confirm', gameLogId }.
+
+ACCEPTANCE: a PENDING game auto-confirms at 48h and its result enters stats; auto-confirmed games are clearly flagged + disputable for 7 days; a dispute reverses cleanly and recomputes stats; manual confirm cancels the timers; no game stays PENDING indefinitely.
+
+OUT OF SCOPE: changing how a game is logged (M23), the leaderboard math itself, and multi-round disputes (single dispute window only).</script>
+
+  <script type="text/plain" id="src-g9">Design and build manamap's EMPTY / LOW-DENSITY states so a quiet store feels like an invitation, not a dead end. Work in apps/mobile (DiscoverScreen + HomeScreen) + a small apps/api addition. Follow CLAUDE.md conventions. PROBLEM: the seeded demo always shows players nearby; the real cold-start (empty store on a Tuesday) is undesigned and is the actual retention battle. CONTEXT: presence is Redis (store_members:{storeId} zset, presence:{userId}); discovery/nearby read it; push via sendPushToUser.
+
+IMPLEMENTATION (mobile):
+- Discover/Nearby empty state when 0 other players are present at the active store: a friendly "No one's open right now — be the first" with a one-tap "Go Open to Play" CTA (existing LFG) so the user seeds activity for others.
+- Home: when checked in but nobody's around, swap the "6 nearby" framing for the be-the-first prompt.
+- Add a "Ping me when players show up" affordance.
+
+IMPLEMENTATION (api):
+- Add a lightweight presence-threshold subscription: POST /v1/stores/:storeId/notify-when-active { threshold=2 } stores a one-shot subscription (Redis or a small table). When check-in/presence pushes the active count at that store to >= threshold, fan out a single push to subscribers ("3 players just checked in at Dragon's Den") and clear the subscription. Hook into the existing check-in/presence path; guard against duplicate fires.
+
+ACCEPTANCE: an empty store shows an inviting be-the-first state with a working one-tap broadcast; the "ping me" subscription fires exactly once when the threshold is crossed and then clears; populated stores are unchanged.
+
+OUT OF SCOPE: cross-store recommendations, scheduled "usual crowd" predictions, and email digests.</script>
+
+  <script type="text/plain" id="src-g10">Make decks first-class in manamap with a DECK SHELF, per-deck win rate, and affiliate buy-links. Work in apps/api + apps/mobile. Follow CLAUDE.md conventions. CONTEXT: DeckLink { id, userId, site DeckSite?, name, url? } already exists (linked Moxfield/Archidekt decks); games store GamePlayer.deck (free text) on a GameLog with a winnerId — so per-deck win rate is derivable. Profile/You screen already renders socials + game record.
+
+IMPLEMENTATION:
+- DECK SHELF: extend DeckLink with optional `colors String[]` (mana identity W/U/B/R/G), `commander String?`, and a `coverColor?`/`isPublic Boolean @default true`. CRUD under /v1/me/decks (mirror the /me/socials pattern). Render a deck shelf card on the You tab + on the public profile (public decks only), styled with the mana identity gradient.
+- PER-DECK WIN RATE: add a query that joins confirmed GameLogs to GamePlayer.deck for the user → games played + wins + win% per deck name; surface it on each shelf card where data exists (graceful when none).
+- AFFILIATE BUY-LINKS: add a config-driven affiliate layer (partner + affiliate tag in env/config, NEVER hard-coded in the bundle) that wraps a deck's "buy/complete this deck" or per-card links to a retailer (e.g. TCGplayer/Card Kingdom) with the affiliate tag appended. Add a "Get cards" action on a deck that opens the tagged URL. Log an AffiliateClick { userId?, deckLinkId?, partner, createdAt } for attribution.
+- Shared zod: DeckInputSchema, DeckSchema (with winRate), updated profile payload.
+
+ACCEPTANCE: a user manages public/private decks with mana colors + commander; public decks appear on their profile; win rate shows where confirmed games exist; buy-links carry the affiliate tag from config and clicks are logged; no affiliate code is committed to the bundle.
+
+OUT OF SCOPE: importing/parsing full decklists, real card pricing/inventory, and becoming a marketplace (referral links only).</script>
+
+  <script type="text/plain" id="src-g11">Add TRAVEL / VISITING MODE to manamap so a player visiting another city can discover that area's stores, players, and pods. Work in apps/api (discovery + stores) + apps/mobile. Follow CLAUDE.md conventions. CONTEXT: discovery/nearby use PostGIS ($queryRaw geography) against the user's location + active store; presence is Redis; check-in has a GPS distance gate (falls back to store coords in __DEV__). Gate this behind the Plus entitlement from G16 (if G16 isn't built yet, gate behind a simple feature flag + TODO).
+
+IMPLEMENTATION:
+- Add a transient "visiting" location override on the user session: POST /v1/me/visiting { storeId | lat,lng, expiresAt } (default expiry e.g. 48h) stored server-side (small table or Redis with TTL). DELETE to clear; it auto-expires.
+- While visiting is active, discovery (nearby players), stores (map/list), and events resolve against the visiting location instead of the device GPS — EXCEPT reward-grade actions (actual check-in, offer claim) which STILL require real GPS proximity to the physical store. Visiting lets you browse + plan + see who's playing there; it doesn't fake a check-in.
+- Clearly label the app while visiting ("Visiting Seattle · Dragon's Den") with a one-tap "Back home".
+- Entitlement: non-Plus users get a preview + upsell; Plus users get full visiting mode.
+- Shared zod: SetVisitingSchema, VisitingStateSchema.
+
+ACCEPTANCE: a visiting user sees the destination's stores + nearby players + events; real check-in/offer-claim still require physical GPS proximity; the mode is clearly labeled and auto-clears at expiry, restoring the home location; non-entitled users see an upsell.
+
+OUT OF SCOPE: spoof/anti-cheat detection beyond the existing GPS gate, multi-city pinning, and trip planning/itineraries.</script>
+
+  <script type="text/plain" id="src-g12">Add POST-GAME ENDORSEMENTS to manamap — strictly positive, one-tap reputation signals after a confirmed game. Work in apps/api + apps/mobile. Follow CLAUDE.md conventions. CONTEXT: GameLog (CONFIRMED) + GamePlayer pair co-players; Encounter records GAME-source meetings; Block + ModerationStatus gate interactions; profile already shows game record. This complements moderation with a carrot.
+
+SCHEMA (+ migration): Endorsement { id, fromUserId, toUserId, gameLogId, tag (enum EndorsementTag: GREAT_HOST | GOOD_SPORT | TAUGHT_THE_FORMAT | FAST_PLAYER | WELL_BREWED_DECK | GENEROUS), createdAt, @@unique([fromUserId, toUserId, gameLogId]) }. There is NO negative tag and NO free text.
+
+API:
+- POST /v1/games/:gameLogId/endorse { toUserId, tag } — caller and target must both be CONFIRMED players of that game; not blocked either direction; one endorsement per (from, to, game). 
+- Aggregate: include endorsement counts by tag on the public profile + connection detail (e.g. "Great host ×7"). Respect privacy/blocks in the aggregate.
+- Shared zod: EndorsementTagSchema, EndorseInputSchema.
+
+MOBILE: after a game is confirmed, prompt an optional "How was the table?" sheet — for each co-player, tap one or more positive tags (skippable). Show aggregated endorsement chips on profiles + connection detail. Keep it celebratory, never punitive.
+
+ACCEPTANCE: only confirmed co-players of a game can endorse each other, once per game; only the fixed positive tags exist (no free text, no negatives); blocked users can't endorse; aggregates appear on profiles and respect privacy; the prompt is skippable.
+
+OUT OF SCOPE: negative/critical reviews, numeric ratings, and endorsement-based matchmaking weighting (surface only for now).</script>
+
+  <script type="text/plain" id="src-g13">Add STORE LEAGUES &amp; SEASONS to manamap so owners can run multi-week competitions with standings. Work in apps/api + apps/admin (portal) + apps/mobile. Follow CLAUDE.md conventions. CONTEXT: GameLog (CONFIRMED, winnerId, storeId, GamePlayer) is the result source; StoreOwnership owner-guards /v1/partner/stores/:storeId/*; gamification already does leaderboards. Gate league creation behind the paid partner tier from G14 (entitlement guard).
+
+SCHEMA (+ migration): League { id, storeId, name, format?, startsAt, endsAt, scoring (enum: WIN_LOSS | POINTS), status (DRAFT|ACTIVE|ENDED), createdById }; LeagueMembership { id, leagueId, userId, joinedAt, @@unique([leagueId,userId]) }; add `leagueId String?` to GameLog so a logged game can count toward a league (validate the game's store == league.store and both players are members). Standings are derived (don't denormalize unless needed).
+
+API:
+- Owner (under /v1/partner/stores/:storeId, entitlement-guarded): CRUD leagues; start/end a season.
+- Player: GET /v1/leagues/:id (standings: per member games/wins/points, my rank), POST /v1/leagues/:id/join (must be a checked-in/known player of that store). When logging a game (M23), allow tagging it to an active league the players belong to.
+- Standings recompute on game confirm (or compute on read).
+- Shared zod: LeagueSchema, CreateLeagueSchema, StandingRowSchema.
+
+PORTAL: a Leagues page in the store section (entitlement-gated): create/edit a season, see roster + standings, end the season. Match index.css purple tokens + TanStack Query.
+
+MOBILE: a league standings view at the store (list + my rank) and a "count toward {league}" toggle in the log-a-game flow when eligible.
+
+ACCEPTANCE: an entitled owner runs a season; confirmed league games update standings; players join + see their rank; only that store's entitled owner can manage its leagues; non-entitled stores can't create leagues.
+
+OUT OF SCOPE: Swiss/bracket pairings, prizes/payouts, and cross-store leagues.</script>
+
+  <script type="text/plain" id="src-g14">Add STORE PARTNER SUBSCRIPTION TIERS to manamap so high-value owner tools are gated behind a paid plan (Stripe). Work in apps/api + apps/admin (portal). Follow CLAUDE.md conventions. CONTEXT: Store.isPartner exists; StoreOwnership (userId↔storeId) owner-guards /v1/partner/stores/:storeId/*; the portal (apps/admin, Vite + React + TanStack Query, purple index.css) already hosts broadcast (M27), event mgmt (M28), redemption (M29). This adds billing + entitlement gating on top.
+
+SCHEMA (+ migration): StoreSubscription { id, storeId @unique, tier (enum StoreTier: FREE|PLUS|PRO @default FREE), status (enum SubStatus: ACTIVE|PAST_DUE|CANCELED), stripeCustomerId?, stripeSubscriptionId?, currentPeriodEnd?, createdAt, updatedAt }. Define an ENTITLEMENTS map (tier → feature flags): FREE = check-in, presence, basic events read; PLUS = broadcast + event management + analytics; PRO = + leagues (G13) + sponsored credits (G15) + priority support + verified badge.
+
+API:
+- Stripe: POST /v1/partner/stores/:storeId/billing/checkout (owner-guarded) → Stripe Checkout session for a tier; POST .../billing/portal → Stripe customer portal; POST /v1/stripe/webhook (raw body, signature-verified) → sync subscription status + tier + currentPeriodEnd; on cancel/past_due, downgrade entitlements at period end.
+- ENTITLEMENT GUARD: a guard/decorator that checks the store's current tier entitlements; apply it to the broadcast, event-management, analytics, and league endpoints (return 402/403 with an upgrade hint when locked). NEVER gate check-in, presence, or safety.
+- Shared zod: StoreTierSchema, StoreSubscriptionSchema, EntitlementsSchema.
+
+PORTAL: a Billing page (plan cards, current tier, manage via Stripe portal); show locked tools with an "Upgrade to unlock" state; add a "Verified store" badge for paid tiers (surface it on the mobile store detail).
+
+ACCEPTANCE: an owner subscribes via Stripe and entitlements unlock immediately on webhook; cancel/downgrade re-locks gated tools at period end; the webhook is signature-verified + idempotent; the free tier keeps check-in/presence/safety forever; locked endpoints return a clear upgrade hint.
+
+OUT OF SCOPE: proration UI, multi-store org billing, taxes/invoicing beyond Stripe defaults, and annual-vs-monthly experiments (one monthly price per tier to start).</script>
+
+  <script type="text/plain" id="src-g15">Add SPONSORED PLACEMENT &amp; PROMOTED EVENTS to manamap so stores can pay to be featured in discovery. Work in apps/api + apps/admin (portal) + apps/mobile. Follow CLAUDE.md conventions. CONTEXT: discovery/stores feeds + events are read by mobile; StoreOwnership owner-guards partner routes; gate purchasing behind the paid tier from G14; billing via the Stripe setup in G14. Keep it tasteful — clearly labeled, one slot per view.
+
+SCHEMA (+ migration): Promotion { id, storeId, kind (enum PromotionKind: FEATURED_STORE | BOOSTED_EVENT), eventId? (when BOOSTED_EVENT), startsAt, endsAt, radiusMeters?, status (DRAFT|ACTIVE|ENDED), stripePaymentId?, createdById, createdAt }; PromotionEvent { id, promotionId, userId?, type (IMPRESSION|TAP), createdAt } for billing/reporting (or a lightweight counter).
+
+API:
+- Owner (entitlement-guarded): create/cancel a promotion (date window + audience radius), pay via Stripe (one-off or credits from the PRO tier), list a store's promotions + their impression/tap stats.
+- Feed insertion: when building the discovery store list / nearby / events for a user, resolve at most ONE active, in-window, in-radius promotion and insert it as a clearly-flagged "Featured" / "Promoted" item (don't let it crowd organic results). Skip if the user blocked/hid the store.
+- Logging: record an impression when the promoted item is served and a tap when opened, attributed to the promotion.
+- Shared zod: PromotionSchema, CreatePromotionSchema.
+
+PORTAL: a "Promote" page — buy a featured window or boost an event (date range, radius, preview), see live impressions/taps. Match purple tokens + TanStack Query.
+
+MOBILE: render the featured/promoted slot with an explicit "Featured" label and the store color; tapping deep-links to the store/event.
+
+ACCEPTANCE: promoted items are always clearly labeled; at most one sponsored slot per feed view; impressions + taps are logged and shown to the owner; only entitled stores can promote; promotions respect block/hide and their date+radius window.
+
+OUT OF SCOPE: auction/bidding, third-party (non-store) ads, and targeting by player attributes beyond location radius.</script>
+
+  <script type="text/plain" id="src-g16">Add MANAMAP PLUS, a player subscription, gating a few premium features while keeping the core free forever. Work in apps/api + apps/mobile. Follow CLAUDE.md conventions. CONTEXT: this is consumer IAP (App Store + Play), so use RevenueCat (or StoreKit2 + Play Billing directly) — NOT Stripe Checkout. User + PrivacySettings exist; entitlement should be checkable server-side for gated endpoints (travel mode G11, advanced stats, card-view list) and client-side for cosmetic gates (card themes).
+
+SCHEMA (+ migration): UserSubscription { id, userId @unique, status (ACTIVE|EXPIRED|GRACE), platform (IOS|ANDROID), productId, expiresAt, originalTxnId?, updatedAt }. Add an `isPlus` server helper (status ACTIVE && expiresAt>now).
+
+API:
+- POST /v1/me/iap/verify { platform, receipt|rcAppUserId } → verify with RevenueCat/store, upsert UserSubscription, return entitlement. Add a RevenueCat webhook (or store server notifications) to keep status fresh (renewals, cancellations, billing retry/grace).
+- Apply isPlus checks to: travel mode (G11), advanced stats/matchup analytics endpoints, and "who viewed your card" (add a CardView { viewerId, ownerId, createdAt } log + a Plus-only list endpoint). Unlimited LFG + priority pod seating = relax existing limits for Plus.
+- NEVER gate check-in, connect, safety, basic stats, or messaging.
+- Shared zod: UserSubscriptionSchema, EntitlementSchema.
+
+MOBILE: a Plus paywall from the You tab (feature list: travel mode, advanced stats, custom card themes/foils, who-viewed-your-card, unlimited LFG, priority seats), purchase + restore-purchases, and graceful locked-state upsells on each gated feature. Custom card themes/foils are client cosmetics gated on isPlus.
+
+ACCEPTANCE: purchasing unlocks entitlements on both iOS + Android and restore-purchases works; renewals/cancellations sync via webhook (grace handled); core check-in/connect/safety are never gated; each gated feature shows a graceful upsell when locked.
+
+OUT OF SCOPE: family sharing, promo/intro pricing experiments, web purchase, and gifting (note as follow-ons).</script>
+
+  <script>
+    document.querySelectorAll('.promptbox').forEach((box) => {
+      const btn = box.querySelector('.copybtn');
+      const key = btn.dataset.src;
+      const text = document.getElementById('src-' + key).textContent.trim();
+      document.getElementById('code-' + key).textContent = text;
+      btn.addEventListener('click', () => {
+        const done = () => { btn.classList.add('done'); btn.textContent = '✓ Copied';
+          setTimeout(() => { btn.classList.remove('done'); btn.textContent = '⧉ Copy'; }, 1600); };
+        const fallback = () => {
+          const ta = document.createElement('textarea'); ta.value = text;
+          ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); done(); } catch (e) {} document.body.removeChild(ta);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(fallback);
+        else fallback();
+      });
+    });
+  </script>
+</body>
+</html>

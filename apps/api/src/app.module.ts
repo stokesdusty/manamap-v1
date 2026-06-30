@@ -25,6 +25,7 @@ import { AdminModerationModule } from './admin-moderation/admin-moderation.modul
 import { LfgModule } from './lfg/lfg.module';
 import { PodsModule } from './pods/pods.module';
 import { GamesModule } from './games/games.module';
+import { EndorsementsModule } from './endorsements/endorsements.module';
 import { DevModule } from './dev/dev.module';
 import { RedemptionsModule } from './redemptions/redemptions.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -34,8 +35,7 @@ import { SocialsModule } from './socials/socials.module';
 import { LifeTrackerModule } from './life-tracker/life-tracker.module';
 import { PlayOnlineModule } from './play-online/play-online.module';
 
-const devEnabled =
-  process.env['NODE_ENV'] !== 'production' && process.env['DEV_TOOLS'] === 'true';
+const devEnabled = process.env['NODE_ENV'] !== 'production' && process.env['DEV_TOOLS'] === 'true';
 
 const conditionalModules: Array<DynamicModule | typeof DevModule> = devEnabled ? [DevModule] : [];
 
@@ -59,7 +59,11 @@ const conditionalModules: Array<DynamicModule | typeof DevModule> = devEnabled ?
               ? {
                   transport: {
                     target: 'pino-pretty',
-                    options: { colorize: true, translateTime: 'SYS:standard', ignore: 'pid,hostname' },
+                    options: {
+                      colorize: true,
+                      translateTime: 'SYS:standard',
+                      ignore: 'pid,hostname',
+                    },
                   },
                 }
               : {}),
@@ -93,6 +97,7 @@ const conditionalModules: Array<DynamicModule | typeof DevModule> = devEnabled ?
     LfgModule,
     PodsModule,
     GamesModule,
+    EndorsementsModule,
     RedemptionsModule,
     NotificationsModule,
     QuestsModule,

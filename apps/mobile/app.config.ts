@@ -1,12 +1,13 @@
 import type { ExpoConfig } from 'expo/config';
 
 const config: ExpoConfig = {
-  name: 'manamap',
+  name: 'ManaMap',
   slug: 'manamap',
   version: '1.0.0',
   runtimeVersion: '1.0.0',
   updates: { url: 'https://u.expo.dev/3497a3d5-7a81-4da9-89a3-5108ce4a69ee' },
   orientation: 'default',
+  icon: './assets/icon.png',
   scheme: 'manamap',
   userInterfaceStyle: 'light',
   ios: {
@@ -16,15 +17,18 @@ const config: ExpoConfig = {
     // react-native-maps uses Apple Maps on iOS by default — no API key required
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
-        '$(PRODUCT_NAME) uses your location to confirm you\'re at the store before checking in.',
+        "$(PRODUCT_NAME) uses your location to confirm you're at the store before checking in.",
       NSContactsUsageDescription:
         '$(PRODUCT_NAME) lets you save ManaMap connections to your phone contacts.',
-      ITSAppUsesNonExemptEncryption: false
+      ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
     package: 'com.manamap.app',
-    adaptiveIcon: { backgroundColor: '#F7F3EE' },
+    adaptiveIcon: { foregroundImage: './assets/icon.png', backgroundColor: '#F7F3EE' },
+    // Sets the native windowBackground — shows through behind the transparent
+    // edge-to-edge nav/status bars, so this must match theme/colors.ts `paper`.
+    backgroundColor: '#191420',
     // Set MAPS_API_KEY env var at build time for Google Maps on Android
     config: {
       googleMaps: { apiKey: process.env['MAPS_API_KEY'] ?? '' },
@@ -36,24 +40,28 @@ const config: ExpoConfig = {
     'expo-splash-screen',
     'expo-secure-store',
     'expo-apple-authentication',
-    ['expo-build-properties', { ios: { newArchEnabled: false }, android: { newArchEnabled: false } }],
+    ['expo-navigation-bar', { style: 'light' }],
+    [
+      'expo-build-properties',
+      { ios: { newArchEnabled: false }, android: { newArchEnabled: false } },
+    ],
     [
       'expo-camera',
       { cameraPermission: '$(PRODUCT_NAME) needs camera access to scan player QR codes.' },
     ],
-    [
-      'expo-notifications',
-      { androidMode: 'default' },
-    ],
+    ['expo-notifications', { androidMode: 'default' }],
     [
       'expo-contacts',
-      { contactsPermission: '$(PRODUCT_NAME) lets you save ManaMap connections to your phone contacts.' },
+      {
+        contactsPermission:
+          '$(PRODUCT_NAME) lets you save ManaMap connections to your phone contacts.',
+      },
     ],
     [
       'expo-location',
       {
         locationWhenInUsePermission:
-          '$(PRODUCT_NAME) uses your location to confirm you\'re at the store before checking in.',
+          "$(PRODUCT_NAME) uses your location to confirm you're at the store before checking in.",
       },
     ],
     './plugins/withXcodeEnvFix',

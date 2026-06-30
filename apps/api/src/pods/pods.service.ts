@@ -7,12 +7,17 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import type Redis from 'ioredis';
-import { EncounterResult, EncounterSource, ModerationStatus, NotificationKind } from '@prisma/client';
+import {
+  EncounterResult,
+  EncounterSource,
+  ModerationStatus,
+  NotificationKind,
+} from '@prisma/client';
 import type { CreatePod, PodMemberAction } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
-import { PrismaService } from '../prisma/prisma.service';
-import { SafetyService } from '../safety/safety.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { SafetyService } from '../safety/safety.service';
+import type { NotificationsService } from '../notifications/notifications.service';
 
 const presenceKey = (userId: string) => `presence:${userId}`;
 const storeMembersKey = (storeId: string) => `store_members:${storeId}`;
@@ -249,8 +254,23 @@ export class PodsService {
       }),
       this.prisma.user.findMany({ where: { id: { in: allUserIds } }, select: PROFILE_SELECT }),
       isHost && pod.requestIds.length > 0
-        ? this.prisma.user.findMany({ where: { id: { in: pod.requestIds } }, select: PROFILE_SELECT })
-        : Promise.resolve([] as Array<{ id: string; displayName: string; pronouns: string | null; bio: string | null; avatarColors: string[]; commander: string | null; powerLevel: number | null; vibes: string[]; formats: string[] }>),
+        ? this.prisma.user.findMany({
+            where: { id: { in: pod.requestIds } },
+            select: PROFILE_SELECT,
+          })
+        : Promise.resolve(
+            [] as Array<{
+              id: string;
+              displayName: string;
+              pronouns: string | null;
+              bio: string | null;
+              avatarColors: string[];
+              commander: string | null;
+              powerLevel: number | null;
+              vibes: string[];
+              formats: string[];
+            }>,
+          ),
     ]);
 
     const userMap = new Map(allUsers.map((u) => [u.id, u]));
@@ -267,7 +287,9 @@ export class PodsService {
 
     const requests = requestUsers.map(normalizeProfile);
 
-    let candidates: Array<ReturnType<typeof normalizeProfile> & { fit: { tier: FitTier; label: string } }> = [];
+    let candidates: Array<
+      ReturnType<typeof normalizeProfile> & { fit: { tier: FitTier; label: string } }
+    > = [];
     if (isHost) {
       candidates = await this.getCandidates(callerId, pod);
     }
@@ -304,7 +326,9 @@ export class PodsService {
     );
     if (!candidateIds.length) return [];
 
-    const existsChecks = await Promise.all(candidateIds.map((id) => this.redis.exists(presenceKey(id))));
+    const existsChecks = await Promise.all(
+      candidateIds.map((id) => this.redis.exists(presenceKey(id))),
+    );
     const presentIds = candidateIds.filter((_, i) => existsChecks[i]);
     if (!presentIds.length) return [];
 
@@ -313,7 +337,9 @@ export class PodsService {
       select: { ...PROFILE_SELECT, privacySettings: { select: { discoverable: true } } },
     });
 
-    const results: Array<ReturnType<typeof normalizeProfile> & { fit: { tier: FitTier; label: string } }> = [];
+    const results: Array<
+      ReturnType<typeof normalizeProfile> & { fit: { tier: FitTier; label: string } }
+    > = [];
     for (const user of users) {
       if (user.privacySettings?.discoverable === false) continue;
       const { privacySettings: _ps, ...profile } = user;

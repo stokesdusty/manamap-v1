@@ -10,7 +10,15 @@ import { DevController } from './dev.controller';
 import { DevService } from './dev.service';
 
 @Module({
-  imports: [AuthModule, PresenceModule, LfgModule, PodsModule, ConnectionsModule, GamesModule, NotificationsModule],
+  imports: [
+    AuthModule,
+    PresenceModule,
+    LfgModule,
+    PodsModule,
+    ConnectionsModule,
+    GamesModule,
+    NotificationsModule,
+  ],
   controllers: [DevController],
   providers: [DevService],
 })

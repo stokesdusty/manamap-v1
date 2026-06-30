@@ -22,7 +22,11 @@ import { colors, radii, spacing, typography } from '../theme';
 type Props = NativeStackScreenProps<RootStackParamList, 'LifeTracker'>;
 
 const MANA_FILL: Record<string, string> = {
-  W: colors.mana.W, U: colors.mana.U, B: colors.mana.B, R: colors.mana.R, G: colors.mana.G,
+  W: colors.mana.W,
+  U: colors.mana.U,
+  B: colors.mana.B,
+  R: colors.mana.R,
+  G: colors.mana.G,
 };
 
 function playerColor(avatarColors: string[]): string {
@@ -44,14 +48,19 @@ function RepeatButton({ onDelta, label, style, textStyle }: RepeatButtonProps) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stop = useCallback(() => {
-    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
   }, []);
 
   return (
     <Pressable
       style={({ pressed }) => [rb.btn, style, pressed && { opacity: 0.6 }]}
       onPress={onDelta}
-      onLongPress={() => { intervalRef.current = setInterval(onDelta, 120); }}
+      onLongPress={() => {
+        intervalRef.current = setInterval(onDelta, 120);
+      }}
       onPressOut={stop}
       delayLongPress={400}
     >
@@ -98,7 +107,9 @@ function CommanderDamageSheet({ player, allPlayers, onDelta, onClose }: CmdSheet
           return (
             <View key={src.userId} style={cds.row}>
               <View style={[cds.dot, { backgroundColor: fill }]} />
-              <Text style={cds.name} numberOfLines={1}>{src.displayName}</Text>
+              <Text style={cds.name} numberOfLines={1}>
+                {src.displayName}
+              </Text>
               <Text style={[cds.dmg, danger && cds.dmgDanger]}>{dmg}</Text>
               <View style={cds.btns}>
                 <RepeatButton
@@ -137,7 +148,8 @@ const cds = StyleSheet.create({
   },
   handle: {
     alignSelf: 'center',
-    width: 40, height: 4,
+    width: 40,
+    height: 4,
     borderRadius: 2,
     backgroundColor: colors.border,
     marginBottom: spacing.sm,
@@ -173,7 +185,8 @@ const cds = StyleSheet.create({
   dmgDanger: { color: colors.error },
   btns: { flexDirection: 'row', gap: spacing.sm },
   adjBtn: {
-    width: 44, height: 44,
+    width: 44,
+    height: 44,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -222,7 +235,9 @@ function CounterRow({ player, compact, onDelta }: CounterRowProps) {
             <Pressable onPress={() => onDelta(key, -1)} hitSlop={8} style={cr.adjMin}>
               <Text style={cr.adjText}>−</Text>
             </Pressable>
-            <Text style={[cr.icon, compact && cr.iconCompact, danger && cr.iconDanger]}>{icon}</Text>
+            <Text style={[cr.icon, compact && cr.iconCompact, danger && cr.iconDanger]}>
+              {icon}
+            </Text>
             <Text style={[cr.val, danger && cr.valDanger]}>{val}</Text>
             <Pressable onPress={() => onDelta(key, 1)} hitSlop={8} style={cr.adjPlus}>
               <Text style={[cr.adjText, cr.adjPlusText]}>+</Text>
@@ -370,20 +385,23 @@ function PlayerPanel({
 
       {/* Commander damage row — always visible so the first hit can be recorded */}
       <Pressable style={pp.cmdRow} onPress={() => setCmdSheetOpen(true)}>
-        <Text style={[pp.cmdLabel, compact && pp.cmdLabelCompact, hasCmdDamage && pp.cmdLabelActive]}>
+        <Text
+          style={[pp.cmdLabel, compact && pp.cmdLabelCompact, hasCmdDamage && pp.cmdLabelActive]}
+        >
           CMD {cmdTotal > 0 ? `${cmdTotal}` : '+'}
         </Text>
-        {!compact && Object.entries(player.commanderDamage).map(([srcId, dmg]) => {
-          const src = allPlayers.find((p) => p.userId === srcId);
-          if (!src) return null;
-          const srcFill = playerColor(src.avatarColors);
-          return (
-            <View key={srcId} style={pp.cmdChip}>
-              <View style={[pp.cmdDot, { backgroundColor: srcFill }]} />
-              <Text style={[pp.cmdChipText, dmg >= 18 && pp.cmdChipDanger]}>{dmg}</Text>
-            </View>
-          );
-        })}
+        {!compact &&
+          Object.entries(player.commanderDamage).map(([srcId, dmg]) => {
+            const src = allPlayers.find((p) => p.userId === srcId);
+            if (!src) return null;
+            const srcFill = playerColor(src.avatarColors);
+            return (
+              <View key={srcId} style={pp.cmdChip}>
+                <View style={[pp.cmdDot, { backgroundColor: srcFill }]} />
+                <Text style={[pp.cmdChipText, dmg >= 18 && pp.cmdChipDanger]}>{dmg}</Text>
+              </View>
+            );
+          })}
         <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
       </Pressable>
 
@@ -422,7 +440,7 @@ const pp = StyleSheet.create({
   },
   eliminated: { opacity: 0.55 },
   eliminatedOverlay: {
-    ...StyleSheet.absoluteFill as object,
+    ...(StyleSheet.absoluteFill as object),
     borderRadius: radii.md,
     backgroundColor: colors.error + '15',
   },
@@ -525,7 +543,15 @@ interface GameBarProps {
   onClose: () => void;
 }
 
-function GameBar({ state, allPlayers, canUndo, onUndo, onNextTurn, onReset, onClose }: GameBarProps) {
+function GameBar({
+  state,
+  allPlayers,
+  canUndo,
+  onUndo,
+  onNextTurn,
+  onReset,
+  onClose,
+}: GameBarProps) {
   const active = allPlayers.find((p) => p.userId === state.activePlayerId);
   const monarch = allPlayers.find((p) => p.userId === state.monarchId);
   const initiative = allPlayers.find((p) => p.userId === state.initiativeId);
@@ -551,13 +577,17 @@ function GameBar({ state, allPlayers, canUndo, onUndo, onNextTurn, onReset, onCl
         {monarch && (
           <View style={[gb.chip, gb.tokenChip]}>
             <Text style={gb.tokenIcon}>👑</Text>
-            <Text style={gb.chipLabel} numberOfLines={1}>{monarch.displayName}</Text>
+            <Text style={gb.chipLabel} numberOfLines={1}>
+              {monarch.displayName}
+            </Text>
           </View>
         )}
         {initiative && (
           <View style={[gb.chip, gb.tokenChip]}>
             <Text style={gb.tokenIcon}>⚔️</Text>
-            <Text style={gb.chipLabel} numberOfLines={1}>{initiative.displayName}</Text>
+            <Text style={gb.chipLabel} numberOfLines={1}>
+              {initiative.displayName}
+            </Text>
           </View>
         )}
       </View>
@@ -569,7 +599,11 @@ function GameBar({ state, allPlayers, canUndo, onUndo, onNextTurn, onReset, onCl
           hitSlop={8}
           style={[gb.actionBtn, !canUndo && gb.actionDisabled]}
         >
-          <Ionicons name="arrow-undo" size={20} color={canUndo ? colors.textSecondary : colors.border} />
+          <Ionicons
+            name="arrow-undo"
+            size={20}
+            color={canUndo ? colors.textSecondary : colors.border}
+          />
         </Pressable>
         <Pressable onPress={onNextTurn} hitSlop={8} style={[gb.actionBtn, gb.actionBtnNext]}>
           <Ionicons name="play-skip-forward" size={20} color={colors.accentInk} />
@@ -659,9 +693,7 @@ function SetupSheet({ format, isHost, onStart, onClose }: SetupSheetProps) {
     <View style={ss.container}>
       <View style={ss.card}>
         <View style={ss.header}>
-          <Text style={ss.title}>
-            {isHost ? 'Start Life Tracker' : 'Waiting for host…'}
-          </Text>
+          <Text style={ss.title}>{isHost ? 'Start Life Tracker' : 'Waiting for host…'}</Text>
           <Pressable onPress={onClose} hitSlop={8}>
             <Ionicons name="close" size={20} color={colors.textSecondary} />
           </Pressable>
@@ -675,7 +707,10 @@ function SetupSheet({ format, isHost, onStart, onClose }: SetupSheetProps) {
                 <Pressable
                   key={p}
                   style={[ss.preset, life === p && ss.presetActive]}
-                  onPress={() => { setLife(p); setShowCustom(false); }}
+                  onPress={() => {
+                    setLife(p);
+                    setShowCustom(false);
+                  }}
                 >
                   <Text style={[ss.presetText, life === p && ss.presetTextActive]}>{p}</Text>
                 </Pressable>
@@ -695,15 +730,16 @@ function SetupSheet({ format, isHost, onStart, onClose }: SetupSheetProps) {
                 placeholder="Enter life total"
                 placeholderTextColor={colors.textTertiary}
                 value={custom}
-                onChangeText={(v) => { setCustom(v); const n = parseInt(v, 10); if (n > 0) setLife(n); }}
+                onChangeText={(v) => {
+                  setCustom(v);
+                  const n = parseInt(v, 10);
+                  if (n > 0) setLife(n);
+                }}
                 autoFocus
               />
             )}
 
-            <Pressable
-              style={ss.startBtn}
-              onPress={() => onStart(life)}
-            >
+            <Pressable style={ss.startBtn} onPress={() => onStart(life)}>
               <Text style={ss.startBtnText}>Start — {life} life</Text>
             </Pressable>
           </>
@@ -777,7 +813,12 @@ const ss = StyleSheet.create({
     fontSize: typography.fontSize.md,
     color: colors.textInverse,
   },
-  waitRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.lg },
+  waitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.lg,
+  },
   waitText: {
     fontFamily: typography.fontFamily.regular,
     fontSize: typography.fontSize.sm,
@@ -831,7 +872,9 @@ function LocalSetupSheet({
           {players.map((p) => (
             <View key={p.id} style={lss.playerRow}>
               <View style={[lss.dot, { backgroundColor: playerColor(p.avatarColors) }]} />
-              <Text style={lss.playerName} numberOfLines={1}>{p.displayName}</Text>
+              <Text style={lss.playerName} numberOfLines={1}>
+                {p.displayName}
+              </Text>
               {p.isGuest && <Text style={lss.guestTag}>Guest</Text>}
             </View>
           ))}
@@ -839,7 +882,11 @@ function LocalSetupSheet({
         <Text style={ss.label}>Starting life total</Text>
         <View style={ss.presets}>
           {[20, 40].map((n) => (
-            <Pressable key={n} style={[ss.preset, life === n && ss.presetActive]} onPress={() => setLife(n)}>
+            <Pressable
+              key={n}
+              style={[ss.preset, life === n && ss.presetActive]}
+              onPress={() => setLife(n)}
+            >
               <Text style={[ss.presetText, life === n && ss.presetTextActive]}>{n}</Text>
             </Pressable>
           ))}
@@ -855,10 +902,27 @@ function LocalSetupSheet({
 const lss = StyleSheet.create({
   sectionLabel: { marginBottom: 8 },
   playerList: { marginBottom: 20, gap: 6 },
-  playerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.chipBg, borderRadius: radii.md },
+  playerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: colors.chipBg,
+    borderRadius: radii.md,
+  },
   dot: { width: 9, height: 9, borderRadius: 5, flexShrink: 0 },
-  playerName: { flex: 1, fontFamily: typography.fontFamily.semiBold, fontSize: 14.5, color: colors.textPrimary },
-  guestTag: { fontFamily: typography.fontFamily.semiBold, fontSize: 11, color: colors.textTertiary },
+  playerName: {
+    flex: 1,
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14.5,
+    color: colors.textPrimary,
+  },
+  guestTag: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 11,
+    color: colors.textTertiary,
+  },
 });
 
 function FirstPlayerPicker({
@@ -886,7 +950,7 @@ function FirstPlayerPicker({
         const t = step / totalSteps;
         timerRef.current = setTimeout(tick, 55 + t * t * 445);
       } else {
-        const dist = ((winner - currentIdx) % players.length + players.length) % players.length;
+        const dist = (((winner - currentIdx) % players.length) + players.length) % players.length;
         if (dist === 0) {
           timerRef.current = setTimeout(() => setPickedIdx(winner), 500);
         } else {
@@ -906,14 +970,18 @@ function FirstPlayerPicker({
       }
     };
     timerRef.current = setTimeout(tick, 80);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   return (
     <View style={fpp.container}>
       <View style={fpp.top}>
         <Text style={fpp.title}>
-          {pickedIdx !== null ? `${players[pickedIdx]?.displayName} goes first!` : 'Who goes first?'}
+          {pickedIdx !== null
+            ? `${players[pickedIdx]?.displayName} goes first!`
+            : 'Who goes first?'}
         </Text>
         <Text style={fpp.sub}>
           {pickedIdx !== null ? 'Tap below to begin.' : '🎲 Rolling the dice…'}
@@ -925,13 +993,27 @@ function FirstPlayerPicker({
           const isPicked = pickedIdx === i;
           const fill = playerColor(p.avatarColors);
           return (
-            <View key={p.userId} style={[
-              fpp.row,
-              isPicked && { backgroundColor: fill + '18', borderColor: fill, borderWidth: 2.5, transform: [{ scale: 1.025 }] },
-              !isPicked && isHighlit && fpp.rowHighlit,
-            ]}>
+            <View
+              key={p.userId}
+              style={[
+                fpp.row,
+                isPicked && {
+                  backgroundColor: fill + '18',
+                  borderColor: fill,
+                  borderWidth: 2.5,
+                  transform: [{ scale: 1.025 }],
+                },
+                !isPicked && isHighlit && fpp.rowHighlit,
+              ]}
+            >
               <View style={[fpp.dot, { backgroundColor: fill }]} />
-              <Text style={[fpp.name, isPicked && { color: fill }, !isPicked && isHighlit && fpp.nameHighlit]}>
+              <Text
+                style={[
+                  fpp.name,
+                  isPicked && { color: fill },
+                  !isPicked && isHighlit && fpp.nameHighlit,
+                ]}
+              >
                 {p.displayName}
               </Text>
               {isPicked && <Text style={fpp.dice}>🎲</Text>}
@@ -949,25 +1031,63 @@ function FirstPlayerPicker({
 }
 
 const fpp = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 20, paddingVertical: 24, backgroundColor: colors.paper, justifyContent: 'center', gap: 28 },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    backgroundColor: colors.paper,
+    justifyContent: 'center',
+    gap: 28,
+  },
   top: { alignItems: 'center' },
-  title: { fontFamily: typography.fontFamily.bold, fontSize: 22, color: colors.textPrimary, letterSpacing: -0.5, textAlign: 'center' },
-  sub: { fontFamily: typography.fontFamily.semiBold, fontSize: 14, color: colors.textSecondary, marginTop: 6 },
+  title: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 22,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+    textAlign: 'center',
+  },
+  sub: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 6,
+  },
   list: { gap: 10 },
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 14,
-    borderRadius: 16, borderWidth: 1.5, borderColor: colors.borderLight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: colors.borderLight,
     backgroundColor: colors.surface,
   },
   rowHighlit: { backgroundColor: colors.accent + '18', borderColor: colors.accent, borderWidth: 2 },
   dot: { width: 11, height: 11, borderRadius: 6, flexShrink: 0 },
-  name: { flex: 1, fontFamily: typography.fontFamily.bold, fontSize: 17, color: colors.textPrimary, letterSpacing: -0.15 },
+  name: {
+    flex: 1,
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 17,
+    color: colors.textPrimary,
+    letterSpacing: -0.15,
+  },
   nameHighlit: { color: colors.accent },
   dice: { fontSize: 18 },
   letsPlay: {
-    marginTop: 24, height: 54, backgroundColor: colors.accent, borderRadius: radii.lg,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: colors.accent, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+    marginTop: 24,
+    height: 54,
+    backgroundColor: colors.accent,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
   letsPlayText: { fontFamily: typography.fontFamily.bold, fontSize: 16, color: colors.textInverse },
 });
@@ -1055,19 +1175,42 @@ function LocalLifeTracker({
     allPlayers: localPlayers,
     isActiveTurn: player.userId === syntheticState.activePlayerId,
     onLifeDelta: (delta) =>
-      applyUpdate((ps) => ps.map((p) => p.userId === player.userId ? { ...p, life: p.life + delta } : p)),
+      applyUpdate((ps) =>
+        ps.map((p) => (p.userId === player.userId ? { ...p, life: p.life + delta } : p)),
+      ),
     onCommanderDamage: (srcId, delta) =>
-      applyUpdate((ps) => ps.map((p) => p.userId === player.userId
-        ? { ...p, commanderDamage: { ...p.commanderDamage, [srcId]: Math.max(0, (p.commanderDamage[srcId] ?? 0) + delta) } }
-        : p)),
+      applyUpdate((ps) =>
+        ps.map((p) =>
+          p.userId === player.userId
+            ? {
+                ...p,
+                commanderDamage: {
+                  ...p.commanderDamage,
+                  [srcId]: Math.max(0, (p.commanderDamage[srcId] ?? 0) + delta),
+                },
+              }
+            : p,
+        ),
+      ),
     onCounterDelta: (counter, delta) =>
-      applyUpdate((ps) => ps.map((p) => p.userId === player.userId ? { ...p, [counter]: Math.max(0, p[counter] + delta) } : p)),
+      applyUpdate((ps) =>
+        ps.map((p) =>
+          p.userId === player.userId ? { ...p, [counter]: Math.max(0, p[counter] + delta) } : p,
+        ),
+      ),
     onEliminateToggle: () =>
-      applyUpdate((ps) => ps.map((p) => p.userId === player.userId ? { ...p, isEliminated: !p.isEliminated } : p)),
+      applyUpdate((ps) =>
+        ps.map((p) => (p.userId === player.userId ? { ...p, isEliminated: !p.isEliminated } : p)),
+      ),
   });
 
   const renderLocalPanel = (player: TrackerPlayer, isFlipped: boolean, compact: boolean) => (
-    <PlayerPanel key={player.userId} {...makeLocalProps(player)} isFlipped={isFlipped} compact={compact} />
+    <PlayerPanel
+      key={player.userId}
+      {...makeLocalProps(player)}
+      isFlipped={isFlipped}
+      compact={compact}
+    />
   );
 
   let grid: React.ReactNode;
@@ -1097,12 +1240,19 @@ function LocalLifeTracker({
       </View>
     ) : (
       <View style={{ flex: 1 }}>
-        <View style={{ flex: 1, flexDirection: 'row' }}>{others.map((p) => renderLocalPanel(p, true, false))}</View>
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          {others.map((p) => renderLocalPanel(p, true, false))}
+        </View>
         {renderLocalPanel(self, false, false)}
       </View>
     );
   } else {
-    const [self, p1, p2, p3] = localPlayers as [TrackerPlayer, TrackerPlayer, TrackerPlayer, TrackerPlayer];
+    const [self, p1, p2, p3] = localPlayers as [
+      TrackerPlayer,
+      TrackerPlayer,
+      TrackerPlayer,
+      TrackerPlayer,
+    ];
     grid = (
       <View style={{ flex: 1 }}>
         <View style={{ flex: 1, flexDirection: 'row' }}>
@@ -1148,9 +1298,12 @@ function LocalLifeTracker({
 
 export function LifeTrackerScreen({ route, navigation }: Props) {
   const { podId, initialPlayers } = route.params;
-  const { state, isConnected: _conn, isLoading, actions } = useLifeTracker(
-    initialPlayers ? null : (podId ?? null),
-  );
+  const {
+    state,
+    isConnected: _conn,
+    isLoading,
+    actions,
+  } = useLifeTracker(initialPlayers ? null : (podId ?? null));
   const { data: profile } = useProfile();
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
@@ -1218,7 +1371,12 @@ export function LifeTrackerScreen({ route, navigation }: Props) {
   });
 
   const renderPanel = (player: TrackerPlayer, isFlipped: boolean, compact: boolean) => (
-    <PlayerPanel key={player.userId} {...makeProps(player)} isFlipped={isFlipped} compact={compact} />
+    <PlayerPanel
+      key={player.userId}
+      {...makeProps(player)}
+      isFlipped={isFlipped}
+      compact={compact}
+    />
   );
 
   let grid: React.ReactNode;
@@ -1246,9 +1404,7 @@ export function LifeTrackerScreen({ route, navigation }: Props) {
     grid = isLandscape ? (
       // Landscape: opponents stacked on left, self takes right half
       <View style={{ flex: 1, flexDirection: 'row' }}>
-        <View style={{ flex: 1 }}>
-          {others.map((p) => renderPanel(p, true, false))}
-        </View>
+        <View style={{ flex: 1 }}>{others.map((p) => renderPanel(p, true, false))}</View>
         {renderPanel(self, false, false)}
       </View>
     ) : (

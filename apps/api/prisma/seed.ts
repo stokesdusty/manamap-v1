@@ -275,7 +275,14 @@ async function main(): Promise<void> {
   for (const b of BOTS) {
     await prisma.user.upsert({
       where: { email: b.email },
-      update: { isBot: true, formats: b.formats, powerLevel: b.powerLevel, vibes: b.vibes, bio: b.bio, avatarColors: b.avatarColors },
+      update: {
+        isBot: true,
+        formats: b.formats,
+        powerLevel: b.powerLevel,
+        vibes: b.vibes,
+        bio: b.bio,
+        avatarColors: b.avatarColors,
+      },
       create: {
         id: b.id,
         displayName: b.displayName,
@@ -375,7 +382,15 @@ async function main(): Promise<void> {
     const rewardBadgeId = badgeIdByCode.get(q.rewardBadgeCode) ?? null;
     await prisma.quest.upsert({
       where: { code: q.code },
-      update: { title: q.title, description: q.description, icon: q.icon, criteria: q.criteria, activeFrom: monthStart, activeTo: monthEnd, rewardBadgeId },
+      update: {
+        title: q.title,
+        description: q.description,
+        icon: q.icon,
+        criteria: q.criteria,
+        activeFrom: monthStart,
+        activeTo: monthEnd,
+        rewardBadgeId,
+      },
       create: {
         code: q.code,
         title: q.title,

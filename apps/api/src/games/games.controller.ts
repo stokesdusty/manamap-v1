@@ -12,7 +12,7 @@ import {
 import { CreateGameSchema, type CreateGame } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import { GamesService } from './games.service';
+import type { GamesService } from './games.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 
@@ -23,10 +23,7 @@ export class GamesController {
 
   @Post()
   @HttpCode(201)
-  create(
-    @Req() req: AuthRequest,
-    @Body(new ZodValidationPipe(CreateGameSchema)) body: CreateGame,
-  ) {
+  create(@Req() req: AuthRequest, @Body(new ZodValidationPipe(CreateGameSchema)) body: CreateGame) {
     return this.games.create(req.user.sub, body);
   }
 

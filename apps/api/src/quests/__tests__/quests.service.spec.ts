@@ -52,7 +52,7 @@ describe('QuestsService', () => {
     const module = await Test.createTestingModule({
       providers: [
         QuestsService,
-        { provide: PrismaService,       useValue: prisma },
+        { provide: PrismaService, useValue: prisma },
         { provide: NotificationsService, useValue: notifications },
       ],
     }).compile();
@@ -96,7 +96,9 @@ describe('QuestsService', () => {
     });
 
     it('sets goal from play_games criteria count', async () => {
-      prisma.quest.findMany.mockResolvedValue([makeQuest({ criteria: { type: 'play_games', count: 5 } })]);
+      prisma.quest.findMany.mockResolvedValue([
+        makeQuest({ criteria: { type: 'play_games', count: 5 } }),
+      ]);
       prisma.questProgress.findMany.mockResolvedValue([]);
 
       const result = await service.getActiveQuests('u1');
@@ -122,7 +124,9 @@ describe('QuestsService', () => {
     });
 
     it('meet_new_players: counts accepted connections since quest start', async () => {
-      prisma.quest.findMany.mockResolvedValue([makeQuest({ criteria: { type: 'meet_new_players', count: 3 } })]);
+      prisma.quest.findMany.mockResolvedValue([
+        makeQuest({ criteria: { type: 'meet_new_players', count: 3 } }),
+      ]);
       prisma.connection.count.mockResolvedValue(2);
 
       await service.evaluate('u1');
@@ -138,7 +142,9 @@ describe('QuestsService', () => {
     });
 
     it('play_games: counts confirmed games since quest start', async () => {
-      prisma.quest.findMany.mockResolvedValue([makeQuest({ criteria: { type: 'play_games', count: 3 } })]);
+      prisma.quest.findMany.mockResolvedValue([
+        makeQuest({ criteria: { type: 'play_games', count: 3 } }),
+      ]);
       prisma.gameLog.count.mockResolvedValue(1);
 
       await service.evaluate('u1');
@@ -154,7 +160,9 @@ describe('QuestsService', () => {
     });
 
     it('checkin_streak: uses best currentStreak across all stores', async () => {
-      prisma.quest.findMany.mockResolvedValue([makeQuest({ criteria: { type: 'checkin_streak', length: 5 } })]);
+      prisma.quest.findMany.mockResolvedValue([
+        makeQuest({ criteria: { type: 'checkin_streak', length: 5 } }),
+      ]);
       prisma.streak.findFirst.mockResolvedValue({ currentStreak: 4 });
 
       await service.evaluate('u1');
@@ -168,7 +176,9 @@ describe('QuestsService', () => {
     });
 
     it('checkin_streak: returns 0 when user has no streaks', async () => {
-      prisma.quest.findMany.mockResolvedValue([makeQuest({ criteria: { type: 'checkin_streak', length: 5 } })]);
+      prisma.quest.findMany.mockResolvedValue([
+        makeQuest({ criteria: { type: 'checkin_streak', length: 5 } }),
+      ]);
       prisma.streak.findFirst.mockResolvedValue(null);
 
       await service.evaluate('u1');
@@ -179,7 +189,9 @@ describe('QuestsService', () => {
     });
 
     it('unique_stores: counts distinct stores visited since quest start', async () => {
-      prisma.quest.findMany.mockResolvedValue([makeQuest({ criteria: { type: 'unique_stores', count: 3 } })]);
+      prisma.quest.findMany.mockResolvedValue([
+        makeQuest({ criteria: { type: 'unique_stores', count: 3 } }),
+      ]);
       prisma.checkin.groupBy.mockResolvedValue([{ storeId: 's1' }, { storeId: 's2' }]);
 
       await service.evaluate('u1');
@@ -193,7 +205,7 @@ describe('QuestsService', () => {
       prisma.quest.findMany.mockResolvedValue([makeQuest({ criteria: { type: 'new_store' } })]);
       prisma.checkin.findMany
         .mockResolvedValueOnce([{ storeId: 'store1' }]) // checkins since quest start
-        .mockResolvedValueOnce([]);                      // no prior visits
+        .mockResolvedValueOnce([]); // no prior visits
 
       await service.evaluate('u1');
 
@@ -205,7 +217,7 @@ describe('QuestsService', () => {
     it('new_store: returns 0 when store was already visited before quest start', async () => {
       prisma.quest.findMany.mockResolvedValue([makeQuest({ criteria: { type: 'new_store' } })]);
       prisma.checkin.findMany
-        .mockResolvedValueOnce([{ storeId: 'store1' }])  // since quest
+        .mockResolvedValueOnce([{ storeId: 'store1' }]) // since quest
         .mockResolvedValueOnce([{ storeId: 'store1' }]); // prior visit — not new
 
       await service.evaluate('u1');
@@ -285,7 +297,9 @@ describe('QuestsService', () => {
 
   describe('evaluate — completion side effects', () => {
     it('sets completedAt when progress meets the goal', async () => {
-      prisma.quest.findMany.mockResolvedValue([makeQuest({ criteria: { type: 'play_games', count: 3 } })]);
+      prisma.quest.findMany.mockResolvedValue([
+        makeQuest({ criteria: { type: 'play_games', count: 3 } }),
+      ]);
       prisma.questProgress.findMany.mockResolvedValue([]);
       prisma.gameLog.count.mockResolvedValue(3); // exactly meets goal
 
@@ -300,7 +314,9 @@ describe('QuestsService', () => {
 
     it('creates a UserBadge when quest has a rewardBadge and is completed', async () => {
       const rewardBadge = { id: 'badge1', code: 'QUEST_BADGE', name: 'Quester', icon: '🎖️' };
-      prisma.quest.findMany.mockResolvedValue([makeQuest({ rewardBadge, criteria: { type: 'play_games', count: 1 } })]);
+      prisma.quest.findMany.mockResolvedValue([
+        makeQuest({ rewardBadge, criteria: { type: 'play_games', count: 1 } }),
+      ]);
       prisma.questProgress.findMany.mockResolvedValue([]);
       prisma.gameLog.count.mockResolvedValue(1);
 
@@ -313,7 +329,9 @@ describe('QuestsService', () => {
 
     it('does not throw when UserBadge creation fails (duplicate race condition)', async () => {
       const rewardBadge = { id: 'badge1', code: 'QUEST_BADGE', name: 'Quester', icon: '🎖️' };
-      prisma.quest.findMany.mockResolvedValue([makeQuest({ rewardBadge, criteria: { type: 'play_games', count: 1 } })]);
+      prisma.quest.findMany.mockResolvedValue([
+        makeQuest({ rewardBadge, criteria: { type: 'play_games', count: 1 } }),
+      ]);
       prisma.questProgress.findMany.mockResolvedValue([]);
       prisma.gameLog.count.mockResolvedValue(1);
       prisma.userBadge.create.mockRejectedValue(new Error('unique constraint'));
@@ -322,7 +340,9 @@ describe('QuestsService', () => {
     });
 
     it('fires a QUEST notification on completion', async () => {
-      prisma.quest.findMany.mockResolvedValue([makeQuest({ criteria: { type: 'play_games', count: 1 } })]);
+      prisma.quest.findMany.mockResolvedValue([
+        makeQuest({ criteria: { type: 'play_games', count: 1 } }),
+      ]);
       prisma.questProgress.findMany.mockResolvedValue([]);
       prisma.gameLog.count.mockResolvedValue(1);
 
@@ -335,7 +355,9 @@ describe('QuestsService', () => {
     });
 
     it('does not fire a notification when quest is not yet complete', async () => {
-      prisma.quest.findMany.mockResolvedValue([makeQuest({ criteria: { type: 'play_games', count: 5 } })]);
+      prisma.quest.findMany.mockResolvedValue([
+        makeQuest({ criteria: { type: 'play_games', count: 5 } }),
+      ]);
       prisma.questProgress.findMany.mockResolvedValue([]);
       prisma.gameLog.count.mockResolvedValue(2); // below goal
 

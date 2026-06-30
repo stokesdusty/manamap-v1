@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConnectionStatus, GameStatus, NotificationKind } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { NotificationsService } from '../notifications/notifications.service';
 
 export type QuestCriteria =
   | { type: 'meet_new_players'; count: number }
@@ -125,11 +125,16 @@ export class QuestsService {
 
   private getGoal(criteria: QuestCriteria): number {
     switch (criteria.type) {
-      case 'meet_new_players': return criteria.count;
-      case 'new_store': return 1;
-      case 'play_games': return criteria.count;
-      case 'checkin_streak': return criteria.length;
-      case 'unique_stores': return criteria.count;
+      case 'meet_new_players':
+        return criteria.count;
+      case 'new_store':
+        return 1;
+      case 'play_games':
+        return criteria.count;
+      case 'checkin_streak':
+        return criteria.length;
+      case 'unique_stores':
+        return criteria.count;
     }
   }
 

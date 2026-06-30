@@ -1,6 +1,8 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
+import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
+import { Catch, HttpException, HttpStatus } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import type { PinoLogger } from 'nestjs-pino';
+import { InjectPinoLogger } from 'nestjs-pino';
 import * as Sentry from '@sentry/node';
 
 @Catch()
@@ -24,7 +26,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status = exception.getStatus();
       const body = exception.getResponse();
       if (typeof body === 'object' && body !== null) {
-        const { message: msg, statusCode: _sc, error: _err, ...rest } = body as Record<string, unknown>;
+        const {
+          message: msg,
+          statusCode: _sc,
+          error: _err,
+          ...rest
+        } = body as Record<string, unknown>;
         if (typeof msg === 'string') {
           message = msg;
         } else if (Array.isArray(msg)) {

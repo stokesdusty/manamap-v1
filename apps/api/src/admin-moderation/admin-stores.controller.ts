@@ -1,12 +1,10 @@
-import {
-  Body, Controller, Get, HttpCode, Param, Post, UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { AdminStoresService } from './admin-stores.service';
+import type { AdminStoresService } from './admin-stores.service';
 
 const RejectStoreBodySchema = z.object({
   reason: z.string().max(500).optional(),

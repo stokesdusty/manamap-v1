@@ -1,8 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import type { JwtService } from '@nestjs/jwt';
 import { randomBytes, createHash } from 'crypto';
 import type { AuthTokens } from '@manamap/shared';
-import { PrismaService } from '../prisma/prisma.service';
+import type { PrismaService } from '../prisma/prisma.service';
 
 const ACCESS_EXPIRY_SECS = 15 * 60; // 15 minutes
 const REFRESH_EXPIRY_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -19,7 +19,10 @@ export class TokenService {
   ) {}
 
   async issueTokens(userId: string, email: string): Promise<AuthTokens> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
     const role = user?.role ?? 'USER';
     const accessToken = this.jwt.sign({ sub: userId, email, role });
 

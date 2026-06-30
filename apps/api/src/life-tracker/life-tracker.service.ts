@@ -10,7 +10,7 @@ import type {
   EliminatePayload,
 } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
-import { PrismaService } from '../prisma/prisma.service';
+import type { PrismaService } from '../prisma/prisma.service';
 import type { PodSession } from '../pods/pods.service';
 
 const TRACKER_TTL_SECS = 8 * 60 * 60;
@@ -42,7 +42,8 @@ export class LifeTrackerService {
 
   private strip(state: TrackerStateInternal): TrackerState {
     const { memberIds: _m, history: _h, ...pub } = state;
-    void _m; void _h;
+    void _m;
+    void _h;
     return pub;
   }
 
@@ -91,7 +92,11 @@ export class LifeTrackerService {
     const players: TrackerPlayer[] = pod.memberIds.map((userId) => {
       const user = userMap.get(userId);
       const commanderDamage: Record<string, number> = {};
-      pod.memberIds.filter((id) => id !== userId).forEach((id) => { commanderDamage[id] = 0; });
+      pod.memberIds
+        .filter((id) => id !== userId)
+        .forEach((id) => {
+          commanderDamage[id] = 0;
+        });
       return {
         userId,
         displayName: user?.displayName ?? 'Unknown',
@@ -140,7 +145,10 @@ export class LifeTrackerService {
     return this.strip(next);
   }
 
-  async applyCommanderDamage(podId: string, payload: CommanderDamagePayload): Promise<TrackerState | null> {
+  async applyCommanderDamage(
+    podId: string,
+    payload: CommanderDamagePayload,
+  ): Promise<TrackerState | null> {
     const s = await this.getInternal(podId);
     if (!s) return null;
 
@@ -161,7 +169,10 @@ export class LifeTrackerService {
     return this.strip(next);
   }
 
-  async applyCounterDelta(podId: string, payload: CounterDeltaPayload): Promise<TrackerState | null> {
+  async applyCounterDelta(
+    podId: string,
+    payload: CounterDeltaPayload,
+  ): Promise<TrackerState | null> {
     const s = await this.getInternal(podId);
     if (!s) return null;
 
@@ -239,7 +250,12 @@ export class LifeTrackerService {
       : -1;
     const activePlayerId = this.nextAlive(s, Math.max(currentIdx, 0));
 
-    const next: TrackerStateInternal = { ...s, turnNumber: s.turnNumber + 1, activePlayerId, history };
+    const next: TrackerStateInternal = {
+      ...s,
+      turnNumber: s.turnNumber + 1,
+      activePlayerId,
+      history,
+    };
     await this.saveInternal(next);
     return this.strip(next);
   }

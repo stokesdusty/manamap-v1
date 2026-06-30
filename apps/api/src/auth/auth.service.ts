@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import type { AuthTokens } from '@manamap/shared';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { PrismaService } from '../prisma/prisma.service';
-import { AppleService } from './apple.service';
-import { DiscordService } from './discord.service';
-import { TokenService } from './token.service';
+import type { PinoLogger } from 'nestjs-pino';
+import { InjectPinoLogger } from 'nestjs-pino';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { AppleService } from './apple.service';
+import type { DiscordService } from './discord.service';
+import type { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
@@ -36,7 +37,11 @@ export class AuthService {
     return this.tokens.issueTokens(user.id, user.email);
   }
 
-  async signInWithDiscord(code: string, codeVerifier?: string, redirectUri?: string): Promise<AuthTokens> {
+  async signInWithDiscord(
+    code: string,
+    codeVerifier?: string,
+    redirectUri?: string,
+  ): Promise<AuthTokens> {
     let profile;
     try {
       profile = await this.discord.exchangeCode(code, codeVerifier, redirectUri);

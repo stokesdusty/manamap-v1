@@ -2,16 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
@@ -96,11 +94,9 @@ export function StoreSuggestSheet({ visible, onClose }: Props) {
       },
       {
         onSuccess: () => {
-          Alert.alert(
-            'Suggested!',
-            '3 players confirming it will make it live on the map.',
-            [{ text: 'OK', onPress: onClose }],
-          );
+          Alert.alert('Suggested!', '3 players confirming it will make it live on the map.', [
+            { text: 'OK', onPress: onClose },
+          ]);
         },
         onError: (err) => {
           if (axios.isAxiosError(err)) {
@@ -122,108 +118,102 @@ export function StoreSuggestSheet({ visible, onClose }: Props) {
   }
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <SafeAreaView style={s.safe}>
-        <KeyboardAvoidingView
+        {/* Header */}
+        <View style={s.header}>
+          <Pressable onPress={onClose} hitSlop={8} style={s.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
+          </Pressable>
+          <Text style={s.title}>Suggest a Store</Text>
+          <View style={s.backBtn} />
+        </View>
+
+        <KeyboardAwareScrollView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          contentContainerStyle={s.scroll}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={spacing.xl}
         >
-          {/* Header */}
-          <View style={s.header}>
-            <Pressable onPress={onClose} hitSlop={8} style={s.backBtn}>
-              <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
-            </Pressable>
-            <Text style={s.title}>Suggest a Store</Text>
-            <View style={s.backBtn} />
-          </View>
-
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={s.scroll}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Map */}
-            <View style={s.mapWrapper}>
-              <MapView
-                ref={mapRef}
-                style={s.map}
-                initialRegion={{
-                  latitude: FALLBACK_LAT,
-                  longitude: FALLBACK_LNG,
-                  latitudeDelta: 30,
-                  longitudeDelta: 45,
+          {/* Map */}
+          <View style={s.mapWrapper}>
+            <MapView
+              ref={mapRef}
+              style={s.map}
+              initialRegion={{
+                latitude: FALLBACK_LAT,
+                longitude: FALLBACK_LNG,
+                latitudeDelta: 30,
+                longitudeDelta: 45,
+              }}
+              showsUserLocation
+              showsMyLocationButton={false}
+            >
+              <Marker
+                coordinate={{ latitude: pinLat, longitude: pinLng }}
+                draggable
+                onDragEnd={(e) => {
+                  setPinLat(e.nativeEvent.coordinate.latitude);
+                  setPinLng(e.nativeEvent.coordinate.longitude);
                 }}
-                showsUserLocation
-                showsMyLocationButton={false}
-              >
-                <Marker
-                  coordinate={{ latitude: pinLat, longitude: pinLng }}
-                  draggable
-                  onDragEnd={(e) => {
-                    setPinLat(e.nativeEvent.coordinate.latitude);
-                    setPinLng(e.nativeEvent.coordinate.longitude);
-                  }}
-                  pinColor={colors.accent}
-                />
-              </MapView>
+                pinColor={colors.accent}
+              />
+            </MapView>
 
-              {locLoading && (
-                <View style={s.mapOverlay}>
-                  <ActivityIndicator color={colors.accent} />
-                  <Text style={s.mapOverlayText}>Getting your location…</Text>
-                </View>
-              )}
-            </View>
-            <Text style={s.mapHint}>Drag the pin to the store's exact location</Text>
+            {locLoading && (
+              <View style={s.mapOverlay}>
+                <ActivityIndicator color={colors.accent} />
+                <Text style={s.mapOverlayText}>Getting your location…</Text>
+              </View>
+            )}
+          </View>
+          <Text style={s.mapHint}>Drag the pin to the store's exact location</Text>
 
-            {/* Name */}
-            <Text style={s.label}>Store name *</Text>
-            <TextInput
-              style={s.input}
-              value={name}
-              onChangeText={setName}
-              maxLength={128}
-              placeholder="e.g. Card Kingdom"
-              placeholderTextColor={colors.textTertiary}
-              returnKeyType="next"
-              autoCorrect={false}
-            />
+          {/* Name */}
+          <Text style={s.label}>Store name *</Text>
+          <TextInput
+            style={s.input}
+            value={name}
+            onChangeText={setName}
+            maxLength={128}
+            placeholder="e.g. Card Kingdom"
+            placeholderTextColor={colors.textTertiary}
+            returnKeyType="next"
+            autoCorrect={false}
+          />
 
-            {/* Website */}
-            <Text style={s.label}>Website</Text>
-            <TextInput
-              style={s.input}
-              value={website}
-              onChangeText={setWebsite}
-              maxLength={512}
-              placeholder="https://..."
-              placeholderTextColor={colors.textTertiary}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              returnKeyType="next"
-            />
+          {/* Website */}
+          <Text style={s.label}>Website</Text>
+          <TextInput
+            style={s.input}
+            value={website}
+            onChangeText={setWebsite}
+            maxLength={512}
+            placeholder="https://..."
+            placeholderTextColor={colors.textTertiary}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            returnKeyType="next"
+          />
 
-            {/* Note */}
-            <Text style={s.label}>Note</Text>
-            <TextInput
-              style={[s.input, s.inputMultiline]}
-              value={note}
-              onChangeText={setNote}
-              maxLength={512}
-              placeholder="Anything that helps confirm this is a real MTG store"
-              placeholderTextColor={colors.textTertiary}
-              multiline
-              numberOfLines={2}
-              returnKeyType="done"
-            />
-          </ScrollView>
+          {/* Note */}
+          <Text style={s.label}>Note</Text>
+          <TextInput
+            style={[s.input, s.inputMultiline]}
+            value={note}
+            onChangeText={setNote}
+            maxLength={512}
+            placeholder="Anything that helps confirm this is a real MTG store"
+            placeholderTextColor={colors.textTertiary}
+            multiline
+            numberOfLines={2}
+            returnKeyType="done"
+          />
+        </KeyboardAwareScrollView>
 
-          {/* Footer */}
+        {/* Footer */}
+        <KeyboardStickyView>
           <View style={s.footer}>
             <Pressable
               style={({ pressed }) => [
@@ -244,7 +234,7 @@ export function StoreSuggestSheet({ visible, onClose }: Props) {
               )}
             </Pressable>
           </View>
-        </KeyboardAvoidingView>
+        </KeyboardStickyView>
       </SafeAreaView>
     </Modal>
   );
@@ -290,7 +280,7 @@ const s = StyleSheet.create({
     flex: 1,
   },
   mapOverlay: {
-    ...StyleSheet.absoluteFill as object,
+    ...(StyleSheet.absoluteFill as object),
     backgroundColor: colors.paper + 'CC',
     alignItems: 'center',
     justifyContent: 'center',

@@ -40,23 +40,30 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 function kindIcon(kind: string): IoniconName {
   switch (kind) {
-    case 'CONNECT_REQUEST': return 'person-add-outline';
-    case 'CONNECT_ACCEPTED': return 'checkmark-circle-outline';
-    case 'POD': return 'people-outline';
-    case 'GAME_CONFIRM': return 'game-controller-outline';
-    case 'EVENT_REMINDER': return 'calendar-outline';
-    case 'BROADCAST': return 'megaphone-outline';
-    case 'NEARBY': return 'radio-outline';
-    case 'QUEST': return 'trophy-outline';
-    case 'PLAY_INVITE': return 'videocam-outline';
-    default: return 'notifications-outline';
+    case 'CONNECT_REQUEST':
+      return 'person-add-outline';
+    case 'CONNECT_ACCEPTED':
+      return 'checkmark-circle-outline';
+    case 'POD':
+      return 'people-outline';
+    case 'GAME_CONFIRM':
+      return 'game-controller-outline';
+    case 'EVENT_REMINDER':
+      return 'calendar-outline';
+    case 'BROADCAST':
+      return 'megaphone-outline';
+    case 'NEARBY':
+      return 'radio-outline';
+    case 'QUEST':
+      return 'trophy-outline';
+    case 'PLAY_INVITE':
+      return 'videocam-outline';
+    default:
+      return 'notifications-outline';
   }
 }
 
-function deepLinkByKind(
-  kind: string,
-  data: Record<string, unknown> | null,
-) {
+function deepLinkByKind(kind: string, data: Record<string, unknown> | null) {
   if (!navigationRef.isReady()) return;
   switch (kind) {
     case 'CONNECT_REQUEST':
@@ -108,7 +115,11 @@ function NotifRow({ id, kind, title, body, data, readAt, createdAt, onPress }: N
   const storeName = kind === 'BROADCAST' ? (data?.storeName as string | undefined) : undefined;
   return (
     <Pressable
-      style={({ pressed }) => [styles.row, unread && styles.rowUnread, pressed && { opacity: 0.75 }]}
+      style={({ pressed }) => [
+        styles.row,
+        unread && styles.rowUnread,
+        pressed && { opacity: 0.75 },
+      ]}
       onPress={() => onPress(id)}
     >
       <View style={styles.iconTile}>
@@ -116,12 +127,16 @@ function NotifRow({ id, kind, title, body, data, readAt, createdAt, onPress }: N
       </View>
       <View style={styles.rowContent}>
         {storeName && (
-          <Text style={styles.rowStore} numberOfLines={1}>From {storeName}</Text>
+          <Text style={styles.rowStore} numberOfLines={1}>
+            From {storeName}
+          </Text>
         )}
         <Text style={styles.rowTitle} numberOfLines={1}>
           {title}
         </Text>
-        <Text style={styles.rowBody} numberOfLines={2}>{body}</Text>
+        <Text style={styles.rowBody} numberOfLines={2}>
+          {body}
+        </Text>
         <Text style={styles.rowTime}>{relativeTime(createdAt)}</Text>
       </View>
       {unread && <View style={styles.unreadDot} />}
@@ -213,9 +228,7 @@ export function NotificationsScreen({ navigation, route }: Props) {
       ) : (
         <FlatList
           data={listData}
-          keyExtractor={(item, i) =>
-            item.type === 'notif' ? item.item.id : `${item.type}-${i}`
-          }
+          keyExtractor={(item, i) => (item.type === 'notif' ? item.item.id : `${item.type}-${i}`)}
           renderItem={({ item }) => {
             if (item.type === 'header') {
               return <Text style={styles.sectionHeader}>{item.label}</Text>;
@@ -225,7 +238,9 @@ export function NotificationsScreen({ navigation, route }: Props) {
                 <View style={styles.emptyWrap}>
                   <Ionicons name="notifications-outline" size={40} color={colors.textTertiary} />
                   <Text style={styles.emptyHeading}>You're all caught up</Text>
-                  <Text style={styles.emptySubtext}>Connects, games, and store news land here.</Text>
+                  <Text style={styles.emptySubtext}>
+                    Connects, games, and store news land here.
+                  </Text>
                 </View>
               );
             }
@@ -249,7 +264,9 @@ export function NotificationsScreen({ navigation, route }: Props) {
           }}
           onEndReachedThreshold={0.4}
           ListFooterComponent={
-            isFetchingNextPage ? <ActivityIndicator color={colors.accent} style={styles.footer} /> : null
+            isFetchingNextPage ? (
+              <ActivityIndicator color={colors.accent} style={styles.footer} />
+            ) : null
           }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}

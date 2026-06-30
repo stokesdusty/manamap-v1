@@ -10,7 +10,15 @@ import { StoresController } from './stores.controller';
 import { StoresService } from './stores.service';
 
 @Module({
-  imports: [AuthModule, PresenceModule, GamificationModule, EventRemindersModule, SafetyModule, QuestsModule, NotificationsModule],
+  imports: [
+    AuthModule,
+    PresenceModule,
+    GamificationModule,
+    EventRemindersModule,
+    SafetyModule,
+    QuestsModule,
+    NotificationsModule,
+  ],
   controllers: [StoresController],
   providers: [StoresService],
 })

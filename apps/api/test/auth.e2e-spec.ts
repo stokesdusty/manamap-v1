@@ -17,10 +17,7 @@ describe('Auth + Onboarding (e2e)', () => {
   afterAll(() => app.close());
 
   it('POST /auth/dev-login returns access + refresh tokens', async () => {
-    const res = await req
-      .post('/api/v1/auth/dev-login')
-      .send({ email })
-      .expect(200);
+    const res = await req.post('/api/v1/auth/dev-login').send({ email }).expect(200);
 
     expect(res.body).toHaveProperty('accessToken');
     expect(res.body).toHaveProperty('refreshToken');
@@ -66,10 +63,7 @@ describe('Auth + Onboarding (e2e)', () => {
 
   it('POST /auth/refresh rotates token pair', async () => {
     // Fresh login to get a new refresh token for this test
-    const { body: t1 } = await req
-      .post('/api/v1/auth/dev-login')
-      .send({ email })
-      .expect(200);
+    const { body: t1 } = await req.post('/api/v1/auth/dev-login').send({ email }).expect(200);
 
     const res = await req
       .post('/api/v1/auth/refresh')

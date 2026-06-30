@@ -1,10 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type Redis from 'ioredis';
-import { ConnectionStatus, EncounterResult, EncounterSource, ModerationStatus } from '@prisma/client';
+import {
+  ConnectionStatus,
+  EncounterResult,
+  EncounterSource,
+  ModerationStatus,
+} from '@prisma/client';
 import { REDIS } from '../redis/redis.module';
-import { PrismaService } from '../prisma/prisma.service';
-import { SafetyService } from '../safety/safety.service';
-import { SocialsService } from '../socials/socials.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { SafetyService } from '../safety/safety.service';
+import type { SocialsService } from '../socials/socials.service';
 import { SUGGESTION_WEIGHTS, VIBE_COMPAT } from './suggestion-weights';
 
 const presenceKey = (userId: string) => `presence:${userId}`;
@@ -25,17 +30,31 @@ const PROFILE_SELECT = {
 } as const;
 
 const FORMAT_LABELS: Record<string, string> = {
-  standard: 'Standard', pioneer: 'Pioneer', modern: 'Modern',
-  legacy: 'Legacy', vintage: 'Vintage', commander: 'Commander', draft: 'Draft',
+  standard: 'Standard',
+  pioneer: 'Pioneer',
+  modern: 'Modern',
+  legacy: 'Legacy',
+  vintage: 'Vintage',
+  commander: 'Commander',
+  draft: 'Draft',
 };
 
 const COLOR_NAMES: Record<string, string> = {
-  W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green',
+  W: 'White',
+  U: 'Blue',
+  B: 'Black',
+  R: 'Red',
+  G: 'Green',
 };
 
 const VIBE_LABELS: Record<string, string> = {
-  competitive: 'Competitive', casual: 'Casual', spike: 'Spike',
-  timmy: 'Timmy', johnny: 'Johnny', vorthos: 'Vorthos', influencer: 'Influencer',
+  competitive: 'Competitive',
+  casual: 'Casual',
+  spike: 'Spike',
+  timmy: 'Timmy',
+  johnny: 'Johnny',
+  vorthos: 'Vorthos',
+  influencer: 'Influencer',
 };
 
 const MAX_SUGGESTIONS = 5;
@@ -59,7 +78,8 @@ export class DiscoveryService {
 
   private async _getPresence(callerId: string) {
     const storeId = await this.redis.get(presenceKey(callerId));
-    if (!storeId) return { storeId: null as null, storeName: null as null, validIds: [] as string[] };
+    if (!storeId)
+      return { storeId: null as null, storeName: null as null, validIds: [] as string[] };
 
     const [store, memberIds] = await Promise.all([
       this.prisma.store.findUnique({ where: { id: storeId }, select: { name: true } }),
@@ -67,9 +87,12 @@ export class DiscoveryService {
     ]);
 
     const otherIds = memberIds.filter((id) => id !== callerId);
-    if (!otherIds.length) return { storeId, storeName: store?.name ?? null, validIds: [] as string[] };
+    if (!otherIds.length)
+      return { storeId, storeName: store?.name ?? null, validIds: [] as string[] };
 
-    const existsResults = await Promise.all(otherIds.map((id) => this.redis.exists(presenceKey(id))));
+    const existsResults = await Promise.all(
+      otherIds.map((id) => this.redis.exists(presenceKey(id))),
+    );
     const validIds: string[] = [];
     const expiredIds: string[] = [];
     otherIds.forEach((id, i) => {
@@ -82,7 +105,9 @@ export class DiscoveryService {
     return { storeId, storeName: store?.name ?? null, validIds };
   }
 
-  private async _locationNearbyIds(callerId: string): Promise<{ lat: number; lng: number; ids: string[] }> {
+  private async _locationNearbyIds(
+    callerId: string,
+  ): Promise<{ lat: number; lng: number; ids: string[] }> {
     const RADIUS_METERS = 800;
     const STALENESS_MS = 15 * 60 * 1000;
 
@@ -131,10 +156,9 @@ export class DiscoveryService {
     const { storeId, storeName, validIds: storeMemberIds } = presenceData;
 
     // Always union location-based + store members; both sources contribute
-    const allIds = [...new Set([...locIds, ...storeMemberIds])].filter(
-      (id) => !blockedIds.has(id),
-    );
-    if (!allIds.length) return { storeId: storeId ?? null, storeName: storeName ?? null, players: [] };
+    const allIds = [...new Set([...locIds, ...storeMemberIds])].filter((id) => !blockedIds.has(id));
+    if (!allIds.length)
+      return { storeId: storeId ?? null, storeName: storeName ?? null, players: [] };
 
     const windowStart = new Date(Date.now() - 60 * 60 * 1000);
 
@@ -150,7 +174,12 @@ export class DiscoveryService {
             { userId: { in: allIds }, opponentId: callerId },
           ],
         },
-        select: { userId: true, opponentId: true, store: { select: { name: true } }, createdAt: true },
+        select: {
+          userId: true,
+          opponentId: true,
+          store: { select: { name: true } },
+          createdAt: true,
+        },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.connection.findMany({
@@ -178,7 +207,10 @@ export class DiscoveryService {
       const peerId = e.userId === callerId ? e.opponentId : e.userId;
       metBeforeSet.add(peerId);
       if (!lastMetStoreByPeer.has(peerId)) {
-        lastMetStoreByPeer.set(peerId, (e as { store?: { name: string } | null }).store?.name ?? null);
+        lastMetStoreByPeer.set(
+          peerId,
+          (e as { store?: { name: string } | null }).store?.name ?? null,
+        );
       }
     }
     for (const c of connections) {
@@ -216,7 +248,9 @@ export class DiscoveryService {
     }
 
     const discoverableUsers = users.filter((u) => u.privacySettings?.discoverable !== false);
-    const socialsBatch = await this.socialsService.publicSocialsBatch(discoverableUsers.map((u) => u.id));
+    const socialsBatch = await this.socialsService.publicSocialsBatch(
+      discoverableUsers.map((u) => u.id),
+    );
 
     let players = discoverableUsers.map(({ privacySettings: _ps, ...u }) => {
       const sd = socialsBatch.get(u.id) ?? { socials: [], friendsOnlyCount: 0 };
@@ -278,10 +312,16 @@ export class DiscoveryService {
       }
     }
 
-    if (filters?.format) players = players.filter((p) => (p.formats as string[]).includes(filters.format!));
-    if (filters?.colors?.length) players = players.filter((p) => (p.avatarColors as string[]).some((c) => filters.colors!.includes(c)));
-    if (filters?.powerMin != null && !isNaN(filters.powerMin)) players = players.filter((p) => p.powerLevel != null && p.powerLevel >= filters.powerMin!);
-    if (filters?.powerMax != null && !isNaN(filters.powerMax)) players = players.filter((p) => p.powerLevel != null && p.powerLevel <= filters.powerMax!);
+    if (filters?.format)
+      players = players.filter((p) => (p.formats as string[]).includes(filters.format!));
+    if (filters?.colors?.length)
+      players = players.filter((p) =>
+        (p.avatarColors as string[]).some((c) => filters.colors!.includes(c)),
+      );
+    if (filters?.powerMin != null && !isNaN(filters.powerMin))
+      players = players.filter((p) => p.powerLevel != null && p.powerLevel >= filters.powerMin!);
+    if (filters?.powerMax != null && !isNaN(filters.powerMax))
+      players = players.filter((p) => p.powerLevel != null && p.powerLevel <= filters.powerMax!);
     if (filters?.vibe) players = players.filter((p) => p.vibes.includes(filters.vibe!));
 
     return { storeId: storeId ?? null, storeName: storeName ?? null, players };
@@ -316,9 +356,12 @@ export class DiscoveryService {
           ],
         },
         select: {
-          userId: true, opponentId: true,
-          source: true, result: true,
-          store: { select: { name: true } }, createdAt: true,
+          userId: true,
+          opponentId: true,
+          source: true,
+          result: true,
+          store: { select: { name: true } },
+          createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -348,7 +391,10 @@ export class DiscoveryService {
       const peerId = e.userId === callerId ? e.opponentId : e.userId;
       metBeforeSet.add(peerId);
       if (!lastMetStoreByPeer.has(peerId)) {
-        lastMetStoreByPeer.set(peerId, (e as { store?: { name: string } | null }).store?.name ?? null);
+        lastMetStoreByPeer.set(
+          peerId,
+          (e as { store?: { name: string } | null }).store?.name ?? null,
+        );
       }
       if (
         e.source === EncounterSource.GAME &&
@@ -358,8 +404,12 @@ export class DiscoveryService {
       }
     }
 
-    const eligiblePeers = peers.filter((p) => p.privacySettings?.discoverable !== false && !connectedIds.has(p.id));
-    const suggSocialsBatch = await this.socialsService.publicSocialsBatch(eligiblePeers.map((p) => p.id));
+    const eligiblePeers = peers.filter(
+      (p) => p.privacySettings?.discoverable !== false && !connectedIds.has(p.id),
+    );
+    const suggSocialsBatch = await this.socialsService.publicSocialsBatch(
+      eligiblePeers.map((p) => p.id),
+    );
 
     const scored = eligiblePeers
       .map(({ privacySettings: _ps, ...peer }) => {
@@ -420,7 +470,10 @@ export class DiscoveryService {
           for (const cv of callerVibes) {
             for (const pv of peerVibes) {
               const compat = VIBE_COMPAT[cv]?.[pv] ?? 0;
-              if (compat > bestCompat) { bestCompat = compat; bestPeerVibe = pv; }
+              if (compat > bestCompat) {
+                bestCompat = compat;
+                bestPeerVibe = pv;
+              }
               if (compat < 0 && bestCompat === 0) bestCompat = compat;
             }
           }

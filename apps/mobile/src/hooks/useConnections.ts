@@ -44,7 +44,9 @@ export function useAcceptConnection() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (connectionId: string) =>
-      api.post<{ id: string; status: string }>(`/v1/connections/${connectionId}/accept`).then((r) => r.data),
+      api
+        .post<{ id: string; status: string }>(`/v1/connections/${connectionId}/accept`)
+        .then((r) => r.data),
     onMutate: async (connectionId) => {
       await qc.cancelQueries({ queryKey: KEYS.list });
       const prev = qc.getQueryData<ConnectionsList>(KEYS.list);
@@ -76,7 +78,11 @@ export function useUpdateConnectionNote() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ connectionId, text }: { connectionId: string; text: string | null }) =>
-      api.patch<{ myNote: string | null }>(`/v1/connections/${connectionId}/note`, { text } satisfies UpdateConnectionNote).then((r) => r.data),
+      api
+        .patch<{
+          myNote: string | null;
+        }>(`/v1/connections/${connectionId}/note`, { text } satisfies UpdateConnectionNote)
+        .then((r) => r.data),
     onSuccess: (_data, { connectionId }) => {
       void qc.invalidateQueries({ queryKey: KEYS.list });
       void qc.invalidateQueries({ queryKey: KEYS.detail(connectionId) });

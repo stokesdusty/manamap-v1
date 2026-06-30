@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import type { Queue } from 'bullmq';
 import type Redis from 'ioredis';
-import { PrismaService } from '../prisma/prisma.service';
+import type { PrismaService } from '../prisma/prisma.service';
 import { REDIS } from '../redis/redis.module';
 
 export type BadgeCriteria =
@@ -44,7 +44,11 @@ export class GamificationService {
     ]);
 
     // Enqueue async leaderboard refresh
-    await this.queue.add('leaderboard:refresh', { storeId }, { removeOnComplete: 100, removeOnFail: 50 });
+    await this.queue.add(
+      'leaderboard:refresh',
+      { storeId },
+      { removeOnComplete: 100, removeOnFail: 50 },
+    );
 
     return { newBadges, streak };
   }
@@ -64,9 +68,20 @@ export class GamificationService {
 
     if (!existing) {
       const s = await this.prisma.streak.create({
-        data: { userId, storeId, currentStreak: 1, longestStreak: 1, totalCheckins: 1, lastCheckinAt: now },
+        data: {
+          userId,
+          storeId,
+          currentStreak: 1,
+          longestStreak: 1,
+          totalCheckins: 1,
+          lastCheckinAt: now,
+        },
       });
-      return { currentStreak: s.currentStreak, longestStreak: s.longestStreak, totalCheckins: s.totalCheckins };
+      return {
+        currentStreak: s.currentStreak,
+        longestStreak: s.longestStreak,
+        totalCheckins: s.totalCheckins,
+      };
     }
 
     const daysSinceLast = (now.getTime() - existing.lastCheckinAt.getTime()) / 86_400_000;
@@ -92,7 +107,11 @@ export class GamificationService {
       },
     });
 
-    return { currentStreak: s.currentStreak, longestStreak: s.longestStreak, totalCheckins: s.totalCheckins };
+    return {
+      currentStreak: s.currentStreak,
+      longestStreak: s.longestStreak,
+      totalCheckins: s.totalCheckins,
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -114,7 +133,9 @@ export class GamificationService {
       this.prisma.checkin.count({ where: { userId } }),
       this.prisma.checkin.count({ where: { userId, storeId } }),
       this.prisma.checkin.groupBy({ by: ['storeId'], where: { userId } }).then((r) => r.length),
-      this.prisma.streak.findUnique({ where: { userId_storeId: { userId, storeId } } }).then((s) => s?.currentStreak ?? 1),
+      this.prisma.streak
+        .findUnique({ where: { userId_storeId: { userId, storeId } } })
+        .then((s) => s?.currentStreak ?? 1),
     ]);
 
     const newlyEarned: EarnedBadge[] = [];
@@ -188,7 +209,10 @@ export class GamificationService {
     await pipeline.exec();
   }
 
-  async getLeaderboard(callerId: string, storeId: string): Promise<{
+  async getLeaderboard(
+    callerId: string,
+    storeId: string,
+  ): Promise<{
     entries: Array<{
       rank: number;
       userId: string;
@@ -202,7 +226,12 @@ export class GamificationService {
     myEntry: { rank: number; currentStreak: number; totalCheckins: number } | null;
   }> {
     // Try Redis first
-    const redisEntries = await this.redis.zrevrange(`leaderboard:${storeId}:streak`, 0, 49, 'WITHSCORES');
+    const redisEntries = await this.redis.zrevrange(
+      `leaderboard:${storeId}:streak`,
+      0,
+      49,
+      'WITHSCORES',
+    );
 
     let rankedUserIds: Array<{ userId: string; score: number }> = [];
     if (redisEntries.length > 0) {
@@ -250,7 +279,16 @@ export class GamificationService {
       })
       .then((rows) => new Map(rows.map((r) => [r.userId, r])));
 
-    const entries: Array<{ rank: number; userId: string; displayName: string; avatarUrl: string | null; avatarColors: string[]; currentStreak: number; totalCheckins: number; isMe: boolean }> = [];
+    const entries: Array<{
+      rank: number;
+      userId: string;
+      displayName: string;
+      avatarUrl: string | null;
+      avatarColors: string[];
+      currentStreak: number;
+      totalCheckins: number;
+      isMe: boolean;
+    }> = [];
     let rank = 0;
     for (const { userId } of rankedUserIds) {
       const user = visibleUserMap.get(userId);
@@ -306,7 +344,10 @@ export class GamificationService {
     await pipeline.exec();
   }
 
-  async getWinsLeaderboard(callerId: string, storeId: string): Promise<{
+  async getWinsLeaderboard(
+    callerId: string,
+    storeId: string,
+  ): Promise<{
     entries: Array<{
       rank: number;
       userId: string;
@@ -318,7 +359,12 @@ export class GamificationService {
     }>;
     myEntry: { rank: number; wins: number } | null;
   }> {
-    const redisEntries = await this.redis.zrevrange(`leaderboard:${storeId}:wins`, 0, 49, 'WITHSCORES');
+    const redisEntries = await this.redis.zrevrange(
+      `leaderboard:${storeId}:wins`,
+      0,
+      49,
+      'WITHSCORES',
+    );
 
     let rankedUserIds: Array<{ userId: string; score: number }> = [];
     if (redisEntries.length > 0) {
@@ -356,7 +402,15 @@ export class GamificationService {
         .map((u) => [u.id, u]),
     );
 
-    const entries: Array<{ rank: number; userId: string; displayName: string; avatarUrl: string | null; avatarColors: string[]; wins: number; isMe: boolean }> = [];
+    const entries: Array<{
+      rank: number;
+      userId: string;
+      displayName: string;
+      avatarUrl: string | null;
+      avatarColors: string[];
+      wins: number;
+      isMe: boolean;
+    }> = [];
     let rank = 0;
     for (const { userId, score } of rankedUserIds) {
       const user = visibleMap.get(userId);

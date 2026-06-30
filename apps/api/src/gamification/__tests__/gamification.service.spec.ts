@@ -84,8 +84,8 @@ describe('GamificationService', () => {
   function suppressStreak(currentStreak = 1) {
     // updateStreak: no existing record → create path
     prisma.streak.findUnique
-      .mockResolvedValueOnce(null)                      // updateStreak lookup
-      .mockResolvedValueOnce({ currentStreak });        // evaluateAndAwardBadges lookup
+      .mockResolvedValueOnce(null) // updateStreak lookup
+      .mockResolvedValueOnce({ currentStreak }); // evaluateAndAwardBadges lookup
     prisma.streak.create.mockResolvedValue({
       currentStreak,
       longestStreak: currentStreak,
@@ -97,7 +97,9 @@ describe('GamificationService', () => {
     prisma.checkin.count.mockImplementation(({ where }: { where: Record<string, unknown> }) =>
       Promise.resolve(where.storeId !== undefined ? storeTotal : globalTotal),
     );
-    prisma.checkin.groupBy.mockResolvedValue(Array.from({ length: uniqueStores }, (_, i) => ({ storeId: `s${i}` })));
+    prisma.checkin.groupBy.mockResolvedValue(
+      Array.from({ length: uniqueStores }, (_, i) => ({ storeId: `s${i}` })),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -109,13 +111,23 @@ describe('GamificationService', () => {
 
     it('creates a 1/1/1 streak on the first visit to a store', async () => {
       prisma.streak.findUnique.mockResolvedValue(null);
-      prisma.streak.create.mockResolvedValue({ currentStreak: 1, longestStreak: 1, totalCheckins: 1 });
+      prisma.streak.create.mockResolvedValue({
+        currentStreak: 1,
+        longestStreak: 1,
+        totalCheckins: 1,
+      });
 
       const { streak } = await service.processCheckin('user1', 'store1');
 
       expect(prisma.streak.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ userId: 'user1', storeId: 'store1', currentStreak: 1, longestStreak: 1, totalCheckins: 1 }),
+          data: expect.objectContaining({
+            userId: 'user1',
+            storeId: 'store1',
+            currentStreak: 1,
+            longestStreak: 1,
+            totalCheckins: 1,
+          }),
         }),
       );
       expect(streak).toEqual({ currentStreak: 1, longestStreak: 1, totalCheckins: 1 });
@@ -128,7 +140,11 @@ describe('GamificationService', () => {
         totalCheckins: 10,
         lastCheckinAt: new Date(Date.now() - 30 * 60 * 1000), // 30 min ago
       });
-      prisma.streak.update.mockResolvedValue({ currentStreak: 3, longestStreak: 5, totalCheckins: 11 });
+      prisma.streak.update.mockResolvedValue({
+        currentStreak: 3,
+        longestStreak: 5,
+        totalCheckins: 11,
+      });
 
       await service.processCheckin('user1', 'store1');
 
@@ -144,7 +160,11 @@ describe('GamificationService', () => {
         totalCheckins: 5,
         lastCheckinAt: new Date(Date.now() - 3 * 24 * 3600 * 1000), // 3 days ago
       });
-      prisma.streak.update.mockResolvedValue({ currentStreak: 3, longestStreak: 3, totalCheckins: 6 });
+      prisma.streak.update.mockResolvedValue({
+        currentStreak: 3,
+        longestStreak: 3,
+        totalCheckins: 6,
+      });
 
       await service.processCheckin('user1', 'store1');
 
@@ -159,7 +179,11 @@ describe('GamificationService', () => {
         totalCheckins: 20,
         lastCheckinAt: new Date(Date.now() - 10 * 24 * 3600 * 1000), // 10 days ago
       });
-      prisma.streak.update.mockResolvedValue({ currentStreak: 1, longestStreak: 5, totalCheckins: 21 });
+      prisma.streak.update.mockResolvedValue({
+        currentStreak: 1,
+        longestStreak: 5,
+        totalCheckins: 21,
+      });
 
       await service.processCheckin('user1', 'store1');
 
@@ -174,7 +198,11 @@ describe('GamificationService', () => {
         totalCheckins: 8,
         lastCheckinAt: new Date(Date.now() - 2 * 24 * 3600 * 1000), // 2 days ago
       });
-      prisma.streak.update.mockResolvedValue({ currentStreak: 5, longestStreak: 5, totalCheckins: 9 });
+      prisma.streak.update.mockResolvedValue({
+        currentStreak: 5,
+        longestStreak: 5,
+        totalCheckins: 9,
+      });
 
       await service.processCheckin('user1', 'store1');
 
@@ -189,7 +217,11 @@ describe('GamificationService', () => {
         totalCheckins: 30,
         lastCheckinAt: new Date(Date.now() - 10 * 24 * 3600 * 1000), // lapsed
       });
-      prisma.streak.update.mockResolvedValue({ currentStreak: 1, longestStreak: 7, totalCheckins: 31 });
+      prisma.streak.update.mockResolvedValue({
+        currentStreak: 1,
+        longestStreak: 7,
+        totalCheckins: 31,
+      });
 
       await service.processCheckin('user1', 'store1');
 
@@ -199,7 +231,11 @@ describe('GamificationService', () => {
 
     it('enqueues a leaderboard:refresh job for the store', async () => {
       prisma.streak.findUnique.mockResolvedValue(null);
-      prisma.streak.create.mockResolvedValue({ currentStreak: 1, longestStreak: 1, totalCheckins: 1 });
+      prisma.streak.create.mockResolvedValue({
+        currentStreak: 1,
+        longestStreak: 1,
+        totalCheckins: 1,
+      });
 
       await service.processCheckin('user1', 'store1');
 
@@ -279,7 +315,9 @@ describe('GamificationService', () => {
 
     it('awards global_total when globalTotal meets the threshold', async () => {
       suppressStreak();
-      prisma.badge.findMany.mockResolvedValue([makeBadge('b1', { type: 'global_total', count: 10 })]);
+      prisma.badge.findMany.mockResolvedValue([
+        makeBadge('b1', { type: 'global_total', count: 10 }),
+      ]);
       prisma.userBadge.findMany.mockResolvedValue([]);
       setupCheckinCounts(10, 3, 2);
       prisma.userBadge.create.mockResolvedValue({});
@@ -314,7 +352,9 @@ describe('GamificationService', () => {
 
     it('awards unique_stores when the count meets the threshold', async () => {
       suppressStreak();
-      prisma.badge.findMany.mockResolvedValue([makeBadge('b1', { type: 'unique_stores', count: 3 })]);
+      prisma.badge.findMany.mockResolvedValue([
+        makeBadge('b1', { type: 'unique_stores', count: 3 }),
+      ]);
       prisma.userBadge.findMany.mockResolvedValue([]);
       setupCheckinCounts(5, 5, 3);
       prisma.userBadge.create.mockResolvedValue({});
@@ -343,7 +383,9 @@ describe('GamificationService', () => {
       setupCheckinCounts(1, 1, 1);
       prisma.userBadge.create.mockRejectedValue(new Error('Unique constraint failed'));
 
-      await expect(service.processCheckin('user1', 'store1')).resolves.toMatchObject({ newBadges: [] });
+      await expect(service.processCheckin('user1', 'store1')).resolves.toMatchObject({
+        newBadges: [],
+      });
     });
   });
 
@@ -384,8 +426,20 @@ describe('GamificationService', () => {
   // ---------------------------------------------------------------------------
 
   describe('getLeaderboard', () => {
-    const alice = { id: 'u1', displayName: 'Alice', avatarUrl: null, avatarColors: [], privacySettings: { discoverable: true } };
-    const bob   = { id: 'u2', displayName: 'Bob',   avatarUrl: null, avatarColors: [], privacySettings: { discoverable: true } };
+    const alice = {
+      id: 'u1',
+      displayName: 'Alice',
+      avatarUrl: null,
+      avatarColors: [],
+      privacySettings: { discoverable: true },
+    };
+    const bob = {
+      id: 'u2',
+      displayName: 'Bob',
+      avatarUrl: null,
+      avatarColors: [],
+      privacySettings: { discoverable: true },
+    };
 
     it('returns ranked entries from Redis when the cache is populated', async () => {
       redis.zrevrange.mockResolvedValue(['u1', '5', 'u2', '3']);
@@ -398,7 +452,12 @@ describe('GamificationService', () => {
       const { entries } = await service.getLeaderboard('caller', 'store1');
 
       expect(entries).toHaveLength(2);
-      expect(entries[0]).toMatchObject({ rank: 1, userId: 'u1', displayName: 'Alice', currentStreak: 5 });
+      expect(entries[0]).toMatchObject({
+        rank: 1,
+        userId: 'u1',
+        displayName: 'Alice',
+        currentStreak: 5,
+      });
       expect(entries[1]).toMatchObject({ rank: 2, userId: 'u2', currentStreak: 3 });
     });
 
@@ -416,8 +475,20 @@ describe('GamificationService', () => {
     });
 
     it('excludes non-discoverable users (except the caller themselves)', async () => {
-      const hidden = { id: 'u3', displayName: 'Ghost', avatarUrl: null, avatarColors: [], privacySettings: { discoverable: false } };
-      const callerUser = { id: 'caller', displayName: 'Me', avatarUrl: null, avatarColors: [], privacySettings: { discoverable: false } };
+      const hidden = {
+        id: 'u3',
+        displayName: 'Ghost',
+        avatarUrl: null,
+        avatarColors: [],
+        privacySettings: { discoverable: false },
+      };
+      const callerUser = {
+        id: 'caller',
+        displayName: 'Me',
+        avatarUrl: null,
+        avatarColors: [],
+        privacySettings: { discoverable: false },
+      };
       redis.zrevrange.mockResolvedValue(['u1', '5', 'u3', '4', 'caller', '3']);
       prisma.user.findMany.mockResolvedValue([alice, hidden, callerUser]);
       prisma.streak.findMany.mockResolvedValue([
@@ -428,14 +499,17 @@ describe('GamificationService', () => {
       const { entries } = await service.getLeaderboard('caller', 'store1');
 
       const ids = entries.map((e) => e.userId);
-      expect(ids).toContain('u1');      // discoverable → included
-      expect(ids).not.toContain('u3');  // non-discoverable, not caller → excluded
-      expect(ids).toContain('caller');  // non-discoverable but IS caller → included
+      expect(ids).toContain('u1'); // discoverable → included
+      expect(ids).not.toContain('u3'); // non-discoverable, not caller → excluded
+      expect(ids).toContain('caller'); // non-discoverable but IS caller → included
     });
 
     it('returns myEntry with rank and stats when caller appears in the ranked list', async () => {
       redis.zrevrange.mockResolvedValue(['u1', '5', 'caller', '3']);
-      prisma.user.findMany.mockResolvedValue([alice, { ...alice, id: 'caller', displayName: 'Me' }]);
+      prisma.user.findMany.mockResolvedValue([
+        alice,
+        { ...alice, id: 'caller', displayName: 'Me' },
+      ]);
       prisma.streak.findMany.mockResolvedValue([
         { userId: 'u1', currentStreak: 5, totalCheckins: 20 },
         { userId: 'caller', currentStreak: 3, totalCheckins: 12 },
@@ -452,7 +526,9 @@ describe('GamificationService', () => {
     it('returns myEntry: null when the caller has no streak for this store', async () => {
       redis.zrevrange.mockResolvedValue(['u1', '5']);
       prisma.user.findMany.mockResolvedValue([alice]);
-      prisma.streak.findMany.mockResolvedValue([{ userId: 'u1', currentStreak: 5, totalCheckins: 20 }]);
+      prisma.streak.findMany.mockResolvedValue([
+        { userId: 'u1', currentStreak: 5, totalCheckins: 20 },
+      ]);
 
       const { myEntry } = await service.getLeaderboard('caller', 'store1');
 

@@ -18,7 +18,9 @@ export function BroadcastSheet({ visible, storeName, title, body, onClose }: Pro
           <View style={styles.header}>
             <View style={styles.storeBadge}>
               <Ionicons name="megaphone" size={13} color={colors.accent} />
-              <Text style={styles.storeName} numberOfLines={1}>{storeName}</Text>
+              <Text style={styles.storeName} numberOfLines={1}>
+                {storeName}
+              </Text>
             </View>
             <Pressable onPress={onClose} hitSlop={8}>
               <Ionicons name="close" size={22} color={colors.textSecondary} />

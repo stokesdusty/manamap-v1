@@ -2,8 +2,8 @@ import { ForbiddenException, HttpException, Inject, Injectable } from '@nestjs/c
 import type Redis from 'ioredis';
 import { NotificationKind } from '@prisma/client';
 import { REDIS } from '../redis/redis.module';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { NotificationsService } from '../notifications/notifications.service';
 import type { SendBroadcast } from '@manamap/shared';
 
 const BROADCAST_DAILY_CAP = 3;
@@ -83,13 +83,16 @@ export class BroadcastService {
     }
 
     const recipientIds = await this.resolveRecipients(storeId, dto.audience, dto.eventId, userId);
-    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { name: true } });
+    const store = await this.prisma.store.findUnique({
+      where: { id: storeId },
+      select: { name: true },
+    });
 
     const broadcast = await this.prisma.broadcast.create({
       data: {
         storeId,
         sentById: userId,
-        audience: dto.audience as any,
+        audience: dto.audience,
         title: dto.title,
         body: dto.body,
         ...(dto.eventId !== undefined ? { eventId: dto.eventId } : {}),
@@ -98,12 +101,14 @@ export class BroadcastService {
     });
 
     // Fan-out is fire-and-forget; push failures must not block the response
-    this.notifications.createBulk(recipientIds, {
-      kind: NotificationKind.BROADCAST,
-      title: dto.title,
-      body: dto.body,
-      data: { type: 'store_broadcast', storeId, storeName: store?.name ?? 'A store' },
-    }).catch(() => {});
+    this.notifications
+      .createBulk(recipientIds, {
+        kind: NotificationKind.BROADCAST,
+        title: dto.title,
+        body: dto.body,
+        data: { type: 'store_broadcast', storeId, storeName: store?.name ?? 'A store' },
+      })
+      .catch(() => {});
 
     return { id: broadcast.id, recipientCount: recipientIds.length };
   }

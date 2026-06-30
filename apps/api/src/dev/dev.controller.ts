@@ -2,7 +2,7 @@ import { Body, Controller, HttpCode, Post, Req, UseGuards } from '@nestjs/common
 import { z } from 'zod';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import { DevService } from './dev.service';
+import type { DevService } from './dev.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

@@ -1,16 +1,15 @@
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { PodCandidate, PodDetail, MtgFormat, PodFitTier, PublicProfile } from '@manamap/shared';
+import type {
+  PodCandidate,
+  PodDetail,
+  MtgFormat,
+  PodFitTier,
+  PublicProfile,
+} from '@manamap/shared';
 import { LogGameSheet, type RosterPlayer } from '../components/LogGameSheet';
 import {
   usePodDetail,
@@ -27,12 +26,21 @@ import { colors, radii, shadows, spacing, typography } from '../theme';
 type PodScreenProps = NativeStackScreenProps<RootStackParamList, 'Pod'>;
 
 const FORMAT_LABELS: Partial<Record<MtgFormat, string>> = {
-  standard: 'Standard', pioneer: 'Pioneer', modern: 'Modern',
-  legacy: 'Legacy', vintage: 'Vintage', commander: 'Commander', draft: 'Draft',
+  standard: 'Standard',
+  pioneer: 'Pioneer',
+  modern: 'Modern',
+  legacy: 'Legacy',
+  vintage: 'Vintage',
+  commander: 'Commander',
+  draft: 'Draft',
 };
 
 const MANA_FILL: Record<string, string> = {
-  W: colors.mana.W, U: colors.mana.U, B: colors.mana.B, R: colors.mana.R, G: colors.mana.G,
+  W: colors.mana.W,
+  U: colors.mana.U,
+  B: colors.mana.B,
+  R: colors.mana.R,
+  G: colors.mana.G,
 };
 
 const FIT_COLORS: Record<PodFitTier, string> = {
@@ -79,9 +87,11 @@ function FitBadge({ tier, label }: FitBadgeProps) {
 
 function FitBanner({ tier, label }: FitBadgeProps) {
   const title =
-    tier === 'great' ? "You're a great fit" :
-    tier === 'close' ? "You're close on power" :
-    'Heads up on fit';
+    tier === 'great'
+      ? "You're a great fit"
+      : tier === 'close'
+        ? "You're close on power"
+        : 'Heads up on fit';
   return (
     <View style={[fitBanner.wrap, { backgroundColor: FIT_BG[tier] }]}>
       <View style={[fitBanner.dot, { backgroundColor: FIT_COLORS[tier] }]} />
@@ -121,7 +131,9 @@ function StatusBanner({ full, seats, need, podName }: StatusBannerProps) {
   return (
     <View style={banner.forming}>
       <View style={banner.dot} />
-      <Text style={banner.formingName} numberOfLines={1}>{podName}</Text>
+      <Text style={banner.formingName} numberOfLines={1}>
+        {podName}
+      </Text>
       <View style={banner.needPill}>
         <Text style={banner.needText}>Need {need} more</Text>
       </View>
@@ -164,7 +176,9 @@ function PodInfoCard({ pod }: PodInfoCardProps) {
         </View>
       )}
       <View style={info.chip}>
-        <Text style={info.chipText}>Power {pod.targetPower}±{pod.tolerance}</Text>
+        <Text style={info.chipText}>
+          Power {pod.targetPower}±{pod.tolerance}
+        </Text>
       </View>
     </View>
   );
@@ -189,14 +203,21 @@ function SeatRow({ members, seats, hostId, myId }: SeatRowProps) {
       <View style={seatRow.row}>
         {members.map((m) => {
           const fill = avatarFill(m.avatarColors);
-          const textFill = ['W', 'G'].includes(m.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
-          const role = m.id === hostId ? 'Host' : m.id === myId ? 'You' : m.displayName.split(' ')[0];
+          const textFill = ['W', 'G'].includes(m.avatarColors[0])
+            ? colors.textPrimary
+            : colors.textInverse;
+          const role =
+            m.id === hostId ? 'Host' : m.id === myId ? 'You' : m.displayName.split(' ')[0];
           return (
             <View key={m.id} style={seatRow.card}>
               <View style={[seatRow.avatar, { backgroundColor: fill }]}>
-                <Text style={[seatRow.avatarText, { color: textFill }]}>{avatarInitial(m.displayName)}</Text>
+                <Text style={[seatRow.avatarText, { color: textFill }]}>
+                  {avatarInitial(m.displayName)}
+                </Text>
               </View>
-              <Text style={seatRow.seatName} numberOfLines={1}>{role}</Text>
+              <Text style={seatRow.seatName} numberOfLines={1}>
+                {role}
+              </Text>
             </View>
           );
         })}
@@ -223,14 +244,20 @@ interface CandidateRowProps {
 
 function CandidateRow({ candidate }: CandidateRowProps) {
   const fill = avatarFill(candidate.avatarColors);
-  const textFill = ['W', 'G'].includes(candidate.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(candidate.avatarColors[0])
+    ? colors.textPrimary
+    : colors.textInverse;
   return (
     <View style={cand.card}>
       <View style={[cand.avatar, { backgroundColor: fill }]}>
-        <Text style={[cand.avatarText, { color: textFill }]}>{avatarInitial(candidate.displayName)}</Text>
+        <Text style={[cand.avatarText, { color: textFill }]}>
+          {avatarInitial(candidate.displayName)}
+        </Text>
       </View>
       <View style={{ flex: 1, gap: spacing.xs }}>
-        <Text style={cand.name} numberOfLines={1}>{candidate.displayName}</Text>
+        <Text style={cand.name} numberOfLines={1}>
+          {candidate.displayName}
+        </Text>
         <FitBadge tier={candidate.fit.tier} label={candidate.fit.label} />
       </View>
     </View>
@@ -249,16 +276,28 @@ interface RequestRowProps {
   isDeclining: boolean;
 }
 
-function RequestRow({ requester, onApprove, onDecline, isApproving, isDeclining }: RequestRowProps) {
+function RequestRow({
+  requester,
+  onApprove,
+  onDecline,
+  isApproving,
+  isDeclining,
+}: RequestRowProps) {
   const fill = avatarFill(requester.avatarColors);
-  const textFill = ['W', 'G'].includes(requester.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(requester.avatarColors[0])
+    ? colors.textPrimary
+    : colors.textInverse;
   return (
     <View style={req.card}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
         <View style={[req.avatar, { backgroundColor: fill }]}>
-          <Text style={[req.avatarText, { color: textFill }]}>{avatarInitial(requester.displayName)}</Text>
+          <Text style={[req.avatarText, { color: textFill }]}>
+            {avatarInitial(requester.displayName)}
+          </Text>
         </View>
-        <Text style={req.name} numberOfLines={1}>{requester.displayName}</Text>
+        <Text style={req.name} numberOfLines={1}>
+          {requester.displayName}
+        </Text>
       </View>
       <View style={req.actions}>
         <Pressable
@@ -266,18 +305,22 @@ function RequestRow({ requester, onApprove, onDecline, isApproving, isDeclining 
           onPress={onDecline}
           disabled={isDeclining}
         >
-          {isDeclining
-            ? <ActivityIndicator size="small" color={colors.error} />
-            : <Text style={req.declineText}>Decline</Text>}
+          {isDeclining ? (
+            <ActivityIndicator size="small" color={colors.error} />
+          ) : (
+            <Text style={req.declineText}>Decline</Text>
+          )}
         </Pressable>
         <Pressable
           style={({ pressed }) => [req.approveBtn, pressed && { opacity: 0.6 }]}
           onPress={onApprove}
           disabled={isApproving}
         >
-          {isApproving
-            ? <ActivityIndicator size="small" color={colors.textInverse} />
-            : <Text style={req.approveText}>Approve</Text>}
+          {isApproving ? (
+            <ActivityIndicator size="small" color={colors.textInverse} />
+          ) : (
+            <Text style={req.approveText}>Approve</Text>
+          )}
         </Pressable>
       </View>
     </View>
@@ -368,7 +411,10 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
         {lockedPlayers && (
           <LogGameSheet
             visible={logGameOpen}
-            onClose={() => { setLogGameOpen(false); navigation.goBack(); }}
+            onClose={() => {
+              setLogGameOpen(false);
+              navigation.goBack();
+            }}
             onSuccess={() => navigation.goBack()}
             preselectedPlayers={lockedPlayers}
             {...(lockedStoreId !== undefined ? { storeId: lockedStoreId } : {})}
@@ -385,9 +431,11 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
             onPress={handleDisband}
             disabled={disband.isPending}
           >
-            {disband.isPending
-              ? <ActivityIndicator size="small" color={colors.error} />
-              : <Text style={s.disbandText}>Disband</Text>}
+            {disband.isPending ? (
+              <ActivityIndicator size="small" color={colors.error} />
+            ) : (
+              <Text style={s.disbandText}>Disband</Text>
+            )}
           </Pressable>
         </View>
 
@@ -398,7 +446,12 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
 
           <WhereCard where={pod.where} />
 
-          <SeatRow members={pod.members} seats={pod.seats} hostId={pod.hostId} {...(profile?.id !== undefined ? { myId: profile.id } : {})} />
+          <SeatRow
+            members={pod.members}
+            seats={pod.seats}
+            hostId={pod.hostId}
+            {...(profile?.id !== undefined ? { myId: profile.id } : {})}
+          />
 
           {pod.note ? (
             <View style={s.noteBox}>
@@ -413,9 +466,11 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
                 onPress={handleLock}
                 disabled={lock.isPending}
               >
-                {lock.isPending
-                  ? <ActivityIndicator size="small" color={colors.textInverse} />
-                  : <Text style={s.lockBtnText}>Lock it in & log game</Text>}
+                {lock.isPending ? (
+                  <ActivityIndicator size="small" color={colors.textInverse} />
+                ) : (
+                  <Text style={s.lockBtnText}>Lock it in & log game</Text>
+                )}
               </Pressable>
               <Pressable
                 style={({ pressed }) => [s.trackerBtn, pressed && { opacity: 0.75 }]}
@@ -486,7 +541,10 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
       {lockedPlayers && (
         <LogGameSheet
           visible={logGameOpen}
-          onClose={() => { setLogGameOpen(false); navigation.goBack(); }}
+          onClose={() => {
+            setLogGameOpen(false);
+            navigation.goBack();
+          }}
           onSuccess={() => navigation.goBack()}
           preselectedPlayers={lockedPlayers}
           {...(lockedStoreId !== undefined ? { storeId: lockedStoreId } : {})}
@@ -508,7 +566,12 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
 
         <WhereCard where={pod.where} />
 
-        <SeatRow members={pod.members} seats={pod.seats} hostId={pod.hostId} {...(profile?.id !== undefined ? { myId: profile.id } : {})} />
+        <SeatRow
+          members={pod.members}
+          seats={pod.seats}
+          hostId={pod.hostId}
+          {...(profile?.id !== undefined ? { myId: profile.id } : {})}
+        />
 
         {pod.note ? (
           <View style={s.noteBox}>
@@ -549,9 +612,11 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
             onPress={handleRequest}
             disabled={request.isPending}
           >
-            {request.isPending
-              ? <ActivityIndicator size="small" color={colors.textInverse} />
-              : <Text style={s.joinBtnText}>Ask to join</Text>}
+            {request.isPending ? (
+              <ActivityIndicator size="small" color={colors.textInverse} />
+            ) : (
+              <Text style={s.joinBtnText}>Ask to join</Text>
+            )}
           </Pressable>
         )}
       </ScrollView>

@@ -2,7 +2,7 @@ import { Body, Controller, Delete, HttpCode, Post, Req, UseGuards } from '@nestj
 import { HeartbeatBodySchema, type HeartbeatBody } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import { PresenceService } from './presence.service';
+import type { PresenceService } from './presence.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

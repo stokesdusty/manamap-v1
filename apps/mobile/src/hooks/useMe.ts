@@ -34,8 +34,7 @@ export function useProfile(opts?: { enabled?: boolean }) {
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: UpdateProfile) =>
-      api.patch<Profile>('/v1/me', body).then((r) => r.data),
+    mutationFn: (body: UpdateProfile) => api.patch<Profile>('/v1/me', body).then((r) => r.data),
     onSuccess: (updated) => {
       qc.setQueryData<Profile>(KEYS.profile, updated);
     },
@@ -120,10 +119,11 @@ export function useDeleteDeck() {
 // --- Recent checkin stores ---
 
 export function useRecentCheckinStores() {
-  return useQuery<{ stores: Array<{ id: string; name: string; city: string | null; state: string | null }> }>({
+  return useQuery<{
+    stores: Array<{ id: string; name: string; city: string | null; state: string | null }>;
+  }>({
     queryKey: KEYS.recentStores,
-    queryFn: () =>
-      api.get('/v1/me/recent-stores').then((r) => r.data),
+    queryFn: () => api.get('/v1/me/recent-stores').then((r) => r.data),
   });
 }
 
@@ -132,8 +132,7 @@ export function useRecentCheckinStores() {
 export function useHomeStore() {
   return useQuery<{ store: StoreDetail | null }>({
     queryKey: KEYS.homeStore,
-    queryFn: () =>
-      api.get<{ store: StoreDetail | null }>('/v1/me/home-store').then((r) => r.data),
+    queryFn: () => api.get<{ store: StoreDetail | null }>('/v1/me/home-store').then((r) => r.data),
   });
 }
 

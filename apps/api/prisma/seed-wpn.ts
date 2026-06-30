@@ -68,8 +68,8 @@ interface PageInfo {
 // Continental US 5000km radius also covers Alaska (Anchorage ~4400km away).
 // Hawaii is ~6100km away and needs its own query.
 const SEARCH_CENTERS = [
-  { label: 'Continental US + Alaska + Canada', lat: 39.5,  lng: -98.35,  maxMeters: 5_000_000 },
-  { label: 'Hawaii',                           lat: 21.3,  lng: -157.8,  maxMeters:   500_000 },
+  { label: 'Continental US + Alaska + Canada', lat: 39.5, lng: -98.35, maxMeters: 5_000_000 },
+  { label: 'Hawaii', lat: 21.3, lng: -157.8, maxMeters: 500_000 },
 ] as const;
 
 function sleep(ms: number) {
@@ -86,8 +86,17 @@ async function fetchPage(
     data: { storesByLocation: { stores: WpnStore[]; pageInfo: PageInfo } };
   }>(
     GRAPHQL_URL,
-    { query: QUERY, variables: { latitude: lat, longitude: lng, maxMeters, pageSize: PAGE_SIZE, page } },
-    { headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; ManaMapSeed/1.0)' }, timeout: 30_000 },
+    {
+      query: QUERY,
+      variables: { latitude: lat, longitude: lng, maxMeters, pageSize: PAGE_SIZE, page },
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; ManaMapSeed/1.0)',
+      },
+      timeout: 30_000,
+    },
   );
   return res.data.data.storesByLocation;
 }
@@ -101,13 +110,16 @@ function parseAddress(raw: string): {
   zip: string | null;
   country: string;
 } | null {
-  const parts = raw.split(',').map((p) => p.trim()).filter(Boolean);
+  const parts = raw
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
   if (parts.length < 4) return null;
 
   const country = parts[parts.length - 1];
-  const zip     = parts[parts.length - 2] || null;
-  const state   = parts[parts.length - 3] || null;
-  const city    = parts[parts.length - 4] || null;
+  const zip = parts[parts.length - 2] || null;
+  const state = parts[parts.length - 3] || null;
+  const city = parts[parts.length - 4] || null;
   const address = parts.slice(0, parts.length - 4).join(', ') || null;
 
   return { address, city, state, zip, country };
@@ -160,13 +172,13 @@ async function seedWpn(): Promise<void> {
     }
 
     const fields = {
-      name:    wpn.name.trim(),
+      name: wpn.name.trim(),
       address: parsed.address,
-      city:    parsed.city,
-      state:   parsed.state,
-      zip:     parsed.zip,
+      city: parsed.city,
+      state: parsed.state,
+      zip: parsed.zip,
       website: wpn.website ?? null,
-      wpnId:   wpn.id,
+      wpnId: wpn.id,
     };
 
     let storeId: string;
@@ -216,7 +228,9 @@ async function seedWpn(): Promise<void> {
 
     const total = created + updated + skipped;
     if (total % 250 === 0) {
-      console.log(`  [${total}/${byWpnId.size}] created=${created} updated=${updated} skipped=${skipped}`);
+      console.log(
+        `  [${total}/${byWpnId.size}] created=${created} updated=${updated} skipped=${skipped}`,
+      );
     }
   }
 

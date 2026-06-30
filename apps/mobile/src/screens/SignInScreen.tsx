@@ -81,7 +81,11 @@ export function SignInScreen() {
     if (!code) return;
     setLoading('discord');
     try {
-      const { data } = await api.post<AuthTokens>('/v1/auth/discord', { code, codeVerifier, redirectUri });
+      const { data } = await api.post<AuthTokens>('/v1/auth/discord', {
+        code,
+        codeVerifier,
+        redirectUri,
+      });
       await signIn(data);
     } catch (err: unknown) {
       const msg =
@@ -99,7 +103,7 @@ export function SignInScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.content}>
         <View style={styles.hero}>
-          <Text style={styles.logo}>manamap</Text>
+          <Text style={styles.logo}>ManaMap</Text>
           <Text style={styles.tagline}>Your local MTG scene, mapped.</Text>
         </View>
 

@@ -5,13 +5,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { ConnectionStatus, EncounterResult, EncounterSource, NotificationKind } from '@prisma/client';
+import {
+  ConnectionStatus,
+  EncounterResult,
+  EncounterSource,
+  NotificationKind,
+} from '@prisma/client';
 import { ConnectionsService } from '../connections.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SafetyService } from '../../safety/safety.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { QuestsService } from '../../quests/quests.service';
 import { SocialsService } from '../../socials/socials.service';
+import { EndorsementsService } from '../../endorsements/endorsements.service';
 
 function makePrismaMock() {
   return {
@@ -76,22 +82,29 @@ describe('ConnectionsService', () => {
   let notifications: { create: jest.Mock };
   let quests: { evaluate: jest.Mock };
   let socials: { visibleSocials: jest.Mock };
+  let endorsements: { getSummary: jest.Mock };
 
   beforeEach(async () => {
     prisma = makePrismaMock();
     safety = { getBlockedIds: jest.fn().mockResolvedValue(new Set()) };
     notifications = { create: jest.fn().mockResolvedValue(undefined) };
     quests = { evaluate: jest.fn().mockResolvedValue(undefined) };
-    socials = { visibleSocials: jest.fn().mockResolvedValue({ socials: [], publicCount: 0, friendsOnlyCount: 0 }) };
+    socials = {
+      visibleSocials: jest
+        .fn()
+        .mockResolvedValue({ socials: [], publicCount: 0, friendsOnlyCount: 0 }),
+    };
+    endorsements = { getSummary: jest.fn().mockResolvedValue({ total: 0, byTag: [] }) };
 
     const module = await Test.createTestingModule({
       providers: [
         ConnectionsService,
-        { provide: PrismaService,        useValue: prisma },
-        { provide: SafetyService,        useValue: safety },
+        { provide: PrismaService, useValue: prisma },
+        { provide: SafetyService, useValue: safety },
         { provide: NotificationsService, useValue: notifications },
-        { provide: QuestsService,        useValue: quests },
-        { provide: SocialsService,       useValue: socials },
+        { provide: QuestsService, useValue: quests },
+        { provide: SocialsService, useValue: socials },
+        { provide: EndorsementsService, useValue: endorsements },
       ],
     }).compile();
 
@@ -104,17 +117,23 @@ describe('ConnectionsService', () => {
 
   describe('sendRequest', () => {
     it('throws BadRequestException when the caller tries to connect with themselves', async () => {
-      await expect(service.sendRequest('u1', { addresseeId: 'u1' })).rejects.toThrow(BadRequestException);
+      await expect(service.sendRequest('u1', { addresseeId: 'u1' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws ForbiddenException when the addressee is blocked', async () => {
       safety.getBlockedIds.mockResolvedValue(new Set(['peer1']));
-      await expect(service.sendRequest('caller', { addresseeId: 'peer1' })).rejects.toThrow(ForbiddenException);
+      await expect(service.sendRequest('caller', { addresseeId: 'peer1' })).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('throws ConflictException when a connection already exists in either direction', async () => {
       prisma.connection.findFirst.mockResolvedValue({ id: 'existing' });
-      await expect(service.sendRequest('caller', { addresseeId: 'peer1' })).rejects.toThrow(ConflictException);
+      await expect(service.sendRequest('caller', { addresseeId: 'peer1' })).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('creates the connection and returns its id and pending status', async () => {
@@ -127,7 +146,9 @@ describe('ConnectionsService', () => {
       const result = await service.sendRequest('caller', { addresseeId: 'peer1' });
 
       expect(prisma.connection.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ requesterId: 'caller', addresseeId: 'peer1' }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ requesterId: 'caller', addresseeId: 'peer1' }),
+        }),
       );
       expect(result).toEqual({ id: 'conn1', status: 'pending' });
     });
@@ -202,7 +223,9 @@ describe('ConnectionsService', () => {
       ]);
 
       const { outgoing } = await service.list('caller');
-      expect((outgoing[0] as { peer: { homeStoreName: string } }).peer.homeStoreName).toBe('The Vault');
+      expect((outgoing[0] as { peer: { homeStoreName: string } }).peer.homeStoreName).toBe(
+        'The Vault',
+      );
     });
 
     it('sets homeStoreName to null when peer has no home store', async () => {
@@ -366,7 +389,11 @@ describe('ConnectionsService', () => {
       const conn = makeDetailConn({
         requesterId: 'peer1',
         addresseeId: 'caller',
-        requester: { ...PEER_DETAIL, id: 'peer1', privacySettings: { showDiscord: false, showDecks: true, shareNameWithContacts: false } },
+        requester: {
+          ...PEER_DETAIL,
+          id: 'peer1',
+          privacySettings: { showDiscord: false, showDecks: true, shareNameWithContacts: false },
+        },
       });
       prisma.connection.findUnique.mockResolvedValue(conn);
 
@@ -375,7 +402,11 @@ describe('ConnectionsService', () => {
     });
 
     it('hides discordHandle when the connection is not yet accepted', async () => {
-      const conn = makeDetailConn({ requesterId: 'peer1', addresseeId: 'caller', status: ConnectionStatus.PENDING });
+      const conn = makeDetailConn({
+        requesterId: 'peer1',
+        addresseeId: 'caller',
+        status: ConnectionStatus.PENDING,
+      });
       prisma.connection.findUnique.mockResolvedValue(conn);
 
       const result = await service.getDetail('caller', 'conn1');
@@ -395,7 +426,11 @@ describe('ConnectionsService', () => {
       const conn = makeDetailConn({
         requesterId: 'peer1',
         addresseeId: 'caller',
-        requester: { ...PEER_DETAIL, id: 'peer1', privacySettings: { showDiscord: true, showDecks: false, shareNameWithContacts: false } },
+        requester: {
+          ...PEER_DETAIL,
+          id: 'peer1',
+          privacySettings: { showDiscord: true, showDecks: false, shareNameWithContacts: false },
+        },
       });
       prisma.connection.findUnique.mockResolvedValue(conn);
 
@@ -407,7 +442,12 @@ describe('ConnectionsService', () => {
       const conn = makeDetailConn({
         requesterId: 'peer1',
         addresseeId: 'caller',
-        requester: { ...PEER_DETAIL, id: 'peer1', name: 'Jane Smith', privacySettings: { showDiscord: true, showDecks: true, shareNameWithContacts: true } },
+        requester: {
+          ...PEER_DETAIL,
+          id: 'peer1',
+          name: 'Jane Smith',
+          privacySettings: { showDiscord: true, showDecks: true, shareNameWithContacts: true },
+        },
       });
       prisma.connection.findUnique.mockResolvedValue(conn);
 
@@ -424,7 +464,11 @@ describe('ConnectionsService', () => {
     });
 
     it('skips visibleSocials call when connection is not accepted', async () => {
-      const conn = makeDetailConn({ requesterId: 'peer1', addresseeId: 'caller', status: ConnectionStatus.PENDING });
+      const conn = makeDetailConn({
+        requesterId: 'peer1',
+        addresseeId: 'caller',
+        status: ConnectionStatus.PENDING,
+      });
       prisma.connection.findUnique.mockResolvedValue(conn);
 
       await service.getDetail('caller', 'conn1');

@@ -36,7 +36,9 @@ function ClaimCodeTool() {
 
   const generate = useMutation({
     mutationFn: (store: StoreResult) =>
-      api.post(`/v1/admin/stores/${store.id}/claim-code`).then((r) => ({ storeName: store.name, claimCode: r.data.claimCode as string })),
+      api
+        .post(`/v1/admin/stores/${store.id}/claim-code`)
+        .then((r) => ({ storeName: store.name, claimCode: r.data.claimCode as string })),
     onSuccess: (data) => setGenerated(data),
   });
 
@@ -55,10 +57,12 @@ function ClaimCodeTool() {
 
   return (
     <div className="card" style={{ marginBottom: 24 }}>
-      <div className="mod-detail-title" style={{ marginBottom: 12 }}>Generate a claim code</div>
+      <div className="mod-detail-title" style={{ marginBottom: 12 }}>
+        Generate a claim code
+      </div>
       <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
-        Generate a one-time code for a store and relay it to the real owner offline (phone, email, in person).
-        Entering it on the claim page instantly approves their ownership.
+        Generate a one-time code for a store and relay it to the real owner offline (phone, email,
+        in person). Entering it on the claim page instantly approves their ownership.
       </p>
       <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <input
@@ -76,8 +80,19 @@ function ClaimCodeTool() {
       {results.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {results.map((store) => (
-            <div key={store.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 14 }}>
-              <span>{store.name}{store.city ? ` — ${store.city}, ${store.state}` : ''}</span>
+            <div
+              key={store.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: 14,
+              }}
+            >
+              <span>
+                {store.name}
+                {store.city ? ` — ${store.city}, ${store.state}` : ''}
+              </span>
               <button
                 className="btn btn-sm btn-outline"
                 onClick={() => generate.mutate(store)}
@@ -92,7 +107,8 @@ function ClaimCodeTool() {
 
       {generated && (
         <div className="alert" style={{ marginTop: 12 }}>
-          Code for <strong>{generated.storeName}</strong>: <code style={{ fontSize: 16, fontWeight: 700 }}>{generated.claimCode}</code>
+          Code for <strong>{generated.storeName}</strong>:{' '}
+          <code style={{ fontSize: 16, fontWeight: 700 }}>{generated.claimCode}</code>
         </div>
       )}
     </div>
@@ -205,12 +221,19 @@ function DetailPanel({ claim, onRemove }: { claim: PendingClaim; onRemove: () =>
               />
             </div>
             <div className="mod-actions">
-              <button className="btn btn-danger btn-sm" onClick={() => reject.mutate()} disabled={isPending}>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => reject.mutate()}
+                disabled={isPending}
+              >
                 Confirm Reject
               </button>
               <button
                 className="btn btn-outline btn-sm"
-                onClick={() => { setRejectExpanded(false); setRejectReason(''); }}
+                onClick={() => {
+                  setRejectExpanded(false);
+                  setRejectReason('');
+                }}
                 disabled={isPending}
               >
                 Cancel
@@ -248,7 +271,8 @@ export function StoreClaimsPage() {
       <div className="page-header">
         <div className="page-title">Store Claims</div>
         <div className="page-sub">
-          Review pending ownership claims, or generate a one-time code to fast-track a verified owner.
+          Review pending ownership claims, or generate a one-time code to fast-track a verified
+          owner.
         </div>
       </div>
 
@@ -265,15 +289,22 @@ export function StoreClaimsPage() {
               justifyContent: 'space-between',
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>Pending</span>
-            <span className="badge" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>
+              Pending
+            </span>
+            <span
+              className="badge"
+              style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}
+            >
               {claims.length}
             </span>
           </div>
 
           <div className="mod-queue-list">
             {isLoading && (
-              <div style={{ padding: 24, color: 'var(--text-tertiary)', fontSize: 14 }}>Loading…</div>
+              <div style={{ padding: 24, color: 'var(--text-tertiary)', fontSize: 14 }}>
+                Loading…
+              </div>
             )}
             {!isLoading && claims.length === 0 && (
               <div className="empty-state">
@@ -299,7 +330,10 @@ export function StoreClaimsPage() {
         {selected ? (
           <DetailPanel key={selected.id} claim={selected} onRemove={handleRemove} />
         ) : (
-          <div className="mod-detail" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div
+            className="mod-detail"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
             <div className="empty-state">
               <div className="empty-state-icon">🏷️</div>
               <div className="empty-state-text">Select a claim to review</div>

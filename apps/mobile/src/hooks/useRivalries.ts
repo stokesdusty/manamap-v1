@@ -13,8 +13,7 @@ export function useRivalries(limit = 10) {
 export function useRivalryDetail(opponentId: string | undefined) {
   return useQuery<Rivalry | null>({
     queryKey: ['rivalries', 'detail', opponentId],
-    queryFn: () =>
-      api.get<Rivalry | null>(`/v1/rivalries/${opponentId}`).then((r) => r.data),
+    queryFn: () => api.get<Rivalry | null>(`/v1/rivalries/${opponentId}`).then((r) => r.data),
     enabled: !!opponentId,
     staleTime: 60 * 1000,
   });

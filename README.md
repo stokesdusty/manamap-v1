@@ -90,16 +90,73 @@ Features: Discord PKCE login · BLE proximity · check-in with PostGIS gating ·
 
 ### Android builds on Windows
 
-Windows has a 260-character path limit that CMake/ninja cannot bypass, and pnpm's virtual store adds long hash-suffixed directory names to every native package path. To work around this, the project must live at a short root path.
+Windows has a 260-character path limit. pnpm's content-addressable store adds long, hash-suffixed directory names to every native package path (e.g. `node_modules/.pnpm/react-native-screens@4.25.2_<hash>/node_modules/react-native-screens/android/...`), and combined with deeply-nested Gradle/Kotlin/CMake build output, this reliably tips some files over the limit — even with Windows' `LongPathsEnabled=1` registry setting on, since ninja (bundled with the Android SDK's CMake) doesn't handle long paths reliably. Symptom: `ninja: error: manifest 'build.ninja' still dirty after 100 tries`, or `ninja: Filename longer than 260 characters`.
 
-**Working directory: `C:\m`** — keep all development here. Do not build Android from `C:\dev\...` or other deep paths; the build will fail with `ninja: Filename longer than 260 characters`.
+**The fix is local-machine-only — do not put it in any committed file.** Add this to your **user-level** npmrc (`C:\Users\<you>\.npmrc` — NOT the project's `.npmrc` or `pnpm-workspace.yaml`) to relocate pnpm's virtual store to a short path:
 
-`gradle.properties` sets `reactNativeArchitectures=x86_64` so only the emulator architecture is compiled, which keeps CMake object-file paths within the 260-char limit. Change to `arm64-v8a` if you need a physical-device build (and be aware it may push some paths close to the limit again).
+```
+virtual-store-dir=C:/pm
+```
+
+Then do one clean reinstall so it actually takes effect (pnpm won't relocate an existing store on a plain `pnpm install` — it has to be forced once):
 
 ```bash
-# Android emulator build (run from repo root at C:\m)
-cd apps/mobile/android
-.\gradlew.bat assembleDebug
+cd c:\m
+rm -rf node_modules
+pnpm install --virtual-store-dir=C:/pm
+```
+
+After that, plain `pnpm install` runs keep using the relocated store. If you ever see the ninja error again, also clear these stale caches and retry:
+
+```bash
+rm -rf "$HOME/.gradle/caches/build-cache-1"
+find . -type d -name ".cxx" -exec rm -rf {} +
+```
+
+**Never add `virtual-store-dir`/`virtualStoreDir` to the project's `pnpm-workspace.yaml` or root `.npmrc`.** Those files are committed and also read by EAS Build's cloud machines (which run Linux) — a Windows absolute path there breaks the Android Gradle build in the cloud. See "Cloud builds (EAS) on Windows" below.
+
+Keeping the repo at a short root path (`C:\m`) still helps on top of this, but isn't sufficient on its own — the pnpm store relocation is the actual fix.
+
+```bash
+# Local Android build + install on a connected device/emulator (run from repo root)
+cd apps/mobile
+npx expo run:android
+```
+
+### Cloud builds (EAS) on Windows
+
+`eas build` uploads your local working directory, then runs a genuinely fresh `pnpm install --frozen-lockfile` on a Linux build machine — your local `node_modules`/pnpm store layout doesn't affect that install. **However**, stale generated files left over from local Windows builds still get swept into the upload and are not reliably excluded by `.easignore` for this project, specifically:
+
+- `apps/mobile/android/build/generated/autolinking/autolinking.json`
+- other content under `android/build/`, `android/app/build/`, `**/.cxx/`
+
+These bake in absolute Windows paths (`C:/pm/...`) from your last local build. When uploaded and read during the Linux Gradle build, they fail with:
+
+```
+Configuring project ':react-native-screens' without an existing directory is not allowed. The configured projectDirectory
+'/home/expo/workingdir/build/apps/mobile/android/C:/pm/react-native-screens@.../android' does not exist...
+```
+
+**Before every `eas build --platform android`, clean these locally first:**
+
+```bash
+cd apps/mobile
+rm -rf android/build android/app/build
+find android -type d -name ".cxx" -exec rm -rf {} +
+```
+
+And don't run a local `npx expo run:android` between cleaning and triggering the EAS build — it immediately regenerates the stale file. Note `eas build --clear-cache` does **not** fix this; it clears EAS's own build cache, not the contents of your uploaded project archive.
+
+### iOS / Android build numbers (TestFlight, Play Store)
+
+`eas.json`'s `cli.appVersionSource` is set to `"remote"` — EAS tracks `ios.buildNumber` / `android.versionCode` itself and auto-increments on every build. You don't need to bump anything in `app.config.ts` by hand for this anymore.
+
+If you ever need to explicitly jump the counter (e.g. after a manual reset on Apple's/Google's side), run interactively in a real terminal (this prompt can't be satisfied via piped/non-interactive input):
+
+```bash
+cd apps/mobile
+eas build:version:set -p ios -e production
+eas build:version:set -p android -e production
 ```
 
 ## Admin portal
@@ -149,11 +206,9 @@ The following features are fully implemented in the API and data model but are h
 
 | Feature | Status | Where to re-enable |
 |---|---|---|
-| Game logging | Hidden | Restore the "Log game result" button and `<LogGameSheet>` in `YouScreen`, and `<ConfirmResultsSection>` in `ConnectScreen` |
-| Game record & history | Hidden | Restore `<GameRecordCard>`, `<RecentGamesCard>`, and `<RivalriesCard>` in `YouScreen` |
 | Monthly quests | Hidden | Restore `<QuestsCard>` in `YouScreen` |
 
-API routes (`/v1/games/*`, `/v1/me/stats`) and database tables (`game_logs`, `game_players`) remain active.
+Game logging (`<ConfirmResultsSection>` in `ConnectScreen`, `<GameRecordCard>`/`<RecentGamesCard>`/`<RivalriesCard>` in `YouScreen`) and the post-game endorsement prompt (`<EndorsementPromptSheet>`, fired after a confirmed game) are live. Creating a game is reachable from the Home screen's "Log a Game" tile and from locking in a pod; endorsement chips show on profile and connection detail once endorsements exist.
 
 ## Tech stack
 

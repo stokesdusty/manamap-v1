@@ -10,13 +10,13 @@ import {
   View,
 } from 'react-native';
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type {
   ManaColor as SharedManaColor,
   MtgFormat,
   NearbyPlayer,
-  PlayerVibe,
   StoreDetail,
   Suggestion,
   LfgFeedItem,
@@ -40,9 +40,18 @@ import {
 import { usePodFeed, useCreatePod } from '../hooks/usePods';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
+import type {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
 import type { TabParamList, RootStackParamList } from '../navigation/types';
-import { useNearby, useSuggestions, useStores, useStorePins, type DiscoveryFilters } from '../hooks/useNearby';
+import {
+  useNearby,
+  useSuggestions,
+  useStores,
+  useStorePins,
+  useNotifyWhenActive,
+} from '../hooks/useNearby';
 import { usePresence, useCheckout } from '../hooks/usePresence';
 import { useCrossedPathsCount } from '../hooks/useEncounters';
 import { useActiveStore } from '../context/ActiveStoreContext';
@@ -64,8 +73,8 @@ function avatarInitial(name: string) {
 
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
@@ -73,7 +82,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
 }
 
 function formatDist(km: number) {
-  if (km < 0.05) return 'You\'re here';
+  if (km < 0.05) return "You're here";
   if (km < 1) return `${Math.round(km * 1000)} m away`;
   return `${km.toFixed(1)} km away`;
 }
@@ -108,7 +117,12 @@ function StorePicker({ visible, onClose, onSelect }: StorePickerProps) {
   const { data: stores = [], isLoading } = useStores(query.length >= 2 ? query : undefined);
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
       <SafeAreaView style={picker.safe}>
         <View style={picker.header}>
           <Text style={picker.title}>Select your store</Text>
@@ -118,7 +132,12 @@ function StorePicker({ visible, onClose, onSelect }: StorePickerProps) {
         </View>
 
         <View style={picker.searchWrap}>
-          <Ionicons name="search-outline" size={16} color={colors.textTertiary} style={picker.searchIcon} />
+          <Ionicons
+            name="search-outline"
+            size={16}
+            color={colors.textTertiary}
+            style={picker.searchIcon}
+          />
           <TextInput
             style={picker.searchInput}
             placeholder="Search stores…"
@@ -140,7 +159,14 @@ function StorePicker({ visible, onClose, onSelect }: StorePickerProps) {
               <Pressable
                 style={({ pressed }) => [picker.storeRow, pressed && { opacity: 0.6 }]}
                 onPress={() => {
-                  onSelect({ ...item, address: null, zip: null, discordUrl: null, lat: null, lng: null });
+                  onSelect({
+                    ...item,
+                    address: null,
+                    zip: null,
+                    discordUrl: null,
+                    lat: null,
+                    lng: null,
+                  });
                   onClose();
                 }}
               >
@@ -168,28 +194,28 @@ function StorePicker({ visible, onClose, onSelect }: StorePickerProps) {
   );
 }
 
-
 // ---------------------------------------------------------------------------
 // Player row
 // ---------------------------------------------------------------------------
 
 const FORMAT_LABELS: Partial<Record<MtgFormat, string>> = {
-  standard: 'Std', pioneer: 'Pio', modern: 'Mod',
-  legacy: 'Leg', vintage: 'Vnt', commander: 'EDH', draft: 'Draft',
+  standard: 'Std',
+  pioneer: 'Pio',
+  modern: 'Mod',
+  legacy: 'Leg',
+  vintage: 'Vnt',
+  commander: 'EDH',
+  draft: 'Draft',
 };
 
 const FORMAT_FULL_LABELS: Partial<Record<MtgFormat, string>> = {
-  standard: 'Standard', pioneer: 'Pioneer', modern: 'Modern',
-  legacy: 'Legacy', vintage: 'Vintage', commander: 'Commander', draft: 'Draft',
-};
-
-const ALL_FORMATS: MtgFormat[] = ['commander', 'modern', 'standard', 'pioneer', 'legacy', 'vintage', 'draft'];
-const ALL_COLORS: SharedManaColor[] = ['W', 'U', 'B', 'R', 'G'];
-const ALL_VIBES: PlayerVibe[] = ['casual', 'competitive', 'spike', 'timmy', 'johnny', 'vorthos', 'influencer'];
-
-const VIBE_LABELS: Partial<Record<PlayerVibe, string>> = {
-  competitive: 'Competitive', casual: 'Casual', spike: 'Spike',
-  timmy: 'Timmy', johnny: 'Johnny', vorthos: 'Vorthos', influencer: 'Influencer',
+  standard: 'Standard',
+  pioneer: 'Pioneer',
+  modern: 'Modern',
+  legacy: 'Legacy',
+  vintage: 'Vintage',
+  commander: 'Commander',
+  draft: 'Draft',
 };
 
 interface PlayerRowProps {
@@ -199,30 +225,40 @@ interface PlayerRowProps {
 
 function PlayerRow({ player, onPress }: PlayerRowProps) {
   const fill = nodeColor(player);
-  const textFill = ['W', 'G'].includes(player.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
+  const textFill = ['W', 'G'].includes(player.avatarColors[0])
+    ? colors.textPrimary
+    : colors.textInverse;
 
   return (
-    <Pressable
-      style={({ pressed }) => [row.root, pressed && { opacity: 0.75 }]}
-      onPress={onPress}
-    >
+    <Pressable style={({ pressed }) => [row.root, pressed && { opacity: 0.75 }]} onPress={onPress}>
       <View style={[row.avatar, { backgroundColor: fill }]}>
-        <Text style={[row.avatarText, { color: textFill }]}>{avatarInitial(player.displayName)}</Text>
+        <Text style={[row.avatarText, { color: textFill }]}>
+          {avatarInitial(player.displayName)}
+        </Text>
       </View>
 
       <View style={{ flex: 1, gap: 5 }}>
         <View style={row.nameRow}>
-          <Text style={row.name} numberOfLines={1}>{player.displayName}</Text>
+          <Text style={row.name} numberOfLines={1}>
+            {player.displayName}
+          </Text>
           {player.metBefore && (
-            <View style={row.metBadge}><Text style={row.metText}>MET</Text></View>
+            <View style={row.metBadge}>
+              <Text style={row.metText}>MET</Text>
+            </View>
           )}
         </View>
         <View style={row.subRow}>
           {(player.formats as MtgFormat[]).slice(0, 1).map((f) => (
-            <Text key={f} style={row.sub}>{FORMAT_LABELS[f] ?? f}</Text>
+            <Text key={f} style={row.sub}>
+              {FORMAT_LABELS[f] ?? f}
+            </Text>
           ))}
           {player.commander ? (
-            <Text style={row.sub} numberOfLines={1}> · {player.commander}</Text>
+            <Text style={row.sub} numberOfLines={1}>
+              {' '}
+              · {player.commander}
+            </Text>
           ) : null}
         </View>
       </View>
@@ -242,25 +278,29 @@ interface SuggestionCardProps {
 }
 
 function SuggestionCard({ suggestion, onPress }: SuggestionCardProps) {
-  const fill = suggestion.avatarColors.length > 0
-    ? (MANA_FILL[suggestion.avatarColors[0] as SharedManaColor] ?? colors.border)
-    : colors.border;
-  const textFill = ['W', 'G'].includes(suggestion.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
+  const fill =
+    suggestion.avatarColors.length > 0
+      ? (MANA_FILL[suggestion.avatarColors[0] as SharedManaColor] ?? colors.border)
+      : colors.border;
+  const textFill = ['W', 'G'].includes(suggestion.avatarColors[0])
+    ? colors.textPrimary
+    : colors.textInverse;
   const topReasons = suggestion.reasons.slice(0, 2);
 
   return (
-    <Pressable
-      style={({ pressed }) => [sugg.card, pressed && { opacity: 0.75 }]}
-      onPress={onPress}
-    >
+    <Pressable style={({ pressed }) => [sugg.card, pressed && { opacity: 0.75 }]} onPress={onPress}>
       <View style={[sugg.avatar, { backgroundColor: fill }]}>
         <Text style={[sugg.avatarText, { color: textFill }]}>
           {avatarInitial(suggestion.displayName)}
         </Text>
       </View>
-      <Text style={sugg.name} numberOfLines={1}>{suggestion.displayName}</Text>
+      <Text style={sugg.name} numberOfLines={1}>
+        {suggestion.displayName}
+      </Text>
       {topReasons.map((r, i) => (
-        <Text key={i} style={sugg.reason} numberOfLines={1}>{r.label}</Text>
+        <Text key={i} style={sugg.reason} numberOfLines={1}>
+          {r.label}
+        </Text>
       ))}
     </Pressable>
   );
@@ -294,156 +334,6 @@ function SuggestionsCarousel({ suggestions, onSelectSuggestion }: SuggestionsCar
 }
 
 // ---------------------------------------------------------------------------
-// Advanced filter panel
-// ---------------------------------------------------------------------------
-
-interface AdvancedFiltersProps {
-  filterFormat: MtgFormat | undefined;
-  onFormatToggle: (f: MtgFormat) => void;
-  filterColors: SharedManaColor[];
-  onColorToggle: (c: SharedManaColor) => void;
-  displayPowerMin: number;
-  displayPowerMax: number;
-  onPowerMinChange: (v: number) => void;
-  onPowerMaxChange: (v: number) => void;
-  filterVibe: PlayerVibe | undefined;
-  onVibeToggle: (v: PlayerVibe) => void;
-  onClear: () => void;
-  hasActiveFilters: boolean;
-}
-
-function AdvancedFilters({
-  filterFormat, onFormatToggle,
-  filterColors, onColorToggle,
-  displayPowerMin, displayPowerMax,
-  onPowerMinChange, onPowerMaxChange,
-  filterVibe, onVibeToggle,
-  onClear, hasActiveFilters,
-}: AdvancedFiltersProps) {
-  return (
-    <View style={filt.wrap}>
-      {/* Format chips */}
-      <Text style={filt.sectionLabel}>Format</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={filt.chipScroll}>
-        {ALL_FORMATS.map((f) => {
-          const active = filterFormat === f;
-          return (
-            <Pressable
-              key={f}
-              style={[filt.chip, active && filt.chipActive]}
-              onPress={() => onFormatToggle(f)}
-            >
-              <Text style={[filt.chipText, active && filt.chipTextActive]}>
-                {FORMAT_FULL_LABELS[f] ?? f}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      {/* Mana color pips */}
-      <Text style={filt.sectionLabel}>Colors</Text>
-      <View style={filt.colorRow}>
-        {ALL_COLORS.map((c) => {
-          const active = filterColors.includes(c);
-          return (
-            <Pressable
-              key={c}
-              style={[
-                filt.colorPip,
-                { backgroundColor: MANA_FILL[c] },
-                active && filt.colorPipActive,
-              ]}
-              onPress={() => onColorToggle(c)}
-            >
-              <Text style={[
-                filt.colorText,
-                { color: c === 'W' ? colors.textPrimary : colors.textInverse },
-                !active && { opacity: 0.45 },
-              ]}>
-                {c}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* Power range */}
-      <Text style={filt.sectionLabel}>Power range</Text>
-      <View style={filt.powerRow}>
-        <View style={filt.powerGroup}>
-          <Text style={filt.powerLabel}>Min</Text>
-          <View style={filt.stepper}>
-            <Pressable
-              style={filt.stepBtn}
-              onPress={() => onPowerMinChange(Math.max(1, displayPowerMin - 1))}
-              hitSlop={6}
-            >
-              <Ionicons name="remove" size={14} color={colors.textSecondary} />
-            </Pressable>
-            <Text style={filt.stepVal}>{displayPowerMin}</Text>
-            <Pressable
-              style={filt.stepBtn}
-              onPress={() => onPowerMinChange(Math.min(displayPowerMax, displayPowerMin + 1))}
-              hitSlop={6}
-            >
-              <Ionicons name="add" size={14} color={colors.textSecondary} />
-            </Pressable>
-          </View>
-        </View>
-        <Text style={filt.powerSep}>–</Text>
-        <View style={filt.powerGroup}>
-          <Text style={filt.powerLabel}>Max</Text>
-          <View style={filt.stepper}>
-            <Pressable
-              style={filt.stepBtn}
-              onPress={() => onPowerMaxChange(Math.max(displayPowerMin, displayPowerMax - 1))}
-              hitSlop={6}
-            >
-              <Ionicons name="remove" size={14} color={colors.textSecondary} />
-            </Pressable>
-            <Text style={filt.stepVal}>{displayPowerMax}</Text>
-            <Pressable
-              style={filt.stepBtn}
-              onPress={() => onPowerMaxChange(Math.min(10, displayPowerMax + 1))}
-              hitSlop={6}
-            >
-              <Ionicons name="add" size={14} color={colors.textSecondary} />
-            </Pressable>
-          </View>
-        </View>
-      </View>
-
-      {/* Vibe chips */}
-      <Text style={filt.sectionLabel}>Vibe</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={filt.chipScroll}>
-        {ALL_VIBES.map((v) => {
-          const active = filterVibe === v;
-          return (
-            <Pressable
-              key={v}
-              style={[filt.chip, active && filt.chipActive]}
-              onPress={() => onVibeToggle(v)}
-            >
-              <Text style={[filt.chipText, active && filt.chipTextActive]}>
-                {VIBE_LABELS[v] ?? v}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      {/* Clear */}
-      {hasActiveFilters && (
-        <Pressable style={filt.clearBtn} onPress={onClear}>
-          <Text style={filt.clearText}>Clear all filters</Text>
-        </Pressable>
-      )}
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // LFG helpers
 // ---------------------------------------------------------------------------
 
@@ -465,7 +355,15 @@ interface LFGStatusBarProps {
   onManagePod: () => void;
 }
 
-function LFGStatusBar({ session, isLoading, isCheckedIn, onOpen, onEdit, onStop, onManagePod }: LFGStatusBarProps) {
+function LFGStatusBar({
+  session,
+  isLoading,
+  isCheckedIn,
+  onOpen,
+  onEdit,
+  onStop,
+  onManagePod,
+}: LFGStatusBarProps) {
   const [tick, setTick] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -486,7 +384,11 @@ function LFGStatusBar({ session, isLoading, isCheckedIn, onOpen, onEdit, onStop,
   if (!session) {
     return (
       <Pressable
-        style={({ pressed }) => [lfgBar.cta, !isCheckedIn && lfgBar.ctaDisabled, pressed && { opacity: 0.75 }]}
+        style={({ pressed }) => [
+          lfgBar.cta,
+          !isCheckedIn && lfgBar.ctaDisabled,
+          pressed && { opacity: 0.75 },
+        ]}
         onPress={isCheckedIn ? onOpen : undefined}
         accessibilityLabel="Open to play now"
       >
@@ -518,25 +420,38 @@ function LFGStatusBar({ session, isLoading, isCheckedIn, onOpen, onEdit, onStop,
         <View style={lfgBar.chips}>
           {session.format && (
             <View style={lfgBar.chip}>
-              <Text style={lfgBar.chipText}>{FORMAT_LABELS[session.format as MtgFormat] ?? session.format}</Text>
+              <Text style={lfgBar.chipText}>
+                {FORMAT_LABELS[session.format as MtgFormat] ?? session.format}
+              </Text>
             </View>
           )}
           <View style={lfgBar.chip}>
             <Text style={lfgBar.chipText}>P{session.power}</Text>
           </View>
           <View style={lfgBar.chip}>
-            <Text style={lfgBar.chipText}>{session.seats} seat{session.seats !== 1 ? 's' : ''}</Text>
+            <Text style={lfgBar.chipText}>
+              {session.seats} seat{session.seats !== 1 ? 's' : ''}
+            </Text>
           </View>
         </View>
       </View>
       <View style={lfgBar.actions}>
-        <Pressable style={({ pressed }) => [lfgBar.actionBtn, pressed && { opacity: 0.6 }]} onPress={onManagePod}>
+        <Pressable
+          style={({ pressed }) => [lfgBar.actionBtn, pressed && { opacity: 0.6 }]}
+          onPress={onManagePod}
+        >
           <Ionicons name="people-outline" size={15} color={colors.accent} />
         </Pressable>
-        <Pressable style={({ pressed }) => [lfgBar.actionBtn, pressed && { opacity: 0.6 }]} onPress={onEdit}>
+        <Pressable
+          style={({ pressed }) => [lfgBar.actionBtn, pressed && { opacity: 0.6 }]}
+          onPress={onEdit}
+        >
           <Ionicons name="pencil-outline" size={15} color={colors.textSecondary} />
         </Pressable>
-        <Pressable style={({ pressed }) => [lfgBar.actionBtn, lfgBar.stopBtn, pressed && { opacity: 0.6 }]} onPress={onStop}>
+        <Pressable
+          style={({ pressed }) => [lfgBar.actionBtn, lfgBar.stopBtn, pressed && { opacity: 0.6 }]}
+          onPress={onStop}
+        >
           <Ionicons name="stop-circle-outline" size={15} color={colors.error} />
         </Pressable>
       </View>
@@ -555,35 +470,62 @@ interface LFGOpenRowProps {
 }
 
 function LFGOpenRow({ item, onJoin, joined }: LFGOpenRowProps) {
-  const fill = item.avatarColors.length > 0
-    ? (MANA_FILL[item.avatarColors[0] as SharedManaColor] ?? colors.border)
-    : colors.border;
-  const textFill = ['W', 'G'].includes(item.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
+  const fill =
+    item.avatarColors.length > 0
+      ? (MANA_FILL[item.avatarColors[0] as SharedManaColor] ?? colors.border)
+      : colors.border;
+  const textFill = ['W', 'G'].includes(item.avatarColors[0])
+    ? colors.textPrimary
+    : colors.textInverse;
 
   return (
     <View style={lfgSection.row}>
       <View style={[lfgSection.avatar, { backgroundColor: fill }]}>
-        <Text style={[lfgSection.avatarText, { color: textFill }]}>{avatarInitial(item.displayName)}</Text>
+        <Text style={[lfgSection.avatarText, { color: textFill }]}>
+          {avatarInitial(item.displayName)}
+        </Text>
       </View>
       <View style={{ flex: 1, gap: 3 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <Text style={lfgSection.name} numberOfLines={1}>{item.displayName}</Text>
-          {item.metBefore && <View style={lfgSection.metBadge}><Text style={lfgSection.metText}>Met</Text></View>}
+          <Text style={lfgSection.name} numberOfLines={1}>
+            {item.displayName}
+          </Text>
+          {item.metBefore && (
+            <View style={lfgSection.metBadge}>
+              <Text style={lfgSection.metText}>Met</Text>
+            </View>
+          )}
           <Text style={lfgSection.timer}>{item.minutesLeft}m</Text>
         </View>
         <View style={lfgSection.chips}>
           {item.session.format && (
-            <View style={lfgSection.chip}><Text style={lfgSection.chipText}>{FORMAT_LABELS[item.session.format as MtgFormat] ?? item.session.format}</Text></View>
+            <View style={lfgSection.chip}>
+              <Text style={lfgSection.chipText}>
+                {FORMAT_LABELS[item.session.format as MtgFormat] ?? item.session.format}
+              </Text>
+            </View>
           )}
-          <View style={lfgSection.chip}><Text style={lfgSection.chipText}>P{item.session.power}</Text></View>
-          <View style={lfgSection.chip}><Text style={lfgSection.chipText}>{item.session.seats} seat{item.session.seats !== 1 ? 's' : ''}</Text></View>
+          <View style={lfgSection.chip}>
+            <Text style={lfgSection.chipText}>P{item.session.power}</Text>
+          </View>
+          <View style={lfgSection.chip}>
+            <Text style={lfgSection.chipText}>
+              {item.session.seats} seat{item.session.seats !== 1 ? 's' : ''}
+            </Text>
+          </View>
         </View>
         {item.session.note ? (
-          <Text style={lfgSection.note} numberOfLines={1}>{item.session.note}</Text>
+          <Text style={lfgSection.note} numberOfLines={1}>
+            {item.session.note}
+          </Text>
         ) : null}
       </View>
       <Pressable
-        style={({ pressed }) => [lfgSection.joinBtn, joined && lfgSection.joinBtnSent, pressed && { opacity: 0.7 }]}
+        style={({ pressed }) => [
+          lfgSection.joinBtn,
+          joined && lfgSection.joinBtnSent,
+          pressed && { opacity: 0.7 },
+        ]}
         onPress={joined ? undefined : onJoin}
         accessibilityLabel={joined ? 'Request sent' : 'Join pod'}
       >
@@ -669,9 +611,7 @@ function PodsSection({ pods, isCheckedIn, onStartPod, onOpenPod }: PodsSectionPr
         <View style={podsSection.headerLeft}>
           <Ionicons name="people-outline" size={13} color={colors.accent} />
           <Text style={podsSection.headerText}>Pods forming here</Text>
-          {pods.length > 0 && (
-            <Text style={podsSection.headerCount}>{pods.length}</Text>
-          )}
+          {pods.length > 0 && <Text style={podsSection.headerCount}>{pods.length}</Text>}
         </View>
         <Pressable
           style={({ pressed }) => [
@@ -682,8 +622,14 @@ function PodsSection({ pods, isCheckedIn, onStartPod, onOpenPod }: PodsSectionPr
           onPress={isCheckedIn ? onStartPod : undefined}
           accessibilityLabel="Start a pod"
         >
-          <Ionicons name="add" size={13} color={isCheckedIn ? colors.accent : colors.textTertiary} />
-          <Text style={[podsSection.startBtnText, !isCheckedIn && podsSection.startBtnTextDisabled]}>
+          <Ionicons
+            name="add"
+            size={13}
+            color={isCheckedIn ? colors.accent : colors.textTertiary}
+          />
+          <Text
+            style={[podsSection.startBtnText, !isCheckedIn && podsSection.startBtnTextDisabled]}
+          >
             Start a pod
           </Text>
         </Pressable>
@@ -694,10 +640,13 @@ function PodsSection({ pods, isCheckedIn, onStartPod, onOpenPod }: PodsSectionPr
       ) : (
         <View style={podsSection.list}>
           {pods.map((pod) => {
-            const fill = pod.host.avatarColors.length > 0
-              ? (MANA_FILL[pod.host.avatarColors[0] as SharedManaColor] ?? colors.border)
-              : colors.border;
-            const textFill = ['W', 'G'].includes(pod.host.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
+            const fill =
+              pod.host.avatarColors.length > 0
+                ? (MANA_FILL[pod.host.avatarColors[0] as SharedManaColor] ?? colors.border)
+                : colors.border;
+            const textFill = ['W', 'G'].includes(pod.host.avatarColors[0])
+              ? colors.textPrimary
+              : colors.textInverse;
             return (
               <Pressable
                 key={pod.id}
@@ -716,11 +665,15 @@ function PodsSection({ pods, isCheckedIn, onStartPod, onOpenPod }: PodsSectionPr
                   <View style={podsSection.chips}>
                     {pod.format && (
                       <View style={podsSection.chip}>
-                        <Text style={podsSection.chipText}>{FORMAT_LABELS[pod.format as MtgFormat] ?? pod.format}</Text>
+                        <Text style={podsSection.chipText}>
+                          {FORMAT_LABELS[pod.format as MtgFormat] ?? pod.format}
+                        </Text>
                       </View>
                     )}
                     <View style={podsSection.chip}>
-                      <Text style={podsSection.chipText}>P{pod.targetPower}±{pod.tolerance}</Text>
+                      <Text style={podsSection.chipText}>
+                        P{pod.targetPower}±{pod.tolerance}
+                      </Text>
                     </View>
                     <View style={podsSection.chip}>
                       <Text style={podsSection.chipText}>{pod.seatsOpen} open</Text>
@@ -748,7 +701,15 @@ function PodsSection({ pods, isCheckedIn, onStartPod, onOpenPod }: PodsSectionPr
 // PodCreateSheet
 // ---------------------------------------------------------------------------
 
-const ALL_POD_FORMATS: MtgFormat[] = ['commander', 'modern', 'standard', 'pioneer', 'legacy', 'vintage', 'draft'];
+const ALL_POD_FORMATS: MtgFormat[] = [
+  'commander',
+  'modern',
+  'standard',
+  'pioneer',
+  'legacy',
+  'vintage',
+  'draft',
+];
 const POD_TOLERANCES: PodTolerance[] = [1, 2, 3];
 const POD_SEATS = [2, 3, 4] as const;
 
@@ -793,7 +754,12 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
   }, [canSubmit, format, targetPower, tolerance, seats, where, note, onSubmit]);
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
       <SafeAreaView style={podCreate.safe}>
         <View style={podCreate.header}>
           <Pressable onPress={onClose} hitSlop={8}>
@@ -810,15 +776,25 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
             onPress={handleSubmit}
             disabled={isSubmitting || !canSubmit}
           >
-            {isSubmitting
-              ? <ActivityIndicator size="small" color={colors.textInverse} />
-              : <Text style={podCreate.submitText}>Create</Text>}
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color={colors.textInverse} />
+            ) : (
+              <Text style={podCreate.submitText}>Create</Text>
+            )}
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={podCreate.scroll} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView
+          contentContainerStyle={podCreate.scroll}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={spacing.xl}
+        >
           <Text style={podCreate.sectionLabel}>Format (optional)</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={podCreate.chipRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={podCreate.chipRow}
+          >
             {ALL_POD_FORMATS.map((f) => {
               const active = format === f;
               return (
@@ -837,11 +813,19 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
 
           <Text style={podCreate.sectionLabel}>Target power</Text>
           <View style={podCreate.stepper}>
-            <Pressable style={podCreate.stepBtn} onPress={() => setTargetPower((p) => Math.max(1, p - 1))} hitSlop={6}>
+            <Pressable
+              style={podCreate.stepBtn}
+              onPress={() => setTargetPower((p) => Math.max(1, p - 1))}
+              hitSlop={6}
+            >
               <Ionicons name="remove" size={16} color={colors.textSecondary} />
             </Pressable>
             <Text style={podCreate.stepVal}>{targetPower}</Text>
-            <Pressable style={podCreate.stepBtn} onPress={() => setTargetPower((p) => Math.min(10, p + 1))} hitSlop={6}>
+            <Pressable
+              style={podCreate.stepBtn}
+              onPress={() => setTargetPower((p) => Math.min(10, p + 1))}
+              hitSlop={6}
+            >
               <Ionicons name="add" size={16} color={colors.textSecondary} />
             </Pressable>
           </View>
@@ -854,7 +838,9 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
                 style={[podCreate.seg, tolerance === t && podCreate.segActive]}
                 onPress={() => setTolerance(t)}
               >
-                <Text style={[podCreate.segText, tolerance === t && podCreate.segTextActive]}>±{t}</Text>
+                <Text style={[podCreate.segText, tolerance === t && podCreate.segTextActive]}>
+                  ±{t}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -872,7 +858,9 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
             ))}
           </View>
 
-          <Text style={podCreate.sectionLabel}>Where to meet <Text style={podCreate.required}>*</Text></Text>
+          <Text style={podCreate.sectionLabel}>
+            Where to meet <Text style={podCreate.required}>*</Text>
+          </Text>
           <TextInput
             style={podCreate.whereInput}
             placeholder="e.g. back table by the draft pods"
@@ -893,7 +881,7 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
             maxLength={140}
             multiline
           />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     </Modal>
   );
@@ -903,7 +891,15 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
 // LFGComposer (create / edit sheet)
 // ---------------------------------------------------------------------------
 
-const ALL_LFG_FORMATS: MtgFormat[] = ['commander', 'modern', 'standard', 'pioneer', 'legacy', 'vintage', 'draft'];
+const ALL_LFG_FORMATS: MtgFormat[] = [
+  'commander',
+  'modern',
+  'standard',
+  'pioneer',
+  'legacy',
+  'vintage',
+  'draft',
+];
 const DURATIONS: LfgDuration[] = [30, 60, 120];
 const DURATION_LABELS: Record<LfgDuration, string> = { 30: '30 min', 60: '1 hr', 120: '2 hrs' };
 
@@ -933,35 +929,67 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
   }, [visible, initial]);
 
   const handleSubmit = useCallback(() => {
-    onSubmit({ format: format ?? null, power, seats, durationMins: duration, note: note.trim() || null });
+    onSubmit({
+      format: format ?? null,
+      power,
+      seats,
+      durationMins: duration,
+      note: note.trim() || null,
+    });
   }, [format, power, seats, duration, note, onSubmit]);
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
       <SafeAreaView style={composer.safe}>
         <View style={composer.header}>
-          <Pressable onPress={onClose} hitSlop={8}><Ionicons name="close" size={24} color={colors.textSecondary} /></Pressable>
+          <Pressable onPress={onClose} hitSlop={8}>
+            <Ionicons name="close" size={24} color={colors.textSecondary} />
+          </Pressable>
           <Text style={composer.title}>{initial ? 'Edit session' : "I'm open to play"}</Text>
           <Pressable
-            style={({ pressed }) => [composer.submitBtn, isSubmitting && { opacity: 0.5 }, pressed && { opacity: 0.75 }]}
+            style={({ pressed }) => [
+              composer.submitBtn,
+              isSubmitting && { opacity: 0.5 },
+              pressed && { opacity: 0.75 },
+            ]}
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting
-              ? <ActivityIndicator size="small" color={colors.textInverse} />
-              : <Text style={composer.submitText}>{initial ? 'Save' : 'Go open'}</Text>
-            }
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color={colors.textInverse} />
+            ) : (
+              <Text style={composer.submitText}>{initial ? 'Save' : 'Go open'}</Text>
+            )}
           </Pressable>
         </View>
 
-        <ScrollView contentContainerStyle={composer.scroll} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScrollView
+          contentContainerStyle={composer.scroll}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={spacing.xl}
+        >
           <Text style={composer.sectionLabel}>Format (optional)</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={composer.chipRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={composer.chipRow}
+          >
             {ALL_LFG_FORMATS.map((f) => {
               const active = format === f;
               return (
-                <Pressable key={f} style={[composer.chip, active && composer.chipActive]} onPress={() => setFormat(format === f ? null : f)}>
-                  <Text style={[composer.chipText, active && composer.chipTextActive]}>{FORMAT_FULL_LABELS[f] ?? f}</Text>
+                <Pressable
+                  key={f}
+                  style={[composer.chip, active && composer.chipActive]}
+                  onPress={() => setFormat(format === f ? null : f)}
+                >
+                  <Text style={[composer.chipText, active && composer.chipTextActive]}>
+                    {FORMAT_FULL_LABELS[f] ?? f}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -969,11 +997,19 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
 
           <Text style={composer.sectionLabel}>Power level</Text>
           <View style={composer.stepper}>
-            <Pressable style={composer.stepBtn} onPress={() => setPower((p) => Math.max(1, p - 1))} hitSlop={6}>
+            <Pressable
+              style={composer.stepBtn}
+              onPress={() => setPower((p) => Math.max(1, p - 1))}
+              hitSlop={6}
+            >
               <Ionicons name="remove" size={16} color={colors.textSecondary} />
             </Pressable>
             <Text style={composer.stepVal}>{power}</Text>
-            <Pressable style={composer.stepBtn} onPress={() => setPower((p) => Math.min(10, p + 1))} hitSlop={6}>
+            <Pressable
+              style={composer.stepBtn}
+              onPress={() => setPower((p) => Math.min(10, p + 1))}
+              hitSlop={6}
+            >
               <Ionicons name="add" size={16} color={colors.textSecondary} />
             </Pressable>
           </View>
@@ -981,7 +1017,11 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
           <Text style={composer.sectionLabel}>Seats needed</Text>
           <View style={composer.segRow}>
             {([1, 2, 3] as const).map((s) => (
-              <Pressable key={s} style={[composer.seg, seats === s && composer.segActive]} onPress={() => setSeats(s)}>
+              <Pressable
+                key={s}
+                style={[composer.seg, seats === s && composer.segActive]}
+                onPress={() => setSeats(s)}
+              >
                 <Text style={[composer.segText, seats === s && composer.segTextActive]}>{s}</Text>
               </Pressable>
             ))}
@@ -990,8 +1030,14 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
           <Text style={composer.sectionLabel}>Open for</Text>
           <View style={composer.segRow}>
             {DURATIONS.map((d) => (
-              <Pressable key={d} style={[composer.seg, duration === d && composer.segActive]} onPress={() => setDuration(d)}>
-                <Text style={[composer.segText, duration === d && composer.segTextActive]}>{DURATION_LABELS[d]}</Text>
+              <Pressable
+                key={d}
+                style={[composer.seg, duration === d && composer.segActive]}
+                onPress={() => setDuration(d)}
+              >
+                <Text style={[composer.segText, duration === d && composer.segTextActive]}>
+                  {DURATION_LABELS[d]}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -1006,7 +1052,7 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
             maxLength={140}
             multiline
           />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     </Modal>
   );
@@ -1032,46 +1078,75 @@ function PodSheet({ visible, mySession, feed, onClose, onLock, isLocking }: PodS
     if (visible) setSelected(new Set());
   }, [visible]);
 
-  const toggleSelect = useCallback((id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else if (next.size < (mySession?.seats ?? 3)) next.add(id);
-      return next;
-    });
-  }, [mySession?.seats]);
+  const toggleSelect = useCallback(
+    (id: string) => {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else if (next.size < (mySession?.seats ?? 3)) next.add(id);
+        return next;
+      });
+    },
+    [mySession?.seats],
+  );
 
   if (!mySession) return null;
 
   const minsLeft = lfgMinutesLeft(mySession.expiresAt);
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
       <SafeAreaView style={pod.safe}>
         <View style={pod.header}>
-          <Pressable onPress={onClose} hitSlop={8}><Ionicons name="close" size={24} color={colors.textSecondary} /></Pressable>
+          <Pressable onPress={onClose} hitSlop={8}>
+            <Ionicons name="close" size={24} color={colors.textSecondary} />
+          </Pressable>
           <Text style={pod.title}>Lock your pod</Text>
           <Pressable
-            style={({ pressed }) => [pod.lockBtn, selected.size === 0 && pod.lockBtnDisabled, pressed && { opacity: 0.75 }]}
+            style={({ pressed }) => [
+              pod.lockBtn,
+              selected.size === 0 && pod.lockBtnDisabled,
+              pressed && { opacity: 0.75 },
+            ]}
             onPress={() => onLock([...selected])}
             disabled={isLocking || selected.size === 0}
           >
-            {isLocking
-              ? <ActivityIndicator size="small" color={colors.textInverse} />
-              : <Text style={pod.lockText}>Lock ({selected.size})</Text>
-            }
+            {isLocking ? (
+              <ActivityIndicator size="small" color={colors.textInverse} />
+            ) : (
+              <Text style={pod.lockText}>Lock ({selected.size})</Text>
+            )}
           </Pressable>
         </View>
 
         <View style={pod.sessionInfo}>
           <Text style={pod.sessionLabel}>Your session</Text>
           <View style={pod.sessionChips}>
-            {mySession.format && <View style={pod.chip}><Text style={pod.chipText}>{FORMAT_LABELS[mySession.format as MtgFormat] ?? mySession.format}</Text></View>}
-            <View style={pod.chip}><Text style={pod.chipText}>P{mySession.power}</Text></View>
-            <View style={pod.chip}><Text style={pod.chipText}>{mySession.seats} seat{mySession.seats !== 1 ? 's' : ''}</Text></View>
+            {mySession.format && (
+              <View style={pod.chip}>
+                <Text style={pod.chipText}>
+                  {FORMAT_LABELS[mySession.format as MtgFormat] ?? mySession.format}
+                </Text>
+              </View>
+            )}
+            <View style={pod.chip}>
+              <Text style={pod.chipText}>P{mySession.power}</Text>
+            </View>
+            <View style={pod.chip}>
+              <Text style={pod.chipText}>
+                {mySession.seats} seat{mySession.seats !== 1 ? 's' : ''}
+              </Text>
+            </View>
             <Text style={pod.timerText}>{minsLeft}m left</Text>
           </View>
-          <Text style={pod.hint}>Select up to {mySession.seats} player{mySession.seats !== 1 ? 's' : ''} to seat</Text>
+          <Text style={pod.hint}>
+            Select up to {mySession.seats} player{mySession.seats !== 1 ? 's' : ''} to seat
+          </Text>
         </View>
 
         {feed.length === 0 ? (
@@ -1080,28 +1155,49 @@ function PodSheet({ visible, mySession, feed, onClose, onLock, isLocking }: PodS
           <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxxl }}>
             {feed.map((item) => {
               const isSelected = selected.has(item.id);
-              const fill = item.avatarColors.length > 0
-                ? (MANA_FILL[item.avatarColors[0] as SharedManaColor] ?? colors.border)
-                : colors.border;
-              const textFill = ['W', 'G'].includes(item.avatarColors[0]) ? colors.textPrimary : colors.textInverse;
+              const fill =
+                item.avatarColors.length > 0
+                  ? (MANA_FILL[item.avatarColors[0] as SharedManaColor] ?? colors.border)
+                  : colors.border;
+              const textFill = ['W', 'G'].includes(item.avatarColors[0])
+                ? colors.textPrimary
+                : colors.textInverse;
               return (
                 <Pressable
                   key={item.id}
-                  style={({ pressed }) => [pod.row, isSelected && pod.rowSelected, pressed && { opacity: 0.7 }]}
+                  style={({ pressed }) => [
+                    pod.row,
+                    isSelected && pod.rowSelected,
+                    pressed && { opacity: 0.7 },
+                  ]}
                   onPress={() => toggleSelect(item.id)}
                 >
                   <View style={[pod.avatar, { backgroundColor: fill }]}>
-                    <Text style={[pod.avatarText, { color: textFill }]}>{avatarInitial(item.displayName)}</Text>
+                    <Text style={[pod.avatarText, { color: textFill }]}>
+                      {avatarInitial(item.displayName)}
+                    </Text>
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={pod.name} numberOfLines={1}>{item.displayName}</Text>
+                    <Text style={pod.name} numberOfLines={1}>
+                      {item.displayName}
+                    </Text>
                     <View style={pod.chips}>
-                      {item.session.format && <View style={pod.chip}><Text style={pod.chipText}>{FORMAT_LABELS[item.session.format as MtgFormat] ?? item.session.format}</Text></View>}
-                      <View style={pod.chip}><Text style={pod.chipText}>P{item.session.power}</Text></View>
+                      {item.session.format && (
+                        <View style={pod.chip}>
+                          <Text style={pod.chipText}>
+                            {FORMAT_LABELS[item.session.format as MtgFormat] ?? item.session.format}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={pod.chip}>
+                        <Text style={pod.chipText}>P{item.session.power}</Text>
+                      </View>
                     </View>
                   </View>
                   <View style={[pod.checkbox, isSelected && pod.checkboxSelected]}>
-                    {isSelected && <Ionicons name="checkmark" size={14} color={colors.textInverse} />}
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={14} color={colors.textInverse} />
+                    )}
                   </View>
                 </Pressable>
               );
@@ -1113,6 +1209,71 @@ function PodSheet({ visible, mySession, feed, onClose, onLock, isLocking }: PodS
   );
 }
 
+// ---------------------------------------------------------------------------
+// EmptyStoreState — "be the first" invitation when nobody else is here
+// ---------------------------------------------------------------------------
+
+interface EmptyStoreStateProps {
+  storeName: string;
+  isOpenToPlay: boolean;
+  onGoOpen: () => void;
+  onNotifyMe: () => void;
+  isSubscribed: boolean;
+  isSubscribing: boolean;
+}
+
+function EmptyStoreState({
+  storeName,
+  isOpenToPlay,
+  onGoOpen,
+  onNotifyMe,
+  isSubscribed,
+  isSubscribing,
+}: EmptyStoreStateProps) {
+  return (
+    <View style={emptyState.wrap}>
+      <View style={emptyState.iconWell}>
+        <Ionicons name="moon-outline" size={24} color={colors.textTertiary} />
+      </View>
+      <Text style={emptyState.title}>No one's open right now</Text>
+      <Text style={emptyState.sub}>
+        {isOpenToPlay
+          ? `You're open to play — we'll let the table fill in around you at ${storeName}.`
+          : `Be the first — go open to play and put ${storeName} on the map for tonight.`}
+      </Text>
+
+      {!isOpenToPlay && (
+        <Pressable
+          style={({ pressed }) => [emptyState.cta, pressed && { opacity: 0.85 }]}
+          onPress={onGoOpen}
+        >
+          <Ionicons name="flash" size={16} color={colors.textInverse} />
+          <Text style={emptyState.ctaText}>Go Open to Play</Text>
+        </Pressable>
+      )}
+
+      <Pressable
+        style={({ pressed }) => [emptyState.pingBtn, pressed && !isSubscribed && { opacity: 0.7 }]}
+        onPress={isSubscribed ? undefined : onNotifyMe}
+        disabled={isSubscribing || isSubscribed}
+        accessibilityLabel="Ping me when players show up"
+      >
+        {isSubscribing ? (
+          <ActivityIndicator size="small" color={colors.textSecondary} />
+        ) : (
+          <Ionicons
+            name={isSubscribed ? 'checkmark-circle' : 'notifications-outline'}
+            size={14}
+            color={isSubscribed ? colors.success : colors.textSecondary}
+          />
+        )}
+        <Text style={[emptyState.pingText, isSubscribed && { color: colors.success }]}>
+          {isSubscribed ? "We'll ping you when players show up" : 'Ping me when players show up'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // DiscoverScreen
@@ -1130,6 +1291,13 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   // Pod state
   const [showPodComposer, setShowPodComposer] = useState(false);
 
+  // "Be the first" empty-store state
+  const [notifySubscribed, setNotifySubscribed] = useState(false);
+  const notifyWhenActive = useNotifyWhenActive();
+
+  useEffect(() => {
+    setNotifySubscribed(false);
+  }, [activeStore?.id]);
 
   // LFG hooks
   const { data: myLfgSession } = useLfgMe();
@@ -1143,59 +1311,6 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   // Pod hooks
   const { data: podFeed = [] } = usePodFeed(!!activeStore);
   const createPod = useCreatePod();
-
-  // Advanced filter state
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [filterFormat, setFilterFormat] = useState<MtgFormat | undefined>();
-  const [filterColors, setFilterColors] = useState<SharedManaColor[]>([]);
-  const [displayPowerMin, setDisplayPowerMin] = useState(1);
-  const [displayPowerMax, setDisplayPowerMax] = useState(10);
-  const [filterVibe, setFilterVibe] = useState<PlayerVibe | undefined>();
-
-  const filterPowerMin = displayPowerMin > 1 ? displayPowerMin : undefined;
-  const filterPowerMax = displayPowerMax < 10 ? displayPowerMax : undefined;
-  const hasActiveFilters =
-    !!filterFormat || filterColors.length > 0 ||
-    filterPowerMin !== undefined || filterPowerMax !== undefined || !!filterVibe;
-
-  const activeFilterCount = [
-    filterFormat,
-    filterColors.length > 0 ? 'colors' : null,
-    filterPowerMin !== undefined || filterPowerMax !== undefined ? 'power' : null,
-    filterVibe,
-  ].filter(Boolean).length;
-
-  const discoveryFilters: DiscoveryFilters = useMemo(() => {
-    const f: DiscoveryFilters = {};
-    if (filterFormat) f.format = filterFormat;
-    if (filterColors.length > 0) f.colors = filterColors;
-    if (filterPowerMin !== undefined) f.powerMin = filterPowerMin;
-    if (filterPowerMax !== undefined) f.powerMax = filterPowerMax;
-    if (filterVibe) f.vibe = filterVibe;
-    return f;
-  }, [filterFormat, filterColors, filterPowerMin, filterPowerMax, filterVibe]);
-
-  const handleFormatToggle = useCallback((f: MtgFormat) => {
-    setFilterFormat((prev) => (prev === f ? undefined : f));
-  }, []);
-
-  const handleColorToggle = useCallback((c: SharedManaColor) => {
-    setFilterColors((prev) =>
-      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c],
-    );
-  }, []);
-
-  const handleVibeToggle = useCallback((v: PlayerVibe) => {
-    setFilterVibe((prev) => (prev === v ? undefined : v));
-  }, []);
-
-  const clearFilters = useCallback(() => {
-    setFilterFormat(undefined);
-    setFilterColors([]);
-    setDisplayPowerMin(1);
-    setDisplayPowerMax(10);
-    setFilterVibe(undefined);
-  }, []);
 
   // Presence heartbeat
   usePresence();
@@ -1212,34 +1327,57 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   const myUserId = profile?.id ?? '';
 
   // LFG handlers
-  const handleComposerSubmit = useCallback((data: CreateLfg) => {
-    if (myLfgSession) {
-      updateLfg.mutate(data, { onSuccess: () => setShowComposer(false) });
-    } else {
-      createLfg.mutate(data, { onSuccess: () => setShowComposer(false) });
-    }
-  }, [myLfgSession, createLfg, updateLfg]);
+  const handleComposerSubmit = useCallback(
+    (data: CreateLfg) => {
+      if (myLfgSession) {
+        updateLfg.mutate(data, { onSuccess: () => setShowComposer(false) });
+      } else {
+        createLfg.mutate(data, { onSuccess: () => setShowComposer(false) });
+      }
+    },
+    [myLfgSession, createLfg, updateLfg],
+  );
 
-  const handleLfgJoin = useCallback((item: LfgFeedItem) => {
-    setSentInvites((prev) => new Set(prev).add(item.id));
-    inviteLfg.mutate(item.id);
-  }, [inviteLfg]);
+  const handleLfgJoin = useCallback(
+    (item: LfgFeedItem) => {
+      setSentInvites((prev) => new Set(prev).add(item.id));
+      inviteLfg.mutate(item.id);
+    },
+    [inviteLfg],
+  );
 
-  const handleLfgLock = useCallback((memberIds: string[]) => {
-    lockLfg.mutate(
-      { hostUserId: myUserId, memberIds },
-      { onSuccess: () => setShowPodSheet(false) },
+  const handleLfgLock = useCallback(
+    (memberIds: string[]) => {
+      lockLfg.mutate(
+        { hostUserId: myUserId, memberIds },
+        { onSuccess: () => setShowPodSheet(false) },
+      );
+    },
+    [lockLfg, myUserId],
+  );
+
+  const handleNotifyMe = useCallback(() => {
+    if (!activeStore) return;
+    notifyWhenActive.mutate(
+      { storeId: activeStore.id },
+      { onSuccess: () => setNotifySubscribed(true) },
     );
-  }, [lockLfg, myUserId]);
+  }, [activeStore, notifyWhenActive]);
 
   // Pod handlers
-  const handlePodComposerSubmit = useCallback((data: CreatePod) => {
-    createPod.mutate(data, { onSuccess: () => setShowPodComposer(false) });
-  }, [createPod]);
+  const handlePodComposerSubmit = useCallback(
+    (data: CreatePod) => {
+      createPod.mutate(data, { onSuccess: () => setShowPodComposer(false) });
+    },
+    [createPod],
+  );
 
-  const handleOpenPod = useCallback((pod: PodFeedItem) => {
-    navigation.navigate('Pod', { podId: pod.id });
-  }, [navigation]);
+  const handleOpenPod = useCallback(
+    (pod: PodFeedItem) => {
+      navigation.navigate('Pod', { podId: pod.id });
+    },
+    [navigation],
+  );
 
   // Go invisible toggle
   const { data: privacy } = usePrivacy();
@@ -1255,14 +1393,13 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   // Nearby players (filtered)
   // Always enabled — API returns store-based players when checked in,
   // or location-based players (800 m radius, 15 min staleness) otherwise.
-  const { data: nearby, isLoading: isLoadingNearby } = useNearby(true, discoveryFilters);
+  const { data: nearby, isLoading: isLoadingNearby } = useNearby(true);
 
   // Matchmaking suggestions (unfiltered — separate ranking)
   const { data: suggestionsData } = useSuggestions(!!activeStore);
 
   // Crossed-paths nudge
   const crossedPathsCount = useCrossedPathsCount();
-
 
   // Banner event sub-line
 
@@ -1271,9 +1408,10 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
   // When not checked in, fetch pins near the user's last known location to find the closest store
   const userLat = profile?.lastLat ?? null;
   const userLng = profile?.lastLng ?? null;
-  const nearbyBbox = !activeStore && userLat && userLng
-    ? `${userLng - 0.15},${userLat - 0.15},${userLng + 0.15},${userLat + 0.15}`
-    : null;
+  const nearbyBbox =
+    !activeStore && userLat && userLng
+      ? `${userLng - 0.15},${userLat - 0.15},${userLng + 0.15},${userLat + 0.15}`
+      : null;
   const { data: nearbyPins = [] } = useStorePins(nearbyBbox);
 
   const closestPin = useMemo(() => {
@@ -1282,7 +1420,10 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
     let bestDist = haversineKm(userLat, userLng, best.lat, best.lng);
     for (const pin of nearbyPins.slice(1)) {
       const d = haversineKm(userLat, userLng, pin.lat, pin.lng);
-      if (d < bestDist) { best = pin; bestDist = d; }
+      if (d < bestDist) {
+        best = pin;
+        bestDist = d;
+      }
     }
     return { name: best.name, distLabel: formatDist(bestDist) };
   }, [nearbyPins, userLat, userLng]);
@@ -1295,21 +1436,27 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
 
   const suggestions = suggestionsData?.suggestions ?? [];
 
-  const handleOpenPreview = useCallback((player: NearbyPlayer) => {
-    navigation.navigate('PlayerPreview', {
-      profile: player,
-      sharedEvent: player.sharedEvent,
-      lastMetStoreName: player.lastMetStoreName,
-    });
-  }, [navigation]);
+  const handleOpenPreview = useCallback(
+    (player: NearbyPlayer) => {
+      navigation.navigate('PlayerPreview', {
+        profile: player,
+        sharedEvent: player.sharedEvent,
+        lastMetStoreName: player.lastMetStoreName,
+      });
+    },
+    [navigation],
+  );
 
-  const handleOpenSuggestion = useCallback((s: Suggestion) => {
-    navigation.navigate('PlayerPreview', {
-      profile: s,
-      sharedEvent: s.sharedEvent,
-      lastMetStoreName: s.lastMetStoreName,
-    });
-  }, [navigation]);
+  const handleOpenSuggestion = useCallback(
+    (s: Suggestion) => {
+      navigation.navigate('PlayerPreview', {
+        profile: s,
+        sharedEvent: s.sharedEvent,
+        lastMetStoreName: s.lastMetStoreName,
+      });
+    },
+    [navigation],
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
@@ -1334,48 +1481,44 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
           {/* Tappable store info */}
           <Pressable
             style={({ pressed }) => [styles.storeInfoBtn, pressed && { opacity: 0.75 }]}
-            onPress={() => navigation.navigate('StoresMap', activeStore ? { storeId: activeStore.id } : nearestStore ? { storeId: nearestStore.id } : undefined)}
+            onPress={() =>
+              navigation.navigate(
+                'StoresMap',
+                activeStore
+                  ? { storeId: activeStore.id }
+                  : nearestStore
+                    ? { storeId: nearestStore.id }
+                    : undefined,
+              )
+            }
           >
             {activeStore ? (
               <>
                 <View style={styles.storeGlowDot} />
-                <Text style={[styles.storeName, { color: identityTheme.accent }]} numberOfLines={1}>{activeStore.name}</Text>
+                <Text style={[styles.storeName, { color: identityTheme.accent }]} numberOfLines={1}>
+                  {activeStore.name}
+                </Text>
               </>
             ) : nearestStore && nearestDistKm != null ? (
               <>
                 <Ionicons name="location-outline" size={13} color={colors.textTertiary} />
+                <Text style={styles.closestLabel}>Closest LGS</Text>
                 <Text style={styles.storeName} numberOfLines={1}>
-                  {nearestStore.name} · {nearestDistKm < 1.6 ? `${Math.round(nearestDistKm * 1000)}m` : `${(nearestDistKm * 0.621371).toFixed(1)}mi`}
+                  {nearestStore.name} ·{' '}
+                  {nearestDistKm < 1.6
+                    ? `${Math.round(nearestDistKm * 1000)}m`
+                    : `${(nearestDistKm * 0.621371).toFixed(1)}mi`}
                 </Text>
               </>
             ) : (
               <Text style={styles.storeHint}>No store selected</Text>
             )}
-            <Ionicons name="chevron-forward" size={13} color={colors.textTertiary} style={{ flexShrink: 0 }} />
-          </Pressable>
-
-          {/* Filters */}
-          <Pressable
-            style={({ pressed }) => [
-              styles.filterToggleBtn,
-              filtersOpen && { borderColor: identityTheme.accent, backgroundColor: identityTheme.soft },
-              pressed && { opacity: 0.7 },
-            ]}
-            onPress={() => setFiltersOpen((o) => !o)}
-          >
             <Ionicons
-              name="options-outline"
-              size={15}
-              color={filtersOpen ? identityTheme.accent : colors.textSecondary}
+              name="chevron-forward"
+              size={13}
+              color={colors.textTertiary}
+              style={{ flexShrink: 0 }}
             />
-            <Text style={[styles.filterToggleText, filtersOpen && { color: identityTheme.accent }]}>
-              Filters
-            </Text>
-            {activeFilterCount > 0 && (
-              <View style={[styles.filterBadge, { backgroundColor: identityTheme.accent }]}>
-                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-              </View>
-            )}
           </Pressable>
         </View>
       </View>
@@ -1384,53 +1527,29 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
       {isInvisible && (
         <Pressable style={styles.invisibleBanner} onPress={handleToggleInvisible}>
           <Ionicons name="eye-off-outline" size={16} color={colors.textInverse} />
-          <Text style={styles.invisibleBannerText}>
-            You're invisible — nobody here can see you
-          </Text>
+          <Text style={styles.invisibleBannerText}>You're invisible — nobody here can see you</Text>
           <Text style={styles.invisibleBannerCta}>Go visible</Text>
         </Pressable>
       )}
 
-      {/* Advanced filter panel (outside ScrollView — stays fixed) */}
-      {filtersOpen && (
-        <AdvancedFilters
-          filterFormat={filterFormat}
-          onFormatToggle={handleFormatToggle}
-          filterColors={filterColors}
-          onColorToggle={handleColorToggle}
-          displayPowerMin={displayPowerMin}
-          displayPowerMax={displayPowerMax}
-          onPowerMinChange={setDisplayPowerMin}
-          onPowerMaxChange={setDisplayPowerMax}
-          filterVibe={filterVibe}
-          onVibeToggle={handleVibeToggle}
-          onClear={clearFilters}
-          hasActiveFilters={hasActiveFilters}
-        />
-      )}
-
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
         {/* ── Store context ── */}
         <View style={styles.storeSection}>
           {activeStore ? (
             <>
               <View style={styles.storeSectionRow}>
                 <Ionicons name="storefront-outline" size={16} color={identityTheme.accent} />
-                <Text style={[styles.storeSectionName, { color: identityTheme.accent }]} numberOfLines={1}>
+                <Text
+                  style={[styles.storeSectionName, { color: identityTheme.accent }]}
+                  numberOfLines={1}
+                >
                   {activeStore.name}
                 </Text>
-                <Pressable
-                  onPress={() => checkout()}
-                  hitSlop={8}
-                  style={styles.leaveBtn}
-                >
+                <Pressable onPress={() => checkout()} hitSlop={8} style={styles.leaveBtn}>
                   <Text style={styles.leaveBtnText}>Leave</Text>
                 </Pressable>
               </View>
-              {distLabel && (
-                <Text style={styles.storeSectionDist}>{distLabel}</Text>
-              )}
+              {distLabel && <Text style={styles.storeSectionDist}>{distLabel}</Text>}
             </>
           ) : closestPin ? (
             <Pressable
@@ -1439,7 +1558,10 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
             >
               <View style={styles.storeSectionRow}>
                 <Ionicons name="storefront-outline" size={16} color={colors.textSecondary} />
-                <Text style={[styles.storeSectionName, { color: colors.textPrimary }]} numberOfLines={1}>
+                <Text
+                  style={[styles.storeSectionName, { color: colors.textPrimary }]}
+                  numberOfLines={1}
+                >
                   {closestPin.name}
                 </Text>
                 <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
@@ -1490,6 +1612,15 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
               />
             ))}
           </View>
+        ) : activeStore ? (
+          <EmptyStoreState
+            storeName={activeStore.name}
+            isOpenToPlay={!!myLfgSession}
+            onGoOpen={() => setShowComposer(true)}
+            onNotifyMe={handleNotifyMe}
+            isSubscribed={notifySubscribed}
+            isSubscribing={notifyWhenActive.isPending}
+          />
         ) : (
           <Text style={styles.emptyBlurb}>
             Players who are nearby or checked into the same store as you will appear here.
@@ -1505,11 +1636,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
               onStartPod={() => setShowPodComposer(true)}
               onOpenPod={handleOpenPod}
             />
-            <LFGSection
-              items={lfgFeed}
-              sentInvites={sentInvites}
-              onJoin={handleLfgJoin}
-            />
+            <LFGSection items={lfgFeed} sentInvites={sentInvites} onJoin={handleLfgJoin} />
             {crossedPathsCount > 0 && (
               <Pressable
                 style={({ pressed }) => [styles.nudge, pressed && { opacity: 0.8 }]}
@@ -1624,6 +1751,14 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textTertiary,
   },
+  closestLabel: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    flexShrink: 0,
+  },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1662,42 +1797,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
     color: colors.textInverse,
     textDecorationLine: 'underline',
-  },
-  filterToggleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    backgroundColor: colors.surface,
-  },
-  filterToggleBtnActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentLight,
-  },
-  filterToggleText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-  },
-  filterToggleTextActive: {
-    color: colors.accent,
-  },
-  filterBadge: {
-    backgroundColor: colors.accent,
-    borderRadius: radii.full,
-    width: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterBadgeText: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: 9,
-    color: colors.textInverse,
   },
   storeBtn: {
     flexDirection: 'row',
@@ -1801,6 +1900,70 @@ const styles = StyleSheet.create({
   },
 });
 
+const emptyState = StyleSheet.create({
+  wrap: {
+    alignItems: 'center',
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    gap: spacing.sm,
+  },
+  iconWell: {
+    width: 48,
+    height: 48,
+    borderRadius: radii.full,
+    backgroundColor: colors.borderLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  title: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 16,
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  sub: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: 13.5,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: spacing.xs,
+  },
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radii.full,
+  },
+  ctaText: {
+    fontFamily: typography.fontFamily.bold,
+    fontSize: 14,
+    color: colors.textInverse,
+  },
+  pingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  pingText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: 12.5,
+    color: colors.textSecondary,
+  },
+});
+
 const banner = StyleSheet.create({
   root: {
     flexDirection: 'row',
@@ -1836,8 +1999,11 @@ const row = StyleSheet.create({
     ...shadows.sm,
   },
   avatar: {
-    width: 52, height: 52, borderRadius: radii.avatar,
-    alignItems: 'center', justifyContent: 'center',
+    width: 52,
+    height: 52,
+    borderRadius: radii.avatar,
+    alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
   },
   avatarText: {
@@ -1980,8 +2146,11 @@ const sugg = StyleSheet.create({
     ...shadows.sm,
   },
   avatar: {
-    width: 40, height: 40, borderRadius: radii.avatar,
-    alignItems: 'center', justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: radii.avatar,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.xs,
   },
   avatarText: {
@@ -1998,119 +2167,6 @@ const sugg = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textSecondary,
     lineHeight: 15,
-  },
-});
-
-const filt = StyleSheet.create({
-  wrap: {
-    backgroundColor: colors.surfaceWarm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    gap: spacing.sm,
-  },
-  sectionLabel: {
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.xs,
-    color: colors.textTertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginTop: spacing.xs,
-  },
-  chipScroll: { gap: spacing.sm, paddingVertical: 2 },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    backgroundColor: colors.surface,
-  },
-  chipActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentLight,
-  },
-  chipText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-  },
-  chipTextActive: { color: colors.accent },
-  colorRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    paddingVertical: 2,
-  },
-  colorPip: {
-    width: 36,
-    height: 36,
-    borderRadius: radii.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  colorPipActive: {
-    borderColor: colors.accent,
-  },
-  colorText: {
-    fontFamily: typography.fontFamily.bold,
-    fontSize: typography.fontSize.sm,
-  },
-  powerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  powerGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  powerLabel: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    width: 26,
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    backgroundColor: colors.surface,
-    overflow: 'hidden',
-  },
-  stepBtn: {
-    width: 28,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceWarm,
-  },
-  stepVal: {
-    width: 28,
-    textAlign: 'center',
-    fontFamily: typography.fontFamily.semiBold,
-    fontSize: typography.fontSize.sm,
-    color: colors.textPrimary,
-  },
-  powerSep: {
-    fontFamily: typography.fontFamily.regular,
-    fontSize: typography.fontSize.md,
-    color: colors.textTertiary,
-  },
-  clearBtn: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.xs,
-    paddingVertical: spacing.xs,
-  },
-  clearText: {
-    fontFamily: typography.fontFamily.medium,
-    fontSize: typography.fontSize.sm,
-    color: colors.error,
   },
 });
 

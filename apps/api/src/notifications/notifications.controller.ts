@@ -1,15 +1,6 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
-import { NotificationsService } from './notifications.service';
+import type { NotificationsService } from './notifications.service';
 
 @Controller('v1/notifications')
 @UseGuards(AuthGuard)
@@ -35,18 +26,12 @@ export class NotificationsController {
   }
 
   @Post('read')
-  markRead(
-    @Request() req: { user: { sub: string } },
-    @Body() body: { ids?: string[] },
-  ) {
+  markRead(@Request() req: { user: { sub: string } }, @Body() body: { ids?: string[] }) {
     return this.notifications.markRead(req.user.sub, body.ids);
   }
 
   @Post(':id/read')
-  markOneRead(
-    @Request() req: { user: { sub: string } },
-    @Param('id') id: string,
-  ) {
+  markOneRead(@Request() req: { user: { sub: string } }, @Param('id') id: string) {
     return this.notifications.markRead(req.user.sub, [id]);
   }
 }

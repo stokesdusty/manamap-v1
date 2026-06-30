@@ -13,17 +13,13 @@ describe('Authorization guards (e2e)', () => {
 
   afterAll(() => app.close());
 
-  it('GET /me without token → 401', () =>
-    req.get('/api/v1/me').expect(401));
+  it('GET /me without token → 401', () => req.get('/api/v1/me').expect(401));
 
   it('GET /discovery/nearby without token → 401', () =>
     req.get('/api/v1/discovery/nearby').expect(401));
 
   it('Protected route with invalid Bearer token → 401', () =>
-    req
-      .get('/api/v1/me')
-      .set('Authorization', 'Bearer not-a-real-token')
-      .expect(401));
+    req.get('/api/v1/me').set('Authorization', 'Bearer not-a-real-token').expect(401));
 
   it('GET /admin/moderation/stats as non-admin → 403', async () => {
     const { body } = await req

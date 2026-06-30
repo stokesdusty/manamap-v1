@@ -1,15 +1,14 @@
+import type { OnGatewayInit, OnGatewayDisconnect } from '@nestjs/websockets';
 import {
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
-  OnGatewayInit,
-  OnGatewayDisconnect,
   MessageBody,
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Inject } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { Server, Socket } from 'socket.io';
+import type { JwtService } from '@nestjs/jwt';
+import type { Server, Socket } from 'socket.io';
 import type Redis from 'ioredis';
 import type {
   TrackerState,
@@ -20,7 +19,7 @@ import type {
   EliminatePayload,
 } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
-import { LifeTrackerService } from './life-tracker.service';
+import type { LifeTrackerService } from './life-tracker.service';
 import type { PodSession } from '../pods/pods.service';
 
 @WebSocketGateway({
@@ -40,7 +39,10 @@ export class LifeTrackerGateway implements OnGatewayInit<Server>, OnGatewayDisco
   afterInit(server: Server): void {
     server.use((socket, next) => {
       const token = socket.handshake.auth?.['token'] as string | undefined;
-      if (!token) { next(new Error('auth_required')); return; }
+      if (!token) {
+        next(new Error('auth_required'));
+        return;
+      }
       try {
         const payload = this.jwtService.verify<{ sub: string }>(token);
         socket.data['userId'] = payload.sub;
@@ -53,7 +55,9 @@ export class LifeTrackerGateway implements OnGatewayInit<Server>, OnGatewayDisco
 
   handleDisconnect(_socket: Socket): void {}
 
-  private room(podId: string) { return `pod:${podId}`; }
+  private room(podId: string) {
+    return `pod:${podId}`;
+  }
 
   private getPodId(socket: Socket): string | null {
     for (const room of socket.rooms) {
@@ -113,7 +117,10 @@ export class LifeTrackerGateway implements OnGatewayInit<Server>, OnGatewayDisco
     }
 
     const existing = await this.service.getState(podId);
-    if (existing) { this.broadcast(podId, existing); return; }
+    if (existing) {
+      this.broadcast(podId, existing);
+      return;
+    }
 
     const life = data.startingLife ?? (pod.format === 'commander' ? 40 : 20);
     const state = await this.service.createState(podId, pod, life);

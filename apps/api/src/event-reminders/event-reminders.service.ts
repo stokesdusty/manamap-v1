@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import type { Queue } from 'bullmq';
 
 export interface ReminderJobData {
   userId: string;
@@ -22,9 +22,7 @@ function morningOfAt(date: Date, timezone: string, hour = 9): Date {
 
 @Injectable()
 export class EventRemindersService {
-  constructor(
-    @InjectQueue('event-reminders') private readonly queue: Queue<ReminderJobData>,
-  ) {}
+  constructor(@InjectQueue('event-reminders') private readonly queue: Queue<ReminderJobData>) {}
 
   async scheduleReminders(
     userId: string,

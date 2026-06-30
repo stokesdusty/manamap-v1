@@ -137,13 +137,11 @@ describe('ThrottleGuard', () => {
   });
 
   it('uses independent bucket keys for different users — user-B unaffected when user-A is blocked', async () => {
-    jwtService.decode
-      .mockReturnValueOnce({ sub: 'user-A' })
-      .mockReturnValueOnce({ sub: 'user-B' });
+    jwtService.decode.mockReturnValueOnce({ sub: 'user-A' }).mockReturnValueOnce({ sub: 'user-B' });
 
     throttleService.check
       .mockResolvedValueOnce({ allowed: false, retryAfterMs: 10_000 }) // user-A blocked
-      .mockResolvedValueOnce({ allowed: true, retryAfterMs: 0 });      // user-B OK
+      .mockResolvedValueOnce({ allowed: true, retryAfterMs: 0 }); // user-B OK
 
     // user-A gets 429
     await expect(guard.canActivate(makeContext({ authHeader: 'Bearer tokenA' }))).rejects.toThrow(
@@ -165,7 +163,7 @@ describe('ThrottleGuard', () => {
   it('includes the named throttle config (limit and ttl) when @Throttle is applied', async () => {
     const routeConfig: ThrottleOptions = { name: 'connections', limit: 10, ttl: 600_000 };
     reflector.getAllAndOverride
-      .mockReturnValueOnce(undefined)   // SKIP_THROTTLE_KEY → no skip
+      .mockReturnValueOnce(undefined) // SKIP_THROTTLE_KEY → no skip
       .mockReturnValueOnce(routeConfig); // THROTTLE_KEY → named config
 
     await guard.canActivate(makeContext({}));
@@ -184,8 +182,7 @@ describe('ThrottleGuard', () => {
   });
 
   it('skips entirely when @SkipThrottle is applied', async () => {
-    reflector.getAllAndOverride
-      .mockReturnValueOnce(true); // SKIP_THROTTLE_KEY → skip
+    reflector.getAllAndOverride.mockReturnValueOnce(true); // SKIP_THROTTLE_KEY → skip
 
     const result = await guard.canActivate(makeContext({}));
     expect(result).toBe(true);

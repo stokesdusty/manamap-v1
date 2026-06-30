@@ -6,12 +6,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type Redis from 'ioredis';
-import { EncounterResult, EncounterSource, ModerationStatus, NotificationKind } from '@prisma/client';
+import {
+  EncounterResult,
+  EncounterSource,
+  ModerationStatus,
+  NotificationKind,
+} from '@prisma/client';
 import type { CreateLfg, UpdateLfg, LfgLockBody } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
-import { PrismaService } from '../prisma/prisma.service';
-import { SafetyService } from '../safety/safety.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { SafetyService } from '../safety/safety.service';
+import type { NotificationsService } from '../notifications/notifications.service';
 
 const presenceKey = (userId: string) => `presence:${userId}`;
 const lfgKey = (userId: string) => `lfg:${userId}`;
@@ -94,7 +99,8 @@ export class LfgService {
     const existingExpiry = new Date(existing.expiresAt).getTime();
     const remainingSecs = Math.max(1, Math.floor((existingExpiry - now) / 1000));
 
-    const durationChanged = dto.durationMins !== undefined && dto.durationMins !== existing.durationMins;
+    const durationChanged =
+      dto.durationMins !== undefined && dto.durationMins !== existing.durationMins;
     const newDurationMins = dto.durationMins ?? existing.durationMins;
     const newExpiresAt = durationChanged
       ? new Date(now + newDurationMins * 60 * 1000).toISOString()
@@ -187,7 +193,10 @@ export class LfgService {
       const session = await this.getActiveSession(user.id);
       if (!session) continue;
 
-      const minutesLeft = Math.max(0, Math.ceil((new Date(session.expiresAt).getTime() - now) / 60000));
+      const minutesLeft = Math.max(
+        0,
+        Math.ceil((new Date(session.expiresAt).getTime() - now) / 60000),
+      );
       const { privacySettings: _ps, ...profile } = user;
 
       results.push({

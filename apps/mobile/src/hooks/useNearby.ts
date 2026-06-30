@@ -7,6 +7,7 @@ import type {
   ManaColor,
   MtgFormat,
   NearbyResponse,
+  NotifyWhenActiveResponse,
   PlayerVibe,
   StoreDetail,
   StoreEventsResponse,
@@ -40,9 +41,7 @@ export function useNearby(enabled = true, filters?: DiscoveryFilters) {
       if (filters?.powerMin != null) params.powerMin = filters.powerMin;
       if (filters?.powerMax != null) params.powerMax = filters.powerMax;
       if (filters?.vibe) params.vibe = filters.vibe;
-      return api
-        .get<NearbyResponse>('/v1/discovery/nearby', { params })
-        .then((r) => r.data);
+      return api.get<NearbyResponse>('/v1/discovery/nearby', { params }).then((r) => r.data);
     },
     refetchInterval: POLL_INTERVAL_MS,
     enabled,
@@ -56,8 +55,7 @@ export function useNearby(enabled = true, filters?: DiscoveryFilters) {
 export function useSuggestions(enabled = true) {
   return useQuery<SuggestionsResponse>({
     queryKey: ['discovery', 'suggestions'],
-    queryFn: () =>
-      api.get<SuggestionsResponse>('/v1/discovery/suggestions').then((r) => r.data),
+    queryFn: () => api.get<SuggestionsResponse>('/v1/discovery/suggestions').then((r) => r.data),
     refetchInterval: POLL_INTERVAL_MS,
     enabled,
   });
@@ -73,7 +71,15 @@ export function useStores(q?: string) {
     queryFn: () =>
       api
         .get('/v1/stores', { params: q ? { q } : undefined })
-        .then((r) => r.data as Array<{ id: string; name: string; city: string | null; state: string | null }>),
+        .then(
+          (r) =>
+            r.data as Array<{
+              id: string;
+              name: string;
+              city: string | null;
+              state: string | null;
+            }>,
+        ),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -101,8 +107,7 @@ export function useStorePins(bbox: string | null) {
 export function useStoreDetail(storeId: string | null) {
   return useQuery<StoreDetail>({
     queryKey: ['stores', 'detail', storeId],
-    queryFn: () =>
-      api.get<StoreDetail>(`/v1/stores/${storeId}`).then((r) => r.data),
+    queryFn: () => api.get<StoreDetail>(`/v1/stores/${storeId}`).then((r) => r.data),
     enabled: !!storeId,
     staleTime: 5 * 60 * 1000,
   });
@@ -135,14 +140,26 @@ export function useCheckin() {
 }
 
 // ---------------------------------------------------------------------------
+// Notify when active (one-shot presence-threshold subscription)
+// ---------------------------------------------------------------------------
+
+export function useNotifyWhenActive() {
+  return useMutation({
+    mutationFn: ({ storeId, threshold = 2 }: { storeId: string; threshold?: number }) =>
+      api
+        .post<NotifyWhenActiveResponse>(`/v1/stores/${storeId}/notify-when-active`, { threshold })
+        .then((r) => r.data),
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Store events (calendar)
 // ---------------------------------------------------------------------------
 
 export function useStoreEvents(storeId: string | null) {
   return useQuery<StoreEventsResponse>({
     queryKey: ['stores', storeId, 'events'],
-    queryFn: () =>
-      api.get<StoreEventsResponse>(`/v1/stores/${storeId}/events`).then((r) => r.data),
+    queryFn: () => api.get<StoreEventsResponse>(`/v1/stores/${storeId}/events`).then((r) => r.data),
     enabled: !!storeId,
     staleTime: 2 * 60 * 1000,
   });
@@ -189,9 +206,19 @@ export function useUnattendEvent() {
 export function useAssociateCheckinEvent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ storeId, checkinId, eventId }: { storeId: string; checkinId: string; eventId: string }) =>
+    mutationFn: ({
+      storeId,
+      checkinId,
+      eventId,
+    }: {
+      storeId: string;
+      checkinId: string;
+      eventId: string;
+    }) =>
       api
-        .post<AssociateCheckinEventBody>(`/v1/stores/${storeId}/checkin/${checkinId}/event`, { eventId })
+        .post<AssociateCheckinEventBody>(`/v1/stores/${storeId}/checkin/${checkinId}/event`, {
+          eventId,
+        })
         .then((r) => r.data),
     onSuccess: (_data, { storeId }) => {
       void qc.invalidateQueries({ queryKey: ['stores', storeId, 'events'] });

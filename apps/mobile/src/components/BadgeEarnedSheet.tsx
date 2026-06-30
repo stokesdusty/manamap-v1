@@ -36,12 +36,8 @@ export function BadgeEarnedSheet({ badges, onDismiss }: Props) {
           <Text style={styles.unlocked}>Badge unlocked!</Text>
           <Text style={styles.icon}>{badge.icon}</Text>
           <Text style={styles.name}>{badge.name}</Text>
-          {badge.description ? (
-            <Text style={styles.description}>{badge.description}</Text>
-          ) : null}
-          {badges.length > 1 && (
-            <Text style={styles.more}>+{badges.length - 1} more</Text>
-          )}
+          {badge.description ? <Text style={styles.description}>{badge.description}</Text> : null}
+          {badges.length > 1 && <Text style={styles.more}>+{badges.length - 1} more</Text>}
           <Pressable
             style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
             onPress={onDismiss}

@@ -74,7 +74,9 @@ export function RedeemPage() {
       inputRef.current?.focus();
     },
     onError: (err) => {
-      const msg = axios.isAxiosError(err) ? (err.response?.data?.message ?? 'redeem_failed') : 'redeem_failed';
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data?.message ?? 'redeem_failed')
+        : 'redeem_failed';
       setVerifyError(ERROR_LABELS[msg] ?? 'Redemption failed. Please try again.');
       setVerifyResult(null);
     },
@@ -105,7 +107,12 @@ export function RedeemPage() {
   }
 
   function handleCodeChange(raw: string) {
-    setCode(raw.toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0, 8));
+    setCode(
+      raw
+        .toUpperCase()
+        .replace(/[^A-Z2-9]/g, '')
+        .slice(0, 8),
+    );
     if (verifyResult || verifyError) {
       setVerifyResult(null);
       setVerifyError(null);
@@ -118,7 +125,10 @@ export function RedeemPage() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Link to={`/stores/${storeId}`} style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 14 }}>
+        <Link
+          to={`/stores/${storeId}`}
+          style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 14 }}
+        >
           ← Dashboard
         </Link>
       </div>
@@ -171,14 +181,32 @@ export function RedeemPage() {
 
       {/* Success flash */}
       {redeemSuccess && (
-        <div className="card" style={{ marginBottom: 20, background: 'var(--success-bg)', border: '1px solid var(--success)', padding: '14px 16px' }}>
-          <span style={{ color: 'var(--success)', fontWeight: 600 }}>✓ Redeemed! The offer has been marked as used.</span>
+        <div
+          className="card"
+          style={{
+            marginBottom: 20,
+            background: 'var(--success-bg)',
+            border: '1px solid var(--success)',
+            padding: '14px 16px',
+          }}
+        >
+          <span style={{ color: 'var(--success)', fontWeight: 600 }}>
+            ✓ Redeemed! The offer has been marked as used.
+          </span>
         </div>
       )}
 
       {/* Verify error */}
       {verifyError && (
-        <div className="card" style={{ marginBottom: 20, background: 'var(--danger-bg, #fff1f2)', border: '1px solid var(--danger, #f43f5e)', padding: '14px 16px' }}>
+        <div
+          className="card"
+          style={{
+            marginBottom: 20,
+            background: 'var(--danger-bg, #fff1f2)',
+            border: '1px solid var(--danger, #f43f5e)',
+            padding: '14px 16px',
+          }}
+        >
           <span style={{ color: 'var(--danger, #f43f5e)', fontWeight: 600 }}>⚠ {verifyError}</span>
         </div>
       )}
@@ -191,7 +219,15 @@ export function RedeemPage() {
             <span style={{ fontWeight: 700, fontSize: 16 }}>Valid Code</span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px 12px', marginBottom: 16, fontSize: 14 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '120px 1fr',
+              gap: '8px 12px',
+              marginBottom: 16,
+              fontSize: 14,
+            }}
+          >
             <span style={{ color: 'var(--text-tertiary)', fontWeight: 500 }}>Player</span>
             <span style={{ fontWeight: 600 }}>
               {verifyResult.player.displayName}
@@ -209,7 +245,15 @@ export function RedeemPage() {
             <span style={{ color: 'var(--success)' }}>{verifyResult.qualifyingReason}</span>
 
             <span style={{ color: 'var(--text-tertiary)', fontWeight: 500 }}>Code</span>
-            <code style={{ fontFamily: 'monospace', background: 'var(--muted-bg)', padding: '2px 6px', borderRadius: 4, letterSpacing: 2 }}>
+            <code
+              style={{
+                fontFamily: 'monospace',
+                background: 'var(--muted-bg)',
+                padding: '2px 6px',
+                borderRadius: 4,
+                letterSpacing: 2,
+              }}
+            >
               {verifyResult.code}
             </code>
           </div>
@@ -229,7 +273,10 @@ export function RedeemPage() {
       <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Recent Redemptions</h2>
 
       {recent.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '28px 24px', color: 'var(--text-tertiary)' }}>
+        <div
+          className="card"
+          style={{ textAlign: 'center', padding: '28px 24px', color: 'var(--text-tertiary)' }}
+        >
           No redemptions yet for this store.
         </div>
       ) : (
@@ -248,7 +295,8 @@ export function RedeemPage() {
                       fontSize: 11,
                       padding: '2px 6px',
                       borderRadius: 10,
-                      background: r.offerType === 'FIRST_VISIT' ? 'var(--success-bg)' : 'var(--primary-bg)',
+                      background:
+                        r.offerType === 'FIRST_VISIT' ? 'var(--success-bg)' : 'var(--primary-bg)',
                       color: r.offerType === 'FIRST_VISIT' ? 'var(--success)' : 'var(--primary)',
                       fontWeight: 600,
                     }}

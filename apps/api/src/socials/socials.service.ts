@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConnectionStatus } from '@prisma/client';
 import type { SocialLinkInput, UpdateSocialLink } from '@manamap/shared';
-import { PrismaService } from '../prisma/prisma.service';
+import type { PrismaService } from '../prisma/prisma.service';
 
 export type SocialLinkRow = {
   id: string;
@@ -88,7 +88,8 @@ export class SocialsService {
     });
     if (!existing) throw new NotFoundException('Social link not found');
 
-    const value = dto.value !== undefined ? normalizeValue(existing.platform, dto.value) : undefined;
+    const value =
+      dto.value !== undefined ? normalizeValue(existing.platform, dto.value) : undefined;
     const visibility = dto.visibility;
 
     return this.prisma.socialLink.update({
@@ -170,7 +171,14 @@ export class SocialsService {
       this.prisma.socialLink.findMany({
         where: { userId: { in: userIds }, visibility: 'PUBLIC' },
         orderBy: { sort: 'asc' },
-        select: { id: true, userId: true, platform: true, value: true, visibility: true, sort: true },
+        select: {
+          id: true,
+          userId: true,
+          platform: true,
+          value: true,
+          visibility: true,
+          sort: true,
+        },
       }),
       this.prisma.socialLink.groupBy({
         by: ['userId'],

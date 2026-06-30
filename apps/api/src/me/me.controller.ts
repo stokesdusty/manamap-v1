@@ -28,7 +28,7 @@ import {
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import { MeService } from './me.service';
+import type { MeService } from './me.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

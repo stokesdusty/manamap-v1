@@ -30,10 +30,7 @@ describe('SafetyService', () => {
     prisma = makePrismaMock();
 
     const module = await Test.createTestingModule({
-      providers: [
-        SafetyService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [SafetyService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get(SafetyService);
@@ -57,9 +54,7 @@ describe('SafetyService', () => {
     });
 
     it('returns IDs that have blocked the caller', async () => {
-      prisma.block.findMany.mockResolvedValue([
-        { blockerId: 'dave', blockedId: 'alice' },
-      ]);
+      prisma.block.findMany.mockResolvedValue([{ blockerId: 'dave', blockedId: 'alice' }]);
 
       const ids = await service.getBlockedIds('alice');
 
@@ -93,10 +88,7 @@ describe('SafetyService', () => {
 
       const where = prisma.block.findMany.mock.calls[0][0].where as Record<string, unknown>;
       expect(where).toMatchObject({
-        OR: expect.arrayContaining([
-          { blockerId: 'alice' },
-          { blockedId: 'alice' },
-        ]),
+        OR: expect.arrayContaining([{ blockerId: 'alice' }, { blockedId: 'alice' }]),
       });
     });
   });

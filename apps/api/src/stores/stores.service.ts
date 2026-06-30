@@ -1,18 +1,30 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import type { AssociateCheckinEventBody, CheckinBody, ConfirmStore, SuggestStore } from '@manamap/shared';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import type {
+  AssociateCheckinEventBody,
+  CheckinBody,
+  ConfirmStore,
+  SuggestStore,
+} from '@manamap/shared';
+import type { PinoLogger } from 'nestjs-pino';
+import { InjectPinoLogger } from 'nestjs-pino';
 import { ModerationStatus, NotificationKind, Prisma, StoreStatus } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { PresenceService } from '../presence/presence.service';
-import { GamificationService } from '../gamification/gamification.service';
-import { EventRemindersService } from '../event-reminders/event-reminders.service';
-import { SafetyService } from '../safety/safety.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { PresenceService } from '../presence/presence.service';
+import type { GamificationService } from '../gamification/gamification.service';
+import type { EventRemindersService } from '../event-reminders/event-reminders.service';
+import type { SafetyService } from '../safety/safety.service';
+import type { NotificationsService } from '../notifications/notifications.service';
 import { StoreConnector } from './connectors/store.connector';
 import { DiscordConnector } from './connectors/discord.connector';
 import { WizardsConnector } from './connectors/wizards.connector';
 import type { IEventConnector } from './connectors/event-connector.interface';
-import { QuestsService } from '../quests/quests.service';
+import type { QuestsService } from '../quests/quests.service';
 
 const DEFAULT_CHECKIN_RADIUS_M = 1000;
 const ACCURACY_CAP_M = 150;
@@ -267,13 +279,14 @@ export class StoresService {
       data: { userId, storeId },
     });
 
-    const [presence, gamificationResult, priorVisits, eligibleOffers, activeEvents] = await Promise.all([
-      this.presence.heartbeat(userId, { storeId }),
-      this.gamification.processCheckin(userId, storeId),
-      this.prisma.checkin.count({ where: { userId, storeId, id: { not: checkin.id } } }),
-      this.getEligibleOffers(userId, storeId),
-      this.getActiveEventsNow(storeId),
-    ]);
+    const [presence, gamificationResult, priorVisits, eligibleOffers, activeEvents] =
+      await Promise.all([
+        this.presence.heartbeat(userId, { storeId }),
+        this.gamification.processCheckin(userId, storeId),
+        this.prisma.checkin.count({ where: { userId, storeId, id: { not: checkin.id } } }),
+        this.getEligibleOffers(userId, storeId),
+        this.getActiveEventsNow(storeId),
+      ]);
 
     void this.quests.evaluate(userId);
 
@@ -285,18 +298,21 @@ export class StoresService {
       presenceExpiresIn: presence.expiresIn,
       newBadges: gamificationResult.newBadges,
       streak: gamificationResult.streak,
-      eligibleOffers: eligibleOffers.filter((o) => {
-        if (o.type === 'FIRST_VISIT') return priorVisits === 0;
-        if (o.type === 'STREAK') return (gamificationResult.streak?.currentStreak ?? 0) >= (o.streakRequired ?? 2);
-        return false;
-      }).map((o) => ({
-        id: o.id,
-        type: o.type,
-        title: o.title,
-        description: o.description,
-        terms: o.terms,
-        redemptionCode: o.redemptionCode,
-      })),
+      eligibleOffers: eligibleOffers
+        .filter((o) => {
+          if (o.type === 'FIRST_VISIT') return priorVisits === 0;
+          if (o.type === 'STREAK')
+            return (gamificationResult.streak?.currentStreak ?? 0) >= (o.streakRequired ?? 2);
+          return false;
+        })
+        .map((o) => ({
+          id: o.id,
+          type: o.type,
+          title: o.title,
+          description: o.description,
+          terms: o.terms,
+          redemptionCode: o.redemptionCode,
+        })),
       activeEvents,
     };
   }
@@ -330,7 +346,12 @@ export class StoresService {
       }));
   }
 
-  async associateCheckinEvent(userId: string, storeId: string, checkinId: string, body: AssociateCheckinEventBody) {
+  async associateCheckinEvent(
+    userId: string,
+    storeId: string,
+    checkinId: string,
+    body: AssociateCheckinEventBody,
+  ) {
     const [checkin, event] = await Promise.all([
       this.prisma.checkin.findFirst({
         where: { id: checkinId, userId, storeId, checkedOutAt: null },
@@ -372,7 +393,16 @@ export class StoresService {
         OR: [{ startsAt: null }, { startsAt: { lte: now } }],
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: now } }] }],
       },
-      select: { id: true, type: true, title: true, description: true, terms: true, streakRequired: true, startsAt: true, endsAt: true },
+      select: {
+        id: true,
+        type: true,
+        title: true,
+        description: true,
+        terms: true,
+        streakRequired: true,
+        startsAt: true,
+        endsAt: true,
+      },
       orderBy: { createdAt: 'asc' },
     });
   }
@@ -386,7 +416,15 @@ export class StoresService {
         OR: [{ startsAt: null }, { startsAt: { lte: now } }],
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: now } }] }],
       },
-      select: { id: true, type: true, title: true, description: true, terms: true, redemptionCode: true, streakRequired: true },
+      select: {
+        id: true,
+        type: true,
+        title: true,
+        description: true,
+        terms: true,
+        redemptionCode: true,
+        streakRequired: true,
+      },
     });
   }
 
@@ -395,7 +433,10 @@ export class StoresService {
   // -------------------------------------------------------------------------
 
   async getEvents(userId: string, storeId: string) {
-    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { id: true } });
+    const store = await this.prisma.store.findUnique({
+      where: { id: storeId },
+      select: { id: true },
+    });
     if (!store) throw new NotFoundException('Store not found');
 
     const windowStart = new Date(Date.now() - 60 * 60 * 1000); // include events started in past hour
@@ -429,7 +470,7 @@ export class StoresService {
     const memberSet = new Set(storeMembers);
 
     // For each event, count how many store members are attending
-    let hereNowByEvent = new Map<string, number>();
+    const hereNowByEvent = new Map<string, number>();
     if (memberSet.size > 0) {
       const eventIds = events.map((e) => e.id);
       const memberAttendances = await this.prisma.eventAttendee.findMany({
@@ -574,7 +615,12 @@ export class StoresService {
   async attendEvent(userId: string, storeId: string, eventId: string) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, storeId },
-      select: { id: true, name: true, startsAt: true, store: { select: { id: true, name: true, timezone: true } } },
+      select: {
+        id: true,
+        name: true,
+        startsAt: true,
+        store: { select: { id: true, name: true, timezone: true } },
+      },
     });
     if (!event) throw new NotFoundException('Event not found');
 
@@ -610,6 +656,11 @@ export class StoresService {
     return { eventId: event.id, eventName: event.name };
   }
 
+  async notifyWhenActive(userId: string, storeId: string, threshold: number) {
+    await this.presence.subscribeNotifyWhenActive(userId, storeId, threshold);
+    return { storeId, threshold };
+  }
+
   async getLeaderboard(callerId: string, storeId: string) {
     const [streakBoard, winsBoard] = await Promise.all([
       this.gamification.getLeaderboard(callerId, storeId),
@@ -636,7 +687,8 @@ export class StoresService {
 
     let submitterProximity = false;
     if (body.submitterLat != null && body.submitterLng != null) {
-      submitterProximity = haversineMeters(body.submitterLat, body.submitterLng, body.lat, body.lng) <= 500;
+      submitterProximity =
+        haversineMeters(body.submitterLat, body.submitterLng, body.lat, body.lng) <= 500;
     }
 
     const store = await this.prisma.store.create({

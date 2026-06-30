@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { getTokens, setTokens, clearTokens } from '../lib/storage';
 import { registerClearAuth } from '../lib/authCallbacks';
 import type { AuthTokens } from '@manamap/shared';
@@ -57,7 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [signOut]);
 
-  return <AuthContext.Provider value={{ ...state, signIn, signOut }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ ...state, signIn, signOut }}>{children}</AuthContext.Provider>
+  );
 }
 
 export function useAuth(): AuthContextValue {

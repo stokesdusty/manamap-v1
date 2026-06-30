@@ -115,9 +115,7 @@ describe('EventRemindersService', () => {
     it('removes both morning and hour jobs when they exist', async () => {
       const morningJob = makeJobMock();
       const hourJob = makeJobMock();
-      queue.getJob
-        .mockResolvedValueOnce(morningJob)
-        .mockResolvedValueOnce(hourJob);
+      queue.getJob.mockResolvedValueOnce(morningJob).mockResolvedValueOnce(hourJob);
 
       await service.cancelReminders('u1', 'evt1');
 
@@ -143,7 +141,7 @@ describe('EventRemindersService', () => {
       const morningJob = makeJobMock();
       queue.getJob
         .mockResolvedValueOnce(morningJob) // morning found
-        .mockResolvedValueOnce(null);      // hour not found
+        .mockResolvedValueOnce(null); // hour not found
 
       await service.cancelReminders('u1', 'evt1');
 

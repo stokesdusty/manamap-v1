@@ -1,6 +1,12 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { EncounterResult, EncounterSource, GameStatus, ModerationStatus, NotificationKind } from '@prisma/client';
+import {
+  EncounterResult,
+  EncounterSource,
+  GameStatus,
+  ModerationStatus,
+  NotificationKind,
+} from '@prisma/client';
 import { GamesService } from '../games.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SafetyService } from '../../safety/safety.service';
@@ -81,7 +87,7 @@ function makePendingGameRow(overrides: Record<string, unknown> = {}) {
     createdById: 'creator',
     players: [
       { id: 'gp1', userId: 'creator', confirmed: true },
-      { id: 'gp2', userId: 'other',   confirmed: false },
+      { id: 'gp2', userId: 'other', confirmed: false },
     ],
     ...overrides,
   };
@@ -89,17 +95,14 @@ function makePendingGameRow(overrides: Record<string, unknown> = {}) {
 
 /** Valid CreateGame DTO with creator and one other player. */
 const BASE_DTO: CreateGame = {
-  players: [
-    { userId: 'creator' },
-    { userId: 'other' },
-  ],
+  players: [{ userId: 'creator' }, { userId: 'other' }],
   winnerId: 'creator',
 };
 
 /** Active user rows returned by prisma.user.findMany. */
 const ACTIVE_USERS = [
   { id: 'creator', displayName: 'Creator', moderationStatus: ModerationStatus.ACTIVE },
-  { id: 'other',   displayName: 'Other',   moderationStatus: ModerationStatus.ACTIVE },
+  { id: 'other', displayName: 'Other', moderationStatus: ModerationStatus.ACTIVE },
 ];
 
 // ---------------------------------------------------------------------------
@@ -115,20 +118,20 @@ describe('GamesService', () => {
   let quests: { evaluate: jest.Mock };
 
   beforeEach(async () => {
-    prisma       = makePrismaMock();
-    safety       = { getBlockedIds: jest.fn().mockResolvedValue(new Set()) };
+    prisma = makePrismaMock();
+    safety = { getBlockedIds: jest.fn().mockResolvedValue(new Set()) };
     gamification = { refreshWinsLeaderboard: jest.fn().mockResolvedValue(undefined) };
     notifications = { create: jest.fn().mockResolvedValue(undefined) };
-    quests       = { evaluate: jest.fn().mockResolvedValue(undefined) };
+    quests = { evaluate: jest.fn().mockResolvedValue(undefined) };
 
     const module = await Test.createTestingModule({
       providers: [
         GamesService,
-        { provide: PrismaService,       useValue: prisma },
-        { provide: SafetyService,       useValue: safety },
+        { provide: PrismaService, useValue: prisma },
+        { provide: SafetyService, useValue: safety },
         { provide: GamificationService, useValue: gamification },
         { provide: NotificationsService, useValue: notifications },
-        { provide: QuestsService,       useValue: quests },
+        { provide: QuestsService, useValue: quests },
       ],
     }).compile();
 
@@ -143,7 +146,7 @@ describe('GamesService', () => {
     /** Wire up the happy-path prisma mocks for create. */
     function setupCreate(txGameLogId = 'game1') {
       const tx = {
-        gameLog:    { create: jest.fn().mockResolvedValue({ id: txGameLogId }) },
+        gameLog: { create: jest.fn().mockResolvedValue({ id: txGameLogId }) },
         gamePlayer: { createMany: jest.fn().mockResolvedValue({ count: 2 }) },
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -198,7 +201,7 @@ describe('GamesService', () => {
     it('throws inactive_player when a non-creator player is not ACTIVE', async () => {
       prisma.user.findMany.mockResolvedValue([
         { id: 'creator', displayName: 'Creator', moderationStatus: ModerationStatus.ACTIVE },
-        { id: 'other',   displayName: 'Other',   moderationStatus: ModerationStatus.BANNED },
+        { id: 'other', displayName: 'Other', moderationStatus: ModerationStatus.BANNED },
       ]);
       safety.getBlockedIds.mockResolvedValue(new Set());
       await expect(service.create('creator', BASE_DTO)).rejects.toThrow(BadRequestException);
@@ -211,7 +214,9 @@ describe('GamesService', () => {
       await service.create('creator', BASE_DTO);
 
       expect(tx.gameLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ createdById: 'creator', winnerId: 'creator' }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ createdById: 'creator', winnerId: 'creator' }),
+        }),
       );
       expect(tx.gamePlayer.createMany).toHaveBeenCalled();
     });
@@ -225,7 +230,7 @@ describe('GamesService', () => {
       const players: Array<{ userId: string; confirmed: boolean }> =
         tx.gamePlayer.createMany.mock.calls[0][0].data;
       const creator = players.find((p) => p.userId === 'creator');
-      const other   = players.find((p) => p.userId === 'other');
+      const other = players.find((p) => p.userId === 'other');
       expect(creator?.confirmed).toBe(true);
       expect(other?.confirmed).toBe(false);
     });
@@ -257,7 +262,7 @@ describe('GamesService', () => {
         winnerId: 'creator',
         players: expect.arrayContaining([
           expect.objectContaining({ userId: 'creator', confirmed: true }),
-          expect.objectContaining({ userId: 'other',   confirmed: false }),
+          expect.objectContaining({ userId: 'other', confirmed: false }),
         ]),
       });
     });
@@ -298,7 +303,7 @@ describe('GamesService', () => {
         makePendingGameRow({
           players: [
             { id: 'gp1', userId: 'creator', confirmed: false },
-            { id: 'gp2', userId: 'other',   confirmed: false },
+            { id: 'gp2', userId: 'other', confirmed: false },
           ],
         }),
       );
@@ -319,7 +324,7 @@ describe('GamesService', () => {
           // creator was already confirmed; 'other' confirming now completes it
           players: [
             { id: 'gp1', userId: 'creator', confirmed: true },
-            { id: 'gp2', userId: 'other',   confirmed: false },
+            { id: 'gp2', userId: 'other', confirmed: false },
           ],
         }),
       );
@@ -335,17 +340,29 @@ describe('GamesService', () => {
       expect(prisma.gameLog.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'game1' },
-          data: expect.objectContaining({ status: GameStatus.CONFIRMED, confirmedAt: expect.any(Date) }),
+          data: expect.objectContaining({
+            status: GameStatus.CONFIRMED,
+            confirmedAt: expect.any(Date),
+          }),
         }),
       );
 
       // WIN row for winner, LOSS row for loser
-      const encounterData: unknown[] =
-        prisma.encounter.createMany.mock.calls[0][0].data;
+      const encounterData: unknown[] = prisma.encounter.createMany.mock.calls[0][0].data;
       expect(encounterData).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ userId: 'creator', opponentId: 'other', result: EncounterResult.WIN,  source: EncounterSource.GAME }),
-          expect.objectContaining({ userId: 'other',   opponentId: 'creator', result: EncounterResult.LOSS, source: EncounterSource.GAME }),
+          expect.objectContaining({
+            userId: 'creator',
+            opponentId: 'other',
+            result: EncounterResult.WIN,
+            source: EncounterSource.GAME,
+          }),
+          expect.objectContaining({
+            userId: 'other',
+            opponentId: 'creator',
+            result: EncounterResult.LOSS,
+            source: EncounterSource.GAME,
+          }),
         ]),
       );
     });
@@ -356,7 +373,7 @@ describe('GamesService', () => {
           storeId: 'store1',
           players: [
             { id: 'gp1', userId: 'creator', confirmed: true },
-            { id: 'gp2', userId: 'other',   confirmed: false },
+            { id: 'gp2', userId: 'other', confirmed: false },
           ],
         }),
       );
@@ -376,7 +393,7 @@ describe('GamesService', () => {
           storeId: null,
           players: [
             { id: 'gp1', userId: 'creator', confirmed: true },
-            { id: 'gp2', userId: 'other',   confirmed: false },
+            { id: 'gp2', userId: 'other', confirmed: false },
           ],
         }),
       );
@@ -395,7 +412,7 @@ describe('GamesService', () => {
         makePendingGameRow({
           players: [
             { id: 'gp1', userId: 'creator', confirmed: true },
-            { id: 'gp2', userId: 'other',   confirmed: false },
+            { id: 'gp2', userId: 'other', confirmed: false },
           ],
         }),
       );
@@ -432,8 +449,12 @@ describe('GamesService', () => {
       const data: unknown[] = prisma.encounter.createMany.mock.calls[0][0].data;
       // 2 losers → 2 WIN rows + 2 LOSS rows = 4 total
       expect(data).toHaveLength(4);
-      expect(data.filter((e: unknown) => (e as { result: string }).result === EncounterResult.WIN)).toHaveLength(2);
-      expect(data.filter((e: unknown) => (e as { result: string }).result === EncounterResult.LOSS)).toHaveLength(2);
+      expect(
+        data.filter((e: unknown) => (e as { result: string }).result === EncounterResult.WIN),
+      ).toHaveLength(2);
+      expect(
+        data.filter((e: unknown) => (e as { result: string }).result === EncounterResult.LOSS),
+      ).toHaveLength(2);
     });
   });
 
@@ -483,23 +504,21 @@ describe('GamesService', () => {
     });
 
     it('notifies the creator when the disputer is a different player', async () => {
-      prisma.gameLog.findUnique.mockResolvedValue(
-        makePendingGameRow({ createdById: 'creator' }),
-      );
+      prisma.gameLog.findUnique.mockResolvedValue(makePendingGameRow({ createdById: 'creator' }));
       prisma.gameLog.update.mockResolvedValue({});
 
       await service.dispute('other', 'game1');
 
       expect(notifications.create).toHaveBeenCalledWith(
         'creator',
-        expect.objectContaining({ data: expect.objectContaining({ type: 'game_disputed', gameId: 'game1' }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ type: 'game_disputed', gameId: 'game1' }),
+        }),
       );
     });
 
     it('does not notify anyone when the creator disputes their own game', async () => {
-      prisma.gameLog.findUnique.mockResolvedValue(
-        makePendingGameRow({ createdById: 'creator' }),
-      );
+      prisma.gameLog.findUnique.mockResolvedValue(makePendingGameRow({ createdById: 'creator' }));
       prisma.gameLog.update.mockResolvedValue({});
 
       await service.dispute('creator', 'game1');

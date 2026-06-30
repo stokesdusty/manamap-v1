@@ -24,7 +24,14 @@ export function StoresPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 24,
+        }}
+      >
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>My Stores</h1>
         <Link to="/stores/claim" className="btn btn-primary" style={{ textDecoration: 'none' }}>
           + Claim Store
@@ -32,7 +39,10 @@ export function StoresPage() {
       </div>
 
       {stores?.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-secondary)' }}>
+        <div
+          className="card"
+          style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-secondary)' }}
+        >
           <div style={{ fontSize: 40, marginBottom: 12 }}>🏪</div>
           <p style={{ marginBottom: 16 }}>You haven't claimed any stores yet.</p>
           <Link to="/stores/claim" className="btn btn-primary" style={{ textDecoration: 'none' }}>
@@ -42,12 +52,11 @@ export function StoresPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {stores?.map((store) => (
-            <Link
-              key={store.id}
-              to={`/stores/${store.id}`}
-              style={{ textDecoration: 'none' }}
-            >
-              <div className="card card-hover" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Link key={store.id} to={`/stores/${store.id}`} style={{ textDecoration: 'none' }}>
+              <div
+                className="card card-hover"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+              >
                 <div>
                   <div style={{ fontWeight: 600, marginBottom: 2 }}>{store.name}</div>
                   {(store.city || store.state) && (

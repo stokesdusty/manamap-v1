@@ -5,13 +5,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ConnectionStatus, EncounterResult, EncounterSource, NotificationKind } from '@prisma/client';
+import {
+  ConnectionStatus,
+  EncounterResult,
+  EncounterSource,
+  NotificationKind,
+} from '@prisma/client';
 import type { CreateConnection, UpdateConnectionNote } from '@manamap/shared';
-import { PrismaService } from '../prisma/prisma.service';
-import { SafetyService } from '../safety/safety.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { QuestsService } from '../quests/quests.service';
-import { SocialsService } from '../socials/socials.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { SafetyService } from '../safety/safety.service';
+import type { NotificationsService } from '../notifications/notifications.service';
+import type { QuestsService } from '../quests/quests.service';
+import type { SocialsService } from '../socials/socials.service';
+import type { EndorsementsService } from '../endorsements/endorsements.service';
 
 const PEER_SELECT = {
   id: true,
@@ -38,6 +44,7 @@ export class ConnectionsService {
     private readonly notifications: NotificationsService,
     private readonly quests: QuestsService,
     private readonly socials: SocialsService,
+    private readonly endorsements: EndorsementsService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -196,7 +203,9 @@ export class ConnectionsService {
             name: true,
             identities: { select: { discordHandle: true } },
             deckLinks: { select: { id: true, site: true, name: true, url: true } },
-            privacySettings: { select: { showDiscord: true, showDecks: true, shareNameWithContacts: true } },
+            privacySettings: {
+              select: { showDiscord: true, showDecks: true, shareNameWithContacts: true },
+            },
           },
         },
         addressee: {
@@ -205,7 +214,9 @@ export class ConnectionsService {
             name: true,
             identities: { select: { discordHandle: true } },
             deckLinks: { select: { id: true, site: true, name: true, url: true } },
-            privacySettings: { select: { showDiscord: true, showDecks: true, shareNameWithContacts: true } },
+            privacySettings: {
+              select: { showDiscord: true, showDecks: true, shareNameWithContacts: true },
+            },
           },
         },
       },
@@ -236,7 +247,15 @@ export class ConnectionsService {
       ? await this.socials.visibleSocials(peerRaw.id, userId)
       : { socials: [], publicCount: 0, friendsOnlyCount: 0 };
 
-    const { identities: _i, deckLinks: _d, privacySettings: _p, name: peerName, ...peerBase } = peerRaw;
+    const endorsementsSummary = await this.endorsements.getSummary(peerRaw.id);
+
+    const {
+      identities: _i,
+      deckLinks: _d,
+      privacySettings: _p,
+      name: peerName,
+      ...peerBase
+    } = peerRaw;
 
     return {
       id: conn.id,
@@ -257,6 +276,7 @@ export class ConnectionsService {
           publicCount: socialsData.publicCount,
           friendsOnlyCount: socialsData.friendsOnlyCount,
         },
+        endorsements: endorsementsSummary,
       },
     };
   }
@@ -265,7 +285,8 @@ export class ConnectionsService {
     const conn = await this.prisma.connection.findUnique({ where: { id: connectionId } });
     if (!conn) throw new NotFoundException('Connection not found');
     if (conn.requesterId !== userId && conn.addresseeId !== userId) throw new ForbiddenException();
-    if (conn.status !== ConnectionStatus.ACCEPTED) throw new BadRequestException('Connection is not accepted');
+    if (conn.status !== ConnectionStatus.ACCEPTED)
+      throw new BadRequestException('Connection is not accepted');
 
     const field = conn.requesterId === userId ? 'requesterNote' : 'addresseeNote';
     await this.prisma.connection.update({

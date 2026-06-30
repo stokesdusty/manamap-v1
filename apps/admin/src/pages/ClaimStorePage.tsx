@@ -63,7 +63,9 @@ export function ClaimStorePage() {
     e.preventDefault();
     if (!selectedStore) return;
     if (!code.trim() && !note.trim()) {
-      setClaimError('Enter a claim code, or describe how you’re affiliated with this store for manual review.');
+      setClaimError(
+        'Enter a claim code, or describe how you’re affiliated with this store for manual review.',
+      );
       return;
     }
     setClaiming(true);
@@ -78,7 +80,9 @@ export function ClaimStorePage() {
         await qc.invalidateQueries({ queryKey: ['partner', 'stores'] });
         navigate(`/stores/${selectedStore.id}`);
       } else {
-        setPendingMessage(`Claim submitted for ${selectedStore.name} — an admin will review it shortly.`);
+        setPendingMessage(
+          `Claim submitted for ${selectedStore.name} — an admin will review it shortly.`,
+        );
         setSelectedStore(null);
       }
     } catch (err: any) {
@@ -92,8 +96,17 @@ export function ClaimStorePage() {
     return (
       <div style={{ maxWidth: 600 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Claim a Store</h1>
-        <div className="alert" style={{ marginBottom: 16 }}>{pendingMessage}</div>
-        <button className="btn btn-outline" onClick={() => { setPendingMessage(''); setQuery(''); setResults([]); }}>
+        <div className="alert" style={{ marginBottom: 16 }}>
+          {pendingMessage}
+        </div>
+        <button
+          className="btn btn-outline"
+          onClick={() => {
+            setPendingMessage('');
+            setQuery('');
+            setResults([]);
+          }}
+        >
           Claim another store
         </button>
       </div>
@@ -123,13 +136,19 @@ export function ClaimStorePage() {
           </form>
 
           {searchError && (
-            <div className="alert alert-error" style={{ marginBottom: 16 }}>{searchError}</div>
+            <div className="alert alert-error" style={{ marginBottom: 16 }}>
+              {searchError}
+            </div>
           )}
 
           {results.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {results.map((store) => (
-                <div key={store.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div
+                  key={store.id}
+                  className="card"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
                   <div>
                     <div style={{ fontWeight: 600 }}>{store.name}</div>
                     {(store.city || store.state) && (
@@ -159,7 +178,11 @@ export function ClaimStorePage() {
       )}
 
       {selectedStore && (
-        <form onSubmit={handleClaim} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form
+          onSubmit={handleClaim}
+          className="card"
+          style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+        >
           <div style={{ fontWeight: 700, fontSize: 16 }}>Claiming: {selectedStore.name}</div>
 
           <div>
@@ -189,7 +212,12 @@ export function ClaimStorePage() {
             <button className="btn btn-primary" type="submit" disabled={claiming}>
               {claiming ? 'Submitting…' : 'Submit Claim'}
             </button>
-            <button type="button" className="btn btn-outline" onClick={() => setSelectedStore(null)} disabled={claiming}>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setSelectedStore(null)}
+              disabled={claiming}
+            >
               Cancel
             </button>
           </div>

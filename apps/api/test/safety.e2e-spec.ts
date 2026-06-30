@@ -23,9 +23,7 @@ describe('Safety gates (e2e)', () => {
     tokenA = resA.body.accessToken as string;
     tokenB = resB.body.accessToken as string;
 
-    const { body: meB } = await req
-      .get('/api/v1/me')
-      .set('Authorization', `Bearer ${tokenB}`);
+    const { body: meB } = await req.get('/api/v1/me').set('Authorization', `Bearer ${tokenB}`);
     userBId = meB.id as string;
 
     const { body: stores } = await req

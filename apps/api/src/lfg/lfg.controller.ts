@@ -20,7 +20,7 @@ import {
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import { LfgService } from './lfg.service';
+import type { LfgService } from './lfg.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 
@@ -41,18 +41,12 @@ export class LfgController {
 
   @Post('v1/lfg')
   @HttpCode(200)
-  create(
-    @Req() req: AuthRequest,
-    @Body(new ZodValidationPipe(CreateLfgSchema)) body: CreateLfg,
-  ) {
+  create(@Req() req: AuthRequest, @Body(new ZodValidationPipe(CreateLfgSchema)) body: CreateLfg) {
     return this.lfg.create(req.user.sub, body);
   }
 
   @Patch('v1/lfg')
-  update(
-    @Req() req: AuthRequest,
-    @Body(new ZodValidationPipe(UpdateLfgSchema)) body: UpdateLfg,
-  ) {
+  update(@Req() req: AuthRequest, @Body(new ZodValidationPipe(UpdateLfgSchema)) body: UpdateLfg) {
     return this.lfg.update(req.user.sub, body);
   }
 

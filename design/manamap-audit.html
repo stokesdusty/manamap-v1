@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>manamap — Product Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#FBF8F2; --ink:#221C16; --ink-2:#4E443A; --muted:#8A7E70;
+    --line:#E7DECF; --line-2:#D8CCB8;
+    --brand:#2F6BF0; --brand-soft:#EAF0FE;
+    --plum:#6B4FC4; --plum-soft:#EFEAFB;
+    --gold:#9A6B12; --gold-soft:#F6EFDF;
+    --green:#3E7C45; --green-soft:#E9F2E7;
+    --rose:#B5453E; --rose-soft:#F8EAE7;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{ margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Plus Jakarta Sans',system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+    font-size:15px; line-height:1.62; }
+  .doc{ box-sizing:border-box; max-width:8.5in; margin:0 auto; background:inherit;
+    padding:64px clamp(22px,5vw,0.85in) 96px; }
+  .doc-frame{ width:100%; border-collapse:collapse; }
+  .doc-frame td{ padding:0; }
+  .hdr-space,.ftr-space{ display:none; }
+
+  h1,h2,h3,h4{ text-wrap:balance; letter-spacing:-0.02em; }
+  p,li{ text-wrap:pretty; }
+  h1{ font-size:40px; line-height:1.05; font-weight:800; margin:0 0 6px; }
+  h2{ font-size:24px; font-weight:800; margin:0 0 4px; letter-spacing:-0.025em; }
+  h3{ font-size:16.5px; font-weight:800; margin:22px 0 4px; }
+  h4{ font-size:14px; font-weight:800; margin:0 0 3px; }
+  a{ color:var(--brand); text-decoration:none; }
+  strong{ font-weight:700; color:var(--ink); }
+
+  .lede{ font-family:'Newsreader',Georgia,serif; font-size:19px; line-height:1.5;
+    color:var(--ink-2); font-weight:400; margin:14px 0 0; }
+  .kicker{ font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600;
+    letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); }
+
+  /* masthead */
+  .mast{ display:flex; align-items:flex-end; justify-content:space-between; gap:20px;
+    border-bottom:2px solid var(--ink); padding-bottom:20px; margin-bottom:6px; }
+  .mast .meta{ text-align:right; font-family:'JetBrains Mono',monospace; font-size:11px;
+    line-height:1.7; color:var(--muted); white-space:nowrap; }
+  .logo{ display:inline-flex; align-items:center; gap:9px; margin-bottom:14px; }
+  .logo .dot{ width:13px; height:13px; border-radius:50%;
+    background:conic-gradient(from 210deg,#E8C14B,#3E7C45,#2F6BF0,#6B4FC4,#B5453E,#E8C14B); }
+  .logo b{ font-size:15px; font-weight:800; letter-spacing:-0.01em; }
+
+  /* section heads */
+  .sec{ margin-top:48px; }
+  .sec-head{ display:flex; align-items:baseline; gap:12px; border-bottom:1px solid var(--line-2);
+    padding-bottom:10px; margin-bottom:18px; }
+  .sec-head .n{ font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600;
+    color:var(--brand); }
+
+  /* verdict / scores grid */
+  .scores{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:22px 0 4px; }
+  .score{ border:1px solid var(--line-2); border-radius:12px; padding:13px 14px; background:#fff; }
+  .score .lab{ font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;
+    letter-spacing:0.06em; }
+  .score .val{ font-size:26px; font-weight:800; letter-spacing:-0.03em; margin-top:3px; }
+  .score .val small{ font-size:14px; color:var(--muted); font-weight:700; }
+
+  /* finding cards */
+  .find{ border:1px solid var(--line); border-radius:13px; padding:15px 17px; margin:11px 0;
+    background:#fff; break-inside:avoid; }
+  .find .top{ display:flex; align-items:center; gap:9px; margin-bottom:5px; flex-wrap:wrap; }
+  .find h4{ margin:0; flex:1; min-width:180px; }
+  .find p{ margin:5px 0 0; font-size:14px; color:var(--ink-2); }
+  .find p.fix{ margin-top:8px; padding-top:8px; border-top:1px dashed var(--line-2); }
+  .find p.fix b{ color:var(--green); }
+
+  .tag{ font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600;
+    letter-spacing:0.04em; text-transform:uppercase; padding:2.5px 8px; border-radius:99px;
+    white-space:nowrap; }
+  .t-high{ background:var(--rose-soft); color:var(--rose); }
+  .t-med{ background:var(--gold-soft); color:var(--gold); }
+  .t-low{ background:var(--green-soft); color:var(--green); }
+  .t-quick{ background:var(--brand-soft); color:var(--brand); }
+  .t-plum{ background:var(--plum-soft); color:var(--plum); }
+
+  ul.clean{ margin:8px 0 0; padding-left:18px; }
+  ul.clean li{ margin:4px 0; font-size:14px; color:var(--ink-2); }
+
+  .callout{ border-left:3px solid var(--brand); background:var(--brand-soft);
+    padding:13px 16px; border-radius:0 10px 10px 0; margin:18px 0; break-inside:avoid; }
+  .callout.plum{ border-color:var(--plum); background:var(--plum-soft); }
+  .callout.gold{ border-color:var(--gold); background:var(--gold-soft); }
+  .callout p{ margin:0; font-size:14px; color:var(--ink-2); }
+  .callout p+p{ margin-top:7px; }
+
+  /* tables */
+  table.grid{ width:100%; border-collapse:collapse; margin:14px 0; font-size:13.5px; }
+  table.grid th,table.grid td{ text-align:left; padding:9px 11px; border-bottom:1px solid var(--line); vertical-align:top; }
+  table.grid th{ font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted);
+    border-bottom:1.5px solid var(--line-2); }
+  table.grid td:first-child{ font-weight:700; }
+  table.grid tr{ break-inside:avoid; }
+
+  /* money model cards */
+  .models{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0; }
+  .model{ border:1px solid var(--line-2); border-radius:13px; padding:16px; background:#fff; break-inside:avoid; }
+  .model .rank{ font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:var(--muted); }
+  .model h4{ margin:4px 0 6px; font-size:16px; }
+  .model p{ margin:0; font-size:13.5px; color:var(--ink-2); }
+  .model .est{ margin-top:10px; padding-top:9px; border-top:1px dashed var(--line-2);
+    font-size:12.5px; font-weight:700; color:var(--green); }
+
+  .pill-row{ display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+  .pill{ font-size:12px; font-weight:600; color:var(--ink-2); background:#F1EADC;
+    border:1px solid var(--line); padding:3px 10px; border-radius:99px; }
+
+  hr.soft{ border:none; border-top:1px solid var(--line); margin:30px 0; }
+
+  .num-lead{ display:flex; gap:13px; margin:13px 0; break-inside:avoid; }
+  .num-lead .ix{ font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--brand);
+    font-size:13px; padding-top:2px; min-width:22px; }
+  .num-lead div p{ margin:3px 0 0; font-size:14px; color:var(--ink-2); }
+
+  @page{ size:letter; margin:0; }
+  @media print{
+    html,body{ margin:0; padding:0; }
+    .doc{ max-width:none!important; margin:0!important; padding:0 0.7in!important; }
+    .hdr-space,.ftr-space{ display:table-cell; height:0.7in; }
+    h1,h2,h3,h4{ break-after:avoid; }
+    .find,.callout,.model,.score,figure,tr{ break-inside:avoid; }
+    .screen-only{ display:none!important; }
+    .scores{ grid-template-columns:repeat(4,1fr); }
+  }
+  @media (max-width:640px){
+    .scores{ grid-template-columns:repeat(2,1fr); }
+    .models{ grid-template-columns:1fr; }
+    h1{ font-size:32px; }
+  }
+</style>
+</head>
+<body>
+<main class="doc">
+  <table class="doc-frame" role="presentation">
+    <thead><tr><td class="hdr-space"></td></tr></thead>
+    <tbody><tr><td>
+
+      <div class="logo"><span class="dot"></span><b>manamap</b></div>
+      <div class="mast">
+        <div>
+          <div class="kicker">Product Audit</div>
+          <h1>Where manamap goes next</h1>
+        </div>
+        <div class="meta">
+          REVIEW · v2 BUILD<br />
+          JUN 2026<br />
+          DESIGN · UX · GROWTH
+        </div>
+      </div>
+
+      <p class="lede">manamap is past the "does it work" stage. The check-in → discover → connect → play loop is built, polished, and genuinely differentiated. This audit is about the next gear: tightening the screens you already have, removing friction from the play loop, and — most importantly — turning a beloved utility into a business.</p>
+
+      <div class="scores">
+        <div class="score"><div class="lab">Visual craft</div><div class="val">8.5<small>/10</small></div></div>
+        <div class="score"><div class="lab">UX clarity</div><div class="val">7<small>/10</small></div></div>
+        <div class="score"><div class="lab">Feature depth</div><div class="val">9<small>/10</small></div></div>
+        <div class="score"><div class="lab">Monetization</div><div class="val">3<small>/10</small></div></div>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin:10px 0 0;">Scores reflect the prototype as reviewed. Feature depth is a genuine strength — arguably the risk is breadth outrunning focus. Monetization is the single biggest gap: a strong product with no clear way to capture value.</p>
+
+      <!-- ─────────────  THE ONE THING  ───────────── -->
+      <div class="callout plum" style="margin-top:26px;">
+        <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--plum);margin-bottom:4px;">The headline</p>
+        <p style="font-size:15px;color:var(--ink);"><strong>The product is ahead of the business model.</strong> manamap has shipped the hard part — a real-world social graph for a game that has none. The store partner / rewards program is the right wedge, but it's currently a feature, not a revenue engine. Before adding more player features, decide who pays: <strong>stores (SaaS), players (Plus), or transactions (marketplace + affiliate).</strong> My recommendation, detailed in §4, is all three, sequenced — stores first.</p>
+      </div>
+
+      <!-- ═════════════  1 · DESIGN  ═════════════ -->
+      <section class="sec">
+        <div class="sec-head"><span class="n">01</span><h2>Design improvements</h2></div>
+        <p>The dusk theme is confident and the mana-color identity system (the W/U/B/R/G pips and gradient cards) is the strongest piece of brand equity in the app — lean into it everywhere. The issues below are about <strong>hierarchy and restraint</strong>, not taste.</p>
+
+        <div class="find">
+          <div class="top"><h4>The Home screen has too many equal-weight CTAs</h4><span class="tag t-high">High</span><span class="tag t-quick">Quick win</span></div>
+          <p>Home stacks four identical tiles (Open to Play, Log a Game, Meet Players, Connections) plus a Form-a-Pod bar plus a "Needs Attention" list — five-plus competing primary actions of near-identical visual weight. The eye has no entry point, and "Meet Players / Connections / Form a Pod" all blur together.</p>
+          <p class="fix"><b>Fix:</b> Pick one hero action based on context (checked in → "Open to Play / Form a Pod"; not checked in → "Find a store"). Demote the rest to a compact 2-col secondary grid. Let state drive the layout instead of showing everything at once.</p>
+        </div>
+
+        <div class="find">
+          <div class="top"><h4>"Needs Attention" duplicates the Connect tab</h4><span class="tag t-med">Medium</span><span class="tag t-quick">Quick win</span></div>
+          <p>"1 game result to confirm" and "2 new connection requests" appear on Home and again as the Connect badge. Redundancy trains people to ignore one of the two surfaces.</p>
+          <p class="fix"><b>Fix:</b> Keep the badge on Connect as the source of truth. On Home, surface only the single most time-sensitive item as an inline banner ("Confirm Wrenfield's game →"), not a standing list.</p>
+        </div>
+
+        <div class="find">
+          <div class="top"><h4>The socials row breaks the palette</h4><span class="tag t-med">Medium</span><span class="tag t-quick">Quick win</span></div>
+          <p>On the You tab, the socials are full-saturation brand-colored chips (GitHub black, Twitch purple, YouTube red, Instagram pink, X, web, phone green). It's the one spot where the restrained dusk palette turns into a rainbow toolbar — visually the loudest thing on an otherwise elegant profile.</p>
+          <p class="fix"><b>Fix:</b> Use monochrome glyphs on neutral chips by default; reveal brand color only on press/active, or as a thin accent. Let the player's <em>mana identity</em> be the color story, not the logo soup.</p>
+        </div>
+
+        <div class="find">
+          <div class="top"><h4>Reward UI leans on emoji where the app uses crafted icons</h4><span class="tag t-low">Low</span></div>
+          <p>The "🎁 You unlocked a reward!" modal uses an emoji in a product that otherwise has a consistent custom icon set. It reads as a placeholder and slightly cheapens the most commercially important moment in the app.</p>
+          <p class="fix"><b>Fix:</b> Replace with a branded reward glyph + the store's color. This screen is a monetization surface (§4) — it deserves the most polish, not the least.</p>
+        </div>
+
+        <div class="find">
+          <div class="top"><h4>Rhythm: vary card density to create a scannable column</h4><span class="tag t-low">Low</span></div>
+          <p>Most screens are a single column of similarly-sized rounded cards. It's clean but flat — nothing tells the eye what matters. Discover does this better (the colored check-in hero anchors the page).</p>
+          <p class="fix"><b>Fix:</b> Adopt one "hero" element per screen (full-bleed or color-filled), then let everything below be quieter. Use the section labels ("PODS FORMING HERE 2") more consistently as the rhythm device.</p>
+        </div>
+
+        <div class="callout">
+          <p><strong>Worth keeping exactly as-is:</strong> the mana gradient profile cards, the check-in hero band, the color-identity pips, the typographic scale, and the QR/scan center tab. These are doing real brand work.</p>
+        </div>
+      </section>
+
+      <!-- ═════════════  2 · UX  ═════════════ -->
+      <section class="sec">
+        <div class="sec-head"><span class="n">02</span><h2>User experience</h2></div>
+        <p>The core flows are sound. The friction is in <strong>the gap between matching and actually playing</strong>, and in a few redundant surfaces that dilute the most important action.</p>
+
+        <div class="find">
+          <div class="top"><h4>"Open to play now" lives in two places with no clear difference</h4><span class="tag t-high">High</span></div>
+          <p>It's a hero banner on Discover <em>and</em> a tile on Home, and it overlaps conceptually with Pods ("Form a Pod"), LFG, and "Meet Players." A new user can't tell whether they want to go "open to play," join a pod, or browse players — these are four doors to roughly one goal: <em>get into a game tonight.</em></p>
+          <p class="fix"><b>Fix:</b> Unify under one mental model — <b>"Play tonight"</b> — with a single entry that branches: <em>broadcast I'm open</em> · <em>join a forming pod</em> · <em>start a pod</em>. One funnel, not four parallel ones.</p>
+        </div>
+
+        <div class="find">
+          <div class="top"><h4>The "Rule 0" conversation has no home — and that's the #1 cause of bad games</h4><span class="tag t-high">High</span><span class="tag t-plum">Signature feature</span></div>
+          <p>Power level (7, 8…) and vibe ("Casual-spicy") are on the profile, but the actual pre-game expectation-setting — bracket, "no infinite combos," "I'm playing my janky deck" — happens nowhere. This is <em>the</em> recurring pain point in Commander, and manamap is uniquely positioned to own it.</p>
+          <p class="fix"><b>Fix:</b> A lightweight <b>Pod Agreement</b> card shown when a pod fills: each player taps a bracket (1–4 / cEDH), toggles a few flags, and everyone sees the table's consensus before shuffling up. Becomes the trust layer no competitor has. Detailed in §3.</p>
+        </div>
+
+        <div class="find">
+          <div class="top"><h4>No in-app messaging — the connection hands off to Discord and never comes back</h4><span class="tag t-med">Medium</span></div>
+          <p>Connection requests carry a one-line note ("gg earlier! lets get a pod going sat"), but there's no thread. The moment two players connect, the relationship leaves manamap for Discord/text — so the app can't see, improve, or monetize ongoing coordination.</p>
+          <p class="fix"><b>Fix:</b> A minimal <b>pod / connection thread</b> (not a full chat app) — enough to say "running 20 late," drop a meet spot, share a decklist. Keeps the loop closed and retention inside the app.</p>
+        </div>
+
+        <div class="find">
+          <div class="top"><h4>Confirm-result flow is good — close the loop with a nudge</h4><span class="tag t-low">Low</span></div>
+          <p>The "Wrenfield logged a game — confirm/dispute" pattern is excellent and underrated. Risk: results that never get confirmed leave stats permanently incomplete, which erodes trust in the leaderboard.</p>
+          <p class="fix"><b>Fix:</b> Auto-confirm after 48h with a clear "auto-confirmed, dispute within 7 days" rule, plus a single gentle push. Don't let unconfirmed games rot.</p>
+        </div>
+
+        <div class="find">
+          <div class="top"><h4>Onboarding "Skip" drops you into a fully-populated app — great demo, risky reality</h4><span class="tag t-low">Low</span></div>
+          <p>The prototype's seeded state (streaks, RSVPs, nearby players, pending games) makes a brilliant first impression. The real cold-start — empty store, no players nearby on a Tuesday — is the actual retention battle and isn't designed yet.</p>
+          <p class="fix"><b>Fix:</b> Design the <b>empty / low-density states</b> deliberately: "No one's open right now — be the first" with a one-tap broadcast, plus "ping me when 2+ players check in here." Turn emptiness into an invite.</p>
+        </div>
+      </section>
+
+      <!-- ═════════════  3 · FEATURES  ═════════════ -->
+      <section class="sec">
+        <div class="sec-head"><span class="n">03</span><h2>New features</h2></div>
+        <p>The backlog is already deep (moderation, LFG, pods, quests, rivalries — all designed). Rather than pile on, here are <strong>five high-leverage additions</strong> that either close the play loop or unlock revenue, ranked by leverage.</p>
+
+        <div class="num-lead">
+          <div class="ix">01</div>
+          <div>
+            <h4>Pod Agreement / Rule 0 card <span class="tag t-plum" style="margin-left:6px;">Signature</span></h4>
+            <p>The trust layer described in §2. Bracket selector + a handful of toggles, surfaced at pod-fill, with a shared consensus view. Cheap to build, uniquely defensible, and feeds power-matching data back into discovery. <strong>Build this first.</strong></p>
+          </div>
+        </div>
+        <div class="num-lead">
+          <div class="ix">02</div>
+          <div>
+            <h4>Deck shelf + affiliate buy links <span class="tag t-low" style="margin-left:6px;">Revenue</span></h4>
+            <p>Players already link Moxfield/Archidekt decks. Make decks first-class: a "deck shelf" on the profile, per-deck win rate (already modeled), and "missing cards" → affiliate links to TCGplayer/Card Kingdom. Useful to players, and the cleanest path to transaction revenue (§4).</p>
+          </div>
+        </div>
+        <div class="num-lead">
+          <div class="ix">03</div>
+          <div>
+            <h4>Travel / visiting mode <span class="tag t-plum" style="margin-left:6px;">Plus driver</span></h4>
+            <p>"I'm in a new city this weekend — who's playing, which store, can I get into a pod?" The location graph already exists; this is mostly a mode flip and a great reason to pay for Plus. Also a wedge into store discovery for tournaments/conventions.</p>
+          </div>
+        </div>
+        <div class="num-lead">
+          <div class="ix">04</div>
+          <div>
+            <h4>Post-game endorsements (the sportsmanship layer)</h4>
+            <p>After a confirmed game, optional one-tap endorsements: "great host," "good sport," "taught me the format," "fast player." Builds a positive-reputation signal that improves matching and gives moderation a carrot to pair with its stick. Keep it strictly positive to avoid review-bombing.</p>
+          </div>
+        </div>
+        <div class="num-lead">
+          <div class="ix">05</div>
+          <div>
+            <h4>Store leagues &amp; seasons (owner-run)</h4>
+            <p>Extend Log-a-Game into multi-week store leagues with standings — a recurring reason to check in, and a premium store-portal feature (§4). The encounter/leaderboard data model is already there; this is packaging plus a season construct.</p>
+          </div>
+        </div>
+
+        <div class="callout gold">
+          <p><strong>Deliberately NOT recommending right now:</strong> a marketplace for selling singles (regulatory + trust + logistics weight — partner with TCGplayer instead), a full chat product, and broad social-feed mechanics. They'd dilute the "get into a real game" focus that makes manamap special.</p>
+        </div>
+      </section>
+
+      <!-- ═════════════  4 · MONETIZATION  ═════════════ -->
+      <section class="sec">
+        <div class="sec-head"><span class="n">04</span><h2>Ways to monetize</h2></div>
+        <p>This is the gap. The app captures almost none of the value it creates. Good news: it sits on top of a <strong>$1B+ specialty-retail ecosystem</strong> (local game stores) and a passionate spending base. Three revenue lines, sequenced so each funds the next.</p>
+
+        <div class="models">
+          <div class="model">
+            <div class="rank">PRIMARY · BUILD NOW</div>
+            <h4>Store SaaS (partner tiers)</h4>
+            <p>You already have a partner portal and reward offers — that's the wedge. Charge stores a monthly subscription for what drives them foot traffic: broadcast announcements, event management, check-in analytics, league tools, and a "verified store" badge. Stores happily pay for measurable foot traffic.</p>
+            <div class="est">~$29–99/store/mo · clearest near-term ARR</div>
+          </div>
+          <div class="model">
+            <div class="rank">PRIMARY · BUILD NOW</div>
+            <h4>Sponsored placement &amp; promoted events</h4>
+            <p>Let stores pay to be featured in Discover ("Featured tonight"), boost an event to nearby players, or run a sponsored first-visit promo. Native to the existing surfaces, high margin, and scales with store density — the same engine as the SaaS tiers.</p>
+            <div class="est">CPM / flat boost · scales with density</div>
+          </div>
+          <div class="model">
+            <div class="rank">SECONDARY · NEXT</div>
+            <h4>manamap Plus (player subscription)</h4>
+            <p>A light consumer tier once density is real: travel mode, advanced stats &amp; matchup analytics, custom card themes/foils, "who viewed your card," unlimited LFG, priority pod seats. Keep the core free forever — Plus is for the obsessed.</p>
+            <div class="est">~$4–6/mo · ~3–6% conversion target</div>
+          </div>
+          <div class="model">
+            <div class="rank">TERTIARY · OPPORTUNISTIC</div>
+            <h4>Affiliate &amp; transactions</h4>
+            <p>Deck links already exist — attach affiliate buy-links (TCGplayer, Card Kingdom) to decklists and "missing cards." Add event-ticketing fees for paid store events. Zero inventory risk; you're the referral layer, not the retailer.</p>
+            <div class="est">3–10% referral · pure margin</div>
+          </div>
+        </div>
+
+        <div class="callout">
+          <p style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--brand);margin-bottom:4px;">Why stores first, not players</p>
+          <p>Players are the network; stores are the customers. Charging players early taxes the very growth you need. Stores already pay for marketing, already want foot traffic, and your check-in data <em>proves</em> you deliver it — that's a sales pitch no Discord server can make. Player subscriptions work, but only once each store has enough density that Plus features (travel, stats, priority) are obviously worth $5.</p>
+        </div>
+
+        <h3>What NOT to do</h3>
+        <ul class="clean">
+          <li><strong>No ads in the player feed.</strong> It would poison the trust that makes people show their real location and identity.</li>
+          <li><strong>Don't paywall safety, identity, or core check-in/connect.</strong> Those are the network; gating them kills growth.</li>
+          <li><strong>Don't become a card marketplace.</strong> Be the referral layer to TCGplayer; skip the inventory, fraud, and shipping.</li>
+        </ul>
+      </section>
+
+      <!-- ═════════════  5 · SEQUENCE  ═════════════ -->
+      <section class="sec">
+        <div class="sec-head"><span class="n">05</span><h2>What to do in the next 90 days</h2></div>
+        <p>Ordered for leverage. Each row is shippable on its own and sets up the next.</p>
+
+        <table class="grid">
+          <thead>
+            <tr><th style="width:38px;">#</th><th>Move</th><th style="width:90px;">Type</th><th style="width:74px;">Effort</th><th style="width:74px;">Impact</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>Unify the "Play tonight" funnel; demote competing Home CTAs</td><td>UX</td><td>Med</td><td>High</td></tr>
+            <tr><td>2</td><td>Ship the Pod Agreement / Rule 0 card</td><td>Feature</td><td>Med</td><td>High</td></tr>
+            <tr><td>3</td><td>Package &amp; price store partner tiers (SaaS)</td><td>Money</td><td>Med</td><td>High</td></tr>
+            <tr><td>4</td><td>Sponsored placement + promoted events in Discover</td><td>Money</td><td>Low</td><td>High</td></tr>
+            <tr><td>5</td><td>Design empty / low-density states as invitations</td><td>UX</td><td>Low</td><td>Med</td></tr>
+            <tr><td>6</td><td>Calm the socials row + reward modal polish</td><td>Design</td><td>Low</td><td>Med</td></tr>
+            <tr><td>7</td><td>Deck shelf + affiliate buy-links</td><td>Feature/Money</td><td>Med</td><td>Med</td></tr>
+            <tr><td>8</td><td>Minimal pod/connection thread (keep coordination in-app)</td><td>UX</td><td>Med</td><td>Med</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout plum">
+          <p><strong>If you do only three things:</strong> unify the play funnel (1), ship the Pod Agreement (2), and price the store tiers (3). The first makes the product obvious, the second makes it defensible, and the third makes it a business.</p>
+        </div>
+
+        <hr class="soft" />
+        <p style="font-size:13px;color:var(--muted);">Audit based on the v2 prototype as reviewed — Home, Discover, Connect, You, Stores, and the rewards flow — plus the backlog and handoff docs. Happy to turn any recommendation here into a working mockup next: the unified play funnel, the Pod Agreement card, the store-tier pricing screen, or the calmed-down profile are all good first targets.</p>
+
+      </td></tr>
+      <tfoot><tr><td class="ftr-space"></td></tr></tfoot>
+    </table>
+  </main>
+</body>
+</html>

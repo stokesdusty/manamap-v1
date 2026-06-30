@@ -33,9 +33,20 @@ interface ConnectionOption {
   avatarColors: string[];
 }
 
-function PlayerAvatar({ name, avatarColors, size = 36 }: { name: string; avatarColors: string[]; size?: number }) {
+function PlayerAvatar({
+  name,
+  avatarColors,
+  size = 36,
+}: {
+  name: string;
+  avatarColors: string[];
+  size?: number;
+}) {
   const initial = name.charAt(0).toUpperCase();
-  const fill = avatarColors.length > 0 ? colors.mana[avatarColors[0] as ManaColor] ?? colors.border : colors.border;
+  const fill =
+    avatarColors.length > 0
+      ? (colors.mana[avatarColors[0] as ManaColor] ?? colors.border)
+      : colors.border;
   const textFill =
     avatarColors[0] === 'W' || avatarColors[0] === 'G' ? colors.textPrimary : colors.textInverse;
   return (
@@ -46,7 +57,12 @@ function PlayerAvatar({ name, avatarColors, size = 36 }: { name: string; avatarC
 }
 
 const av = StyleSheet.create({
-  root: { borderRadius: radii.avatar, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  root: {
+    borderRadius: radii.avatar,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   text: { fontFamily: typography.fontFamily.bold },
 });
 
@@ -118,7 +134,11 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
       <SafeAreaView style={sh.safe}>
         {/* Top bar */}
         <View style={sh.topBar}>
-          <Pressable onPress={onClose} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.6 }}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            style={({ pressed }) => pressed && { opacity: 0.6 }}
+          >
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={sh.topTitle}>Play Online</Text>
@@ -130,7 +150,6 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
           style={{ flex: 1 }}
         >
           <ScrollView contentContainerStyle={sh.scroll} keyboardShouldPersistTaps="handled">
-
             {/* Platform picker */}
             <Text style={sh.label}>PLATFORM</Text>
             <View style={sh.platformRow}>
@@ -171,10 +190,7 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
                   color={platform === 'convoke' ? colors.accent : colors.textSecondary}
                 />
                 <Text
-                  style={[
-                    sh.platformBtnText,
-                    platform === 'convoke' && sh.platformBtnTextActive,
-                  ]}
+                  style={[sh.platformBtnText, platform === 'convoke' && sh.platformBtnTextActive]}
                 >
                   Convoke
                 </Text>
@@ -204,9 +220,7 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
             </Text>
 
             {options.length === 0 ? (
-              <Text style={sh.empty}>
-                Connect with other players to invite them to your game.
-              </Text>
+              <Text style={sh.empty}>Connect with other players to invite them to your game.</Text>
             ) : (
               options.map((opt) => {
                 const isSelected = selected.has(opt.connectionId);
@@ -233,7 +247,6 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
                 );
               })
             )}
-
           </ScrollView>
         </KeyboardAvoidingView>
 
@@ -254,7 +267,10 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
               <>
                 <Ionicons name="paper-plane-outline" size={16} color={colors.textInverse} />
                 <Text style={sh.sendBtnText}>
-                  Send {selected.size > 0 ? `to ${selected.size} player${selected.size !== 1 ? 's' : ''}` : 'Invite'}
+                  Send{' '}
+                  {selected.size > 0
+                    ? `to ${selected.size} player${selected.size !== 1 ? 's' : ''}`
+                    : 'Invite'}
                 </Text>
               </>
             )}

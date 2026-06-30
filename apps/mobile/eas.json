@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.expo.io/eas.json",
-  "cli": { "version": ">= 12.0.0", "requireCommit": false },
+  "cli": { "version": ">= 12.0.0", "requireCommit": false, "appVersionSource": "remote" },
   "build": {
     "development": {
       "developmentClient": true,
@@ -8,7 +8,8 @@
       "ios": { "simulator": false },
       "android": { "buildType": "apk" },
       "env": {
-        "npm_config_virtual_store_dir": "node_modules/.pnpm"
+        "npm_config_virtual_store_dir": "node_modules/.pnpm",
+        "MAPS_API_KEY": "AIzaSyBPmoXqQ4F-o-7wIBwjtewzlfTC6-vKwe4"
       }
     },
     "preview": {
@@ -19,7 +20,8 @@
         "npm_config_virtual_store_dir": "node_modules/.pnpm",
         "EXPO_PUBLIC_API_URL": "https://manamap-v1-production.up.railway.app",
         "EXPO_PUBLIC_DISCORD_CLIENT_ID": "1510362228526809199",
-        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a,x86,x86_64"
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a,x86,x86_64",
+        "MAPS_API_KEY": "AIzaSyBPmoXqQ4F-o-7wIBwjtewzlfTC6-vKwe4"
       }
     },
     "production": {
@@ -29,7 +31,8 @@
         "npm_config_virtual_store_dir": "node_modules/.pnpm",
         "EXPO_PUBLIC_API_URL": "https://manamap-v1-production.up.railway.app",
         "EXPO_PUBLIC_DISCORD_CLIENT_ID": "1510362228526809199",
-        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a,x86,x86_64"
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a,x86,x86_64",
+        "MAPS_API_KEY": "AIzaSyBPmoXqQ4F-o-7wIBwjtewzlfTC6-vKwe4"
       }
     }
   },

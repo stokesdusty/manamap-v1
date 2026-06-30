@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { PrismaService } from '../prisma/prisma.service';
+import type { PrismaService } from '../prisma/prisma.service';
 
 const CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -51,7 +51,12 @@ export class RedemptionsService {
     });
 
     if (existing?.status === 'PENDING') {
-      return { code: existing.code, offerId: offer.id, offerTitle: offer.title, status: 'PENDING' as const };
+      return {
+        code: existing.code,
+        offerId: offer.id,
+        offerTitle: offer.title,
+        status: 'PENDING' as const,
+      };
     }
     if (existing?.status === 'REDEEMED') {
       throw new BadRequestException('already_redeemed');
@@ -253,7 +258,11 @@ export class RedemptionsService {
   // Staff: list recent redemptions for a store
   // ---------------------------------------------------------------------------
 
-  async listRedemptions(staffUserId: string, storeId: string, opts: { status?: string; limit?: number }) {
+  async listRedemptions(
+    staffUserId: string,
+    storeId: string,
+    opts: { status?: string; limit?: number },
+  ) {
     await this.assertOwner(staffUserId, storeId);
 
     const { status, limit = 50 } = opts;
@@ -276,7 +285,7 @@ export class RedemptionsService {
       take: Math.min(limit, 100),
     });
 
-    return records.map((r: typeof records[number]) => ({
+    return records.map((r: (typeof records)[number]) => ({
       id: r.id,
       code: r.code,
       status: r.status,

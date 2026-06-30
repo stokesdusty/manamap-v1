@@ -29,7 +29,12 @@ describe('AuthGuard', () => {
 
   beforeEach(async () => {
     jwtService = { verify: jest.fn() };
-    prismaService = { user: { findUnique: jest.fn().mockResolvedValue(ACTIVE_USER), update: jest.fn().mockResolvedValue({}) } };
+    prismaService = {
+      user: {
+        findUnique: jest.fn().mockResolvedValue(ACTIVE_USER),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    };
     const module = await Test.createTestingModule({
       providers: [
         AuthGuard,
@@ -51,7 +56,9 @@ describe('AuthGuard', () => {
   });
 
   it('throws 401 when JwtService.verify throws (expired / tampered token)', async () => {
-    jwtService.verify.mockImplementation(() => { throw new Error('jwt expired'); });
+    jwtService.verify.mockImplementation(() => {
+      throw new Error('jwt expired');
+    });
     await expect(
       guard.canActivate(mockContext({ authorization: 'Bearer bad.token.value' })),
     ).rejects.toThrow(UnauthorizedException);
@@ -76,7 +83,10 @@ describe('AuthGuard', () => {
 
   it('throws 403 account_banned for banned users', async () => {
     jwtService.verify.mockReturnValue(VALID_PAYLOAD);
-    prismaService.user.findUnique.mockResolvedValue({ moderationStatus: 'BANNED', suspendedUntil: null });
+    prismaService.user.findUnique.mockResolvedValue({
+      moderationStatus: 'BANNED',
+      suspendedUntil: null,
+    });
     await expect(
       guard.canActivate(mockContext({ authorization: 'Bearer valid.jwt' })),
     ).rejects.toThrow(ForbiddenException);

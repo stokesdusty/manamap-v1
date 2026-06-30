@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -44,7 +37,11 @@ function resolveToken(token: string): Promise<PublicProfile> {
 function MyCodePane({ displayName }: { displayName: string }) {
   const [secondsLeft, setSecondsLeft] = useState(60);
 
-  const { data: tokenData, isLoading, refetch } = useQuery({
+  const {
+    data: tokenData,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ['exchange-token'],
     queryFn: mintToken,
     staleTime: Infinity,
@@ -58,7 +55,10 @@ function MyCodePane({ displayName }: { displayName: string }) {
     if (!tokenData?.expiresAt) return;
     const expiresMs = new Date(tokenData.expiresAt).getTime();
     const delay = expiresMs - REFRESH_BEFORE_EXPIRY_MS - Date.now();
-    if (delay <= 0) { void refetch(); return; }
+    if (delay <= 0) {
+      void refetch();
+      return;
+    }
     const t = setTimeout(() => void refetch(), delay);
     return () => clearTimeout(t);
   }, [tokenData?.expiresAt, refetch]);
@@ -230,9 +230,7 @@ function ScanPane({ onScanned }: { onScanned: (profile: PublicProfile) => void }
       <View style={scanPane.center}>
         <Ionicons name="camera-outline" size={48} color={colors.textTertiary} />
         <Text style={scanPane.permTitle}>Camera access needed</Text>
-        <Text style={scanPane.permSub}>
-          Grant camera permission to scan player codes.
-        </Text>
+        <Text style={scanPane.permSub}>Grant camera permission to scan player codes.</Text>
         <Pressable
           style={({ pressed }) => [scanPane.permBtn, pressed && { opacity: 0.7 }]}
           onPress={requestPermission}
@@ -304,7 +302,7 @@ const scanPane = StyleSheet.create({
     color: colors.textInverse,
   },
   overlay: {
-    ...StyleSheet.absoluteFill as object,
+    ...(StyleSheet.absoluteFill as object),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -318,7 +316,7 @@ const scanPane = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   resolving: {
-    ...StyleSheet.absoluteFill as object,
+    ...(StyleSheet.absoluteFill as object),
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',

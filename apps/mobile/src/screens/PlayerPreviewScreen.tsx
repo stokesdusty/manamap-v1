@@ -1,4 +1,14 @@
-import { ActivityIndicator, Alert, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -52,7 +62,19 @@ const FORMAT_LABELS: Record<MtgFormat, string> = {
 
 const BANNER_H = 180;
 
-function ProfileHero({ profile }: { profile: { displayName: string; pronouns?: string | null; avatarColors: string[]; vibes?: string[] | undefined; commander?: string | null; formats: string[]; bio?: string | null } }) {
+function ProfileHero({
+  profile,
+}: {
+  profile: {
+    displayName: string;
+    pronouns?: string | null;
+    avatarColors: string[];
+    vibes?: string[] | undefined;
+    commander?: string | null;
+    formats: string[];
+    bio?: string | null;
+  };
+}) {
   const avatarColors = profile.avatarColors as ManaColor[];
   const gradient = identityGradientStops(avatarColors);
   const accent = avatarColors.length > 0 ? manaAccent(avatarColors) : colors.accent;
@@ -74,7 +96,12 @@ function ProfileHero({ profile }: { profile: { displayName: string; pronouns?: s
           <Rect x="0" y="0" width={bannerW} height={BANNER_H} fill="url(#previewHeroGrad)" />
         </Svg>
         <View style={hero.bannerContent}>
-          <Avatar name={profile.displayName} manaColors={avatarColors} size={64} style={hero.avatar} />
+          <Avatar
+            name={profile.displayName}
+            manaColors={avatarColors}
+            size={64}
+            style={hero.avatar}
+          />
           <Text style={[hero.displayName, { color: onAccent }]} numberOfLines={1}>
             {profile.displayName}
           </Text>
@@ -83,19 +110,30 @@ function ProfileHero({ profile }: { profile: { displayName: string; pronouns?: s
           ) : null}
           {avatarColors.length > 0 && (
             <View style={hero.guildChip}>
-              {avatarColors.map((c) => <ManaPip key={c} color={c} size={14} />)}
+              {avatarColors.map((c) => (
+                <ManaPip key={c} color={c} size={14} />
+              ))}
               <Text style={[hero.guildLabel, { color: onAccent }]}>{guild}</Text>
             </View>
           )}
         </View>
       </View>
 
-      {((profile.vibes?.length ?? 0) > 0 || profile.commander || profile.formats.length > 0 || profile.bio) && (
+      {((profile.vibes?.length ?? 0) > 0 ||
+        profile.commander ||
+        profile.formats.length > 0 ||
+        profile.bio) && (
         <View style={hero.meta}>
           {(profile.vibes ?? []).length > 0 && (
             <View style={hero.vibeRow}>
               {(profile.vibes as PlayerVibe[]).map((v) => (
-                <View key={v} style={[hero.vibePill, { backgroundColor: accent + '22', borderColor: accent + '44' }]}>
+                <View
+                  key={v}
+                  style={[
+                    hero.vibePill,
+                    { backgroundColor: accent + '22', borderColor: accent + '44' },
+                  ]}
+                >
                   <Text style={[hero.vibeText, { color: accent }]}>{VIBE_LABELS[v]}</Text>
                 </View>
               ))}
@@ -104,7 +142,9 @@ function ProfileHero({ profile }: { profile: { displayName: string; pronouns?: s
           {profile.commander ? (
             <View style={hero.metaRow}>
               <Ionicons name="shield-outline" size={14} color={colors.textTertiary} />
-              <Text style={hero.metaText} numberOfLines={1}>{profile.commander}</Text>
+              <Text style={hero.metaText} numberOfLines={1}>
+                {profile.commander}
+              </Text>
             </View>
           ) : null}
           {profile.formats.length > 0 && (
@@ -117,7 +157,9 @@ function ProfileHero({ profile }: { profile: { displayName: string; pronouns?: s
             </View>
           )}
           {profile.bio ? (
-            <Text style={hero.bio} numberOfLines={4}>{profile.bio}</Text>
+            <Text style={hero.bio} numberOfLines={4}>
+              {profile.bio}
+            </Text>
           ) : null}
         </View>
       )}
@@ -129,10 +171,7 @@ function ProfileHero({ profile }: { profile: { displayName: string; pronouns?: s
 // PlayerPreviewScreen
 // ---------------------------------------------------------------------------
 
-export function PlayerPreviewScreen({
-  navigation,
-  route,
-}: RootStackScreenProps<'PlayerPreview'>) {
+export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<'PlayerPreview'>) {
   const { profile, sharedEvent, lastMetStoreName } = route.params;
   const [sent, setSent] = useState(false);
   const { mutate: sendRequest, isPending } = useSendConnectionRequest();
@@ -143,10 +182,10 @@ export function PlayerPreviewScreen({
     connections?.accepted.some((c) => c.peer.id === profile.id)
       ? 'connected'
       : connections?.outgoing.some((c) => c.peer.id === profile.id) || sent
-      ? 'pending_sent'
-      : connections?.incoming.some((c) => c.peer.id === profile.id)
-      ? 'pending_received'
-      : 'none';
+        ? 'pending_sent'
+        : connections?.incoming.some((c) => c.peer.id === profile.id)
+          ? 'pending_received'
+          : 'none';
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -166,10 +205,7 @@ export function PlayerPreviewScreen({
           text: 'Block',
           style: 'destructive',
           onPress: () =>
-            blockUser(
-              { userId: profile.id },
-              { onSuccess: () => navigation.goBack() },
-            ),
+            blockUser({ userId: profile.id }, { onSuccess: () => navigation.goBack() }),
         },
       ],
     );
@@ -266,11 +302,12 @@ export function PlayerPreviewScreen({
         <ProfileHero profile={profile} />
 
         {/* Socials — public links + teaser */}
-        {(profile.socials && profile.socials.length > 0) || (profile.socialsSummary?.friendsOnlyCount ?? 0) > 0 ? (
+        {(profile.socials && profile.socials.length > 0) ||
+        (profile.socialsSummary?.friendsOnlyCount ?? 0) > 0 ? (
           <SocialsCard
             mode="public"
             links={profile.socials ?? []}
-            publicCount={profile.socialsSummary?.publicCount ?? (profile.socials?.length ?? 0)}
+            publicCount={profile.socialsSummary?.publicCount ?? profile.socials?.length ?? 0}
             friendsOnlyCount={profile.socialsSummary?.friendsOnlyCount ?? 0}
           />
         ) : (
@@ -319,9 +356,7 @@ export function PlayerPreviewScreen({
         ) : relationship === 'pending_sent' ? (
           <View style={styles.sentRow}>
             <Ionicons name="checkmark" size={18} color={colors.accentInk} />
-            <Text style={styles.sentText}>
-              Request sent — waiting for {profile.displayName}
-            </Text>
+            <Text style={styles.sentText}>Request sent — waiting for {profile.displayName}</Text>
           </View>
         ) : relationship === 'pending_received' ? (
           <View style={styles.sentRow}>
@@ -330,10 +365,7 @@ export function PlayerPreviewScreen({
           </View>
         ) : (
           <Pressable
-            style={({ pressed }) => [
-              styles.ctaBtn,
-              (pressed || isPending) && { opacity: 0.8 },
-            ]}
+            style={({ pressed }) => [styles.ctaBtn, (pressed || isPending) && { opacity: 0.8 }]}
             onPress={isPending ? undefined : handleConnect}
             disabled={isPending}
           >
@@ -342,21 +374,24 @@ export function PlayerPreviewScreen({
             ) : (
               <Ionicons name="person-add-outline" size={18} color={colors.textInverse} />
             )}
-            <Text style={styles.ctaText}>
-              {isPending ? 'Sending…' : 'Send connect request'}
-            </Text>
+            <Text style={styles.ctaText}>{isPending ? 'Sending…' : 'Send connect request'}</Text>
           </Pressable>
         )}
-        <Text style={styles.disclaimer}>
-          They approve before any contact info is shared.
-        </Text>
+        <Text style={styles.disclaimer}>They approve before any contact info is shared.</Text>
       </ScrollView>
 
       {/* Overflow menu */}
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+      <Modal
+        visible={menuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuOpen(false)}
+      >
         <Pressable style={menu.overlay} onPress={() => setMenuOpen(false)}>
           <View style={menu.sheet}>
-            <Text style={menu.name} numberOfLines={1}>{profile.displayName}</Text>
+            <Text style={menu.name} numberOfLines={1}>
+              {profile.displayName}
+            </Text>
             <Pressable
               style={({ pressed }) => [menu.item, pressed && { opacity: 0.6 }]}
               onPress={handleOpenReport}
@@ -383,7 +418,12 @@ export function PlayerPreviewScreen({
       </Modal>
 
       {/* Report sheet */}
-      <Modal visible={reportOpen} transparent animationType="slide" onRequestClose={() => setReportOpen(false)}>
+      <Modal
+        visible={reportOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setReportOpen(false)}
+      >
         <Pressable style={menu.overlay} onPress={() => setReportOpen(false)}>
           <View style={[menu.sheet, { gap: spacing.sm }]}>
             <Text style={menu.name}>Report {profile.displayName}</Text>
@@ -398,7 +438,9 @@ export function PlayerPreviewScreen({
                 ]}
                 onPress={() => setSelectedReason(r.value)}
               >
-                <Text style={[menu.itemText, selectedReason === r.value && { color: colors.accent }]}>
+                <Text
+                  style={[menu.itemText, selectedReason === r.value && { color: colors.accent }]}
+                >
                   {r.label}
                 </Text>
                 {selectedReason === r.value && (

@@ -48,42 +48,84 @@ function audienceCount(counts: AudienceCounts, audience: Audience): number {
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
-function PushPreview({ title, body, storeName }: { title: string; body: string; storeName?: string }) {
+function PushPreview({
+  title,
+  body,
+  storeName,
+}: {
+  title: string;
+  body: string;
+  storeName?: string;
+}) {
   const displayTitle = title || 'Notification title';
   const displayBody = body || 'Your message will appear here…';
 
   return (
-    <div style={{
-      background: 'var(--paper)',
-      borderRadius: 16,
-      padding: '10px 14px',
-      border: '1px solid var(--border)',
-      maxWidth: 320,
-    }}>
-      <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+    <div
+      style={{
+        background: 'var(--paper)',
+        borderRadius: 16,
+        padding: '10px 14px',
+        border: '1px solid var(--border)',
+        maxWidth: 320,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          color: 'var(--text-tertiary)',
+          marginBottom: 6,
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+        }}
+      >
         Push preview
       </div>
-      <div style={{
-        background: 'rgba(255,255,255,0.9)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: 12,
-        padding: '10px 12px',
-        border: '1px solid rgba(0,0,0,0.08)',
-        boxShadow: '0 2px 8px rgba(0,0,0,.12)',
-      }}>
+      <div
+        style={{
+          background: 'rgba(255,255,255,0.9)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: 12,
+          padding: '10px 12px',
+          border: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 2px 8px rgba(0,0,0,.12)',
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: 7, background: 'var(--primary)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0,
-          }}>
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 7,
+              background: 'var(--primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 14,
+              flexShrink: 0,
+            }}
+          >
             🗺️
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: '#1a1a1a',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
               {displayTitle}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
@@ -132,7 +174,10 @@ export function BroadcastPage() {
       qc.invalidateQueries({ queryKey: ['partner', 'broadcast', 'history', storeId] });
       setTitle('');
       setBody('');
-      showToast('success', `Sent to ${data.recipientCount} player${data.recipientCount !== 1 ? 's' : ''}`);
+      showToast(
+        'success',
+        `Sent to ${data.recipientCount} player${data.recipientCount !== 1 ? 's' : ''}`,
+      );
     },
     onError: (err) => {
       const msg = err.response?.data?.message ?? 'Failed to send broadcast';
@@ -151,13 +196,22 @@ export function BroadcastPage() {
   return (
     <div>
       {toast && (
-        <div style={{
-          position: 'fixed', top: 20, right: 20, zIndex: 1000,
-          background: toast.type === 'success' ? 'var(--success)' : 'var(--danger)',
-          color: '#fff', padding: '10px 18px', borderRadius: 10,
-          fontWeight: 600, fontSize: 14, boxShadow: 'var(--shadow)',
-          maxWidth: 340,
-        }}>
+        <div
+          style={{
+            position: 'fixed',
+            top: 20,
+            right: 20,
+            zIndex: 1000,
+            background: toast.type === 'success' ? 'var(--success)' : 'var(--danger)',
+            color: '#fff',
+            padding: '10px 18px',
+            borderRadius: 10,
+            fontWeight: 600,
+            fontSize: 14,
+            boxShadow: 'var(--shadow)',
+            maxWidth: 340,
+          }}
+        >
           {toast.message}
         </div>
       )}
@@ -175,7 +229,6 @@ export function BroadcastPage() {
 
       <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 380px', minWidth: 0 }}>
-
           {/* Audience Picker */}
           <div className="card" style={{ marginBottom: 16 }}>
             <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Who receives this?</h2>
@@ -205,13 +258,31 @@ export function BroadcastPage() {
                       value={a}
                       checked={isSelected}
                       onChange={() => setAudience(a)}
-                      style={{ accentColor: 'var(--primary)', width: 16, height: 16, flexShrink: 0 }}
+                      style={{
+                        accentColor: 'var(--primary)',
+                        width: 16,
+                        height: 16,
+                        flexShrink: 0,
+                      }}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: isSelected ? 'var(--primary)' : 'var(--text-primary)' }}>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          fontSize: 14,
+                          color: isSelected ? 'var(--primary)' : 'var(--text-primary)',
+                        }}
+                      >
                         {AUDIENCE_LABELS[a]}
                         {eventName && (
-                          <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: 12, marginLeft: 6 }}>
+                          <span
+                            style={{
+                              fontWeight: 400,
+                              color: 'var(--text-secondary)',
+                              fontSize: 12,
+                              marginLeft: 6,
+                            }}
+                          >
                             ({eventName})
                           </span>
                         )}
@@ -220,14 +291,16 @@ export function BroadcastPage() {
                         {AUDIENCE_DESCRIPTIONS[a]}
                       </div>
                     </div>
-                    <div style={{
-                      fontWeight: 700,
-                      fontSize: 18,
-                      color: isSelected ? 'var(--primary)' : 'var(--text-secondary)',
-                      minWidth: 32,
-                      textAlign: 'right',
-                      flexShrink: 0,
-                    }}>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: 18,
+                        color: isSelected ? 'var(--primary)' : 'var(--text-secondary)',
+                        minWidth: 32,
+                        textAlign: 'right',
+                        flexShrink: 0,
+                      }}
+                    >
                       {loadingCounts ? '…' : (count ?? 0)}
                     </div>
                   </label>
@@ -240,9 +313,23 @@ export function BroadcastPage() {
           <div className="card" style={{ marginBottom: 16 }}>
             <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Message</h2>
             <div style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Title</label>
-                <span style={{ fontSize: 12, color: title.length > 35 ? 'var(--danger)' : 'var(--text-tertiary)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 6,
+                }}
+              >
+                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Title
+                </label>
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: title.length > 35 ? 'var(--danger)' : 'var(--text-tertiary)',
+                  }}
+                >
                   {title.length}/40
                 </span>
               </div>
@@ -255,9 +342,23 @@ export function BroadcastPage() {
               />
             </div>
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Body</label>
-                <span style={{ fontSize: 12, color: body.length > 120 ? 'var(--danger)' : 'var(--text-tertiary)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 6,
+                }}
+              >
+                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Body
+                </label>
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: body.length > 120 ? 'var(--danger)' : 'var(--text-tertiary)',
+                  }}
+                >
                   {body.length}/140
                 </span>
               </div>
@@ -284,7 +385,14 @@ export function BroadcastPage() {
               : `Send to ${recipientCount} player${recipientCount !== 1 ? 's' : ''}`}
           </button>
           {counts?.EVENT_RSVPS.count === 0 && audience === 'EVENT_RSVPS' && (
-            <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 8 }}>
+            <p
+              style={{
+                fontSize: 12,
+                color: 'var(--text-tertiary)',
+                textAlign: 'center',
+                marginTop: 8,
+              }}
+            >
               No upcoming event or RSVPs found
             </p>
           )}
@@ -302,7 +410,10 @@ export function BroadcastPage() {
         {loadingHistory ? (
           <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Loading…</p>
         ) : !history?.length ? (
-          <div className="card" style={{ textAlign: 'center', padding: '28px 24px', color: 'var(--text-secondary)' }}>
+          <div
+            className="card"
+            style={{ textAlign: 'center', padding: '28px 24px', color: 'var(--text-secondary)' }}
+          >
             <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
             <p>No broadcasts sent yet.</p>
           </div>
@@ -311,36 +422,107 @@ export function BroadcastPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--paper)' }}>
-                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)' }}>Message</th>
-                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Audience</th>
-                  <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Delivered</th>
-                  <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Sent</th>
+                  <th
+                    style={{
+                      padding: '10px 16px',
+                      textAlign: 'left',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    Message
+                  </th>
+                  <th
+                    style={{
+                      padding: '10px 16px',
+                      textAlign: 'left',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Audience
+                  </th>
+                  <th
+                    style={{
+                      padding: '10px 16px',
+                      textAlign: 'right',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Delivered
+                  </th>
+                  <th
+                    style={{
+                      padding: '10px 16px',
+                      textAlign: 'right',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Sent
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {history.map((b, i) => (
                   <tr
                     key={b.id}
-                    style={{ borderBottom: i < history.length - 1 ? '1px solid var(--border-light)' : 'none' }}
+                    style={{
+                      borderBottom:
+                        i < history.length - 1 ? '1px solid var(--border-light)' : 'none',
+                    }}
                   >
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ fontWeight: 600, marginBottom: 2 }}>{b.title}</div>
-                      <div style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 280 }}>
+                      <div
+                        style={{
+                          color: 'var(--text-secondary)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: 280,
+                        }}
+                      >
                         {b.body}
                       </div>
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      <span style={{
-                        fontSize: 11, padding: '3px 8px', borderRadius: 12,
-                        background: 'var(--primary-bg)', color: 'var(--primary)', fontWeight: 600, whiteSpace: 'nowrap',
-                      }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          padding: '3px 8px',
+                          borderRadius: 12,
+                          background: 'var(--primary-bg)',
+                          color: 'var(--primary)',
+                          fontWeight: 600,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {AUDIENCE_LABELS[b.audience]}
                       </span>
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: 'var(--primary)' }}>
+                    <td
+                      style={{
+                        padding: '12px 16px',
+                        textAlign: 'right',
+                        fontWeight: 700,
+                        color: 'var(--primary)',
+                      }}
+                    >
                       {b.recipientCount}
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
+                    <td
+                      style={{
+                        padding: '12px 16px',
+                        textAlign: 'right',
+                        color: 'var(--text-tertiary)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {formatDate(b.createdAt)}
                     </td>
                   </tr>

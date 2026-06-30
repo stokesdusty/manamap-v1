@@ -14,15 +14,17 @@ import {
   AssociateCheckinEventBodySchema,
   CheckinBodySchema,
   ConfirmStoreSchema,
+  NotifyWhenActiveBodySchema,
   SuggestStoreSchema,
   type AssociateCheckinEventBody,
   type CheckinBody,
   type ConfirmStore,
+  type NotifyWhenActiveBody,
   type SuggestStore,
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import { StoresService } from './stores.service';
+import type { StoresService } from './stores.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 
@@ -91,11 +93,7 @@ export class StoresController {
 
   @Post(':id/events/:eventId/attend')
   @HttpCode(200)
-  attendEvent(
-    @Req() req: AuthRequest,
-    @Param('id') id: string,
-    @Param('eventId') eventId: string,
-  ) {
+  attendEvent(@Req() req: AuthRequest, @Param('id') id: string, @Param('eventId') eventId: string) {
     return this.stores.attendEvent(req.user.sub, id, eventId);
   }
 
@@ -127,5 +125,15 @@ export class StoresController {
     @Param('eventId') eventId: string,
   ) {
     return this.stores.getEventAttendance(req.user.sub, id, eventId);
+  }
+
+  @Post(':id/notify-when-active')
+  @HttpCode(200)
+  notifyWhenActive(
+    @Req() req: AuthRequest,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(NotifyWhenActiveBodySchema)) body: NotifyWhenActiveBody,
+  ) {
+    return this.stores.notifyWhenActive(req.user.sub, id, body.threshold);
   }
 }

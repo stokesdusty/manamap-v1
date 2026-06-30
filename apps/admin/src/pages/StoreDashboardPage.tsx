@@ -56,8 +56,7 @@ export function StoreDashboardPage() {
   });
 
   const deleteOffer = useMutation({
-    mutationFn: (offerId: string) =>
-      api.delete(`/v1/partner/stores/${storeId}/offers/${offerId}`),
+    mutationFn: (offerId: string) => api.delete(`/v1/partner/stores/${storeId}/offers/${offerId}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['partner', 'offers', storeId] });
       qc.invalidateQueries({ queryKey: ['partner', 'analytics', storeId] });
@@ -67,7 +66,10 @@ export function StoreDashboardPage() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Link to="/stores" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 14 }}>
+        <Link
+          to="/stores"
+          style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 14 }}
+        >
           ← My Stores
         </Link>
       </div>
@@ -85,7 +87,14 @@ export function StoreDashboardPage() {
         </div>
       ) : null}
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 16,
+        }}
+      >
         <h2 style={{ fontSize: 17, fontWeight: 700 }}>Reward Offers</h2>
         <Link
           to={`/stores/${storeId}/offers/new`}
@@ -99,9 +108,14 @@ export function StoreDashboardPage() {
       {loadingOffers ? (
         <p style={{ color: 'var(--text-secondary)' }}>Loading offers…</p>
       ) : offers?.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '36px 24px', color: 'var(--text-secondary)' }}>
+        <div
+          className="card"
+          style={{ textAlign: 'center', padding: '36px 24px', color: 'var(--text-secondary)' }}
+        >
           <div style={{ fontSize: 36, marginBottom: 8 }}>🎁</div>
-          <p style={{ marginBottom: 16 }}>No offers yet. Create one to start rewarding customers.</p>
+          <p style={{ marginBottom: 16 }}>
+            No offers yet. Create one to start rewarding customers.
+          </p>
           <Link
             to={`/stores/${storeId}/offers/new`}
             className="btn btn-primary"
@@ -113,7 +127,11 @@ export function StoreDashboardPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {offers?.map((offer) => (
-            <div key={offer.id} className="card" style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+            <div
+              key={offer.id}
+              className="card"
+              style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}
+            >
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ fontWeight: 600 }}>{offer.title}</span>
@@ -122,24 +140,47 @@ export function StoreDashboardPage() {
                       fontSize: 11,
                       padding: '2px 7px',
                       borderRadius: 12,
-                      background: offer.type === 'FIRST_VISIT' ? 'var(--success-bg)' : 'var(--primary-bg)',
+                      background:
+                        offer.type === 'FIRST_VISIT' ? 'var(--success-bg)' : 'var(--primary-bg)',
                       color: offer.type === 'FIRST_VISIT' ? 'var(--success)' : 'var(--primary)',
                       fontWeight: 600,
                     }}
                   >
-                    {offer.type === 'FIRST_VISIT' ? 'First Visit' : `Streak ×${offer.streakRequired}`}
+                    {offer.type === 'FIRST_VISIT'
+                      ? 'First Visit'
+                      : `Streak ×${offer.streakRequired}`}
                   </span>
                   {!offer.active && (
-                    <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 12, background: 'var(--muted-bg)', color: 'var(--text-tertiary)' }}>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        padding: '2px 7px',
+                        borderRadius: 12,
+                        background: 'var(--muted-bg)',
+                        color: 'var(--text-tertiary)',
+                      }}
+                    >
                       Inactive
                     </span>
                   )}
                 </div>
                 {offer.description && (
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>{offer.description}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                    {offer.description}
+                  </div>
                 )}
                 <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
-                  Code: <code style={{ background: 'var(--muted-bg)', padding: '1px 5px', borderRadius: 4, letterSpacing: 1 }}>{offer.redemptionCode}</code>
+                  Code:{' '}
+                  <code
+                    style={{
+                      background: 'var(--muted-bg)',
+                      padding: '1px 5px',
+                      borderRadius: 4,
+                      letterSpacing: 1,
+                    }}
+                  >
+                    {offer.redemptionCode}
+                  </code>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>

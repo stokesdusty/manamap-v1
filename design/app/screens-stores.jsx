@@ -1,10 +1,21 @@
 // manamap — Stores screen (M35). Map + list + StoreDetailSheet.
 // Exports StoresScreen.
 const { useState, useEffect } = React;
-const { Icon: _StI, Avatar: _StAv, manaAccent: _Stma, ManaPip: _StPip, manaGradient: _Stmg } = window;
+const { Icon: _StI, Avatar: _StAv, manaAccent: _Stma, ManaPip: _StPip, manaGradient: _Stmg, readableOn: _StRdOn } = window;
 const _StMM = window.MM;
 
 const SRC_COLOR = { STORE: 'var(--brand)', DISCORD: '#5865F2', WIZARDS: '#9333ea' };
+
+// Stores have no brand color of their own — derive a stable WUBRG identity
+// accent from the store id so the reward celebration reads as "this store",
+// not a generic brand-green button. Falls back to the brand accent.
+const _StAccentLetters = ['W', 'U', 'B', 'R', 'G'];
+function storeAccent(store) {
+  if (!store) return 'var(--brand)';
+  let hash = 0;
+  for (let i = 0; i < store.id.length; i++) hash = (hash * 31 + store.id.charCodeAt(i)) | 0;
+  return _Stma([_StAccentLetters[Math.abs(hash) % _StAccentLetters.length]]);
+}
 
 // ── Fake QR code (design placeholder) ──────────────────
 function FakeQR({ code = 'MM-1A2B3C', size = 130 }) {
@@ -220,6 +231,7 @@ function StoreDetailSheet({ store, checkedInId, onCheckin, checkinState, onClose
   const hereNow = isCheckedIn ? _StMM.PLAYERS.slice(0, 3) : [];
   const alreadyConfirmed = store && confirmedIds.has(store.id);
   const confirmCount = store ? (store.confirmCount || 0) + (alreadyConfirmed ? 1 : 0) : 0;
+  const accent = storeAccent(store);
 
   // After check-in success: show event tag then reward
   useEffect(() => {
@@ -503,15 +515,20 @@ function StoreDetailSheet({ store, checkedInId, onCheckin, checkinState, onClose
           justifyContent: 'center', padding: 20, background: 'rgba(0,0,0,0.5)' }}>
           <div style={{ background: 'var(--surface)', borderRadius: 22, padding: '24px 20px', width: '100%' }}>
             <div style={{ textAlign: 'center', marginBottom: 18 }}>
-              <div style={{ fontSize: 36, marginBottom: 6 }}>🎁</div>
-              <div style={{ fontSize: 20, fontWeight: 850, color: 'var(--ink)', letterSpacing: '-0.02em' }}>You unlocked a reward!</div>
+              <div style={{
+                width: 64, height: 64, margin: '0 auto 10px', borderRadius: '50%',
+                background: `${accent}26`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <_StI name="gift" size={32} color={accent} />
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 850, color: accent, letterSpacing: '-0.02em' }}>You unlocked a reward!</div>
             </div>
             <div style={{ background: 'var(--brand-soft)', borderRadius: 14, padding: 14, marginBottom: 16 }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)', marginBottom: 4 }}>First visit bonus</div>
               <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>10% off singles or sealed. Show staff your badge to redeem.</div>
             </div>
             <button onClick={() => setRewardStep('code')} style={{
-              width: '100%', height: 50, background: 'var(--brand)', color: 'var(--on-brand)',
+              width: '100%', height: 50, background: accent, color: _StRdOn(accent),
               border: 'none', borderRadius: 'var(--r-lg)', cursor: 'pointer', fontFamily: 'inherit',
               fontSize: 15, fontWeight: 800, marginBottom: 10,
             }}>Redeem at counter</button>
@@ -528,15 +545,22 @@ function StoreDetailSheet({ store, checkedInId, onCheckin, checkinState, onClose
         <div style={{ position: 'absolute', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center',
           justifyContent: 'center', padding: 20, background: 'rgba(0,0,0,0.5)' }}>
           <div style={{ background: 'var(--surface)', borderRadius: 22, padding: '24px 20px', width: '100%', textAlign: 'center' }}>
-            <div style={{ fontSize: 19, fontWeight: 850, color: 'var(--ink)', marginBottom: 4, letterSpacing: '-0.02em' }}>Show staff this code</div>
-            <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 18 }}>First visit bonus</div>
-            <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 5, color: 'var(--brand)', marginBottom: 16 }}>MM-7X4Q</div>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+            <div style={{ marginBottom: 8 }}><_StI name="gift" size={26} color={accent} /></div>
+            <div style={{
+              fontSize: 13, fontWeight: 700, color: accent, marginBottom: 4,
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+            }}>Show staff this code</div>
+            <div style={{ fontSize: 20, fontWeight: 850, color: 'var(--ink)', marginBottom: 18, letterSpacing: '-0.02em' }}>First visit bonus</div>
+            <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 5, color: accent, marginBottom: 16 }}>MM-7X4Q</div>
+            <div style={{
+              display: 'inline-flex', justifyContent: 'center', marginBottom: 14,
+              border: `2px solid ${accent}`, borderRadius: 16, padding: 4,
+            }}>
               <FakeQR code="MM-7X4Q" size={140} />
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 18 }}>Staff will scan or enter this code</div>
             <button onClick={() => setRewardStep(null)} style={{
-              width: '100%', height: 48, background: 'var(--brand)', color: 'var(--on-brand)',
+              width: '100%', height: 48, background: accent, color: _StRdOn(accent),
               border: 'none', borderRadius: 'var(--r-lg)', cursor: 'pointer', fontFamily: 'inherit',
               fontSize: 15, fontWeight: 800,
             }}>Done</button>

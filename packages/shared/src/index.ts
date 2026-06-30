@@ -54,7 +54,17 @@ export const DECK_SITE_HOSTS: Record<DeckSite, string> = {
 // --- Social links ---
 
 export const SocialPlatformSchema = z.enum([
-  'DISCORD', 'INSTAGRAM', 'TWITCH', 'YOUTUBE', 'X', 'TIKTOK', 'FACEBOOK', 'BLUESKY', 'WEBSITE', 'PHONE', 'EMAIL',
+  'DISCORD',
+  'INSTAGRAM',
+  'TWITCH',
+  'YOUTUBE',
+  'X',
+  'TIKTOK',
+  'FACEBOOK',
+  'BLUESKY',
+  'WEBSITE',
+  'PHONE',
+  'EMAIL',
 ]);
 export type SocialPlatform = z.infer<typeof SocialPlatformSchema>;
 
@@ -139,6 +149,36 @@ export const ResolveTokenBodySchema = z.object({
 });
 export type ResolveTokenBody = z.infer<typeof ResolveTokenBodySchema>;
 
+// --- Endorsements ---
+
+export const EndorsementTagSchema = z.enum([
+  'GREAT_HOST',
+  'GOOD_SPORT',
+  'TAUGHT_THE_FORMAT',
+  'FAST_PLAYER',
+  'WELL_BREWED_DECK',
+  'GENEROUS',
+]);
+export type EndorsementTag = z.infer<typeof EndorsementTagSchema>;
+
+export const EndorseInputSchema = z.object({
+  toUserId: IdSchema,
+  tag: EndorsementTagSchema,
+});
+export type EndorseInput = z.infer<typeof EndorseInputSchema>;
+
+export const EndorsementTagCountSchema = z.object({
+  tag: EndorsementTagSchema,
+  count: z.number().int().nonnegative(),
+});
+export type EndorsementTagCount = z.infer<typeof EndorsementTagCountSchema>;
+
+export const EndorsementSummarySchema = z.object({
+  total: z.number().int().nonnegative(),
+  byTag: z.array(EndorsementTagCountSchema),
+});
+export type EndorsementSummary = z.infer<typeof EndorsementSummarySchema>;
+
 // --- Profile ---
 
 export const ProfileSchema = z.object({
@@ -161,6 +201,7 @@ export const ProfileSchema = z.object({
   lastLng: z.number().nullable().optional(),
   tradeWants: z.string().nullable().optional(),
   tradeHaves: z.string().nullable().optional(),
+  endorsements: EndorsementSummarySchema.optional(),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
 
@@ -213,7 +254,9 @@ export function siteFromUrl(url: string): DeckSite | null {
     for (const [site, expected] of Object.entries(DECK_SITE_HOSTS) as [DeckSite, string][]) {
       if (host === expected || host.endsWith(`.${expected}`)) return site;
     }
-  } catch {}
+  } catch {
+    // Not a parseable URL
+  }
   return null;
 }
 
@@ -288,6 +331,7 @@ export const ConnectedProfileSchema = PublicProfileSchema.extend({
   name: z.string().max(80).nullable(),
   discordHandle: z.string().nullable(),
   deckLinks: z.array(DeckLinkSchema),
+  endorsements: EndorsementSummarySchema.optional(),
 });
 export type ConnectedProfile = z.infer<typeof ConnectedProfileSchema>;
 
@@ -393,18 +437,24 @@ export type WinsLeaderboardEntry = z.infer<typeof WinsLeaderboardEntrySchema>;
 
 export const LeaderboardResponseSchema = z.object({
   entries: z.array(LeaderboardEntrySchema),
-  myEntry: z.object({
-    rank: z.number().int().positive(),
-    currentStreak: z.number().int().nonnegative(),
-    totalCheckins: z.number().int().nonnegative(),
-  }).nullable(),
-  winsLeaderboard: z.object({
-    entries: z.array(WinsLeaderboardEntrySchema),
-    myEntry: z.object({
+  myEntry: z
+    .object({
       rank: z.number().int().positive(),
-      wins: z.number().int().nonnegative(),
-    }).nullable(),
-  }).optional(),
+      currentStreak: z.number().int().nonnegative(),
+      totalCheckins: z.number().int().nonnegative(),
+    })
+    .nullable(),
+  winsLeaderboard: z
+    .object({
+      entries: z.array(WinsLeaderboardEntrySchema),
+      myEntry: z
+        .object({
+          rank: z.number().int().positive(),
+          wins: z.number().int().nonnegative(),
+        })
+        .nullable(),
+    })
+    .optional(),
 });
 export type LeaderboardResponse = z.infer<typeof LeaderboardResponseSchema>;
 
@@ -424,14 +474,16 @@ export const CheckinResultSchema = z.object({
   presenceExpiresIn: z.number().int().positive(),
   newBadges: z.array(EarnedBadgeSchema),
   streak: StoreStreakSchema.nullable(),
-  eligibleOffers: z.array(z.object({
-    id: IdSchema,
-    type: z.string(),
-    title: z.string(),
-    description: z.string().nullable(),
-    terms: z.string().nullable(),
-    redemptionCode: z.string(),
-  })),
+  eligibleOffers: z.array(
+    z.object({
+      id: IdSchema,
+      type: z.string(),
+      title: z.string(),
+      description: z.string().nullable(),
+      terms: z.string().nullable(),
+      redemptionCode: z.string(),
+    }),
+  ),
   activeEvents: z.array(ActiveEventSchema),
 });
 export type CheckinResult = z.infer<typeof CheckinResultSchema>;
@@ -463,6 +515,17 @@ export const HeartbeatResponseSchema = z.object({
   expiresIn: z.number().int().positive(),
 });
 export type HeartbeatResponse = z.infer<typeof HeartbeatResponseSchema>;
+
+export const NotifyWhenActiveBodySchema = z.object({
+  threshold: z.number().int().min(1).max(20).default(2),
+});
+export type NotifyWhenActiveBody = z.infer<typeof NotifyWhenActiveBodySchema>;
+
+export const NotifyWhenActiveResponseSchema = z.object({
+  storeId: IdSchema,
+  threshold: z.number().int(),
+});
+export type NotifyWhenActiveResponse = z.infer<typeof NotifyWhenActiveResponseSchema>;
 
 // --- Events ---
 
@@ -1366,16 +1429,16 @@ export const StoreStatusSchema = z.enum(['PROPOSED', 'ACTIVE', 'REJECTED']);
 export type StoreStatus = z.infer<typeof StoreStatusSchema>;
 
 export const SuggestStoreSchema = z.object({
-  name:         z.string().min(1).max(128),
-  lat:          z.number().min(-90).max(90),
-  lng:          z.number().min(-180).max(180),
-  address:      z.string().max(256).optional(),
-  city:         z.string().max(128).optional(),
-  state:        z.string().max(64).optional(),
-  website:      z.string().url().max(512).optional(),
+  name: z.string().min(1).max(128),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  address: z.string().max(256).optional(),
+  city: z.string().max(128).optional(),
+  state: z.string().max(64).optional(),
+  website: z.string().url().max(512).optional(),
   submitterLat: z.number().min(-90).max(90).optional(),
   submitterLng: z.number().min(-180).max(180).optional(),
-  note:         z.string().max(512).optional(),
+  note: z.string().max(512).optional(),
 });
 export type SuggestStore = z.infer<typeof SuggestStoreSchema>;
 

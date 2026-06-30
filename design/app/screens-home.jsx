@@ -28,7 +28,7 @@ function HL({ children, action }) {
 }
 
 // ── Identity banner (full-bleed, safe-area aware) ─────────
-function IdentityBanner({ me, lfg, todayEvents, onBell, notifUnread, onOpenStores }) {
+function IdentityBanner({ me, lfg, todayEvents, onBell, notifUnread, onOpenStores, checkedIn }) {
   const nextEvent = todayEvents.find(e => e.attending) || todayEvents[0];
   return (
     <div style={{
@@ -67,19 +67,28 @@ function IdentityBanner({ me, lfg, todayEvents, onBell, notifUnread, onOpenStore
         </div>
 
         {/* store / check-in — tappable, opens Stores */}
-        <button onClick={() => onOpenStores && onOpenStores('s1')} style={{
+        <button onClick={() => onOpenStores && onOpenStores(checkedIn ? 's1' : null)} style={{
           display: 'flex', alignItems: 'center', gap: 7, marginTop: 13,
           background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit',
           WebkitTapHighlightColor: 'transparent',
         }}>
-          <span style={{ width: 8, height: 8, borderRadius: 999, background: '#4ade80', flexShrink: 0,
-            boxShadow: '0 0 8px rgba(74,222,128,0.85)' }} />
-          <span style={{ fontSize: 14.5, fontWeight: 750, color: '#fff', letterSpacing: '-0.015em' }}>{me.homeStore}</span>
-          <span style={{
-            fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.85)',
-            background: 'rgba(255,255,255,0.18)', padding: '2px 9px', borderRadius: 999,
-            backdropFilter: 'blur(4px)',
-          }}>Checked in ›</span>
+          {checkedIn ? (
+            <>
+              <span style={{ width: 8, height: 8, borderRadius: 999, background: '#4ade80', flexShrink: 0,
+                boxShadow: '0 0 8px rgba(74,222,128,0.85)' }} />
+              <span style={{ fontSize: 14.5, fontWeight: 750, color: '#fff', letterSpacing: '-0.015em' }}>{me.homeStore}</span>
+              <span style={{
+                fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,0.85)',
+                background: 'rgba(255,255,255,0.18)', padding: '2px 9px', borderRadius: 999,
+                backdropFilter: 'blur(4px)',
+              }}>Checked in ›</span>
+            </>
+          ) : (
+            <>
+              <_HI name="pin" size={13} color="rgba(255,255,255,0.6)" stroke={2.2} />
+              <span style={{ fontSize: 13.5, fontWeight: 650, color: 'rgba(255,255,255,0.6)' }}>Find a store →</span>
+            </>
+          )}
         </button>
 
         {/* status pills */}
@@ -91,7 +100,7 @@ function IdentityBanner({ me, lfg, todayEvents, onBell, notifUnread, onOpenStore
               Open · {fmtMins(lfg.session?.mins)} left
             </BannerPill>
           )}
-          <BannerPill>🔥 2w streak</BannerPill>
+          {checkedIn && <BannerPill>🔥 2w streak</BannerPill>}
           {nextEvent && (
             <BannerPill>
               📅 {nextEvent.name}{nextEvent.attending ? ' · RSVP\u2019d' : ' tonight'}
@@ -114,68 +123,68 @@ function BannerPill({ children }) {
   );
 }
 
-// ── Quick action tiles (2 × 2) ────────────────────────────
-function QuickActions({ lfg, requests, nearbyCount, onTab, onLogGame, onGoOpen, onFormPod }) {
-  const tiles = [
-    {
-      icon: 'sparkle',
-      label: 'Open to Play',
-      sub: lfg.open ? `${fmtMins(lfg.session?.mins)} left` : 'Tap to go live',
-      live: lfg.open,
-      onTap: lfg.open ? () => {} : onGoOpen,
-    },
-    {
-      icon: 'cards',
-      label: 'Log a Game',
-      sub: 'Record a result',
-      onTap: onLogGame,
-    },
-    {
-      icon: 'radar',
-      label: 'Meet Players',
-      sub: `${nearbyCount} nearby now`,
-      onTap: () => onTab('discover'),
-    },
-    {
-      icon: 'users',
-      label: 'Connections',
-      sub: requests.length > 0
-        ? `${requests.length} pending request${requests.length > 1 ? 's' : ''}`
-        : 'Your network',
-      badge: requests.length || null,
-      onTap: () => onTab('connect'),
-    },
-  ];
-
+// ── Hero action — single, state-driven primary CTA ────────
+function HeroAction({ icon, eyebrow, title, sub, onTap }) {
   return (
     <div style={{ padding: '16px 16px 0' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        {tiles.map((tile, i) => <ActionTile key={i} {...tile} />)}
-      </div>
-      <button onClick={onFormPod} style={{
-        marginTop: 10, width: '100%', display: 'flex', alignItems: 'center', gap: 14,
-        background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-lg)',
-        padding: '14px 16px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-        boxShadow: 'var(--shadow-card)', WebkitTapHighlightColor: 'transparent',
+      <button onClick={onTap} style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+        background: 'var(--brand-soft)', border: '1px solid color-mix(in srgb, var(--brand) 30%, transparent)',
+        borderRadius: 'var(--r-lg)', padding: 16, cursor: 'pointer', fontFamily: 'inherit',
+        textAlign: 'left', boxShadow: 'var(--shadow-card)', WebkitTapHighlightColor: 'transparent',
       }}>
         <span style={{
-          width: 44, height: 44, borderRadius: 14, flexShrink: 0,
-          background: 'color-mix(in srgb, var(--brand) 12%, var(--surface))',
+          width: 52, height: 52, borderRadius: 16, flexShrink: 0,
+          background: 'color-mix(in srgb, var(--brand) 18%, transparent)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <_HI name="swords" size={22} color="color-mix(in srgb, var(--brand) 72%, var(--ink))" stroke={2.2} />
+          <_HI name={icon} size={26} color="var(--brand-ink)" stroke={2.2} />
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.01em' }}>Form a Pod</div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginTop: 3 }}>Build your table, start a game</div>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--brand-ink)' }}>
+            {eyebrow}
+          </div>
+          <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.02em', marginTop: 2 }}>{title}</div>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--muted)', marginTop: 3, lineHeight: 1.3 }}>{sub}</div>
         </div>
-        <_HI name="chevR" size={18} color="var(--muted)" />
+        <span style={{
+          width: 36, height: 36, borderRadius: 999, flexShrink: 0,
+          background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <_HI name="arrowR" size={18} color="#fff" stroke={2.4} />
+        </span>
       </button>
     </div>
   );
 }
 
-function ActionTile({ icon, label, sub, live, badge, onTap }) {
+// ── Secondary actions — compact 2×2 grid, demoted weight ──
+function SecondaryGrid({ requests, nearbyCount, checkedIn, homeStore, onTab, onLogGame, onOpenStores, onFormPod }) {
+  const firstTile = checkedIn
+    ? { icon: 'storefront', label: 'Switch Store', sub: homeStore, onTap: () => onOpenStores('s1') }
+    : { icon: 'swords', label: 'Form a Pod', sub: 'Build your table', onTap: onFormPod };
+
+  const tiles = [
+    firstTile,
+    { icon: 'radar', label: 'Discover', sub: `${nearbyCount} nearby now`, onTap: () => onTab('discover') },
+    {
+      icon: 'users', label: 'Connections',
+      sub: requests.length > 0 ? `${requests.length} pending` : 'Your network',
+      badge: requests.length || null, onTap: () => onTab('connect'),
+    },
+    { icon: 'cards', label: 'Log a Game', sub: 'Record a result', onTap: onLogGame },
+  ];
+
+  return (
+    <div style={{ padding: '10px 16px 0' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        {tiles.map((tile, i) => <SecondaryTile key={i} {...tile} />)}
+      </div>
+    </div>
+  );
+}
+
+function SecondaryTile({ icon, label, sub, badge, onTap }) {
   const [pressed, setPressed] = _Hus(false);
   return (
     <button
@@ -184,43 +193,37 @@ function ActionTile({ icon, label, sub, live, badge, onTap }) {
       onPointerLeave={() => setPressed(false)}
       onClick={onTap}
       style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 11,
-        background: 'var(--surface)', border: '1px solid var(--line)',
-        borderRadius: 'var(--r-lg)', padding: '15px 14px 14px',
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8,
+        background: 'var(--bg)', border: '1px solid var(--line)',
+        borderRadius: 'var(--r-md)', padding: 12,
         cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-        boxShadow: 'var(--shadow-card)', WebkitTapHighlightColor: 'transparent',
-        position: 'relative', transition: 'transform .1s ease, box-shadow .1s ease',
+        WebkitTapHighlightColor: 'transparent',
+        position: 'relative', transition: 'transform .1s ease',
         transform: pressed ? 'scale(0.96)' : 'scale(1)',
       }}>
 
       {/* badge */}
       {badge ? (
         <span style={{
-          position: 'absolute', top: 11, right: 11, minWidth: 18, height: 18,
+          position: 'absolute', top: 10, right: 10, minWidth: 18, height: 18,
           borderRadius: 999, background: '#E8484A', color: '#fff', fontSize: 11,
           fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '0 4px', border: '2px solid var(--surface)',
+          padding: '0 4px', border: '2px solid var(--bg)',
         }}>{badge}</span>
       ) : null}
 
       {/* icon well */}
       <span style={{
-        width: 44, height: 44, borderRadius: 14, flexShrink: 0, position: 'relative',
-        background: 'color-mix(in srgb, var(--brand) 12%, var(--surface))',
+        width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+        background: 'var(--surface)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <_HI name={icon} size={22} color="color-mix(in srgb, var(--brand) 72%, var(--ink))" stroke={2.2} />
-        {live && (
-          <span style={{
-            position: 'absolute', top: -2, right: -2, width: 11, height: 11,
-            borderRadius: 999, background: '#4ade80', border: '2.5px solid var(--surface)',
-          }} />
-        )}
+        <_HI name={icon} size={18} color="var(--muted)" stroke={2} />
       </span>
 
       <div style={{ minWidth: 0, width: '100%' }}>
-        <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{label}</div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', marginTop: 3, lineHeight: 1.3 }}>{sub}</div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>{label}</div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', marginTop: 1, lineHeight: 1.3 }}>{sub}</div>
       </div>
     </button>
   );
@@ -360,7 +363,10 @@ function ProgressSection({ stats, quests, onHistory }) {
 }
 
 // ── HomeScreen ────────────────────────────────────────────
-function HomeScreen({ me, connections, requests, pendingGames, games, quests, pods, lfg, notifUnread, onTab, onLogGame, onBell, onOpenStores, onOpenHistory, onFormPod }) {
+// checkedIn drives the single primary hero action: checked in → Open to
+// Play / Form a Pod, checked out → Find a Store. Everything else demotes
+// into the secondary 2×2 grid below it.
+function HomeScreen({ me, connections, requests, pendingGames, games, quests, pods, lfg, notifUnread, checkedIn = true, onTab, onLogGame, onBell, onOpenStores, onOpenHistory, onFormPod }) {
   const stats = window.gameStats ? window.gameStats(games) : { wins: 0, losses: 0, winRate: 0 };
   const activeQuests = (quests ?? []).filter(q => !q.done);
   const todayEvents = _MMH.TODAY_EVENTS ?? [];
@@ -369,13 +375,30 @@ function HomeScreen({ me, connections, requests, pendingGames, games, quests, po
   return (
     <div style={{ paddingBottom: 28 }}>
       <IdentityBanner
-        me={me} lfg={lfg} todayEvents={todayEvents}
+        me={me} lfg={lfg} todayEvents={todayEvents} checkedIn={checkedIn}
         onBell={onBell} notifUnread={notifUnread} onOpenStores={onOpenStores}
       />
-      <QuickActions
-        lfg={lfg} requests={requests} nearbyCount={nearbyCount}
-        onTab={onTab} onLogGame={onLogGame} onGoOpen={lfg.onGoOpen}
-        onFormPod={onFormPod}
+      {checkedIn ? (
+        <HeroAction
+          icon="sparkle"
+          eyebrow="Open to Play"
+          title="Form a Pod"
+          sub={lfg.open ? `Open · ${fmtMins(lfg.session?.mins)} left — tap to manage` : 'Build your table, start a game, track your life'}
+          onTap={onFormPod}
+        />
+      ) : (
+        <HeroAction
+          icon="storefront"
+          eyebrow="Get Started"
+          title="Find a Store"
+          sub="Check in nearby to find your table"
+          onTap={() => onOpenStores && onOpenStores(null)}
+        />
+      )}
+      <SecondaryGrid
+        requests={requests} nearbyCount={nearbyCount}
+        checkedIn={checkedIn} homeStore={me.homeStore}
+        onTab={onTab} onLogGame={onLogGame} onOpenStores={onOpenStores} onFormPod={onFormPod}
       />
       <AttentionSection requests={requests} pendingGames={pendingGames} onTab={onTab} />
       {todayEvents.length > 0 && (

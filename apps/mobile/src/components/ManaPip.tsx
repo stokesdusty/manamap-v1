@@ -16,13 +16,7 @@ interface ManaPipProps {
   style?: ViewStyle;
 }
 
-export function ManaPip({
-  color,
-  size = 22,
-  showLetter = true,
-  ring = true,
-  style,
-}: ManaPipProps) {
+export function ManaPip({ color, size = 22, showLetter = true, ring = true, style }: ManaPipProps) {
   const gradId = `mana-grad-${color}`;
   const stroke = ring ? 1.5 : 0;
   const r = (size - stroke) / 2;
@@ -48,12 +42,7 @@ export function ManaPip({
       </Svg>
       {showLetter && (
         <View style={styles.letterWrap} pointerEvents="none">
-          <Text
-            style={[
-              styles.letter,
-              { color: colors.manaLetter[color], fontSize: size * 0.5 },
-            ]}
-          >
+          <Text style={[styles.letter, { color: colors.manaLetter[color], fontSize: size * 0.5 }]}>
             {color}
           </Text>
         </View>
@@ -64,7 +53,7 @@ export function ManaPip({
 
 const styles = StyleSheet.create({
   letterWrap: {
-    ...StyleSheet.absoluteFill as object,
+    ...(StyleSheet.absoluteFill as object),
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -2,9 +2,7 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { ManaColor } from '@manamap/shared';
@@ -42,7 +41,10 @@ interface DraftPlayer extends RosterPlayer {
 
 function PlayerAvatar({ player, size = 36 }: { player: RosterPlayer; size?: number }) {
   const initial = player.displayName.charAt(0).toUpperCase();
-  const fill = player.avatarColors.length > 0 ? colors.mana[player.avatarColors[0] as ManaColor] ?? colors.border : colors.border;
+  const fill =
+    player.avatarColors.length > 0
+      ? (colors.mana[player.avatarColors[0] as ManaColor] ?? colors.border)
+      : colors.border;
   const textFill =
     player.avatarColors[0] === 'W' || player.avatarColors[0] === 'G'
       ? colors.textPrimary
@@ -55,7 +57,12 @@ function PlayerAvatar({ player, size = 36 }: { player: RosterPlayer; size?: numb
 }
 
 const avatar = StyleSheet.create({
-  root: { borderRadius: radii.avatar, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  root: {
+    borderRadius: radii.avatar,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   text: { fontFamily: typography.fontFamily.bold },
 });
 
@@ -122,7 +129,11 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
   const { mutate: createGame, isPending } = useCreateGame();
 
   const mePlayer: RosterPlayer | null = profile
-    ? { userId: profile.id, displayName: profile.displayName, avatarColors: profile.avatarColors as string[] }
+    ? {
+        userId: profile.id,
+        displayName: profile.displayName,
+        avatarColors: profile.avatarColors as string[],
+      }
     : null;
 
   const [step, setStep] = useState<Step>('roster');
@@ -131,9 +142,7 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
 
   function initRoster() {
     if (!mePlayer) return;
-    const base: DraftPlayer[] = [
-      { ...mePlayer, deck: profile?.commander ?? '' },
-    ];
+    const base: DraftPlayer[] = [{ ...mePlayer, deck: profile?.commander ?? '' }];
     if (preselectedPlayers) {
       for (const p of preselectedPlayers) {
         if (p.userId !== mePlayer.userId) {
@@ -233,7 +242,9 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
                   onPress={() => addToRoster(c)}
                 >
                   <PlayerAvatar player={c} />
-                  <Text style={sh.playerName} numberOfLines={1}>{c.displayName}</Text>
+                  <Text style={sh.playerName} numberOfLines={1}>
+                    {c.displayName}
+                  </Text>
                   <Ionicons name="add-circle-outline" size={20} color={colors.accent} />
                 </Pressable>
               ))}
@@ -247,7 +258,11 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
 
         <View style={sh.footer}>
           <Pressable
-            style={({ pressed }) => [sh.nextBtn, roster.length < 2 && sh.nextBtnDisabled, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [
+              sh.nextBtn,
+              roster.length < 2 && sh.nextBtnDisabled,
+              pressed && { opacity: 0.8 },
+            ]}
             onPress={() => setStep('decks')}
             disabled={roster.length < 2}
           >
@@ -272,33 +287,32 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
           title="What did you play?"
           {...(!preselectedPlayers ? { onBack: () => setStep('roster') } : {})}
         />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
+        <KeyboardAwareScrollView
+          contentContainerStyle={sh.scroll}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={spacing.xl}
         >
-          <ScrollView contentContainerStyle={sh.scroll} keyboardShouldPersistTaps="handled">
-            <Text style={sh.hint}>Optional — deck names shown in your game history.</Text>
-            {roster.map((p) => (
-              <View key={p.userId} style={sh.deckRow}>
-                <PlayerAvatar player={p} size={32} />
-                <View style={{ flex: 1, gap: spacing.xs }}>
-                  <Text style={sh.deckName} numberOfLines={1}>
-                    {p.displayName}
-                    {p.userId === mePlayer?.userId ? ' (you)' : ''}
-                  </Text>
-                  <TextInput
-                    style={sh.deckInput}
-                    value={p.deck}
-                    onChangeText={(v) => updateDeck(p.userId, v)}
-                    placeholder="Deck name (optional)"
-                    placeholderTextColor={colors.textTertiary}
-                    maxLength={128}
-                  />
-                </View>
+          <Text style={sh.hint}>Optional — deck names shown in your game history.</Text>
+          {roster.map((p) => (
+            <View key={p.userId} style={sh.deckRow}>
+              <PlayerAvatar player={p} size={32} />
+              <View style={{ flex: 1, gap: spacing.xs }}>
+                <Text style={sh.deckName} numberOfLines={1}>
+                  {p.displayName}
+                  {p.userId === mePlayer?.userId ? ' (you)' : ''}
+                </Text>
+                <TextInput
+                  style={sh.deckInput}
+                  value={p.deck}
+                  onChangeText={(v) => updateDeck(p.userId, v)}
+                  placeholder="Deck name (optional)"
+                  placeholderTextColor={colors.textTertiary}
+                  maxLength={128}
+                />
               </View>
-            ))}
-          </ScrollView>
-        </KeyboardAvoidingView>
+            </View>
+          ))}
+        </KeyboardAwareScrollView>
 
         <View style={sh.footer}>
           <Pressable
@@ -332,7 +346,11 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
             return (
               <Pressable
                 key={p.userId}
-                style={({ pressed }) => [sh.winnerRow, selected && sh.winnerRowSelected, pressed && { opacity: 0.8 }]}
+                style={({ pressed }) => [
+                  sh.winnerRow,
+                  selected && sh.winnerRowSelected,
+                  pressed && { opacity: 0.8 },
+                ]}
                 onPress={() => setWinnerId(p.userId)}
               >
                 <PlayerAvatar player={p} />
@@ -351,7 +369,11 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
 
         <View style={sh.footer}>
           <Pressable
-            style={({ pressed }) => [sh.nextBtn, !winnerId && sh.nextBtnDisabled, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [
+              sh.nextBtn,
+              !winnerId && sh.nextBtnDisabled,
+              pressed && { opacity: 0.8 },
+            ]}
             onPress={() => winnerId && setStep('confirm')}
             disabled={!winnerId}
           >
@@ -391,7 +413,9 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
             {winner && (
               <View style={sh.winnerHero}>
                 <PlayerAvatar player={winner} size={40} />
-                <Text style={sh.winnerHeroName} numberOfLines={1}>{winner.displayName}</Text>
+                <Text style={sh.winnerHeroName} numberOfLines={1}>
+                  {winner.displayName}
+                </Text>
                 <Ionicons name="sparkles" size={18} color={colors.accent} />
               </View>
             )}
@@ -399,7 +423,9 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
             {others.map((p) => (
               <View key={p.userId} style={sh.confirmRow}>
                 <PlayerAvatar player={p} size={26} />
-                <Text style={sh.confirmName} numberOfLines={1}>{p.displayName}</Text>
+                <Text style={sh.confirmName} numberOfLines={1}>
+                  {p.displayName}
+                </Text>
               </View>
             ))}
           </View>
@@ -411,7 +437,11 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
 
         <View style={sh.footer}>
           <Pressable
-            style={({ pressed }) => [sh.nextBtn, isPending && sh.nextBtnDisabled, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [
+              sh.nextBtn,
+              isPending && sh.nextBtnDisabled,
+              pressed && { opacity: 0.8 },
+            ]}
             onPress={handleSubmit}
             disabled={isPending}
           >
@@ -439,7 +469,11 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
     >
       <SafeAreaView style={sh.safe}>
         <View style={sh.topBar}>
-          <Pressable onPress={onClose} hitSlop={8} style={({ pressed }) => pressed && { opacity: 0.6 }}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            style={({ pressed }) => pressed && { opacity: 0.6 }}
+          >
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={sh.topTitle}>Log game</Text>

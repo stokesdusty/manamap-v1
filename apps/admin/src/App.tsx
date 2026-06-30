@@ -35,7 +35,10 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={isAuthenticated ? <Navigate to="/stores" replace /> : <LoginPage />} />
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/stores" replace /> : <LoginPage />}
+      />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/support" element={<SupportPage />} />
       <Route

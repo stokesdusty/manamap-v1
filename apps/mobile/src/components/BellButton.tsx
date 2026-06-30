@@ -14,11 +14,7 @@ export function BellButton() {
   const badge = count !== undefined && count > 0;
 
   return (
-    <Pressable
-      onPress={() => navigation.navigate('Notifications')}
-      style={styles.btn}
-      hitSlop={8}
-    >
+    <Pressable onPress={() => navigation.navigate('Notifications')} style={styles.btn} hitSlop={8}>
       <View style={styles.iconWrap}>
         <Ionicons name="notifications" size={28} color={colors.textSecondary} />
         {badge && (

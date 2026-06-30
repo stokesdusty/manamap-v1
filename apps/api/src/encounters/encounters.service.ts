@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConnectionStatus } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import type { PrismaService } from '../prisma/prisma.service';
 
 const PEER_SELECT = {
   id: true,
@@ -49,7 +49,9 @@ export class EncountersService {
     );
 
     // Collect unique peer ids for a single profile + privacy fetch
-    const peerIds = [...new Set(rawEncounters.map((e) => (e.userId === userId ? e.opponentId : e.userId)))];
+    const peerIds = [
+      ...new Set(rawEncounters.map((e) => (e.userId === userId ? e.opponentId : e.userId))),
+    ];
 
     const peers = await this.prisma.user.findMany({
       where: { id: { in: peerIds } },

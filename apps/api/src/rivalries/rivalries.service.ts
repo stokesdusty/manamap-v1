@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EncounterResult, EncounterSource, ModerationStatus } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { SafetyService } from '../safety/safety.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { SafetyService } from '../safety/safety.service';
 
 const PROFILE_SELECT = {
   id: true,
@@ -47,7 +47,13 @@ export class RivalriesService {
     for (const e of encounters) {
       let entry = map.get(e.opponentId);
       if (!entry) {
-        entry = { gameIds: new Set(), recentGameIds: new Set(), wins: 0, losses: 0, lastAt: e.createdAt };
+        entry = {
+          gameIds: new Set(),
+          recentGameIds: new Set(),
+          wins: 0,
+          losses: 0,
+          lastAt: e.createdAt,
+        };
         map.set(e.opponentId, entry);
       }
       if (e.gameId) {
@@ -62,7 +68,20 @@ export class RivalriesService {
     return map;
   }
 
-  private shape(opp: { id: string; displayName: string; pronouns: string | null; bio: string | null; avatarColors: string[]; commander: string | null; powerLevel: number | null; vibes: string[]; formats: string[] }, stats: Stats) {
+  private shape(
+    opp: {
+      id: string;
+      displayName: string;
+      pronouns: string | null;
+      bio: string | null;
+      avatarColors: string[];
+      commander: string | null;
+      powerLevel: number | null;
+      vibes: string[];
+      formats: string[];
+    },
+    stats: Stats,
+  ) {
     return {
       opponentId: opp.id,
       displayName: opp.displayName,

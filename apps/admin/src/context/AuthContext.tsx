@@ -26,8 +26,8 @@ interface AuthState {
 const AuthContext = createContext<AuthState>(null!);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [accessToken, setAccessToken] = useState<string | null>(
-    () => localStorage.getItem('accessToken'),
+  const [accessToken, setAccessToken] = useState<string | null>(() =>
+    localStorage.getItem('accessToken'),
   );
 
   const role = accessToken ? (parseJwt(accessToken)?.role ?? null) : null;
@@ -45,7 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ accessToken, role, isAuthenticated: !!accessToken, login, logout }}>
+    <AuthContext.Provider
+      value={{ accessToken, role, isAuthenticated: !!accessToken, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

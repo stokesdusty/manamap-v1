@@ -127,10 +127,7 @@ function DetailPanel({
       )}
 
       {submission.lat != null && submission.lng != null && (
-        <div
-          className="mod-detail-card"
-          style={{ padding: 0, overflow: 'hidden' }}
-        >
+        <div className="mod-detail-card" style={{ padding: 0, overflow: 'hidden' }}>
           <iframe
             title="Store location"
             src={`https://maps.google.com/maps?q=${submission.lat},${submission.lng}&z=16&output=embed`}

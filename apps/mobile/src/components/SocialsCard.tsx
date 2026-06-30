@@ -2,28 +2,21 @@ import {
   ActivityIndicator,
   Alert,
   Clipboard,
-  KeyboardAvoidingView,
   Linking,
   Modal,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { useState } from 'react';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { SocialLink, SocialPlatform, SocialVisibility } from '@manamap/shared';
 import { colors, radii, shadows, spacing, typography } from '../theme';
-import {
-  useAddSocial,
-  useDeleteSocial,
-  useSocials,
-  useUpdateSocial,
-} from '../hooks/useSocials';
+import { useAddSocial, useDeleteSocial, useSocials, useUpdateSocial } from '../hooks/useSocials';
 
 // ---------------------------------------------------------------------------
 // Platform metadata
@@ -129,7 +122,16 @@ export const SOCIAL_META: Record<SocialPlatform, PlatformMeta> = {
   },
 };
 
-const ALL_PLATFORMS = Object.keys(SOCIAL_META) as SocialPlatform[];
+export const ALL_PLATFORMS = Object.keys(SOCIAL_META) as SocialPlatform[];
+
+export function socialKeyboardType(
+  platform: SocialPlatform,
+): 'email-address' | 'url' | 'phone-pad' | 'default' {
+  if (platform === 'EMAIL') return 'email-address';
+  if (SOCIAL_META[platform].isUrl) return 'url';
+  if (SOCIAL_META[platform].isPhone) return 'phone-pad';
+  return 'default';
+}
 
 const VISIBILITY_OPTIONS: Array<{ value: SocialVisibility; label: string }> = [
   { value: 'PUBLIC', label: 'Public' },
@@ -138,23 +140,43 @@ const VISIBILITY_OPTIONS: Array<{ value: SocialVisibility; label: string }> = [
 ];
 
 // ---------------------------------------------------------------------------
-// PlatformTile — brand-colored icon chip in the rail
+// PlatformTile — monochrome icon chip; brand color only on press/active
 // ---------------------------------------------------------------------------
 
-function PlatformTile({ platform, size = 36, dim }: { platform: SocialPlatform; size?: number; dim?: boolean }) {
+// Monochrome by default — the platform brand color only fills the tile when
+// `active` (pressed/selected); otherwise it's a thin 2px edge so the rail
+// doesn't compete with the identity gradient for attention.
+function PlatformTile({
+  platform,
+  size = 36,
+  dim,
+  active,
+}: {
+  platform: SocialPlatform;
+  size?: number;
+  dim?: boolean;
+  active?: boolean;
+}) {
   const meta = SOCIAL_META[platform];
   return (
     <View
       style={[
         tile.root,
-        { width: size, height: size, borderRadius: size * 0.3, backgroundColor: meta.color },
+        {
+          width: size,
+          height: size,
+          borderRadius: size * 0.3,
+          backgroundColor: active ? meta.color : colors.chipBg,
+          borderWidth: active ? 0 : 2,
+          borderColor: meta.color,
+        },
         dim && tile.dim,
       ]}
     >
       <Ionicons
         name={meta.iconName as never}
         size={size * 0.5}
-        color="#fff"
+        color={active ? '#fff' : colors.textSecondary}
       />
     </View>
   );
@@ -175,18 +197,30 @@ const tile = StyleSheet.create({
 function getProfileUrl(platform: SocialPlatform, value: string): string | null {
   const handle = value.startsWith('@') ? value.slice(1) : value;
   switch (platform) {
-    case 'INSTAGRAM': return `https://www.instagram.com/${handle}`;
-    case 'TWITCH':    return `https://www.twitch.tv/${handle}`;
-    case 'YOUTUBE':   return `https://www.youtube.com/@${handle}`;
-    case 'X':         return `https://x.com/${handle}`;
-    case 'TIKTOK':    return `https://www.tiktok.com/@${handle}`;
-    case 'FACEBOOK':  return value.startsWith('http') ? value : `https://www.facebook.com/${handle}`;
-    case 'BLUESKY':   return `https://bsky.app/profile/${handle}`;
-    case 'WEBSITE':   return value;
-    case 'PHONE':     return `tel:${value}`;
-    case 'EMAIL':     return `mailto:${value}`;
-    case 'DISCORD':   return null;
-    default:          return null;
+    case 'INSTAGRAM':
+      return `https://www.instagram.com/${handle}`;
+    case 'TWITCH':
+      return `https://www.twitch.tv/${handle}`;
+    case 'YOUTUBE':
+      return `https://www.youtube.com/@${handle}`;
+    case 'X':
+      return `https://x.com/${handle}`;
+    case 'TIKTOK':
+      return `https://www.tiktok.com/@${handle}`;
+    case 'FACEBOOK':
+      return value.startsWith('http') ? value : `https://www.facebook.com/${handle}`;
+    case 'BLUESKY':
+      return `https://bsky.app/profile/${handle}`;
+    case 'WEBSITE':
+      return value;
+    case 'PHONE':
+      return `tel:${value}`;
+    case 'EMAIL':
+      return `mailto:${value}`;
+    case 'DISCORD':
+      return null;
+    default:
+      return null;
   }
 }
 
@@ -208,21 +242,27 @@ function SocialRow({ link }: { link: SocialLink }) {
       style={({ pressed }) => [row.root, pressed && { opacity: 0.7 }]}
       onPress={handleAction}
     >
-      <PlatformTile platform={link.platform} size={30} />
-      <View style={row.body}>
-        <Text style={row.label}>{meta.label.toUpperCase()}</Text>
-        <Text style={row.value} numberOfLines={1}>{link.value}</Text>
-      </View>
-      {link.visibility === 'FRIENDS' && (
-        <Ionicons name="people-outline" size={14} color="#D9952E" />
+      {({ pressed }) => (
+        <>
+          <PlatformTile platform={link.platform} size={30} active={pressed} />
+          <View style={row.body}>
+            <Text style={row.label}>{meta.label.toUpperCase()}</Text>
+            <Text style={row.value} numberOfLines={1}>
+              {link.value}
+            </Text>
+          </View>
+          {link.visibility === 'FRIENDS' && (
+            <Ionicons name="people-outline" size={14} color="#D9952E" />
+          )}
+          <View style={row.actionBtn}>
+            <Ionicons
+              name={profileUrl ? 'chevron-forward' : 'copy-outline'}
+              size={15}
+              color={colors.textSecondary}
+            />
+          </View>
+        </>
       )}
-      <View style={row.actionBtn}>
-        <Ionicons
-          name={profileUrl ? 'chevron-forward' : 'copy-outline'}
-          size={15}
-          color={colors.textSecondary}
-        />
-      </View>
     </Pressable>
   );
 }
@@ -322,107 +362,101 @@ function ManageSocialsSheet({ visible, onClose }: ManageSheetProps) {
           <Text style={ms.title}>Your Socials</Text>
         </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
+        <KeyboardAwareScrollView
+          contentContainerStyle={ms.scroll}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={spacing.xl}
         >
-          <ScrollView
-            contentContainerStyle={ms.scroll}
-            keyboardShouldPersistTaps="handled"
-          >
-            {isLoading ? (
-              <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.xl }} />
-            ) : (
-              <>
-                {links.length > 0 && (
-                  <View style={ms.section}>
-                    <Text style={ms.sectionLabel}>Your links</Text>
-                    {links.map((link) => (
-                      <ManageLinkRow
-                        key={link.id}
-                        link={link}
-                        onVisibilityChange={(v) =>
-                          updateSocial({ id: link.id, visibility: v })
-                        }
-                        onDelete={() => confirmDelete(link)}
-                      />
-                    ))}
-                  </View>
-                )}
+          {isLoading ? (
+            <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.xl }} />
+          ) : (
+            <>
+              {links.length > 0 && (
+                <View style={ms.section}>
+                  <Text style={ms.sectionLabel}>Your links</Text>
+                  {links.map((link) => (
+                    <ManageLinkRow
+                      key={link.id}
+                      link={link}
+                      onVisibilityChange={(v) => updateSocial({ id: link.id, visibility: v })}
+                      onDelete={() => confirmDelete(link)}
+                    />
+                  ))}
+                </View>
+              )}
 
-                {availablePlatforms.length > 0 && (
-                  <View style={ms.section}>
-                    <Text style={ms.sectionLabel}>Add platform</Text>
+              {availablePlatforms.length > 0 && (
+                <View style={ms.section}>
+                  <Text style={ms.sectionLabel}>Add platform</Text>
 
-                    {addingPlatform ? (
-                      <View style={ms.addForm}>
-                        <View style={ms.addFormHeader}>
-                          <PlatformTile platform={addingPlatform} size={28} />
-                          <Text style={ms.addFormTitle}>
-                            {SOCIAL_META[addingPlatform].label}
-                          </Text>
-                          <Pressable
-                            onPress={() => { setAddingPlatform(null); setAddValue(''); }}
-                            hitSlop={8}
-                          >
-                            <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
-                          </Pressable>
-                        </View>
-                        <TextInput
-                          style={ms.input}
-                          value={addValue}
-                          onChangeText={setAddValue}
-                          placeholder={SOCIAL_META[addingPlatform].placeholder}
-                          placeholderTextColor={colors.textTertiary}
-                          autoFocus
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                          keyboardType={
-                            addingPlatform === 'EMAIL'
-                              ? 'email-address'
-                              : SOCIAL_META[addingPlatform].isUrl
-                              ? 'url'
-                              : SOCIAL_META[addingPlatform].isPhone
-                              ? 'phone-pad'
-                              : 'default'
-                          }
-                        />
+                  {addingPlatform ? (
+                    <View style={ms.addForm}>
+                      <View style={ms.addFormHeader}>
+                        <PlatformTile platform={addingPlatform} size={28} />
+                        <Text style={ms.addFormTitle}>{SOCIAL_META[addingPlatform].label}</Text>
                         <Pressable
-                          style={({ pressed }) => [
-                            ms.addBtn,
-                            (!addValue.trim() || isAdding) && { opacity: 0.5 },
-                            pressed && { opacity: 0.7 },
-                          ]}
-                          onPress={handleAdd}
-                          disabled={!addValue.trim() || isAdding}
+                          onPress={() => {
+                            setAddingPlatform(null);
+                            setAddValue('');
+                          }}
+                          hitSlop={8}
                         >
-                          {isAdding ? (
-                            <ActivityIndicator size="small" color={colors.textInverse} />
-                          ) : (
-                            <Text style={ms.addBtnText}>Add</Text>
-                          )}
+                          <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
                         </Pressable>
                       </View>
-                    ) : (
-                      <View style={ms.platformGrid}>
-                        {availablePlatforms.map((p) => (
-                          <Pressable
-                            key={p}
-                            style={({ pressed }) => [ms.platformBtn, pressed && { opacity: 0.7 }]}
-                            onPress={() => { setAddingPlatform(p); setAddValue(''); }}
-                          >
-                            <PlatformTile platform={p} size={32} />
-                            <Text style={ms.platformBtnLabel}>{SOCIAL_META[p].label}</Text>
-                          </Pressable>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                )}
-              </>
-            )}
-          </ScrollView>
-        </KeyboardAvoidingView>
+                      <TextInput
+                        style={ms.input}
+                        value={addValue}
+                        onChangeText={setAddValue}
+                        placeholder={SOCIAL_META[addingPlatform].placeholder}
+                        placeholderTextColor={colors.textTertiary}
+                        autoFocus
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        keyboardType={socialKeyboardType(addingPlatform)}
+                      />
+                      <Pressable
+                        style={({ pressed }) => [
+                          ms.addBtn,
+                          (!addValue.trim() || isAdding) && { opacity: 0.5 },
+                          pressed && { opacity: 0.7 },
+                        ]}
+                        onPress={handleAdd}
+                        disabled={!addValue.trim() || isAdding}
+                      >
+                        {isAdding ? (
+                          <ActivityIndicator size="small" color={colors.textInverse} />
+                        ) : (
+                          <Text style={ms.addBtnText}>Add</Text>
+                        )}
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <View style={ms.platformGrid}>
+                      {availablePlatforms.map((p) => (
+                        <Pressable
+                          key={p}
+                          style={({ pressed }) => [ms.platformBtn, pressed && { opacity: 0.7 }]}
+                          onPress={() => {
+                            setAddingPlatform(p);
+                            setAddValue('');
+                          }}
+                        >
+                          {({ pressed }) => (
+                            <>
+                              <PlatformTile platform={p} size={32} active={pressed} />
+                              <Text style={ms.platformBtnLabel}>{SOCIAL_META[p].label}</Text>
+                            </>
+                          )}
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+            </>
+          )}
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     </Modal>
   );
@@ -444,7 +478,9 @@ function ManageLinkRow({
       <View style={ml.topRow}>
         <PlatformTile platform={link.platform} size={28} />
         <Text style={ml.platformLabel}>{meta.label}</Text>
-        <Text style={ml.value} numberOfLines={1}>{link.value}</Text>
+        <Text style={ml.value} numberOfLines={1}>
+          {link.value}
+        </Text>
         <Pressable
           onPress={onDelete}
           hitSlop={8}
@@ -464,12 +500,7 @@ function ManageLinkRow({
             ]}
             onPress={() => onVisibilityChange(opt.value)}
           >
-            <Text
-              style={[
-                ml.visSegText,
-                link.visibility === opt.value && ml.visSegTextActive,
-              ]}
-            >
+            <Text style={[ml.visSegText, link.visibility === opt.value && ml.visSegTextActive]}>
               {opt.label}
             </Text>
           </Pressable>
@@ -623,7 +654,12 @@ type SocialsCardProps = {
   friendsOnlyCount?: number;
 };
 
-export function SocialsCard({ mode, links, publicCount = 0, friendsOnlyCount = 0 }: SocialsCardProps) {
+export function SocialsCard({
+  mode,
+  links,
+  publicCount = 0,
+  friendsOnlyCount = 0,
+}: SocialsCardProps) {
   const [manageOpen, setManageOpen] = useState(false);
 
   const { data: ownLinks = [], isLoading: ownLoading } = useSocials();
@@ -632,16 +668,12 @@ export function SocialsCard({ mode, links, publicCount = 0, friendsOnlyCount = 0
   const displayLinks = isOwner ? ownLinks : (links ?? []);
   const isLoading = isOwner && ownLoading;
 
-  const hiddenCount = isOwner
-    ? ownLinks.filter((l) => l.visibility === 'HIDDEN').length
-    : 0;
+  const hiddenCount = isOwner ? ownLinks.filter((l) => l.visibility === 'HIDDEN').length : 0;
 
   const ownerPublicCount = isOwner
     ? ownLinks.filter((l) => l.visibility === 'PUBLIC').length
     : publicCount;
-  const ownerFriendsCount = isOwner
-    ? ownLinks.filter((l) => l.visibility === 'FRIENDS').length
-    : 0;
+  const ownerFriendsCount = isOwner ? ownLinks.filter((l) => l.visibility === 'FRIENDS').length : 0;
 
   const isEmpty = displayLinks.length === 0;
 
@@ -667,7 +699,7 @@ export function SocialsCard({ mode, links, publicCount = 0, friendsOnlyCount = 0
         <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.sm }} />
       ) : (
         <>
-          {/* Colorful icon rail — owner only; non-owner views use the detailed row list below */}
+          {/* Monochrome icon rail — owner only; non-owner views use the detailed row list below */}
           {isOwner && ownLinks.length > 0 && (
             <View style={sc.rail}>
               {ownLinks.map((link) => (
@@ -682,8 +714,8 @@ export function SocialsCard({ mode, links, publicCount = 0, friendsOnlyCount = 0
           )}
 
           {/* Row list — non-owner only */}
-          {!isOwner && (
-            isEmpty ? null : (
+          {!isOwner &&
+            (isEmpty ? null : (
               <View style={sc.rows}>
                 {displayLinks.map((link, i) => (
                   <View key={link.id} style={i > 0 ? sc.rowDivider : undefined}>
@@ -691,8 +723,7 @@ export function SocialsCard({ mode, links, publicCount = 0, friendsOnlyCount = 0
                   </View>
                 ))}
               </View>
-            )
-          )}
+            ))}
 
           {/* Owner summary badges */}
           {isOwner && ownLinks.length > 0 && (
@@ -728,9 +759,7 @@ export function SocialsCard({ mode, links, publicCount = 0, friendsOnlyCount = 0
       {mode === 'public' && friendsOnlyCount > 0 && (
         <View style={sc.teaser}>
           <Ionicons name="people-outline" size={15} color={colors.textTertiary} />
-          <Text style={sc.teaserText}>
-            +{friendsOnlyCount} more shared once you connect
-          </Text>
+          <Text style={sc.teaserText}>+{friendsOnlyCount} more shared once you connect</Text>
         </View>
       )}
 

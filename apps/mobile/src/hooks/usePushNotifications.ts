@@ -76,6 +76,7 @@ export function usePushNotifications(isAuthenticated: boolean) {
           navigationRef.navigate('Main');
           break;
         case 'event_reminder':
+        case 'store_active':
           navigationRef.navigate('Main');
           break;
         case 'store_broadcast': {

@@ -1,8 +1,13 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { NotificationKind, StoreClaimStatus } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationKind, StoreClaimStatus, UserRole } from '@prisma/client';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AdminStoreClaimsService {
@@ -40,7 +45,13 @@ export class AdminStoreClaimsService {
   async approve(claimId: string, adminId: string) {
     const claim = await this.prisma.storeClaim.findUnique({
       where: { id: claimId },
-      select: { id: true, storeId: true, userId: true, status: true, store: { select: { name: true } } },
+      select: {
+        id: true,
+        storeId: true,
+        userId: true,
+        status: true,
+        store: { select: { name: true } },
+      },
     });
     if (!claim) throw new NotFoundException('Claim not found');
     if (claim.status !== StoreClaimStatus.PENDING) {
@@ -62,12 +73,16 @@ export class AdminStoreClaimsService {
       }),
       this.prisma.storeOwnership.upsert({
         where: { userId_storeId: { userId: claim.userId, storeId: claim.storeId } },
-        create: { id: randomBytes(16).toString('hex'), userId: claim.userId, storeId: claim.storeId },
+        create: {
+          id: randomBytes(16).toString('hex'),
+          userId: claim.userId,
+          storeId: claim.storeId,
+        },
         update: {},
       }),
       this.prisma.user.update({
         where: { id: claim.userId },
-        data: { role: { set: 'PARTNER' } as any },
+        data: { role: { set: UserRole.PARTNER } },
       }),
     ]);
 
@@ -110,7 +125,13 @@ export class AdminStoreClaimsService {
   async reject(claimId: string, adminId: string, reason?: string) {
     const claim = await this.prisma.storeClaim.findUnique({
       where: { id: claimId },
-      select: { id: true, storeId: true, status: true, userId: true, store: { select: { name: true } } },
+      select: {
+        id: true,
+        storeId: true,
+        status: true,
+        userId: true,
+        store: { select: { name: true } },
+      },
     });
     if (!claim) throw new NotFoundException('Claim not found');
     if (claim.status !== StoreClaimStatus.PENDING) {
@@ -130,7 +151,9 @@ export class AdminStoreClaimsService {
     await this.notifications.create(claim.userId, {
       kind: NotificationKind.BROADCAST,
       title: 'Your store claim was not approved',
-      body: reason ? `${claim.store.name}: ${reason}` : `Your claim for ${claim.store.name} was not approved.`,
+      body: reason
+        ? `${claim.store.name}: ${reason}`
+        : `Your claim for ${claim.store.name} was not approved.`,
       data: { type: 'store_claim_rejected', storeId: claim.storeId },
     });
 

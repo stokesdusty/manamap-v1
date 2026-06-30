@@ -1,9 +1,10 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type Redis from 'ioredis';
-import { ConnectionStatus, ModerationActionType, ModerationStatus, ReportStatus } from '@prisma/client';
+import type { ModerationActionType } from '@prisma/client';
+import { ConnectionStatus, ModerationStatus, ReportStatus } from '@prisma/client';
 import type { ResolveReport } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
-import { PrismaService } from '../prisma/prisma.service';
+import type { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AdminModerationService {
@@ -168,8 +169,7 @@ export class AdminModerationService {
     });
     if (!report) throw new NotFoundException('Report not found');
 
-    const newStatus =
-      dto.action === 'DISMISS' ? ReportStatus.REVIEWED : ReportStatus.ACTIONED;
+    const newStatus = dto.action === 'DISMISS' ? ReportStatus.REVIEWED : ReportStatus.ACTIONED;
 
     await this.prisma.$transaction(async (tx) => {
       await tx.report.update({

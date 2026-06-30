@@ -28,17 +28,21 @@ function displayValue(s) {
   return m.pre + s.value;
 }
 
-// ── colorful icon tile ────────────────────────────────────
-function SocialTile({ platform, size = 44, dim }) {
+// ── monochrome icon tile — brand color only fills when `active` (press/select);
+// otherwise a thin 2px edge keeps the platform recognizable without competing
+// with the identity gradient for attention.
+function SocialTile({ platform, size = 44, dim, active }) {
   const m = SOCIAL_META[platform] || SOCIAL_META.website;
   return (
     <span style={{
       width: size, height: size, borderRadius: size * 0.3, flexShrink: 0,
-      background: m.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-      boxShadow: dim ? 'none' : `0 4px 12px ${m.color}55`, opacity: dim ? 0.4 : 1,
-      filter: dim ? 'grayscale(0.5)' : 'none',
+      background: active ? m.color : 'var(--chip-bg)',
+      border: active ? 'none' : `2px solid ${m.color}`,
+      boxSizing: 'border-box',
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      opacity: dim ? 0.4 : 1,
     }}>
-      <_SI name={m.icon} size={size * 0.5} color="#fff" stroke={2.2} />
+      <_SI name={m.icon} size={size * 0.5} color={active ? '#fff' : 'var(--ink-2)'} stroke={2.2} />
     </span>
   );
 }
@@ -91,8 +95,8 @@ function SocialsCard({ socials, mode = 'public', onManage, onCopy }) {
           const m = SOCIAL_META[s.platform] || SOCIAL_META.website;
           return (
             <div key={s.platform} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 15px', borderTop: '1px solid var(--line)' }}>
-              <span style={{ width: 30, height: 30, borderRadius: 9, background: m.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <_SI name={m.icon} size={16} color="#fff" stroke={2.3} />
+              <span style={{ width: 30, height: 30, borderRadius: 9, boxSizing: 'border-box', background: 'var(--chip-bg)', border: `2px solid ${m.color}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <_SI name={m.icon} size={16} color="var(--ink-2)" stroke={2.3} />
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--muted)' }}>{m.label}</div>
@@ -154,8 +158,8 @@ function SocialsManageSheet({ socials, onChange, onClose }) {
           return (
             <div key={s.platform} style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r-md)', padding: 13 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 11 }}>
-                <span style={{ width: 34, height: 34, borderRadius: 10, background: m.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <_SI name={m.icon} size={18} color="#fff" stroke={2.3} />
+                <span style={{ width: 34, height: 34, borderRadius: 10, boxSizing: 'border-box', background: 'var(--chip-bg)', border: `2px solid ${m.color}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <_SI name={m.icon} size={18} color="var(--ink-2)" stroke={2.3} />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14.5, fontWeight: 800, color: 'var(--ink)' }}>{m.label}</div>
@@ -184,7 +188,7 @@ function SocialsManageSheet({ socials, onChange, onClose }) {
               const m = SOCIAL_META[p];
               return (
                 <button key={p} onClick={() => addPlatform(p)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: '1.5px solid var(--line)', background: 'var(--surface)', cursor: 'pointer', fontFamily: 'inherit', borderRadius: 999, padding: '7px 13px 7px 8px' }}>
-                  <span style={{ width: 26, height: 26, borderRadius: 8, background: m.color, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><_SI name={m.icon} size={15} color="#fff" stroke={2.3} /></span>
+                  <span style={{ width: 26, height: 26, borderRadius: 8, boxSizing: 'border-box', background: 'var(--chip-bg)', border: `2px solid ${m.color}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><_SI name={m.icon} size={15} color="var(--ink-2)" stroke={2.3} /></span>
                   <span style={{ fontSize: 13.5, fontWeight: 750, color: 'var(--ink)' }}>{m.label}</span>
                 </button>
               );

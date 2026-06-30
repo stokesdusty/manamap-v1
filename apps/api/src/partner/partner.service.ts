@@ -1,8 +1,14 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { EventSource, StoreClaimStatus } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { EventRemindersService } from '../event-reminders/event-reminders.service';
+import { EventSource, StoreClaimStatus, UserRole } from '@prisma/client';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { EventRemindersService } from '../event-reminders/event-reminders.service';
 import { generateCode } from '../common/codes';
 import { EVENT_RECURRENCE_WEEKS } from '@manamap/shared';
 import type {
@@ -39,23 +45,40 @@ export class PartnerService {
     });
     if (existingOwner) {
       await this.prisma.storeClaim.create({
-        data: { storeId, userId, status: StoreClaimStatus.REJECTED, rejectionReason: 'already_claimed' },
+        data: {
+          storeId,
+          userId,
+          status: StoreClaimStatus.REJECTED,
+          rejectionReason: 'already_claimed',
+        },
       });
       throw new ConflictException({ code: 'already_claimed' });
     }
 
     if (dto.code) {
-      const codeMatches = !!store.claimCode && dto.code.trim().toUpperCase() === store.claimCode.toUpperCase();
+      const codeMatches =
+        !!store.claimCode && dto.code.trim().toUpperCase() === store.claimCode.toUpperCase();
       if (!codeMatches) {
         await this.prisma.storeClaim.create({
-          data: { storeId, userId, status: StoreClaimStatus.REJECTED, rejectionReason: 'invalid_code' },
+          data: {
+            storeId,
+            userId,
+            status: StoreClaimStatus.REJECTED,
+            rejectionReason: 'invalid_code',
+          },
         });
         throw new BadRequestException({ code: 'invalid_claim_code' });
       }
 
       await this.prisma.$transaction([
         this.prisma.storeClaim.create({
-          data: { storeId, userId, status: StoreClaimStatus.APPROVED, viaCode: true, reviewedAt: new Date() },
+          data: {
+            storeId,
+            userId,
+            status: StoreClaimStatus.APPROVED,
+            viaCode: true,
+            reviewedAt: new Date(),
+          },
         }),
         this.prisma.storeOwnership.upsert({
           where: { userId_storeId: { userId, storeId } },
@@ -64,7 +87,7 @@ export class PartnerService {
         }),
         this.prisma.user.update({
           where: { id: userId },
-          data: { role: { set: 'PARTNER' } as any },
+          data: { role: { set: UserRole.PARTNER } },
         }),
         this.prisma.store.update({ where: { id: storeId }, data: { claimCode: null } }),
       ]);
@@ -110,7 +133,15 @@ export class PartnerService {
         ...(dto.zip !== undefined ? { zip: dto.zip } : {}),
         ...(dto.discordUrl !== undefined ? { discordUrl: dto.discordUrl } : {}),
       },
-      select: { id: true, name: true, address: true, city: true, state: true, zip: true, discordUrl: true },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        city: true,
+        state: true,
+        zip: true,
+        discordUrl: true,
+      },
     });
   }
 
@@ -160,14 +191,17 @@ export class PartnerService {
     let code: string;
     for (;;) {
       code = generateCode();
-      const existing = await this.prisma.rewardOffer.findUnique({ where: { redemptionCode: code }, select: { id: true } });
+      const existing = await this.prisma.rewardOffer.findUnique({
+        where: { redemptionCode: code },
+        select: { id: true },
+      });
       if (!existing) break;
     }
 
     return this.prisma.rewardOffer.create({
       data: {
         storeId,
-        type: dto.type as any,
+        type: dto.type,
         title: dto.title,
         description: dto.description ?? null,
         terms: dto.terms ?? null,
@@ -181,19 +215,24 @@ export class PartnerService {
 
   async updateOffer(userId: string, storeId: string, offerId: string, dto: UpdateRewardOffer) {
     await this.assertOwner(userId, storeId);
-    const offer = await this.prisma.rewardOffer.findFirst({ where: { id: offerId, storeId }, select: { id: true } });
+    const offer = await this.prisma.rewardOffer.findFirst({
+      where: { id: offerId, storeId },
+      select: { id: true },
+    });
     if (!offer) throw new NotFoundException('Offer not found');
 
     return this.prisma.rewardOffer.update({
       where: { id: offerId },
       data: {
-        ...(dto.type !== undefined ? { type: dto.type as any } : {}),
+        ...(dto.type !== undefined ? { type: dto.type } : {}),
         ...(dto.title !== undefined ? { title: dto.title } : {}),
         ...(dto.description !== undefined ? { description: dto.description } : {}),
         ...(dto.terms !== undefined ? { terms: dto.terms } : {}),
         ...(dto.active !== undefined ? { active: dto.active } : {}),
         ...(dto.streakRequired !== undefined ? { streakRequired: dto.streakRequired } : {}),
-        ...(dto.startsAt !== undefined ? { startsAt: dto.startsAt ? new Date(dto.startsAt) : null } : {}),
+        ...(dto.startsAt !== undefined
+          ? { startsAt: dto.startsAt ? new Date(dto.startsAt) : null }
+          : {}),
         ...(dto.endsAt !== undefined ? { endsAt: dto.endsAt ? new Date(dto.endsAt) : null } : {}),
       },
     });
@@ -201,7 +240,10 @@ export class PartnerService {
 
   async deleteOffer(userId: string, storeId: string, offerId: string) {
     await this.assertOwner(userId, storeId);
-    const offer = await this.prisma.rewardOffer.findFirst({ where: { id: offerId, storeId }, select: { id: true } });
+    const offer = await this.prisma.rewardOffer.findFirst({
+      where: { id: offerId, storeId },
+      select: { id: true },
+    });
     if (!offer) throw new NotFoundException('Offer not found');
     await this.prisma.rewardOffer.delete({ where: { id: offerId } });
   }
@@ -409,7 +451,10 @@ export class PartnerService {
   // ---------------------------------------------------------------------------
 
   private async assertOwner(userId: string, storeId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
     if (user?.role === 'ADMIN') return; // admins bypass ownership check
     const owns = await this.prisma.storeOwnership.findUnique({
       where: { userId_storeId: { userId, storeId } },

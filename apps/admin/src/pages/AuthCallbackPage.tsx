@@ -9,16 +9,20 @@ export function AuthCallbackPage() {
 
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('code');
-    if (!code) { navigate('/login'); return; }
+    if (!code) {
+      navigate('/login');
+      return;
+    }
 
     const key = `discord_exchanged_${code}`;
     if (sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key, '1');
 
-    api.post('/v1/auth/discord', {
-      code,
-      redirectUri: `${window.location.origin}/auth/callback`,
-    })
+    api
+      .post('/v1/auth/discord', {
+        code,
+        redirectUri: `${window.location.origin}/auth/callback`,
+      })
       .then(({ data }) => {
         login(data.accessToken, data.refreshToken);
         navigate('/stores');
@@ -27,7 +31,14 @@ export function AuthCallbackPage() {
   }, [login, navigate]);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
         <p style={{ color: 'var(--text-secondary)' }}>Signing you in…</p>

@@ -4,13 +4,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { EncounterResult, EncounterSource, GameStatus, ModerationStatus, NotificationKind } from '@prisma/client';
+import {
+  EncounterResult,
+  EncounterSource,
+  GameStatus,
+  ModerationStatus,
+  NotificationKind,
+} from '@prisma/client';
 import type { CreateGame } from '@manamap/shared';
-import { PrismaService } from '../prisma/prisma.service';
-import { SafetyService } from '../safety/safety.service';
-import { GamificationService } from '../gamification/gamification.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { QuestsService } from '../quests/quests.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { SafetyService } from '../safety/safety.service';
+import type { GamificationService } from '../gamification/gamification.service';
+import type { NotificationsService } from '../notifications/notifications.service';
+import type { QuestsService } from '../quests/quests.service';
 
 @Injectable()
 export class GamesService {
@@ -37,9 +43,7 @@ export class GamesService {
     });
   }
 
-  private shape(
-    g: NonNullable<Awaited<ReturnType<GamesService['fetchGame']>>>,
-  ) {
+  private shape(g: NonNullable<Awaited<ReturnType<GamesService['fetchGame']>>>) {
     return {
       id: g.id,
       status: g.status,
@@ -151,9 +155,7 @@ export class GamesService {
     const allConfirmed = updatedPlayers.every((p) => p.confirmed);
 
     if (allConfirmed) {
-      const loserIds = game.players
-        .map((p) => p.userId)
-        .filter((id) => id !== game.winnerId);
+      const loserIds = game.players.map((p) => p.userId).filter((id) => id !== game.winnerId);
 
       const encounterData = loserIds.flatMap((loserId) => [
         {

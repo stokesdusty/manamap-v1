@@ -22,9 +22,7 @@ describe('Discovery + Connect (e2e)', () => {
     tokenA = resA.body.accessToken as string;
     tokenB = resB.body.accessToken as string;
 
-    const { body: meB } = await req
-      .get('/api/v1/me')
-      .set('Authorization', `Bearer ${tokenB}`);
+    const { body: meB } = await req.get('/api/v1/me').set('Authorization', `Bearer ${tokenB}`);
     userBId = meB.id as string;
 
     // Resolve a seeded store ID for presence

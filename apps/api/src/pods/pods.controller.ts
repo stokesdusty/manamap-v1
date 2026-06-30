@@ -17,7 +17,7 @@ import {
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import { PodsService } from './pods.service';
+import type { PodsService } from './pods.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 
@@ -28,10 +28,7 @@ export class PodsController {
 
   @Post()
   @HttpCode(200)
-  create(
-    @Req() req: AuthRequest,
-    @Body(new ZodValidationPipe(CreatePodSchema)) body: CreatePod,
-  ) {
+  create(@Req() req: AuthRequest, @Body(new ZodValidationPipe(CreatePodSchema)) body: CreatePod) {
     return this.pods.create(req.user.sub, body);
   }
 

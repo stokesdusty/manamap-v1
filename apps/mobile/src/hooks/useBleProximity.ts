@@ -21,6 +21,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
+import type * as BlePlx from 'react-native-ble-plx';
 
 // ManaMap BLE service UUID — all ManaMap peers advertise this
 const MANAMAP_SERVICE_UUID = '4d414e41-4d41-5000-0000-000000000001';
@@ -36,13 +37,13 @@ interface BleProximityResult {
 
 // Graceful no-op when react-native-ble-plx native module is unavailable
 // (Expo Go, simulator without BLE, or permission denied).
-let BleManager: typeof import('react-native-ble-plx').BleManager | null = null;
-let BleState: typeof import('react-native-ble-plx').State | null = null;
+let BleManager: typeof BlePlx.BleManager | null = null;
+let BleState: typeof BlePlx.State | null = null;
 
 try {
   // Dynamic require so the app doesn't hard-crash if the native module is absent
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const mod = require('react-native-ble-plx') as typeof import('react-native-ble-plx');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const mod = require('react-native-ble-plx') as typeof BlePlx;
   BleManager = mod.BleManager;
   BleState = mod.State;
 } catch {
@@ -54,7 +55,7 @@ export function useBleProximity(enabled: boolean): BleProximityResult {
   const [isScanning, setIsScanning] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
 
-  const managerRef = useRef<InstanceType<typeof import('react-native-ble-plx').BleManager> | null>(null);
+  const managerRef = useRef<InstanceType<typeof BlePlx.BleManager> | null>(null);
 
   useEffect(() => {
     if (!enabled || !BleManager || !BleState) return;
@@ -118,10 +119,7 @@ export function useBleProximity(enabled: boolean): BleProximityResult {
  * sorted so BLE-detected players (stronger signal first) appear at the top,
  * followed by non-detected players in their original order.
  */
-export function sortByBleProximity<T extends { id: string }>(
-  players: T[],
-  rssiMap: RssiMap,
-): T[] {
+export function sortByBleProximity<T extends { id: string }>(players: T[], rssiMap: RssiMap): T[] {
   // rssiMap keys may be 8-char prefixes of the full userId
   function getRssi(player: T): number | undefined {
     const prefix = player.id.replace(/-/g, '').substring(0, 8);

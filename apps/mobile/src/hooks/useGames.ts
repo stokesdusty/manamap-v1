@@ -41,7 +41,9 @@ export function useConfirmGame() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (gameId: string) =>
-      api.post<{ success: boolean; allConfirmed: boolean }>(`/v1/games/${gameId}/confirm`).then((r) => r.data),
+      api
+        .post<{ success: boolean; allConfirmed: boolean }>(`/v1/games/${gameId}/confirm`)
+        .then((r) => r.data),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['games', 'pending'] });
       void qc.invalidateQueries({ queryKey: ['me', 'stats'] });

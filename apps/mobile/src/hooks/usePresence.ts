@@ -22,15 +22,15 @@ async function buildHeartbeatBody(storeId?: string): Promise<HeartbeatBody> {
         body.lng = pos.coords.longitude;
       }
     }
-  } catch { /* location unavailable — heartbeat still fires without coords */ }
+  } catch {
+    /* location unavailable — heartbeat still fires without coords */
+  }
 
   return body;
 }
 
 function sendHeartbeat(body: HeartbeatBody) {
-  return api
-    .post<HeartbeatResponse>('/v1/presence/heartbeat', body)
-    .then((r) => r.data);
+  return api.post<HeartbeatResponse>('/v1/presence/heartbeat', body).then((r) => r.data);
 }
 
 export function useCheckout() {
@@ -87,7 +87,6 @@ export function usePresence() {
       stopHeartbeat();
       startHeartbeat();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStore?.id]);
 
   useEffect(() => {
@@ -109,6 +108,5 @@ export function usePresence() {
       sub.remove();
       stopHeartbeat();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }

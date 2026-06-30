@@ -53,7 +53,11 @@ describe('TokenService', () => {
     it('returns a signed access token', async () => {
       const result = await service.issueTokens(MOCK_USER.id, MOCK_USER.email);
       expect(result.accessToken).toBe('signed.access.token');
-      expect(jwtService.sign).toHaveBeenCalledWith({ sub: MOCK_USER.id, email: MOCK_USER.email, role: 'USER' });
+      expect(jwtService.sign).toHaveBeenCalledWith({
+        sub: MOCK_USER.id,
+        email: MOCK_USER.email,
+        role: 'USER',
+      });
     });
 
     it('returns a 64-char hex refresh token (32 random bytes)', async () => {

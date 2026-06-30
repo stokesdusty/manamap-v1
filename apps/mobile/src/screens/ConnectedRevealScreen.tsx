@@ -12,10 +12,18 @@ import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from 'react-native-svg';
-import type { ConnectedProfile, DeckLink, ManaColor, MtgFormat, PlayerVibe } from '@manamap/shared';
+import type {
+  ConnectedProfile,
+  DeckLink,
+  EndorsementSummary,
+  ManaColor,
+  MtgFormat,
+  PlayerVibe,
+} from '@manamap/shared';
 import { Avatar } from '../components/Avatar';
 import { ManaPip } from '../components/ManaPip';
 import { SocialsCard } from '../components/SocialsCard';
+import { EndorsementChips } from '../components/EndorsementChips';
 import { useConnectionDetail } from '../hooks/useConnections';
 import { useRivalryDetail } from '../hooks/useRivalries';
 import { useProfile } from '../hooks/useMe';
@@ -93,19 +101,13 @@ function CelebrationCard({ peer, myDisplayName, myColors, via, onDismiss }: Cele
   return (
     <View
       style={celeb.root}
-      onLayout={(e) =>
-        setSz({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })
-      }
+      onLayout={(e) => setSz({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
     >
       <Svg style={StyleSheet.absoluteFill} width={sz.w} height={sz.h}>
         <Defs>
           <SvgLinearGradient id="celebBg" x1="0" y1="0" x2="1" y2="1">
             {gradient.map((c, i) => (
-              <Stop
-                key={i}
-                offset={`${i / Math.max(1, gradient.length - 1)}`}
-                stopColor={c}
-              />
+              <Stop key={i} offset={`${i / Math.max(1, gradient.length - 1)}`} stopColor={c} />
             ))}
           </SvgLinearGradient>
         </Defs>
@@ -146,7 +148,9 @@ function CelebrationCard({ peer, myDisplayName, myColors, via, onDismiss }: Cele
 // ---------------------------------------------------------------------------
 
 function DeckRow({ deck }: { deck: DeckLink }) {
-  const siteLabel = (deck.site !== null ? (DECK_SITE_LABELS[deck.site] ?? deck.site) : deck.name).toUpperCase();
+  const siteLabel = (
+    deck.site !== null ? (DECK_SITE_LABELS[deck.site] ?? deck.site) : deck.name
+  ).toUpperCase();
   return (
     <Pressable
       style={({ pressed }) => [drow.root, pressed && deck.url != null && { opacity: 0.75 }]}
@@ -158,9 +162,13 @@ function DeckRow({ deck }: { deck: DeckLink }) {
       </View>
       <View style={drow.info}>
         <Text style={drow.label}>{siteLabel}</Text>
-        <Text style={drow.value} numberOfLines={1}>{deck.name}</Text>
+        <Text style={drow.value} numberOfLines={1}>
+          {deck.name}
+        </Text>
         {deck.url != null && (
-          <Text style={drow.sub} numberOfLines={1}>{deck.url}</Text>
+          <Text style={drow.sub} numberOfLines={1}>
+            {deck.url}
+          </Text>
         )}
       </View>
       {deck.url != null && (
@@ -184,6 +192,7 @@ interface PeerHeroProps {
   commander?: string | null;
   formats: MtgFormat[];
   bio?: string | null;
+  endorsements?: EndorsementSummary;
 }
 
 function PeerHero({
@@ -194,31 +203,23 @@ function PeerHero({
   commander,
   formats,
   bio,
+  endorsements,
 }: PeerHeroProps) {
   const gradient = identityGradientStops(avatarColors);
   const accent = avatarColors.length > 0 ? manaAccent(avatarColors) : colors.accent;
   const onAccent = readableOn(accent);
   const guild = guildName(avatarColors);
 
-  const [bannerW, setBannerW] = useState(
-    () => Dimensions.get('window').width,
-  );
+  const [bannerW, setBannerW] = useState(() => Dimensions.get('window').width);
 
   return (
     <View style={hero.root}>
-      <View
-        style={hero.banner}
-        onLayout={(e) => setBannerW(e.nativeEvent.layout.width)}
-      >
+      <View style={hero.banner} onLayout={(e) => setBannerW(e.nativeEvent.layout.width)}>
         <Svg style={StyleSheet.absoluteFill} width={bannerW} height={BANNER_H}>
           <Defs>
             <SvgLinearGradient id="peerHeroGrad" x1="0" y1="0" x2="1" y2="1">
               {gradient.map((c, i) => (
-                <Stop
-                  key={i}
-                  offset={`${i / Math.max(1, gradient.length - 1)}`}
-                  stopColor={c}
-                />
+                <Stop key={i} offset={`${i / Math.max(1, gradient.length - 1)}`} stopColor={c} />
               ))}
             </SvgLinearGradient>
           </Defs>
@@ -226,19 +227,12 @@ function PeerHero({
         </Svg>
 
         <View style={hero.bannerContent}>
-          <Avatar
-            name={displayName}
-            manaColors={avatarColors}
-            size={64}
-            style={hero.avatar}
-          />
+          <Avatar name={displayName} manaColors={avatarColors} size={64} style={hero.avatar} />
           <Text style={[hero.displayName, { color: onAccent }]} numberOfLines={1}>
             {displayName}
           </Text>
           {pronouns ? (
-            <Text style={[hero.pronouns, { color: onAccent + 'CC' }]}>
-              {pronouns}
-            </Text>
+            <Text style={[hero.pronouns, { color: onAccent + 'CC' }]}>{pronouns}</Text>
           ) : null}
           {avatarColors.length > 0 && (
             <View style={hero.guildChip}>
@@ -251,14 +245,21 @@ function PeerHero({
         </View>
       </View>
 
-      {((vibes?.length ?? 0) > 0 || commander || formats.length > 0 || bio) && (
+      {((vibes?.length ?? 0) > 0 ||
+        commander ||
+        formats.length > 0 ||
+        bio ||
+        (endorsements?.total ?? 0) > 0) && (
         <View style={hero.meta}>
           {(vibes ?? []).length > 0 && (
             <View style={hero.vibeRow}>
               {(vibes as PlayerVibe[]).map((v) => (
                 <View
                   key={v}
-                  style={[hero.vibePill, { backgroundColor: accent + '22', borderColor: accent + '44' }]}
+                  style={[
+                    hero.vibePill,
+                    { backgroundColor: accent + '22', borderColor: accent + '44' },
+                  ]}
                 >
                   <Text style={[hero.vibeText, { color: accent }]}>{VIBE_LABELS[v]}</Text>
                 </View>
@@ -269,7 +270,9 @@ function PeerHero({
           {commander ? (
             <View style={hero.metaRow}>
               <Ionicons name="shield-outline" size={14} color={colors.textTertiary} />
-              <Text style={hero.metaText} numberOfLines={1}>{commander}</Text>
+              <Text style={hero.metaText} numberOfLines={1}>
+                {commander}
+              </Text>
             </View>
           ) : null}
 
@@ -283,8 +286,16 @@ function PeerHero({
             </View>
           )}
 
+          {endorsements && endorsements.total > 0 && (
+            <View style={hero.chips}>
+              <EndorsementChips summary={endorsements} />
+            </View>
+          )}
+
           {bio ? (
-            <Text style={hero.bio} numberOfLines={4}>{bio}</Text>
+            <Text style={hero.bio} numberOfLines={4}>
+              {bio}
+            </Text>
           ) : null}
         </View>
       )}
@@ -296,10 +307,7 @@ function PeerHero({
 // ConnectedRevealScreen
 // ---------------------------------------------------------------------------
 
-export function ConnectedRevealScreen({
-  navigation,
-  route,
-}: RootStackScreenProps<'Connected'>) {
+export function ConnectedRevealScreen({ navigation, route }: RootStackScreenProps<'Connected'>) {
   const { connectionId, isNew } = route.params;
   const { data, isLoading } = useConnectionDetail(connectionId);
   const { data: rivalry } = useRivalryDetail(data?.peer.id);
@@ -324,10 +332,7 @@ export function ConnectedRevealScreen({
             </Pressable>
           </View>
 
-          <ScrollView
-            contentContainerStyle={styles.scroll}
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             {/* Gradient celebration card — new connection reveal */}
             {showBanner && (
               <CelebrationCard
@@ -344,7 +349,8 @@ export function ConnectedRevealScreen({
               <View style={styles.metChip}>
                 <Ionicons name="pin-outline" size={16} color={colors.accentInk} />
                 <Text style={styles.metChipText}>
-                  {data.via === 'qr' ? 'Met via QR scan' : `Met at ${data.via}`} · {relativeDate(data.createdAt)}
+                  {data.via === 'qr' ? 'Met via QR scan' : `Met at ${data.via}`} ·{' '}
+                  {relativeDate(data.createdAt)}
                 </Text>
               </View>
             ) : null}
@@ -358,6 +364,7 @@ export function ConnectedRevealScreen({
               commander={data.peer.commander}
               formats={data.peer.formats as MtgFormat[]}
               bio={data.peer.bio}
+              {...(data.peer.endorsements ? { endorsements: data.peer.endorsements } : {})}
             />
 
             {/* Head-to-head rivalry */}
@@ -391,15 +398,13 @@ export function ConnectedRevealScreen({
             {data.peer.socials &&
               (data.peer.socials.length > 0 ||
                 (data.peer.socialsSummary?.friendsOnlyCount ?? 0) > 0) && (
-              <SocialsCard
-                mode="friend"
-                links={data.peer.socials}
-                publicCount={
-                  data.peer.socialsSummary?.publicCount ?? data.peer.socials.length
-                }
-                friendsOnlyCount={data.peer.socialsSummary?.friendsOnlyCount ?? 0}
-              />
-            )}
+                <SocialsCard
+                  mode="friend"
+                  links={data.peer.socials}
+                  publicCount={data.peer.socialsSummary?.publicCount ?? data.peer.socials.length}
+                  friendsOnlyCount={data.peer.socialsSummary?.friendsOnlyCount ?? 0}
+                />
+              )}
 
             {/* Deck links — ContactRow style */}
             {data.peer.deckLinks.length > 0 && (
@@ -426,7 +431,9 @@ export function ConnectedRevealScreen({
                   </View>
                 )}
                 {!!data.peer.tradeHaves?.trim() && (
-                  <View style={[trade.section, !!data.peer.tradeWants?.trim() && trade.sectionBorder]}>
+                  <View
+                    style={[trade.section, !!data.peer.tradeWants?.trim() && trade.sectionBorder]}
+                  >
                     <Text style={trade.sectionLabel}>Have / For trade</Text>
                     <Text style={trade.body}>{data.peer.tradeHaves}</Text>
                   </View>

@@ -1,8 +1,8 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
+import type { Job } from 'bullmq';
 import { NotificationKind } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { NotificationsService } from '../notifications/notifications.service';
 import type { ReminderJobData } from './event-reminders.service';
 
 @Processor('event-reminders')
@@ -29,7 +29,10 @@ export class EventRemindersProcessor extends WorkerHost {
     if (!attendee) return;
 
     // Verify the event still exists
-    const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: { id: true } });
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { id: true },
+    });
     if (!event) return;
 
     // Respect notification opt-out (defaults to true when no row exists)

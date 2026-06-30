@@ -1,19 +1,15 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { ConnectionStatus, GameStatus, NotificationKind } from '@prisma/client';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import type { NotificationKind } from '@prisma/client';
+import { ConnectionStatus, GameStatus } from '@prisma/client';
 import type Redis from 'ioredis';
 import { REDIS } from '../redis/redis.module';
-import { PrismaService } from '../prisma/prisma.service';
-import { PresenceService } from '../presence/presence.service';
-import { LfgService } from '../lfg/lfg.service';
-import { PodsService } from '../pods/pods.service';
-import { ConnectionsService } from '../connections/connections.service';
-import { GamesService } from '../games/games.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { PresenceService } from '../presence/presence.service';
+import type { LfgService } from '../lfg/lfg.service';
+import type { PodsService } from '../pods/pods.service';
+import type { ConnectionsService } from '../connections/connections.service';
+import type { GamesService } from '../games/games.service';
+import type { NotificationsService } from '../notifications/notifications.service';
 import { BOT_IDS } from './dev.bots';
 
 type BotRow = { id: string; displayName: string; formats: string[]; powerLevel: number | null };
@@ -32,9 +28,7 @@ export class DevService {
   ) {}
 
   private async getBots(count: number, specificId?: string): Promise<BotRow[]> {
-    const where = specificId
-      ? { id: specificId, isBot: true }
-      : { isBot: true };
+    const where = specificId ? { id: specificId, isBot: true } : { isBot: true };
     return this.prisma.user.findMany({
       where,
       take: count,
@@ -71,7 +65,15 @@ export class DevService {
     for (const bot of lfgBots) {
       try {
         await this.lfg.create(bot.id, {
-          format: (bot.formats[0] as 'standard' | 'pioneer' | 'modern' | 'legacy' | 'vintage' | 'commander' | 'draft') ?? null,
+          format:
+            (bot.formats[0] as
+              | 'standard'
+              | 'pioneer'
+              | 'modern'
+              | 'legacy'
+              | 'vintage'
+              | 'commander'
+              | 'draft') ?? null,
           power: bot.powerLevel ?? 6,
           seats: 2,
           durationMins: 60,
@@ -104,7 +106,15 @@ export class DevService {
     }
 
     const pod = await this.pods.create(bot.id, {
-      format: (bot.formats[0] as 'standard' | 'pioneer' | 'modern' | 'legacy' | 'vintage' | 'commander' | 'draft') ?? null,
+      format:
+        (bot.formats[0] as
+          | 'standard'
+          | 'pioneer'
+          | 'modern'
+          | 'legacy'
+          | 'vintage'
+          | 'commander'
+          | 'draft') ?? null,
       targetPower: bot.powerLevel ?? 6,
       tolerance: 2,
       seats: 4,
@@ -161,7 +171,15 @@ export class DevService {
     const game = await this.games.create(bots[0].id, {
       players: playerIds.map((id) => ({ userId: id })),
       winnerId: effectiveWinnerId,
-      format: (bots[0].formats[0] as 'standard' | 'pioneer' | 'modern' | 'legacy' | 'vintage' | 'commander' | 'draft') ?? undefined,
+      format:
+        (bots[0].formats[0] as
+          | 'standard'
+          | 'pioneer'
+          | 'modern'
+          | 'legacy'
+          | 'vintage'
+          | 'commander'
+          | 'draft') ?? undefined,
     });
 
     // Pre-confirm all bots so only the caller needs to confirm
@@ -227,7 +245,11 @@ export class DevService {
     // Disband any existing pod for caller to avoid already_hosting conflict
     const existingPodId = await this.redis.get(`user_pod:${callerId}`);
     if (existingPodId) {
-      try { await this.pods.disband(callerId, existingPodId); } catch { /* expired */ }
+      try {
+        await this.pods.disband(callerId, existingPodId);
+      } catch {
+        /* expired */
+      }
     }
 
     // Check in bots
@@ -263,7 +285,10 @@ export class DevService {
       }
     }
 
-    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { name: true } });
+    const store = await this.prisma.store.findUnique({
+      where: { id: storeId },
+      select: { name: true },
+    });
 
     return {
       podId: pod.id,
@@ -301,9 +326,7 @@ export class DevService {
       select: { lastLat: true, lastLng: true },
     });
     if (caller?.lastLat == null || caller?.lastLng == null) {
-      throw new BadRequestException(
-        'No location on file — send a heartbeat with lat/lng first',
-      );
+      throw new BadRequestException('No location on file — send a heartbeat with lat/lng first');
     }
 
     const bots = await this.getBots(Math.min(count, BOT_IDS.length));

@@ -1,6 +1,7 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
-import { DiscoveryService, type NearbyFilters } from './discovery.service';
+import type { DiscoveryService } from './discovery.service';
+import { type NearbyFilters } from './discovery.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

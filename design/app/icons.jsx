@@ -47,6 +47,7 @@ function Icon({ name, size = 24, color = 'currentColor', stroke = 2 }) {
     chevU: <path d="M18 15l-6-6-6 6" />,
     home: <><path d="M3 9.5L12 3l9 6.5V20a1.5 1.5 0 0 1-1.5 1.5h-5V15h-5v6.5H4A1.5 1.5 0 0 1 2.5 20z"/></>,
     map: <><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3z"/><path d="M9 4v13M15 7v13"/></>,
+    gift: <><path d="M20 12v10H4V12" /><rect x="2" y="7" width="20" height="5" /><path d="M12 22V7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" /><path d="M19 1l.6 1.8L21 3.4l-1.4.6L19 6l-.6-1.8L17 3.4l1.4-.6z" fill={color} stroke="none" /></>,
   };
   return <svg {...common}>{paths[name] || null}</svg>;
 }

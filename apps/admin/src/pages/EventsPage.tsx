@@ -52,23 +52,46 @@ function toInputValue(iso: string): string {
 
 function formatWhen(startsAt: string): string {
   const d = new Date(startsAt);
-  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
 function isPast(e: PartnerEvent): boolean {
-  const end = e.endsAt ? new Date(e.endsAt) : new Date(new Date(e.startsAt).getTime() + 4 * 60 * 60 * 1000);
+  const end = e.endsAt
+    ? new Date(e.endsAt)
+    : new Date(new Date(e.startsAt).getTime() + 4 * 60 * 60 * 1000);
   return end < new Date();
 }
 
 function SourceBadge({ event }: { event: PartnerEvent }) {
   if (isPast(event)) {
-    return <span className="badge" style={{ background: 'var(--muted-bg)', color: 'var(--text-tertiary)' }}>Past</span>;
+    return (
+      <span
+        className="badge"
+        style={{ background: 'var(--muted-bg)', color: 'var(--text-tertiary)' }}
+      >
+        Past
+      </span>
+    );
   }
   if (event.source === 'DISCORD') {
-    return <span className="badge" style={{ background: '#e0e7ff', color: '#3730a3' }}>Discord</span>;
+    return (
+      <span className="badge" style={{ background: '#e0e7ff', color: '#3730a3' }}>
+        Discord
+      </span>
+    );
   }
   if (event.source === 'WIZARDS') {
-    return <span className="badge" style={{ background: '#fef3c7', color: '#b45309' }}>Wizards</span>;
+    return (
+      <span className="badge" style={{ background: '#fef3c7', color: '#b45309' }}>
+        Wizards
+      </span>
+    );
   }
   return <span className="badge badge-active">Store</span>;
 }
@@ -115,8 +138,7 @@ export function EventsPage() {
   });
 
   const del = useMutation({
-    mutationFn: (eventId: string) =>
-      api.delete(`/v1/partner/stores/${storeId}/events/${eventId}`),
+    mutationFn: (eventId: string) => api.delete(`/v1/partner/stores/${storeId}/events/${eventId}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['partner', 'events', storeId] });
       showToast('Event deleted.');
@@ -198,14 +220,26 @@ export function EventsPage() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Link to={`/stores/${storeId}`} style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 14 }}>
+        <Link
+          to={`/stores/${storeId}`}
+          style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 14 }}
+        >
           ← Dashboard
         </Link>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 20,
+        }}
+      >
         <h1 style={{ fontSize: 22, fontWeight: 700 }}>Events</h1>
-        <button className="btn btn-primary" onClick={openCreate}>+ New Event</button>
+        <button className="btn btn-primary" onClick={openCreate}>
+          + New Event
+        </button>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -235,18 +269,26 @@ export function EventsPage() {
                     <div style={{ fontWeight: 600 }}>{e.name}</div>
                     {e.description && (
                       <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>
-                        {e.description.length > 60 ? e.description.slice(0, 60) + '…' : e.description}
+                        {e.description.length > 60
+                          ? e.description.slice(0, 60) + '…'
+                          : e.description}
                       </div>
                     )}
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>{e.formatName ?? '—'}</td>
-                  <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{formatWhen(e.startsAt)}</td>
+                  <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                    {formatWhen(e.startsAt)}
+                  </td>
                   <td style={{ textAlign: 'center' }}>{e.attendeeCount}</td>
-                  <td><SourceBadge event={e} /></td>
+                  <td>
+                    <SourceBadge event={e} />
+                  </td>
                   <td>
                     {isEditable(e) ? (
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="btn btn-sm btn-outline" onClick={() => openEdit(e)}>Edit</button>
+                        <button className="btn btn-sm btn-outline" onClick={() => openEdit(e)}>
+                          Edit
+                        </button>
                         <button
                           className="btn btn-sm btn-danger"
                           onClick={() => handleDelete(e.id)}
@@ -269,18 +311,36 @@ export function EventsPage() {
       {/* Modal */}
       {modalOpen && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: 24,
+          }}
           onClick={() => setModalOpen(false)}
         >
           <div
             className="card"
-            style={{ width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', margin: 0 }}
+            style={{
+              width: '100%',
+              maxWidth: 520,
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              margin: 0,
+            }}
             onClick={(ev) => ev.stopPropagation()}
           >
             <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>
               {editingId ? 'Edit Event' : 'New Event'}
             </h2>
-            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <form
+              onSubmit={handleSave}
+              style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+            >
               <div>
                 <label className="label">Name *</label>
                 <input
@@ -294,10 +354,16 @@ export function EventsPage() {
 
               <div>
                 <label className="label">Format</label>
-                <select className="input" value={form.formatId} onChange={(e) => set('formatId', e.target.value)}>
+                <select
+                  className="input"
+                  value={form.formatId}
+                  onChange={(e) => set('formatId', e.target.value)}
+                >
                   <option value="">— None —</option>
                   {formats?.map((f) => (
-                    <option key={f.id} value={f.id}>{f.name}</option>
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
                   ))}
                 </select>
               </div>

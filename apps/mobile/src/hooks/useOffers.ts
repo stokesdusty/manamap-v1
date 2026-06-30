@@ -47,8 +47,7 @@ export function useRedemptionStatus(offerId: string | null, enabled: boolean) {
           throw err;
         }),
     enabled: !!offerId && enabled,
-    refetchInterval: (query) =>
-      query.state.data?.status === 'REDEEMED' ? false : 5000,
+    refetchInterval: (query) => (query.state.data?.status === 'REDEEMED' ? false : 5000),
     refetchOnWindowFocus: true,
   });
 }

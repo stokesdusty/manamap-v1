@@ -72,7 +72,7 @@ describe('AdminModerationService', () => {
       providers: [
         AdminModerationService,
         { provide: PrismaService, useValue: prisma },
-        { provide: REDIS,         useValue: redis },
+        { provide: REDIS, useValue: redis },
       ],
     }).compile();
 
@@ -86,8 +86,8 @@ describe('AdminModerationService', () => {
   describe('getStats', () => {
     it('returns counts for open, reviewed, and actioned reports', async () => {
       prisma.report.count
-        .mockResolvedValueOnce(3)   // OPEN
-        .mockResolvedValueOnce(5)   // REVIEWED
+        .mockResolvedValueOnce(3) // OPEN
+        .mockResolvedValueOnce(5) // REVIEWED
         .mockResolvedValueOnce(12); // ACTIONED
       prisma.report.findMany.mockResolvedValue([]);
 
@@ -101,7 +101,9 @@ describe('AdminModerationService', () => {
     it('counts repeat offenders as users with 3 or more open reports', async () => {
       prisma.report.count.mockResolvedValue(0);
       prisma.report.findMany.mockResolvedValue([
-        { reportedId: 'u1' }, { reportedId: 'u2' }, { reportedId: 'u1' },
+        { reportedId: 'u1' },
+        { reportedId: 'u2' },
+        { reportedId: 'u1' },
       ]);
       prisma.report.groupBy.mockResolvedValue([
         { reportedId: 'u1', _count: { id: 3 } }, // repeat offender
@@ -125,9 +127,7 @@ describe('AdminModerationService', () => {
     it('does not count users with fewer than 3 reports as repeat offenders', async () => {
       prisma.report.count.mockResolvedValue(0);
       prisma.report.findMany.mockResolvedValue([{ reportedId: 'u1' }]);
-      prisma.report.groupBy.mockResolvedValue([
-        { reportedId: 'u1', _count: { id: 2 } },
-      ]);
+      prisma.report.groupBy.mockResolvedValue([{ reportedId: 'u1', _count: { id: 2 } }]);
 
       const result = await service.getStats();
       expect(result.repeatOffenders).toBe(0);
@@ -167,9 +167,7 @@ describe('AdminModerationService', () => {
             moderationStatus: ModerationStatus.ACTIVE,
             identities: [],
             reportsAgainst: [],
-            targetedActions: [
-              { id: 'a1', action: 'WARN', createdAt: new Date('2026-01-01') },
-            ],
+            targetedActions: [{ id: 'a1', action: 'WARN', createdAt: new Date('2026-01-01') }],
           },
         }),
       );
@@ -230,7 +228,9 @@ describe('AdminModerationService', () => {
 
     it('throws NotFoundException when the report does not exist', async () => {
       prisma.report.findUnique.mockResolvedValue(null);
-      await expect(service.resolveReport('ghost', 'admin1', { action: 'DISMISS' })).rejects.toThrow(NotFoundException);
+      await expect(service.resolveReport('ghost', 'admin1', { action: 'DISMISS' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('sets status to REVIEWED for DISMISS action', async () => {
@@ -240,7 +240,9 @@ describe('AdminModerationService', () => {
       await service.resolveReport('report1', 'admin1', { action: 'DISMISS' });
 
       expect(tx.report.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ status: ReportStatus.REVIEWED }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ status: ReportStatus.REVIEWED }),
+        }),
       );
     });
 
@@ -251,7 +253,9 @@ describe('AdminModerationService', () => {
       await service.resolveReport('report1', 'admin1', { action: 'WARN' });
 
       expect(tx.report.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ status: ReportStatus.ACTIONED }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ status: ReportStatus.ACTIONED }),
+        }),
       );
     });
 

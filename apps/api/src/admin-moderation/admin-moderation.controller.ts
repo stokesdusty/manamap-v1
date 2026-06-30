@@ -1,12 +1,20 @@
 import {
-  Body, Controller, Get, HttpCode, Param, Post, Query, Req, UseGuards,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { ResolveReportSchema, type ResolveReport } from '@manamap/shared';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import { AdminModerationService } from './admin-moderation.service';
+import type { AdminModerationService } from './admin-moderation.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 
@@ -24,7 +32,9 @@ export class AdminModerationController {
   @Get('reports')
   listReports(@Query('status') status?: string) {
     const valid = ['OPEN', 'REVIEWED', 'ACTIONED', 'ALL'];
-    const s = valid.includes(status ?? '') ? (status as 'OPEN' | 'REVIEWED' | 'ACTIONED' | 'ALL') : 'OPEN';
+    const s = valid.includes(status ?? '')
+      ? (status as 'OPEN' | 'REVIEWED' | 'ACTIONED' | 'ALL')
+      : 'OPEN';
     return this.svc.listReports(s);
   }
 

@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationKind, Prisma, StoreStatus } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { NotificationsService } from '../notifications/notifications.service';
 import { generateCode } from '../common/codes';
 
 @Injectable()
@@ -115,13 +115,19 @@ export class AdminStoresService {
   }
 
   async generateClaimCode(storeId: string) {
-    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { id: true } });
+    const store = await this.prisma.store.findUnique({
+      where: { id: storeId },
+      select: { id: true },
+    });
     if (!store) throw new NotFoundException('Store not found');
 
     let code: string;
     for (;;) {
       code = generateCode();
-      const existing = await this.prisma.store.findUnique({ where: { claimCode: code }, select: { id: true } });
+      const existing = await this.prisma.store.findUnique({
+        where: { claimCode: code },
+        select: { id: true },
+      });
       if (!existing) break;
     }
 

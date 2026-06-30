@@ -1,12 +1,10 @@
-import {
-  Body, Controller, Get, HttpCode, Param, Post, Req, UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import { AdminStoreClaimsService } from './admin-store-claims.service';
+import type { AdminStoreClaimsService } from './admin-store-claims.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 

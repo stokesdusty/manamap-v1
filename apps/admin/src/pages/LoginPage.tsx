@@ -13,8 +13,19 @@ function buildDiscordUrl() {
 
 export function LoginPage() {
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)' }}>
-      <div className="card" style={{ maxWidth: 420, width: '100%', textAlign: 'center', padding: '48px 36px' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--paper)',
+      }}
+    >
+      <div
+        className="card"
+        style={{ maxWidth: 420, width: '100%', textAlign: 'center', padding: '48px 36px' }}
+      >
         <div style={{ fontSize: 48, marginBottom: 16 }}>🗺️</div>
         <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>ManaMap Partner Portal</h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: 32, lineHeight: 1.5 }}>

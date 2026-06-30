@@ -3,6 +3,13 @@ import { Test } from '@nestjs/testing';
 import type { OnboardingSubmit } from '@manamap/shared';
 import { MeService } from '../me.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EndorsementsService } from '../../endorsements/endorsements.service';
+
+function makeEndorsementsMock() {
+  return {
+    getSummary: jest.fn().mockResolvedValue({ total: 0, byTag: [] }),
+  };
+}
 
 function makePrismaMock() {
   return {
@@ -44,14 +51,17 @@ function makePrismaMock() {
 describe('MeService', () => {
   let service: MeService;
   let prisma: ReturnType<typeof makePrismaMock>;
+  let endorsements: ReturnType<typeof makeEndorsementsMock>;
 
   beforeEach(async () => {
     prisma = makePrismaMock();
+    endorsements = makeEndorsementsMock();
 
     const module = await Test.createTestingModule({
       providers: [
         MeService,
         { provide: PrismaService, useValue: prisma },
+        { provide: EndorsementsService, useValue: endorsements },
       ],
     }).compile();
 
@@ -63,10 +73,13 @@ describe('MeService', () => {
   // -------------------------------------------------------------------------
 
   describe('getProfile', () => {
-    it('returns the user when found', async () => {
+    it('returns the user with an endorsements summary when found', async () => {
       const user = { id: 'u1', displayName: 'Alice' };
       prisma.user.findUnique.mockResolvedValue(user);
-      await expect(service.getProfile('u1')).resolves.toEqual(user);
+      await expect(service.getProfile('u1')).resolves.toEqual({
+        ...user,
+        endorsements: { total: 0, byTag: [] },
+      });
     });
 
     it('throws NotFoundException when the user does not exist', async () => {
@@ -107,7 +120,15 @@ describe('MeService', () => {
 
   describe('getPrivacy', () => {
     it('returns the stored record when one exists', async () => {
-      const stored = { discoverable: false, showDiscord: true, showDecks: true, showMetHistory: false, storeMessages: true, shareNameWithContacts: false, eventReminders: true };
+      const stored = {
+        discoverable: false,
+        showDiscord: true,
+        showDecks: true,
+        showMetHistory: false,
+        storeMessages: true,
+        shareNameWithContacts: false,
+        eventReminders: true,
+      };
       prisma.privacySettings.findUnique.mockResolvedValue(stored);
 
       const result = await service.getPrivacy('u1');
@@ -149,8 +170,8 @@ describe('MeService', () => {
       await service.updatePrivacy('u1', { discoverable: false });
 
       const { create } = prisma.privacySettings.upsert.mock.calls[0][0];
-      expect(create.discoverable).toBe(false);  // provided
-      expect(create.showDiscord).toBe(true);     // defaulted
+      expect(create.discoverable).toBe(false); // provided
+      expect(create.showDiscord).toBe(true); // defaulted
       expect(create.shareNameWithContacts).toBe(false); // default false
     });
   });
@@ -181,7 +202,12 @@ describe('MeService', () => {
 
   describe('createDeck', () => {
     it('derives the site from the URL and stores it uppercased', async () => {
-      prisma.deckLink.create.mockResolvedValue({ id: 'd1', name: 'Storm', site: 'MOXFIELD', url: 'https://moxfield.com/decks/abc' });
+      prisma.deckLink.create.mockResolvedValue({
+        id: 'd1',
+        name: 'Storm',
+        site: 'MOXFIELD',
+        url: 'https://moxfield.com/decks/abc',
+      });
 
       await service.createDeck('u1', { name: 'Storm', url: 'https://moxfield.com/decks/abc' });
 
@@ -190,7 +216,12 @@ describe('MeService', () => {
     });
 
     it('sets site to null when no URL is provided', async () => {
-      prisma.deckLink.create.mockResolvedValue({ id: 'd1', name: 'Mystery', site: null, url: null });
+      prisma.deckLink.create.mockResolvedValue({
+        id: 'd1',
+        name: 'Mystery',
+        site: null,
+        url: null,
+      });
 
       await service.createDeck('u1', { name: 'Mystery' });
 
@@ -200,9 +231,17 @@ describe('MeService', () => {
     });
 
     it('returns the deck with a lowercased site', async () => {
-      prisma.deckLink.create.mockResolvedValue({ id: 'd1', name: 'Storm', site: 'MOXFIELD', url: 'https://moxfield.com/decks/abc' });
+      prisma.deckLink.create.mockResolvedValue({
+        id: 'd1',
+        name: 'Storm',
+        site: 'MOXFIELD',
+        url: 'https://moxfield.com/decks/abc',
+      });
 
-      const result = await service.createDeck('u1', { name: 'Storm', url: 'https://moxfield.com/decks/abc' });
+      const result = await service.createDeck('u1', {
+        name: 'Storm',
+        url: 'https://moxfield.com/decks/abc',
+      });
       expect(result.site).toBe('moxfield');
     });
   });
@@ -210,12 +249,19 @@ describe('MeService', () => {
   describe('updateDeck', () => {
     it('throws NotFoundException when the deck does not belong to the user', async () => {
       prisma.deckLink.findFirst.mockResolvedValue(null);
-      await expect(service.updateDeck('u1', 'deck99', { name: 'New' })).rejects.toThrow(NotFoundException);
+      await expect(service.updateDeck('u1', 'deck99', { name: 'New' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('re-derives site when the URL changes', async () => {
       prisma.deckLink.findFirst.mockResolvedValue({ id: 'deck1' });
-      prisma.deckLink.update.mockResolvedValue({ id: 'deck1', name: 'Deck', site: 'ARCHIDEKT', url: 'https://archidekt.com/decks/1' });
+      prisma.deckLink.update.mockResolvedValue({
+        id: 'deck1',
+        name: 'Deck',
+        site: 'ARCHIDEKT',
+        url: 'https://archidekt.com/decks/1',
+      });
 
       await service.updateDeck('u1', 'deck1', { url: 'https://archidekt.com/decks/1' });
 
@@ -225,7 +271,12 @@ describe('MeService', () => {
 
     it('does not include url/site in the patch when url is not in the DTO', async () => {
       prisma.deckLink.findFirst.mockResolvedValue({ id: 'deck1' });
-      prisma.deckLink.update.mockResolvedValue({ id: 'deck1', name: 'Renamed', site: 'MOXFIELD', url: 'https://moxfield.com/x' });
+      prisma.deckLink.update.mockResolvedValue({
+        id: 'deck1',
+        name: 'Renamed',
+        site: 'MOXFIELD',
+        url: 'https://moxfield.com/x',
+      });
 
       await service.updateDeck('u1', 'deck1', { name: 'Renamed' });
 
@@ -312,9 +363,7 @@ describe('MeService', () => {
     });
 
     it('counts a game as a win when winnerId equals userId', async () => {
-      prisma.gameLog.findMany.mockResolvedValue([
-        { winnerId: 'u1', players: [{ deck: null }] },
-      ]);
+      prisma.gameLog.findMany.mockResolvedValue([{ winnerId: 'u1', players: [{ deck: null }] }]);
 
       const result = await service.getGameStats('u1');
       expect(result.wins).toBe(1);
@@ -322,9 +371,7 @@ describe('MeService', () => {
     });
 
     it('counts a game as a loss when winnerId differs from userId', async () => {
-      prisma.gameLog.findMany.mockResolvedValue([
-        { winnerId: 'other', players: [{ deck: null }] },
-      ]);
+      prisma.gameLog.findMany.mockResolvedValue([{ winnerId: 'other', players: [{ deck: null }] }]);
 
       const result = await service.getGameStats('u1');
       expect(result.wins).toBe(0);
@@ -333,8 +380,8 @@ describe('MeService', () => {
 
     it('computes winRate as wins / total', async () => {
       prisma.gameLog.findMany.mockResolvedValue([
-        { winnerId: 'u1',   players: [{ deck: null }] },
-        { winnerId: 'u1',   players: [{ deck: null }] },
+        { winnerId: 'u1', players: [{ deck: null }] },
+        { winnerId: 'u1', players: [{ deck: null }] },
         { winnerId: 'other', players: [{ deck: null }] },
       ]);
 
@@ -350,8 +397,8 @@ describe('MeService', () => {
 
     it('accumulates per-deck wins and losses', async () => {
       prisma.gameLog.findMany.mockResolvedValue([
-        { winnerId: 'u1',   players: [{ deck: 'Storm' }] },
-        { winnerId: 'u1',   players: [{ deck: 'Storm' }] },
+        { winnerId: 'u1', players: [{ deck: 'Storm' }] },
+        { winnerId: 'u1', players: [{ deck: 'Storm' }] },
         { winnerId: 'other', players: [{ deck: 'Storm' }] },
       ]);
 
@@ -364,7 +411,7 @@ describe('MeService', () => {
 
     it('computes per-deck rate as deckWins / deckTotal', async () => {
       prisma.gameLog.findMany.mockResolvedValue([
-        { winnerId: 'u1',   players: [{ deck: 'Burn' }] },
+        { winnerId: 'u1', players: [{ deck: 'Burn' }] },
         { winnerId: 'other', players: [{ deck: 'Burn' }] },
       ]);
 
@@ -386,14 +433,14 @@ describe('MeService', () => {
 
     it('tracks multiple decks independently', async () => {
       prisma.gameLog.findMany.mockResolvedValue([
-        { winnerId: 'u1',   players: [{ deck: 'Burn' }] },
+        { winnerId: 'u1', players: [{ deck: 'Burn' }] },
         { winnerId: 'other', players: [{ deck: 'Control' }] },
-        { winnerId: 'u1',   players: [{ deck: 'Control' }] },
+        { winnerId: 'u1', players: [{ deck: 'Control' }] },
       ]);
 
       const result = await service.getGameStats('u1');
       expect(result.byDeck).toHaveLength(2);
-      const burnEntry    = result.byDeck.find((d) => d.deck === 'Burn');
+      const burnEntry = result.byDeck.find((d) => d.deck === 'Burn');
       const controlEntry = result.byDeck.find((d) => d.deck === 'Control');
       expect(burnEntry!.wins).toBe(1);
       expect(controlEntry!.losses).toBe(1);
@@ -422,7 +469,9 @@ describe('MeService', () => {
     it('throws NotFoundException when the storeId does not exist', async () => {
       prisma.store.findUnique.mockResolvedValue(null);
 
-      await expect(service.setHomeStore('u1', { storeId: 'ghost' })).rejects.toThrow(NotFoundException);
+      await expect(service.setHomeStore('u1', { storeId: 'ghost' })).rejects.toThrow(
+        NotFoundException,
+      );
       expect(prisma.user.update).not.toHaveBeenCalled();
     });
 

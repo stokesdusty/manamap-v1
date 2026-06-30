@@ -34,9 +34,9 @@ export function OfferFormPage() {
   const { data: existing } = useQuery({
     queryKey: ['partner', 'offer', storeId, offerId],
     queryFn: () =>
-      api.get(`/v1/partner/stores/${storeId}/offers`).then((r) =>
-        r.data.find((o: any) => o.id === offerId) ?? null,
-      ),
+      api
+        .get(`/v1/partner/stores/${storeId}/offers`)
+        .then((r) => r.data.find((o: any) => o.id === offerId) ?? null),
     enabled: isEdit,
   });
 
@@ -90,7 +90,10 @@ export function OfferFormPage() {
   return (
     <div style={{ maxWidth: 560 }}>
       <div style={{ marginBottom: 20 }}>
-        <Link to={`/stores/${storeId}`} style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 14 }}>
+        <Link
+          to={`/stores/${storeId}`}
+          style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 14 }}
+        >
           ← Dashboard
         </Link>
       </div>
@@ -125,7 +128,10 @@ export function OfferFormPage() {
           <label className="label">Offer Type *</label>
           <div style={{ display: 'flex', gap: 12 }}>
             {(['FIRST_VISIT', 'STREAK'] as const).map((t) => (
-              <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <label
+                key={t}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+              >
                 <input
                   type="radio"
                   name="type"
@@ -133,7 +139,9 @@ export function OfferFormPage() {
                   checked={form.type === t}
                   onChange={() => set('type', t)}
                 />
-                <span style={{ fontSize: 14 }}>{t === 'FIRST_VISIT' ? 'First Visit' : 'Streak'}</span>
+                <span style={{ fontSize: 14 }}>
+                  {t === 'FIRST_VISIT' ? 'First Visit' : 'Streak'}
+                </span>
               </label>
             ))}
           </div>

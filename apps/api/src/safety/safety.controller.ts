@@ -9,15 +9,17 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { BlockBodySchema, ReportBodySchema, type BlockBody, type ReportBody } from '@manamap/shared';
+import {
+  BlockBodySchema,
+  ReportBodySchema,
+  type BlockBody,
+  type ReportBody,
+} from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { AuthGuard, type AccessTokenPayload } from '../auth/auth.guard';
 import { Throttle } from '../throttle/throttle.decorator';
-import {
-  THROTTLE_REPORTS_LIMIT,
-  THROTTLE_REPORTS_TTL,
-} from '../throttle/throttle.constants';
-import { SafetyService } from './safety.service';
+import { THROTTLE_REPORTS_LIMIT, THROTTLE_REPORTS_TTL } from '../throttle/throttle.constants';
+import type { SafetyService } from './safety.service';
 
 type AuthRequest = { user: AccessTokenPayload };
 
@@ -28,10 +30,7 @@ export class SafetyController {
 
   @Post('blocks')
   @HttpCode(201)
-  block(
-    @Req() req: AuthRequest,
-    @Body(new ZodValidationPipe(BlockBodySchema)) body: BlockBody,
-  ) {
+  block(@Req() req: AuthRequest, @Body(new ZodValidationPipe(BlockBodySchema)) body: BlockBody) {
     return this.safety.block(req.user.sub, body.userId);
   }
 
@@ -49,10 +48,7 @@ export class SafetyController {
   @Post('reports')
   @HttpCode(201)
   @Throttle({ name: 'reports', limit: THROTTLE_REPORTS_LIMIT, ttl: THROTTLE_REPORTS_TTL })
-  report(
-    @Req() req: AuthRequest,
-    @Body(new ZodValidationPipe(ReportBodySchema)) body: ReportBody,
-  ) {
+  report(@Req() req: AuthRequest, @Body(new ZodValidationPipe(ReportBodySchema)) body: ReportBody) {
     return this.safety.report(req.user.sub, body);
   }
 }

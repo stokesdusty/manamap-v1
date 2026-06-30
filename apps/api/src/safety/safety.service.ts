@@ -1,10 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { ReportReason } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import type { ReportReason } from '@prisma/client';
+import type { PrismaService } from '../prisma/prisma.service';
 import type { ReportBody } from '@manamap/shared';
 
 @Injectable()

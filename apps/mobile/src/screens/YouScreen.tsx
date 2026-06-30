@@ -4,9 +4,7 @@ import {
   Alert,
   Dimensions,
   FlatList,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,12 +13,14 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { SocialsCard } from '../components/SocialsCard';
-import { useMyGames } from '../hooks/useGames';
+import { EndorsementChips } from '../components/EndorsementChips';
+import { useMyGames, useMyGameStats } from '../hooks/useGames';
 import type { Game, GameStats } from '@manamap/shared';
 import type { BlockedUser } from '@manamap/shared';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -96,26 +96,17 @@ const BANNER_H = 220;
 function IdentityHero({ profile, onEdit }: { profile: Profile; onEdit: () => void }) {
   const { gradient, onAccent, accent, soft, ink } = useIdentityTheme();
   const avatarColors = profile.avatarColors as ManaColor[];
-  const [bannerW, setBannerW] = useState(
-    () => Dimensions.get('window').width - spacing.xl * 2,
-  );
+  const [bannerW, setBannerW] = useState(() => Dimensions.get('window').width - spacing.xl * 2);
 
   return (
     <View style={hero.root}>
       {/* Gradient banner containing avatar / name / guild chip */}
-      <View
-        style={hero.banner}
-        onLayout={(e) => setBannerW(e.nativeEvent.layout.width)}
-      >
+      <View style={hero.banner} onLayout={(e) => setBannerW(e.nativeEvent.layout.width)}>
         <Svg style={StyleSheet.absoluteFill} width={bannerW} height={BANNER_H}>
           <Defs>
             <SvgLinearGradient id="heroGrad" x1="0" y1="0" x2="1" y2="1">
               {gradient.map((c, i) => (
-                <Stop
-                  key={i}
-                  offset={`${i / Math.max(1, gradient.length - 1)}`}
-                  stopColor={c}
-                />
+                <Stop key={i} offset={`${i / Math.max(1, gradient.length - 1)}`} stopColor={c} />
               ))}
             </SvgLinearGradient>
           </Defs>
@@ -133,18 +124,14 @@ function IdentityHero({ profile, onEdit }: { profile: Profile; onEdit: () => voi
             {profile.displayName}
           </Text>
           {profile.pronouns ? (
-            <Text style={[hero.pronouns, { color: onAccent + 'CC' }]}>
-              {profile.pronouns}
-            </Text>
+            <Text style={[hero.pronouns, { color: onAccent + 'CC' }]}>{profile.pronouns}</Text>
           ) : null}
           {avatarColors.length > 0 && (
             <View style={hero.guildChip}>
               {avatarColors.map((c) => (
                 <ManaPip key={c} color={c} size={14} />
               ))}
-              <Text style={[hero.guildLabel, { color: onAccent }]}>
-                {guildName(avatarColors)}
-              </Text>
+              <Text style={[hero.guildLabel, { color: onAccent }]}>{guildName(avatarColors)}</Text>
             </View>
           )}
         </View>
@@ -152,7 +139,7 @@ function IdentityHero({ profile, onEdit }: { profile: Profile; onEdit: () => voi
 
       {/* Actions row on surface background */}
       <View style={hero.actions}>
-        {(profile.vibes as PlayerVibe[] | undefined ?? []).map((v) => (
+        {((profile.vibes as PlayerVibe[] | undefined) ?? []).map((v) => (
           <View key={v} style={[hero.vibePill, { backgroundColor: soft }]}>
             <Text style={[hero.vibeText, { color: ink }]}>{VIBE_LABELS[v]}</Text>
           </View>
@@ -184,6 +171,12 @@ function IdentityHero({ profile, onEdit }: { profile: Profile; onEdit: () => voi
               <Text style={hero.chipText}>{FORMAT_LABELS[f as MtgFormat]}</Text>
             </View>
           ))}
+        </View>
+      )}
+
+      {profile.endorsements && profile.endorsements.total > 0 && (
+        <View style={hero.chips}>
+          <EndorsementChips summary={profile.endorsements} />
         </View>
       )}
 
@@ -333,11 +326,19 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
   const isInvisible = !privacy.discoverable;
 
   const otherRows: Array<{ key: keyof Privacy; label: string; sub?: string }> = [
-    { key: 'shareNameWithContacts', label: 'Share real name', sub: 'Your connections can see your real/chosen name' },
+    {
+      key: 'shareNameWithContacts',
+      label: 'Share real name',
+      sub: 'Your connections can see your real/chosen name',
+    },
     { key: 'showDiscord', label: 'Show Discord', sub: 'Visible to your connections' },
     { key: 'showDecks', label: 'Show decks', sub: 'Share your deck list publicly' },
     { key: 'showMetHistory', label: 'Show met history', sub: "Others can see who you've played" },
-    { key: 'eventReminders', label: 'Event reminders', sub: 'Push notifications before events you RSVP to' },
+    {
+      key: 'eventReminders',
+      label: 'Event reminders',
+      sub: 'Push notifications before events you RSVP to',
+    },
   ];
 
   return (
@@ -358,8 +359,12 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
           <Text style={[section.privacyTitle, isInvisible && { color: colors.textInverse }]}>
             {isInvisible ? 'Invisible' : 'Visible'}
           </Text>
-          <Text style={[section.privacySub, isInvisible && { color: colors.textInverse, opacity: 0.8 }]}>
-            {isInvisible ? "You're hidden from nearby search" : 'You appear in nearby player search'}
+          <Text
+            style={[section.privacySub, isInvisible && { color: colors.textInverse, opacity: 0.8 }]}
+          >
+            {isInvisible
+              ? "You're hidden from nearby search"
+              : 'You appear in nearby player search'}
           </Text>
         </View>
         <Switch
@@ -371,7 +376,10 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
       </Pressable>
 
       {otherRows.map((row, i) => (
-        <View key={row.key} style={[section.privacyRow, i < otherRows.length - 1 && section.rowBorder]}>
+        <View
+          key={row.key}
+          style={[section.privacyRow, i < otherRows.length - 1 && section.rowBorder]}
+        >
           <View style={section.privacyLabel}>
             <Text style={section.privacyTitle}>{row.label}</Text>
             {row.sub ? <Text style={section.privacySub}>{row.sub}</Text> : null}
@@ -409,14 +417,20 @@ function BlockedPlayersCard() {
     <View style={section.card}>
       <Text style={section.heading}>Blocked players</Text>
 
-      {isLoading && <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.sm }} />}
+      {isLoading && (
+        <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.sm }} />
+      )}
 
       {blocked.map((item) => (
         <View key={item.id} style={section.blockedRow}>
           <View style={section.blockedAvatar}>
-            <Text style={section.blockedAvatarText}>{item.displayName.charAt(0).toUpperCase()}</Text>
+            <Text style={section.blockedAvatarText}>
+              {item.displayName.charAt(0).toUpperCase()}
+            </Text>
           </View>
-          <Text style={section.blockedName} numberOfLines={1}>{item.displayName}</Text>
+          <Text style={section.blockedName} numberOfLines={1}>
+            {item.displayName}
+          </Text>
           <Pressable
             style={({ pressed }) => [section.unblockBtn, pressed && { opacity: 0.6 }]}
             onPress={() => confirmUnblock(item)}
@@ -462,11 +476,11 @@ function DecksCard() {
         </Pressable>
       </View>
 
-      {isLoading && <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.md }} />}
-
-      {!isLoading && decks.length === 0 && (
-        <Text style={section.empty}>No decks added yet</Text>
+      {isLoading && (
+        <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.md }} />
       )}
+
+      {!isLoading && decks.length === 0 && <Text style={section.empty}>No decks added yet</Text>}
 
       {decks.map((deck) => (
         <View key={deck.id} style={section.deckRow}>
@@ -552,42 +566,38 @@ function EditTradeListModal({
           </Pressable>
         </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <KeyboardAwareScrollView
           style={{ flex: 1 }}
+          contentContainerStyle={modal.scroll}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={spacing.xl}
         >
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={modal.scroll}
-            keyboardShouldPersistTaps="handled"
-          >
-            <FormField label="Looking for">
-              <TextInput
-                style={[form.input, tl.textArea]}
-                value={wants}
-                onChangeText={setWants}
-                maxLength={2000}
-                placeholder={"e.g. Doubling Season, Force of Will\nor \"all squirrel cards\""}
-                placeholderTextColor={colors.textTertiary}
-                multiline
-                textAlignVertical="top"
-              />
-            </FormField>
+          <FormField label="Looking for">
+            <TextInput
+              style={[form.input, tl.textArea]}
+              value={wants}
+              onChangeText={setWants}
+              maxLength={2000}
+              placeholder={'e.g. Doubling Season, Force of Will\nor "all squirrel cards"'}
+              placeholderTextColor={colors.textTertiary}
+              multiline
+              textAlignVertical="top"
+            />
+          </FormField>
 
-            <FormField label="Have / For trade">
-              <TextInput
-                style={[form.input, tl.textArea]}
-                value={haves}
-                onChangeText={setHaves}
-                maxLength={2000}
-                placeholder="e.g. Foil Rhystic Study, multiple Smothering Tithe..."
-                placeholderTextColor={colors.textTertiary}
-                multiline
-                textAlignVertical="top"
-              />
-            </FormField>
-          </ScrollView>
-        </KeyboardAvoidingView>
+          <FormField label="Have / For trade">
+            <TextInput
+              style={[form.input, tl.textArea]}
+              value={haves}
+              onChangeText={setHaves}
+              maxLength={2000}
+              placeholder="e.g. Foil Rhystic Study, multiple Smothering Tithe..."
+              placeholderTextColor={colors.textTertiary}
+              multiline
+              textAlignVertical="top"
+            />
+          </FormField>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     </Modal>
   );
@@ -717,7 +727,9 @@ function RewardsCard() {
           {badges.map((ub) => (
             <View key={ub.id} style={rewards.badge}>
               <Text style={rewards.badgeIcon}>{ub.badge.icon}</Text>
-              <Text style={rewards.badgeName} numberOfLines={2}>{ub.badge.name}</Text>
+              <Text style={rewards.badgeName} numberOfLines={2}>
+                {ub.badge.name}
+              </Text>
             </View>
           ))}
         </ScrollView>
@@ -748,7 +760,12 @@ const rewards = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textTertiary,
   },
-  statDivider: { width: 1, height: 32, backgroundColor: colors.borderLight, marginHorizontal: spacing.sm },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.borderLight,
+    marginHorizontal: spacing.sm,
+  },
   badgeRow: { paddingHorizontal: spacing.xl, gap: spacing.md, paddingVertical: spacing.xs },
   badge: {
     alignItems: 'center',
@@ -785,14 +802,21 @@ function HomeStorePicker({
 }) {
   const [query, setQuery] = useState('');
   const { data: recent, isLoading: recentLoading } = useRecentCheckinStores();
-  const { data: searchResults = [], isLoading: searchLoading } = useStores(query.length >= 2 ? query : undefined);
+  const { data: searchResults = [], isLoading: searchLoading } = useStores(
+    query.length >= 2 ? query : undefined,
+  );
 
   const showingSearch = query.length >= 2;
   const isLoading = showingSearch ? searchLoading : recentLoading;
   const stores = showingSearch ? searchResults : (recent?.stores ?? []);
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.paper }}>
         <View style={section.pickerHeader}>
           <Pressable onPress={onClose} hitSlop={8} style={section.pickerBack}>
@@ -829,7 +853,10 @@ function HomeStorePicker({
             renderItem={({ item }) => (
               <Pressable
                 style={({ pressed }) => [section.pickerRow, pressed && { opacity: 0.6 }]}
-                onPress={() => { onSelect(item.id); onClose(); }}
+                onPress={() => {
+                  onSelect(item.id);
+                  onClose();
+                }}
               >
                 <Ionicons name="storefront-outline" size={18} color={colors.textTertiary} />
                 <View style={{ flex: 1 }}>
@@ -1165,9 +1192,7 @@ function EditProfileModal({
   function toggleFormat(f: MtgFormat) {
     set(
       'formats',
-      draft.formats.includes(f)
-        ? draft.formats.filter((x) => x !== f)
-        : [...draft.formats, f],
+      draft.formats.includes(f) ? draft.formats.filter((x) => x !== f) : [...draft.formats, f],
     );
   }
 
@@ -1221,159 +1246,161 @@ function EditProfileModal({
           </Pressable>
         </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <KeyboardAwareScrollView
           style={{ flex: 1 }}
+          contentContainerStyle={modal.scroll}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={spacing.xl}
         >
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={modal.scroll}
-            keyboardShouldPersistTaps="handled"
-          >
-            <FormField label="Display name">
-              <TextInput
-                style={form.input}
-                value={draft.displayName}
-                onChangeText={(v) => set('displayName', v)}
-                maxLength={64}
-                placeholder="Your name"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </FormField>
+          <FormField label="Display name">
+            <TextInput
+              style={form.input}
+              value={draft.displayName}
+              onChangeText={(v) => set('displayName', v)}
+              maxLength={64}
+              placeholder="Your name"
+              placeholderTextColor={colors.textTertiary}
+            />
+          </FormField>
 
-            <FormField label="Real / chosen name (optional)">
-              <TextInput
-                style={form.input}
-                value={draft.name}
-                onChangeText={(v) => set('name', v)}
-                maxLength={80}
-                placeholder="e.g. Alex Smith or Alex S."
-                placeholderTextColor={colors.textTertiary}
-                autoCapitalize="words"
-              />
-              <Text style={form.fieldHint}>Shared only with contacts when you enable "Share real name" in Privacy</Text>
-            </FormField>
+          <FormField label="Real / chosen name (optional)">
+            <TextInput
+              style={form.input}
+              value={draft.name}
+              onChangeText={(v) => set('name', v)}
+              maxLength={80}
+              placeholder="e.g. Alex Smith or Alex S."
+              placeholderTextColor={colors.textTertiary}
+              autoCapitalize="words"
+            />
+            <Text style={form.fieldHint}>
+              Shared only with contacts when you enable "Share real name" in Privacy
+            </Text>
+          </FormField>
 
-            <FormField label="Pronouns">
-              <TextInput
-                style={form.input}
-                value={draft.pronouns}
-                onChangeText={(v) => set('pronouns', v)}
-                maxLength={32}
-                placeholder="e.g. they/them"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </FormField>
+          <FormField label="Pronouns">
+            <TextInput
+              style={form.input}
+              value={draft.pronouns}
+              onChangeText={(v) => set('pronouns', v)}
+              maxLength={32}
+              placeholder="e.g. they/them"
+              placeholderTextColor={colors.textTertiary}
+            />
+          </FormField>
 
-            <FormField label="Bio">
-              <TextInput
-                style={[form.input, form.multiline]}
-                value={draft.bio}
-                onChangeText={(v) => set('bio', v)}
-                maxLength={500}
-                placeholder="Tell people about yourself..."
-                placeholderTextColor={colors.textTertiary}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            </FormField>
+          <FormField label="Bio">
+            <TextInput
+              style={[form.input, form.multiline]}
+              value={draft.bio}
+              onChangeText={(v) => set('bio', v)}
+              maxLength={500}
+              placeholder="Tell people about yourself..."
+              placeholderTextColor={colors.textTertiary}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </FormField>
 
-            <FormField label="Color identity">
-              <View style={form.row}>
-                {MANA_COLORS.map((c) => {
-                  const active = draft.avatarColors.includes(c);
-                  return (
-                    <Pressable
-                      key={c}
-                      onPress={() => toggleColor(c)}
-                      style={[form.colorBtn, active && form.colorBtnActive]}
-                    >
-                      <ManaPip color={c} size={28} />
-                    </Pressable>
-                  );
-                })}
+          <FormField label="Color identity">
+            <View style={form.row}>
+              {MANA_COLORS.map((c) => {
+                const active = draft.avatarColors.includes(c);
+                return (
+                  <Pressable
+                    key={c}
+                    onPress={() => toggleColor(c)}
+                    style={[form.colorBtn, active && form.colorBtnActive]}
+                  >
+                    <ManaPip color={c} size={28} />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </FormField>
+
+          <FormField label="Favorite Commander">
+            <TextInput
+              style={form.input}
+              value={draft.commander}
+              onChangeText={(v) => set('commander', v)}
+              maxLength={128}
+              placeholder="e.g. Atraxa, Praetors' Voice"
+              placeholderTextColor={colors.textTertiary}
+            />
+          </FormField>
+
+          <FormField label="Vibe (select all that apply)">
+            <View style={form.chips}>
+              {ALL_VIBES.map((v) => {
+                const active = draft.vibes.includes(v);
+                return (
+                  <Pressable
+                    key={v}
+                    onPress={() =>
+                      set(
+                        'vibes',
+                        active ? draft.vibes.filter((x) => x !== v) : [...draft.vibes, v],
+                      )
+                    }
+                    style={[form.chip, active && form.chipActive]}
+                  >
+                    <Text style={[form.chipText, active && form.chipTextActive]}>
+                      {VIBE_LABELS[v]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </FormField>
+
+          <FormField label="Formats">
+            <View style={form.chips}>
+              {ALL_FORMATS.map((f) => {
+                const active = draft.formats.includes(f);
+                return (
+                  <Pressable
+                    key={f}
+                    onPress={() => toggleFormat(f)}
+                    style={[form.chip, active && form.chipActive]}
+                  >
+                    <Text style={[form.chipText, active && form.chipTextActive]}>
+                      {FORMAT_LABELS[f]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </FormField>
+
+          <FormField label="Online play">
+            <View style={form.toggleRow}>
+              <View style={form.toggleLabel}>
+                <Text style={form.toggleTitle}>SpellTable</Text>
+                <Text style={form.toggleSub}>Open to online Commander games</Text>
               </View>
-            </FormField>
-
-            <FormField label="Favorite Commander">
-              <TextInput
-                style={form.input}
-                value={draft.commander}
-                onChangeText={(v) => set('commander', v)}
-                maxLength={128}
-                placeholder="e.g. Atraxa, Praetors' Voice"
-                placeholderTextColor={colors.textTertiary}
+              <Switch
+                value={draft.spelltable}
+                onValueChange={(v) => set('spelltable', v)}
+                trackColor={{ true: colors.accent, false: colors.border }}
+                thumbColor={colors.surface}
               />
-            </FormField>
-
-            <FormField label="Vibe (select all that apply)">
-              <View style={form.chips}>
-                {ALL_VIBES.map((v) => {
-                  const active = draft.vibes.includes(v);
-                  return (
-                    <Pressable
-                      key={v}
-                      onPress={() => set('vibes', active ? draft.vibes.filter((x) => x !== v) : [...draft.vibes, v])}
-                      style={[form.chip, active && form.chipActive]}
-                    >
-                      <Text style={[form.chipText, active && form.chipTextActive]}>
-                        {VIBE_LABELS[v]}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+            </View>
+            <View style={[form.toggleRow, { marginTop: spacing.sm }]}>
+              <View style={form.toggleLabel}>
+                <Text style={form.toggleTitle}>Convoke.games</Text>
+                <Text style={form.toggleSub}>Open to Convoke online matches</Text>
               </View>
-            </FormField>
-
-            <FormField label="Formats">
-              <View style={form.chips}>
-                {ALL_FORMATS.map((f) => {
-                  const active = draft.formats.includes(f);
-                  return (
-                    <Pressable
-                      key={f}
-                      onPress={() => toggleFormat(f)}
-                      style={[form.chip, active && form.chipActive]}
-                    >
-                      <Text style={[form.chipText, active && form.chipTextActive]}>
-                        {FORMAT_LABELS[f]}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </FormField>
-
-            <FormField label="Online play">
-              <View style={form.toggleRow}>
-                <View style={form.toggleLabel}>
-                  <Text style={form.toggleTitle}>SpellTable</Text>
-                  <Text style={form.toggleSub}>Open to online Commander games</Text>
-                </View>
-                <Switch
-                  value={draft.spelltable}
-                  onValueChange={(v) => set('spelltable', v)}
-                  trackColor={{ true: colors.accent, false: colors.border }}
-                  thumbColor={colors.surface}
-                />
-              </View>
-              <View style={[form.toggleRow, { marginTop: spacing.sm }]}>
-                <View style={form.toggleLabel}>
-                  <Text style={form.toggleTitle}>Convoke.games</Text>
-                  <Text style={form.toggleSub}>Open to Convoke online matches</Text>
-                </View>
-                <Switch
-                  value={draft.convokeGames}
-                  onValueChange={(v) => set('convokeGames', v)}
-                  trackColor={{ true: colors.accent, false: colors.border }}
-                  thumbColor={colors.surface}
-                />
-              </View>
-            </FormField>
-
-          </ScrollView>
-        </KeyboardAvoidingView>
+              <Switch
+                value={draft.convokeGames}
+                onValueChange={(v) => set('convokeGames', v)}
+                trackColor={{ true: colors.accent, false: colors.border }}
+                thumbColor={colors.surface}
+              />
+            </View>
+          </FormField>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     </Modal>
   );
@@ -1524,10 +1551,15 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
   }
 
   function handleSave() {
-    if (!name.trim()) { return; }
+    if (!name.trim()) {
+      return;
+    }
     if (url.trim()) {
       const err = validateUrl(url);
-      if (err) { setUrlError(err); return; }
+      if (err) {
+        setUrlError(err);
+        return;
+      }
     }
 
     createDeck(
@@ -1559,10 +1591,7 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
           <Pressable
             onPress={handleSave}
             disabled={isPending || !name.trim()}
-            style={({ pressed }) => [
-              modal.saveBtn,
-              (pressed || !name.trim()) && { opacity: 0.6 },
-            ]}
+            style={({ pressed }) => [modal.saveBtn, (pressed || !name.trim()) && { opacity: 0.6 }]}
           >
             {isPending ? (
               <ActivityIndicator size="small" color={colors.surface} />
@@ -1572,41 +1601,40 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
           </Pressable>
         </View>
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
+        <KeyboardAwareScrollView
+          contentContainerStyle={addDeck.scroll}
+          keyboardShouldPersistTaps="handled"
+          bottomOffset={spacing.xl}
         >
-          <ScrollView
-            contentContainerStyle={addDeck.scroll}
-            keyboardShouldPersistTaps="handled"
-          >
-            <FormField label="Deck name">
-              <TextInput
-                style={form.input}
-                value={name}
-                onChangeText={setName}
-                maxLength={64}
-                placeholder="My Commander Deck"
-                placeholderTextColor={colors.textTertiary}
-              />
-            </FormField>
+          <FormField label="Deck name">
+            <TextInput
+              style={form.input}
+              value={name}
+              onChangeText={setName}
+              maxLength={64}
+              placeholder="My Commander Deck"
+              placeholderTextColor={colors.textTertiary}
+            />
+          </FormField>
 
-            <FormField label="URL (optional)">
-              <Text style={addDeck.hint}>Only Moxfield and Archidekt links are supported</Text>
-              <TextInput
-                style={[form.input, urlError ? addDeck.inputError : null]}
-                value={url}
-                onChangeText={(v) => { setUrl(v); setUrlError(''); }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                placeholder="https://moxfield.com/decks/..."
-                placeholderTextColor={colors.textTertiary}
-              />
-              {urlError ? <Text style={addDeck.errorText}>{urlError}</Text> : null}
-            </FormField>
-          </ScrollView>
-        </KeyboardAvoidingView>
+          <FormField label="URL (optional)">
+            <Text style={addDeck.hint}>Only Moxfield and Archidekt links are supported</Text>
+            <TextInput
+              style={[form.input, urlError ? addDeck.inputError : null]}
+              value={url}
+              onChangeText={(v) => {
+                setUrl(v);
+                setUrlError('');
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              placeholder="https://moxfield.com/decks/..."
+              placeholderTextColor={colors.textTertiary}
+            />
+            {urlError ? <Text style={addDeck.errorText}>{urlError}</Text> : null}
+          </FormField>
+        </KeyboardAwareScrollView>
       </SafeAreaView>
     </Modal>
   );
@@ -1643,20 +1671,34 @@ function QuestRow({ item }: { item: ActiveQuest }) {
       <Text style={qc.icon}>{quest.icon}</Text>
       <View style={qc.body}>
         <View style={qc.titleRow}>
-          <Text style={qc.title} numberOfLines={1}>{quest.title}</Text>
+          <Text style={qc.title} numberOfLines={1}>
+            {quest.title}
+          </Text>
           {completed ? (
             <View style={qc.donePill}>
               <Text style={qc.doneText}>DONE</Text>
             </View>
           ) : (
-            <Text style={qc.count}>{progress}/{goal}</Text>
+            <Text style={qc.count}>
+              {progress}/{goal}
+            </Text>
           )}
         </View>
         {quest.description ? (
-          <Text style={qc.sub} numberOfLines={1}>{quest.description}</Text>
+          <Text style={qc.sub} numberOfLines={1}>
+            {quest.description}
+          </Text>
         ) : null}
         <View style={qc.barBg}>
-          <View style={[qc.barFill, { width: `${Math.round(pct * 100)}%` as `${number}%`, backgroundColor: completed ? colors.success : accent }]} />
+          <View
+            style={[
+              qc.barFill,
+              {
+                width: `${Math.round(pct * 100)}%` as `${number}%`,
+                backgroundColor: completed ? colors.success : accent,
+              },
+            ]}
+          />
         </View>
         {quest.rewardBadge ? (
           <Text style={qc.reward} numberOfLines={1}>
@@ -1687,7 +1729,9 @@ function _QuestsCard() {
     <View style={section.card}>
       <View style={section.cardHeader}>
         <Text style={section.heading}>This month's quests</Text>
-        <Text style={qc.summary}>{done}/{quests.length} done</Text>
+        <Text style={qc.summary}>
+          {done}/{quests.length} done
+        </Text>
       </View>
       {quests.map((q, i) => (
         <View key={q.quest.id} style={i > 0 ? qc.divider : undefined}>
@@ -1702,7 +1746,12 @@ const qc = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.sm },
   icon: { fontSize: 28, lineHeight: 36, marginTop: 2 },
   body: { flex: 1, gap: spacing.xs },
-  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   title: {
     flex: 1,
     fontFamily: typography.fontFamily.semiBold,
@@ -1781,11 +1830,7 @@ function WinRateStat({ winRate }: { winRate: number }) {
           <Defs>
             <SvgLinearGradient id="wrGrad" x1="0" y1="0" x2="1" y2="1">
               {gradient.map((c, i) => (
-                <Stop
-                  key={i}
-                  offset={`${i / Math.max(1, gradient.length - 1)}`}
-                  stopColor={c}
-                />
+                <Stop key={i} offset={`${i / Math.max(1, gradient.length - 1)}`} stopColor={c} />
               ))}
             </SvgLinearGradient>
           </Defs>
@@ -1798,7 +1843,7 @@ function WinRateStat({ winRate }: { winRate: number }) {
   );
 }
 
-function _GameRecordCard({ stats }: { stats: GameStats }) {
+function GameRecordCard({ stats }: { stats: GameStats }) {
   const { accent } = useIdentityTheme();
   if (stats.games === 0) return null;
 
@@ -1822,17 +1867,33 @@ function _GameRecordCard({ stats }: { stats: GameStats }) {
 
       {stats.byDeck.length > 0 && (
         <View style={{ paddingHorizontal: spacing.xl, gap: spacing.sm }}>
-          <Text style={[section.heading, { fontSize: typography.fontSize.sm, marginTop: spacing.xs }]}>By deck</Text>
+          <Text
+            style={[section.heading, { fontSize: typography.fontSize.sm, marginTop: spacing.xs }]}
+          >
+            By deck
+          </Text>
           {stats.byDeck.slice(0, 5).map((d) => {
             const total = d.wins + d.losses;
             const pct = total > 0 ? d.wins / total : 0;
             return (
               <View key={d.deck} style={gr.deckRow}>
-                <Text style={gr.deckName} numberOfLines={1}>{d.deck}</Text>
+                <Text style={gr.deckName} numberOfLines={1}>
+                  {d.deck}
+                </Text>
                 <View style={gr.barBg}>
-                  <View style={[gr.barFill, { width: `${Math.round(pct * 100)}%` as `${number}%`, backgroundColor: accent }]} />
+                  <View
+                    style={[
+                      gr.barFill,
+                      {
+                        width: `${Math.round(pct * 100)}%` as `${number}%`,
+                        backgroundColor: accent,
+                      },
+                    ]}
+                  />
                 </View>
-                <Text style={gr.deckRecord}>{d.wins}–{d.losses}</Text>
+                <Text style={gr.deckRecord}>
+                  {d.wins}–{d.losses}
+                </Text>
               </View>
             );
           })}
@@ -1865,7 +1926,12 @@ const gr = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     color: colors.textTertiary,
   },
-  statDivider: { width: 1, height: 32, backgroundColor: colors.borderLight, marginHorizontal: spacing.sm },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.borderLight,
+    marginHorizontal: spacing.sm,
+  },
   deckRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   deckName: {
     flex: 1,
@@ -1902,7 +1968,7 @@ function gameResultLabel(game: Game, myId: string): { label: string; color: stri
   return { label: 'L', color: colors.error };
 }
 
-function _RecentGamesCard({ myId }: { myId: string }) {
+function RecentGamesCard({ myId }: { myId: string }) {
   const { data: games = [], isLoading } = useMyGames(8);
 
   if (isLoading) {
@@ -1924,10 +1990,7 @@ function _RecentGamesCard({ myId }: { myId: string }) {
         const opponents = game.players.filter((p) => p.userId !== myId);
         const myPlayer = game.players.find((p) => p.userId === myId);
         return (
-          <View
-            key={game.id}
-            style={[rg.row, i < games.length - 1 && rg.rowBorder]}
-          >
+          <View key={game.id} style={[rg.row, i < games.length - 1 && rg.rowBorder]}>
             <View style={[rg.result, { backgroundColor: color + '20' }]}>
               <Text style={[rg.resultText, { color }]}>{label}</Text>
             </View>
@@ -1936,7 +1999,9 @@ function _RecentGamesCard({ myId }: { myId: string }) {
                 vs {opponents.map((p) => p.displayName).join(', ')}
               </Text>
               {myPlayer?.deck ? (
-                <Text style={rg.deck} numberOfLines={1}>{myPlayer.deck}</Text>
+                <Text style={rg.deck} numberOfLines={1}>
+                  {myPlayer.deck}
+                </Text>
               ) : null}
             </View>
             <Text style={rg.date}>
@@ -2002,7 +2067,9 @@ function RivalryRow({ item, isLast }: { item: Rivalry; isLast: boolean }) {
       </View>
       <View style={rv.info}>
         <View style={rv.nameRow}>
-          <Text style={rv.name} numberOfLines={1}>{item.displayName}</Text>
+          <Text style={rv.name} numberOfLines={1}>
+            {item.displayName}
+          </Text>
           {item.hot && <Text style={rv.flame}>🔥</Text>}
         </View>
         <Text style={rv.sub}>
@@ -2016,7 +2083,7 @@ function RivalryRow({ item, isLast }: { item: Rivalry; isLast: boolean }) {
   );
 }
 
-function _RivalriesCard() {
+function RivalriesCard() {
   const { data: rivalries, isLoading } = useRivalries(5);
 
   if (isLoading || !rivalries?.length) return null;
@@ -2090,6 +2157,7 @@ export function YouScreen() {
   const { signOut } = useAuth();
   const { data: profile, isLoading: profileLoading, error: profileError } = useProfile();
   const { data: privacy, isLoading: privacyLoading } = usePrivacy();
+  const { data: gameStats } = useMyGameStats();
   const { accent } = useIdentityTheme();
   const [editOpen, setEditOpen] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -2131,10 +2199,7 @@ export function YouScreen() {
         <BellButton />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <IdentityHero profile={profile} onEdit={() => setEditOpen(true)} />
 
         <SocialsCard mode="owner" />
@@ -2157,6 +2222,12 @@ export function YouScreen() {
 
         <RewardsCard />
 
+        {gameStats && <GameRecordCard stats={gameStats} />}
+
+        <RecentGamesCard myId={profile.id} />
+
+        <RivalriesCard />
+
         <Pressable
           style={({ pressed }) => [styles.signOutBtn, pressed && styles.pressed]}
           onPress={signOut}
@@ -2165,11 +2236,7 @@ export function YouScreen() {
         </Pressable>
       </ScrollView>
 
-      <EditProfileModal
-        visible={editOpen}
-        profile={profile}
-        onClose={() => setEditOpen(false)}
-      />
+      <EditProfileModal visible={editOpen} profile={profile} onClose={() => setEditOpen(false)} />
     </SafeAreaView>
   );
 }
@@ -2225,10 +2292,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// Hidden game/quest features — see README "Hidden / future features"
+// Hidden quest feature — see README "Hidden / future features"
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type _HiddenGameFeatures =
-  | typeof _QuestsCard
-  | typeof _GameRecordCard
-  | typeof _RecentGamesCard
-  | typeof _RivalriesCard;
+export type _HiddenQuestFeature = typeof _QuestsCard;

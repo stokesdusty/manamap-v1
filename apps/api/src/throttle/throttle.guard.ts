@@ -1,14 +1,9 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  HttpException,
-  HttpStatus,
-  Injectable,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
+import type { CanActivate, ExecutionContext } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import type { Reflector } from '@nestjs/core';
+import type { JwtService } from '@nestjs/jwt';
 import { SKIP_THROTTLE_KEY, THROTTLE_KEY, type ThrottleOptions } from './throttle.decorator';
-import { ThrottleService } from './throttle.service';
+import type { ThrottleService } from './throttle.service';
 import { THROTTLE_GLOBAL_LIMIT, THROTTLE_GLOBAL_TTL } from './throttle.constants';
 
 const GLOBAL_DEFAULT: ThrottleOptions = {
@@ -60,9 +55,7 @@ export class ThrottleGuard implements CanActivate {
 
     if (!result.allowed) {
       const retryAfterSecs = Math.ceil(result.retryAfterMs / 1000) || 1;
-      const res = context
-        .switchToHttp()
-        .getResponse<{ header: (k: string, v: string) => void }>();
+      const res = context.switchToHttp().getResponse<{ header: (k: string, v: string) => void }>();
       res.header('Retry-After', String(retryAfterSecs));
       throw new HttpException(
         {
