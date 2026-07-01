@@ -12,6 +12,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'light',
   ios: {
     bundleIdentifier: 'com.manamap.app',
+    buildNumber: '11',
     supportsTablet: false,
     usesAppleSignIn: true,
     // react-native-maps uses Apple Maps on iOS by default — no API key required
