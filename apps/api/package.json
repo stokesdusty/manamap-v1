@@ -39,7 +39,7 @@
     "axios": "^1.7.9",
     "bullmq": "^5.77.6",
     "expo-server-sdk": "^6.1.0",
-    "fastify": "^4.28.1",
+    "fastify": "^4.29.1",
     "ioredis": "^5.11.0",
     "jose": "^4.15.9",
     "nestjs-pino": "^4.6.1",
