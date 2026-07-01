@@ -50,13 +50,14 @@ async function bootstrap(): Promise<void> {
   app.useLogger(app.get(Logger));
   app.useWebSocketAdapter(new WsAdapter(app));
 
-  await app.register(helmet, {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (app.register as any)(helmet, {
     contentSecurityPolicy: false,     // API returns JSON, not HTML
     crossOriginEmbedderPolicy: false, // would block cross-origin WS/fetch from mobile
   });
 
   // Echo request ID back so clients can correlate errors in logs
-  const fastify = app.getHttpAdapter().getInstance() as FastifyInstance;
+  const fastify = app.getHttpAdapter().getInstance() as unknown as FastifyInstance;
   fastify.addHook('onSend', (req, reply, _payload, done) => {
     reply.header('x-request-id', String(req.id));
     done();
