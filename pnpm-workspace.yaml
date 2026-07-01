@@ -8,8 +8,5 @@ allowBuilds:
   esbuild: true
   msgpackr-extract: true
   prisma: true
-overrides:
-  fastify: 4.28.1
-
 settings:
   nodeLinker: hoisted
