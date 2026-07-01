@@ -223,7 +223,8 @@
       "Bash(git -C c:/m log --oneline --all -- \"*.env\" \"**/.env\" \"**/.env.local\")",
       "Bash(git -C c:/m show de2d0ee --name-only)",
       "Bash(git -C c:/m show ace6202 --name-only)",
-      "Bash(git -C c:/m diff --stat HEAD)"
+      "Bash(git -C c:/m diff --stat HEAD)",
+      "Bash(pnpm --filter @manamap/api add @fastify/helmet)"
     ]
   }
 }

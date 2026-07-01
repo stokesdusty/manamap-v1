@@ -6,6 +6,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import type { FastifyInstance } from 'fastify';
+import helmet from '@fastify/helmet';
 import { WsAdapter } from './ws-adapter';
 import { Logger } from 'nestjs-pino';
 import * as Sentry from '@sentry/node';
@@ -48,6 +49,11 @@ async function bootstrap(): Promise<void> {
 
   app.useLogger(app.get(Logger));
   app.useWebSocketAdapter(new WsAdapter(app));
+
+  await app.register(helmet, {
+    contentSecurityPolicy: false,     // API returns JSON, not HTML
+    crossOriginEmbedderPolicy: false, // would block cross-origin WS/fetch from mobile
+  });
 
   // Echo request ID back so clients can correlate errors in logs
   const fastify = app.getHttpAdapter().getInstance() as FastifyInstance;
