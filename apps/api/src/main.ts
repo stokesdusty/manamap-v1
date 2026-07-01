@@ -6,7 +6,6 @@ import { NestFactory } from '@nestjs/core';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import type { FastifyInstance } from 'fastify';
-import helmet from '@fastify/helmet';
 import { WsAdapter } from './ws-adapter';
 import { Logger } from 'nestjs-pino';
 import * as Sentry from '@sentry/node';
@@ -50,16 +49,16 @@ async function bootstrap(): Promise<void> {
   app.useLogger(app.get(Logger));
   app.useWebSocketAdapter(new WsAdapter(app));
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (app.register as any)(helmet, {
-    contentSecurityPolicy: false,     // API returns JSON, not HTML
-    crossOriginEmbedderPolicy: false, // would block cross-origin WS/fetch from mobile
-  });
-
-  // Echo request ID back so clients can correlate errors in logs
+  // Echo request ID and security headers on every response
   const fastify = app.getHttpAdapter().getInstance() as unknown as FastifyInstance;
   fastify.addHook('onSend', (req, reply, _payload, done) => {
     reply.header('x-request-id', String(req.id));
+    reply.header('strict-transport-security', 'max-age=15552000; includeSubDomains');
+    reply.header('x-content-type-options', 'nosniff');
+    reply.header('x-frame-options', 'SAMEORIGIN');
+    reply.header('x-dns-prefetch-control', 'off');
+    reply.header('x-xss-protection', '0');
+    reply.header('referrer-policy', 'no-referrer');
     done();
   });
 
