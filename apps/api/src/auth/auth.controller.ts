@@ -1,4 +1,5 @@
-import { Body, Controller, HttpCode, Post, ForbiddenException } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Query, Req, Res, ForbiddenException } from '@nestjs/common';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import {
   AppleAuthBodySchema,
   DiscordAuthBodySchema,
@@ -41,6 +42,32 @@ export class AuthController {
     @Body(new ZodValidationPipe(GoogleAuthBodySchema)) body: GoogleAuthBody,
   ): Promise<AuthTokens> {
     return this.auth.signInWithGoogle(body.code, body.codeVerifier, body.redirectUri);
+  }
+
+  @Get('google/callback')
+  async googleCallback(
+    @Query('code') code: string | undefined,
+    @Query('error') error: string | undefined,
+    @Req() req: FastifyRequest,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    if (error || !code) {
+      void reply.redirect(
+        `manamap://auth/google?error=${encodeURIComponent(error ?? 'cancelled')}`,
+      );
+      return;
+    }
+    try {
+      const redirectUri = `${req.protocol}://${req.hostname}/api/v1/auth/google/callback`;
+      const tokens = await this.auth.signInWithGoogle(code, undefined, redirectUri);
+      void reply.redirect(
+        `manamap://auth/google?accessToken=${encodeURIComponent(tokens.accessToken)}&refreshToken=${encodeURIComponent(tokens.refreshToken)}&expiresIn=${tokens.expiresIn}`,
+      );
+    } catch {
+      void reply.redirect(
+        `manamap://auth/google?error=${encodeURIComponent('Sign in failed. Please try again.')}`,
+      );
+    }
   }
 
   @Post('refresh')

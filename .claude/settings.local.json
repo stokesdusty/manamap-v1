@@ -232,7 +232,12 @@
       "Bash(git -C c:/m show 152f5d0:pnpm-workspace.yaml)",
       "Bash(pnpm update *)",
       "Bash(git -C c:/m show HEAD:pnpm-lock.yaml)",
-      "Bash(pnpm --filter @manamap/shared typecheck)"
+      "Bash(pnpm --filter @manamap/shared typecheck)",
+      "Bash(ls \"C:/Users/NoUse/AppData/Local/Android/Sdk/platform-tools/adb.exe\" 2>/dev/null && echo \"found\" || echo \"not found\")",
+      "Bash(ls \"C:/m/node_modules/expo-dev-client\" 2>/dev/null && echo \"found at root\" || echo \"not at root\" *)",
+      "Bash(python3 -c \"import os; p='C:/m/apps/mobile/node_modules/expo-dev-client'; print\\('symlink:', os.path.islink\\(p\\), '-> ', os.readlink\\(p\\) if os.path.islink\\(p\\) else 'N/A'\\)\")",
+      "Read(//c/pm/expo@56.0.11_@babel+core@7._ba4969321360f74ae5fe451cab933aae/node_modules/expo/**)",
+      "Read(//c/m/apps/mobile/node_modules/expo/metro-config/**)"
     ]
   }
 }

@@ -1,8 +1,10 @@
-const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
-const projectRoot = __dirname;
-const workspaceRoot = path.resolve(projectRoot, '../..');
+const workspaceRoot = __dirname;
+const projectRoot = path.resolve(workspaceRoot, 'apps/mobile');
+
+// expo is in the mobile app's node_modules, not the workspace root
+const { getDefaultConfig } = require(path.join(projectRoot, 'node_modules', 'expo', 'metro-config'));
 
 const config = getDefaultConfig(projectRoot);
 

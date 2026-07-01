@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as AuthSession from 'expo-auth-session';
-import * as Google from 'expo-auth-session/providers/google';
+import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -21,15 +21,66 @@ import type { AuthTokens } from '@manamap/shared';
 WebBrowser.maybeCompleteAuthSession();
 
 const DISCORD_CLIENT_ID = process.env['EXPO_PUBLIC_DISCORD_CLIENT_ID'] ?? '';
+const GOOGLE_WEB_CLIENT_ID = process.env['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'] ?? '';
+const API_BASE = process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3000';
+const GOOGLE_CALLBACK_URL = `${API_BASE}/api/v1/auth/google/callback`;
+
+const googleEnabled = !!GOOGLE_WEB_CLIENT_ID;
 
 const discordDiscovery = {
   authorizationEndpoint: 'https://discord.com/api/oauth2/authorize',
   tokenEndpoint: 'https://discord.com/api/oauth2/token',
 };
 
+type LoadingState = 'apple' | 'discord' | 'google' | null;
+
+function GoogleSignInButton({
+  loading,
+  onStart,
+  onDismiss,
+}: {
+  loading: LoadingState;
+  onStart: () => void;
+  onDismiss: () => void;
+}) {
+  async function handlePress() {
+    onStart();
+    const authUrl =
+      `https://accounts.google.com/o/oauth2/v2/auth` +
+      `?client_id=${encodeURIComponent(GOOGLE_WEB_CLIENT_ID)}` +
+      `&redirect_uri=${encodeURIComponent(GOOGLE_CALLBACK_URL)}` +
+      `&response_type=code` +
+      `&scope=${encodeURIComponent('openid email profile')}` +
+      `&access_type=offline`;
+
+    const result = await WebBrowser.openBrowserAsync(authUrl);
+    if (result.type === 'dismiss' || result.type === 'cancel') {
+      onDismiss();
+    }
+  }
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.googleBtn,
+        !!loading && styles.btnDisabled,
+        pressed && styles.btnPressed,
+      ]}
+      onPress={handlePress}
+      disabled={!!loading}
+    >
+      {loading === 'google' ? (
+        <ActivityIndicator color={colors.textPrimary} />
+      ) : (
+        <Text style={styles.googleBtnText}>Continue with Google</Text>
+      )}
+    </Pressable>
+  );
+}
+
 export function SignInScreen() {
   const { signIn } = useAuth();
-  const [loading, setLoading] = useState<'apple' | 'discord' | 'google' | null>(null);
+  const [loading, setLoading] = useState<LoadingState>(null);
 
   const redirectUri = AuthSession.makeRedirectUri({ scheme: 'manamap', path: 'auth/discord' });
 
@@ -42,12 +93,6 @@ export function SignInScreen() {
     },
     discordDiscovery,
   );
-
-  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
-    androidClientId: process.env['EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID'],
-    iosClientId: process.env['EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'],
-    webClientId: process.env['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'],
-  });
 
   useEffect(() => {
     if (!response) return;
@@ -62,20 +107,52 @@ export function SignInScreen() {
   }, [response]);
 
   useEffect(() => {
-    if (!googleResponse) return;
-    if (googleResponse.type === 'success') {
-      handleGoogleCode(
-        googleResponse.params['code'] ?? '',
-        googleRequest?.codeVerifier,
-        googleRequest?.redirectUri,
-      );
-    } else {
-      setLoading(null);
-      if (googleResponse.type === 'error') {
-        Alert.alert('Google sign in failed', googleResponse.error?.message ?? 'Unknown error');
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      const parsed = Linking.parse(url);
+      if (parsed.hostname !== 'auth' || parsed.path !== 'google') return;
+
+      const params = parsed.queryParams as Record<string, string | undefined>;
+
+      if (params['error']) {
+        setLoading(null);
+        Alert.alert('Sign in failed', decodeURIComponent(params['error']));
+        return;
       }
+
+      const { accessToken, refreshToken, expiresIn } = params;
+      if (accessToken && refreshToken) {
+        signIn({ accessToken, refreshToken, expiresIn: Number(expiresIn ?? 900) }).finally(() =>
+          setLoading(null),
+        );
+      } else {
+        setLoading(null);
+      }
+    });
+
+    return () => sub.remove();
+  }, [signIn]);
+
+  async function handleDiscordCode(code: string, codeVerifier?: string) {
+    if (!code) return;
+    setLoading('discord');
+    try {
+      const { data } = await api.post<AuthTokens>('/v1/auth/discord', {
+        code,
+        codeVerifier,
+        redirectUri,
+      });
+      await signIn(data);
+    } catch (err: unknown) {
+      const msg =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { data?: unknown } }).response?.data;
+      Alert.alert('Sign in failed', JSON.stringify(msg ?? err));
+    } finally {
+      setLoading(null);
     }
-  }, [googleResponse]);
+  }
 
   async function handleAppleSignIn() {
     setLoading('apple');
@@ -95,50 +172,6 @@ export function SignInScreen() {
       if ((err as { code?: string }).code !== 'ERR_REQUEST_CANCELED') {
         Alert.alert('Sign in failed', 'Please try again.');
       }
-    } finally {
-      setLoading(null);
-    }
-  }
-
-  async function handleGoogleCode(code: string, codeVerifier?: string, googleRedirectUri?: string) {
-    if (!code) return;
-    setLoading('google');
-    try {
-      const { data } = await api.post<AuthTokens>('/v1/auth/google', {
-        code,
-        codeVerifier,
-        redirectUri: googleRedirectUri,
-      });
-      await signIn(data);
-    } catch (err: unknown) {
-      const msg =
-        err &&
-        typeof err === 'object' &&
-        'response' in err &&
-        (err as { response?: { data?: unknown } }).response?.data;
-      Alert.alert('Sign in failed', JSON.stringify(msg ?? err));
-    } finally {
-      setLoading(null);
-    }
-  }
-
-  async function handleDiscordCode(code: string, codeVerifier?: string) {
-    if (!code) return;
-    setLoading('discord');
-    try {
-      const { data } = await api.post<AuthTokens>('/v1/auth/discord', {
-        code,
-        codeVerifier,
-        redirectUri,
-      });
-      await signIn(data);
-    } catch (err: unknown) {
-      const msg =
-        err &&
-        typeof err === 'object' &&
-        'response' in err &&
-        (err as { response?: { data?: unknown } }).response?.data;
-      Alert.alert('Sign in failed', JSON.stringify(msg ?? err));
     } finally {
       setLoading(null);
     }
@@ -179,21 +212,13 @@ export function SignInScreen() {
             )}
           </Pressable>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.googleBtn,
-              (!!loading || !googleRequest) && styles.btnDisabled,
-              pressed && styles.btnPressed,
-            ]}
-            onPress={() => promptGoogle()}
-            disabled={!!loading || !googleRequest}
-          >
-            {loading === 'google' ? (
-              <ActivityIndicator color={colors.textPrimary} />
-            ) : (
-              <Text style={styles.googleBtnText}>Continue with Google</Text>
-            )}
-          </Pressable>
+          {googleEnabled && (
+            <GoogleSignInButton
+              loading={loading}
+              onStart={() => setLoading('google')}
+              onDismiss={() => setLoading(null)}
+            />
+          )}
         </View>
       </View>
     </SafeAreaView>
@@ -261,12 +286,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border ?? '#E0E0E0',
+    borderColor: colors.border,
     ...shadows.sm,
   },
   googleBtnText: {
     fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.md,
-    color: colors.textPrimary,
+    color: '#1F1F1F',
   },
 });
