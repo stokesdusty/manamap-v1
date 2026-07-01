@@ -2,11 +2,13 @@ import { Body, Controller, HttpCode, Post, ForbiddenException } from '@nestjs/co
 import {
   AppleAuthBodySchema,
   DiscordAuthBodySchema,
+  GoogleAuthBodySchema,
   LogoutBodySchema,
   RefreshBodySchema,
   type AppleAuthBody,
   type AuthTokens,
   type DiscordAuthBody,
+  type GoogleAuthBody,
   type LogoutBody,
   type RefreshBody,
 } from '@manamap/shared';
@@ -31,6 +33,14 @@ export class AuthController {
     @Body(new ZodValidationPipe(DiscordAuthBodySchema)) body: DiscordAuthBody,
   ): Promise<AuthTokens> {
     return this.auth.signInWithDiscord(body.code, body.codeVerifier, body.redirectUri);
+  }
+
+  @Post('google')
+  @HttpCode(200)
+  google(
+    @Body(new ZodValidationPipe(GoogleAuthBodySchema)) body: GoogleAuthBody,
+  ): Promise<AuthTokens> {
+    return this.auth.signInWithGoogle(body.code, body.codeVerifier, body.redirectUri);
   }
 
   @Post('refresh')

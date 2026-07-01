@@ -18,6 +18,10 @@ export const envSchema = z.object({
   DISCORD_CLIENT_SECRET: z.string().optional(),
   DISCORD_REDIRECT_URI: z.string().optional(),
 
+  // Auth — Google OAuth2 (optional; endpoints 503 when absent)
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
   // Rate limiting — set to 'true' to disable all throttling (e2e / CI)
   THROTTLE_DISABLED: z.string().optional(),
 

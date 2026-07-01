@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { DiscordService } from './discord.service';
+import { GoogleService } from './google.service';
 import { TokenService } from './token.service';
 
 @Module({
@@ -20,7 +21,7 @@ import { TokenService } from './token.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AppleService, DiscordService, TokenService, AuthGuard],
+  providers: [AuthService, AppleService, DiscordService, GoogleService, TokenService, AuthGuard],
   exports: [AuthGuard, JwtModule],
 })
 export class AuthModule {}

@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as AuthSession from 'expo-auth-session';
+import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -28,7 +29,7 @@ const discordDiscovery = {
 
 export function SignInScreen() {
   const { signIn } = useAuth();
-  const [loading, setLoading] = useState<'apple' | 'discord' | null>(null);
+  const [loading, setLoading] = useState<'apple' | 'discord' | 'google' | null>(null);
 
   const redirectUri = AuthSession.makeRedirectUri({ scheme: 'manamap', path: 'auth/discord' });
 
@@ -42,6 +43,12 @@ export function SignInScreen() {
     discordDiscovery,
   );
 
+  const [googleRequest, googleResponse, promptGoogle] = Google.useAuthRequest({
+    androidClientId: process.env['EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID'],
+    iosClientId: process.env['EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'],
+    webClientId: process.env['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'],
+  });
+
   useEffect(() => {
     if (!response) return;
     if (response.type === 'success') {
@@ -53,6 +60,22 @@ export function SignInScreen() {
       }
     }
   }, [response]);
+
+  useEffect(() => {
+    if (!googleResponse) return;
+    if (googleResponse.type === 'success') {
+      handleGoogleCode(
+        googleResponse.params['code'] ?? '',
+        googleRequest?.codeVerifier,
+        googleRequest?.redirectUri,
+      );
+    } else {
+      setLoading(null);
+      if (googleResponse.type === 'error') {
+        Alert.alert('Google sign in failed', googleResponse.error?.message ?? 'Unknown error');
+      }
+    }
+  }, [googleResponse]);
 
   async function handleAppleSignIn() {
     setLoading('apple');
@@ -72,6 +95,28 @@ export function SignInScreen() {
       if ((err as { code?: string }).code !== 'ERR_REQUEST_CANCELED') {
         Alert.alert('Sign in failed', 'Please try again.');
       }
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleGoogleCode(code: string, codeVerifier?: string, googleRedirectUri?: string) {
+    if (!code) return;
+    setLoading('google');
+    try {
+      const { data } = await api.post<AuthTokens>('/v1/auth/google', {
+        code,
+        codeVerifier,
+        redirectUri: googleRedirectUri,
+      });
+      await signIn(data);
+    } catch (err: unknown) {
+      const msg =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { data?: unknown } }).response?.data;
+      Alert.alert('Sign in failed', JSON.stringify(msg ?? err));
     } finally {
       setLoading(null);
     }
@@ -133,6 +178,22 @@ export function SignInScreen() {
               <Text style={styles.discordBtnText}>Continue with Discord</Text>
             )}
           </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.googleBtn,
+              (!!loading || !googleRequest) && styles.btnDisabled,
+              pressed && styles.btnPressed,
+            ]}
+            onPress={() => promptGoogle()}
+            disabled={!!loading || !googleRequest}
+          >
+            {loading === 'google' ? (
+              <ActivityIndicator color={colors.textPrimary} />
+            ) : (
+              <Text style={styles.googleBtnText}>Continue with Google</Text>
+            )}
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>
@@ -192,5 +253,20 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.md,
     color: colors.textInverse,
+  },
+  googleBtn: {
+    height: 50,
+    borderRadius: radii.md,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border ?? '#E0E0E0',
+    ...shadows.sm,
+  },
+  googleBtnText: {
+    fontFamily: typography.fontFamily.semiBold,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
   },
 });

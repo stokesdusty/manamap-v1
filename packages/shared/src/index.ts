@@ -696,6 +696,13 @@ export const DiscordAuthBodySchema = z.object({
 });
 export type DiscordAuthBody = z.infer<typeof DiscordAuthBodySchema>;
 
+export const GoogleAuthBodySchema = z.object({
+  code: z.string().min(1, 'code is required'),
+  codeVerifier: z.string().optional(),
+  redirectUri: z.string().optional(),
+});
+export type GoogleAuthBody = z.infer<typeof GoogleAuthBodySchema>;
+
 export const RefreshBodySchema = z.object({
   refreshToken: z.string().min(1, 'refreshToken is required'),
 });

@@ -5,6 +5,7 @@ import { InjectPinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppleService } from './apple.service';
 import { DiscordService } from './discord.service';
+import { GoogleService } from './google.service';
 import { TokenService } from './token.service';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class AuthService {
     @InjectPinoLogger(AuthService.name) private readonly logger: PinoLogger,
     private readonly apple: AppleService,
     private readonly discord: DiscordService,
+    private readonly google: GoogleService,
     private readonly tokens: TokenService,
     private readonly prisma: PrismaService,
   ) {}
@@ -84,6 +86,37 @@ export class AuthService {
       where: { userId_platform: { userId: user.id, platform: 'DISCORD' } },
       create: { userId: user.id, platform: 'DISCORD', value: discordHandle, visibility: 'PUBLIC' },
       update: {},
+    });
+    return this.tokens.issueTokens(user.id, user.email);
+  }
+
+  async signInWithGoogle(
+    code: string,
+    codeVerifier?: string,
+    redirectUri?: string,
+  ): Promise<AuthTokens> {
+    let profile;
+    try {
+      profile = await this.google.exchangeCode(code, codeVerifier, redirectUri);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error({ err }, 'Google code exchange failed');
+      throw error;
+    }
+
+    if (!profile.email) {
+      throw new BadRequestException('Google account must have an email');
+    }
+
+    const existing = await this.prisma.identity.findFirst({
+      where: { provider: 'google', providerId: profile.sub },
+      include: { user: true },
+    });
+    if (existing) return this.tokens.issueTokens(existing.user.id, existing.user.email);
+
+    const user = await this.upsertUserByEmail(profile.email, profile.name ?? 'Google User');
+    await this.prisma.identity.create({
+      data: { userId: user.id, provider: 'google', providerId: profile.sub },
     });
     return this.tokens.issueTokens(user.id, user.email);
   }

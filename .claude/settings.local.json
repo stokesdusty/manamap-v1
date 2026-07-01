@@ -231,7 +231,8 @@
       "Bash(git -C c:/m show 152f5d0:pnpm-lock.yaml)",
       "Bash(git -C c:/m show 152f5d0:pnpm-workspace.yaml)",
       "Bash(pnpm update *)",
-      "Bash(git -C c:/m show HEAD:pnpm-lock.yaml)"
+      "Bash(git -C c:/m show HEAD:pnpm-lock.yaml)",
+      "Bash(pnpm --filter @manamap/shared typecheck)"
     ]
   }
 }
