@@ -68,8 +68,9 @@ export class GoogleService {
         name: userinfoRes.data.name,
       };
     } catch (err) {
+      const axiosData = (err as { response?: { data?: unknown } }).response?.data;
       this.logger.warn(
-        { err: err instanceof Error ? err : new Error(String(err)) },
+        { err: err instanceof Error ? err : new Error(String(err)), googleError: axiosData },
         'Google OAuth failed',
       );
       throw new UnauthorizedException('Google OAuth failed — invalid or expired code');

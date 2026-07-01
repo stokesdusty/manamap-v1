@@ -48,6 +48,7 @@ export class AuthController {
   async googleCallback(
     @Query('code') code: string | undefined,
     @Query('error') error: string | undefined,
+    @Query('state') state: string | undefined,
     @Req() req: FastifyRequest,
     @Res() reply: FastifyReply,
   ): Promise<void> {
@@ -58,8 +59,19 @@ export class AuthController {
       return;
     }
     try {
+      let codeVerifier: string | undefined;
+      if (state) {
+        try {
+          const parsed = JSON.parse(Buffer.from(state, 'base64').toString()) as {
+            cv?: string;
+          };
+          codeVerifier = parsed.cv;
+        } catch {
+          // ignore malformed state
+        }
+      }
       const redirectUri = `${req.protocol}://${req.hostname}/api/v1/auth/google/callback`;
-      const tokens = await this.auth.signInWithGoogle(code, undefined, redirectUri);
+      const tokens = await this.auth.signInWithGoogle(code, codeVerifier, redirectUri);
       void reply.redirect(
         `manamap://auth/google?accessToken=${encodeURIComponent(tokens.accessToken)}&refreshToken=${encodeURIComponent(tokens.refreshToken)}&expiresIn=${tokens.expiresIn}`,
       );

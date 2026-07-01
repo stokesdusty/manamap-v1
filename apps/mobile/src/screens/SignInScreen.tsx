@@ -24,6 +24,7 @@ const DISCORD_CLIENT_ID = process.env['EXPO_PUBLIC_DISCORD_CLIENT_ID'] ?? '';
 const GOOGLE_WEB_CLIENT_ID = process.env['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'] ?? '';
 const API_BASE = process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3000';
 const GOOGLE_CALLBACK_URL = `${API_BASE}/api/v1/auth/google/callback`;
+const GOOGLE_RETURN_SCHEME = 'manamap://auth/google';
 
 const googleEnabled = !!GOOGLE_WEB_CLIENT_ID;
 
@@ -34,27 +35,71 @@ const discordDiscovery = {
 
 type LoadingState = 'apple' | 'discord' | 'google' | null;
 
+async function generatePKCE(): Promise<{ codeVerifier: string; codeChallenge: string }> {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  let bin = '';
+  bytes.forEach((b) => { bin += String.fromCharCode(b); });
+  const codeVerifier = btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier));
+  let b64 = '';
+  new Uint8Array(digest).forEach((b) => { b64 += String.fromCharCode(b); });
+  const codeChallenge = btoa(b64).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+  return { codeVerifier, codeChallenge };
+}
+
 function GoogleSignInButton({
   loading,
   onStart,
+  onTokens,
+  onError,
   onDismiss,
 }: {
   loading: LoadingState;
   onStart: () => void;
+  onTokens: (tokens: AuthTokens) => void;
+  onError: (msg: string) => void;
   onDismiss: () => void;
 }) {
   async function handlePress() {
     onStart();
+    const { codeVerifier, codeChallenge } = await generatePKCE();
+    // Pass the verifier to the API via state so it can complete the code exchange
+    const state = btoa(JSON.stringify({ cv: codeVerifier }));
+
     const authUrl =
       `https://accounts.google.com/o/oauth2/v2/auth` +
       `?client_id=${encodeURIComponent(GOOGLE_WEB_CLIENT_ID)}` +
       `&redirect_uri=${encodeURIComponent(GOOGLE_CALLBACK_URL)}` +
       `&response_type=code` +
       `&scope=${encodeURIComponent('openid email profile')}` +
+      `&code_challenge=${codeChallenge}` +
+      `&code_challenge_method=S256` +
+      `&state=${encodeURIComponent(state)}` +
       `&access_type=offline`;
 
-    const result = await WebBrowser.openBrowserAsync(authUrl);
-    if (result.type === 'dismiss' || result.type === 'cancel') {
+    // openAuthSessionAsync monitors for the manamap:// redirect and closes the tab
+    const result = await WebBrowser.openAuthSessionAsync(authUrl, GOOGLE_RETURN_SCHEME);
+
+    if (result.type !== 'success') {
+      onDismiss();
+      return;
+    }
+
+    const parsed = Linking.parse(result.url);
+    const params = parsed.queryParams as Record<string, string | undefined>;
+
+    if (params['error']) {
+      onError(decodeURIComponent(params['error']));
+      return;
+    }
+
+    const { accessToken, refreshToken, expiresIn } = params;
+    if (accessToken && refreshToken) {
+      onTokens({ accessToken, refreshToken, expiresIn: Number(expiresIn ?? 900) });
+    } else {
       onDismiss();
     }
   }
@@ -106,31 +151,15 @@ export function SignInScreen() {
     }
   }, [response]);
 
-  useEffect(() => {
-    const sub = Linking.addEventListener('url', ({ url }) => {
-      const parsed = Linking.parse(url);
-      if (parsed.hostname !== 'auth' || parsed.path !== 'google') return;
-
-      const params = parsed.queryParams as Record<string, string | undefined>;
-
-      if (params['error']) {
-        setLoading(null);
-        Alert.alert('Sign in failed', decodeURIComponent(params['error']));
-        return;
-      }
-
-      const { accessToken, refreshToken, expiresIn } = params;
-      if (accessToken && refreshToken) {
-        signIn({ accessToken, refreshToken, expiresIn: Number(expiresIn ?? 900) }).finally(() =>
-          setLoading(null),
-        );
-      } else {
-        setLoading(null);
-      }
-    });
-
-    return () => sub.remove();
-  }, [signIn]);
+  async function handleGoogleTokens(tokens: AuthTokens) {
+    try {
+      await signIn(tokens);
+    } catch {
+      Alert.alert('Sign in failed', 'Please try again.');
+    } finally {
+      setLoading(null);
+    }
+  }
 
   async function handleDiscordCode(code: string, codeVerifier?: string) {
     if (!code) return;
@@ -216,6 +245,11 @@ export function SignInScreen() {
             <GoogleSignInButton
               loading={loading}
               onStart={() => setLoading('google')}
+              onTokens={handleGoogleTokens}
+              onError={(msg) => {
+                setLoading(null);
+                Alert.alert('Sign in failed', msg);
+              }}
               onDismiss={() => setLoading(null)}
             />
           )}
