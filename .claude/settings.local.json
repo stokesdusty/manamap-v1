@@ -225,7 +225,11 @@
       "Bash(git -C c:/m show ace6202 --name-only)",
       "Bash(git -C c:/m diff --stat HEAD)",
       "Bash(pnpm --filter @manamap/api add @fastify/helmet)",
-      "Bash(pnpm --filter @manamap/api build --virtual-store-dir=C:/pm)"
+      "Bash(pnpm --filter @manamap/api build --virtual-store-dir=C:/pm)",
+      "Bash(git -C c:/m diff --stat pnpm-lock.yaml)",
+      "Bash(git -C c:/m log --oneline -3 -- pnpm-lock.yaml)",
+      "Bash(git -C c:/m show 152f5d0:pnpm-lock.yaml)",
+      "Bash(git -C c:/m show 152f5d0:pnpm-workspace.yaml)"
     ]
   }
 }
