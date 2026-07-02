@@ -1458,3 +1458,116 @@ export const StoreConfirmResultSchema = z.object({
   status: StoreStatusSchema,
 });
 export type StoreConfirmResult = z.infer<typeof StoreConfirmResultSchema>;
+
+// --- Account data export & deletion (GDPR / CCPA) ---
+
+export const DeleteAccountSchema = z.object({
+  confirm: z.literal(true),
+});
+export type DeleteAccount = z.infer<typeof DeleteAccountSchema>;
+
+export const AccountExportCheckinSchema = z.object({
+  id: IdSchema,
+  storeId: IdSchema,
+  storeName: z.string(),
+  eventId: IdSchema.nullable(),
+  checkedInAt: TimestampSchema,
+  checkedOutAt: TimestampSchema.nullable(),
+});
+
+export const AccountExportStreakSchema = z.object({
+  storeId: IdSchema,
+  storeName: z.string(),
+  currentStreak: z.number().int(),
+  longestStreak: z.number().int(),
+  totalCheckins: z.number().int(),
+  lastCheckinAt: TimestampSchema,
+});
+
+export const AccountExportEventAttendanceSchema = z.object({
+  id: IdSchema,
+  eventId: IdSchema,
+  eventName: z.string(),
+  rsvpAt: TimestampSchema,
+});
+
+export const AccountExportConnectionSchema = z.object({
+  id: IdSchema,
+  otherUserId: IdSchema,
+  otherUserName: z.string(),
+  direction: z.enum(['sent', 'received']),
+  status: ConnectionStatusSchema,
+  createdAt: TimestampSchema,
+});
+
+export const AccountExportEncounterSchema = z.object({
+  id: IdSchema,
+  opponentId: IdSchema,
+  opponentName: z.string(),
+  result: z.enum(['WIN', 'LOSS', 'DRAW']),
+  storeId: IdSchema.nullable(),
+  createdAt: TimestampSchema,
+});
+
+export const AccountExportGameSchema = z.object({
+  id: IdSchema,
+  storeId: IdSchema.nullable(),
+  format: z.string().nullable(),
+  status: GameStatusSchema,
+  isWinner: z.boolean(),
+  deck: z.string().nullable(),
+  createdAt: TimestampSchema,
+});
+
+export const AccountExportEndorsementSchema = z.object({
+  id: IdSchema,
+  otherUserId: IdSchema,
+  otherUserName: z.string(),
+  tag: EndorsementTagSchema,
+  createdAt: TimestampSchema,
+});
+
+export const AccountExportRedemptionSchema = z.object({
+  id: IdSchema,
+  storeId: IdSchema,
+  storeName: z.string(),
+  code: z.string(),
+  status: RedemptionStatusSchema,
+  createdAt: TimestampSchema,
+  redeemedAt: TimestampSchema.nullable(),
+});
+
+export const AccountExportReportSchema = z.object({
+  id: IdSchema,
+  reportedUserId: IdSchema,
+  reason: ReportReasonSchema,
+  detail: z.string().nullable(),
+  status: z.enum(['OPEN', 'REVIEWED', 'ACTIONED']),
+  createdAt: TimestampSchema,
+});
+
+export const AccountExportBlockSchema = z.object({
+  blockedUserId: IdSchema,
+  createdAt: TimestampSchema,
+});
+
+export const AccountExportSchema = z.object({
+  exportedAt: TimestampSchema,
+  profile: ProfileSchema,
+  privacy: PrivacySchema,
+  decks: z.array(DeckLinkSchema),
+  socialLinks: z.array(SocialLinkSchema),
+  badges: z.array(UserBadgeSchema),
+  streaks: z.array(AccountExportStreakSchema),
+  checkins: z.array(AccountExportCheckinSchema),
+  eventAttendance: z.array(AccountExportEventAttendanceSchema),
+  connections: z.array(AccountExportConnectionSchema),
+  encounters: z.array(AccountExportEncounterSchema),
+  games: z.array(AccountExportGameSchema),
+  endorsementsGiven: z.array(AccountExportEndorsementSchema),
+  endorsementsReceived: z.array(AccountExportEndorsementSchema),
+  offerRedemptions: z.array(AccountExportRedemptionSchema),
+  blocksMade: z.array(AccountExportBlockSchema),
+  reportsMade: z.array(AccountExportReportSchema),
+});
+export type AccountExport = z.infer<typeof AccountExportSchema>;

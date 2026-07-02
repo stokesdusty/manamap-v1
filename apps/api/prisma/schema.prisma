@@ -188,6 +188,7 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
   onboardedAt  DateTime? @map("onboarded_at")
+  deletedAt    DateTime? @map("deleted_at")
 
   homeStoreId         String?  @map("home_store_id")
   role                UserRole @default(USER)

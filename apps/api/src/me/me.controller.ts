@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   CreateDeckLinkSchema,
+  DeleteAccountSchema,
   OnboardingSubmitSchema,
   RegisterPushTokenSchema,
   SetHomeStoreSchema,
@@ -19,6 +20,7 @@ import {
   UpdatePrivacySchema,
   UpdateProfileSchema,
   type CreateDeckLink,
+  type DeleteAccount,
   type OnboardingSubmit,
   type RegisterPushToken,
   type SetHomeStore,
@@ -145,5 +147,19 @@ export class MeController {
   @Get('stats')
   getGameStats(@Req() req: AuthRequest) {
     return this.me.getGameStats(req.user.sub);
+  }
+
+  @Get('export')
+  exportData(@Req() req: AuthRequest) {
+    return this.me.exportData(req.user.sub);
+  }
+
+  @Delete()
+  @HttpCode(204)
+  deleteAccount(
+    @Req() req: AuthRequest,
+    @Body(new ZodValidationPipe(DeleteAccountSchema)) _body: DeleteAccount,
+  ) {
+    return this.me.deleteAccount(req.user.sub);
   }
 }

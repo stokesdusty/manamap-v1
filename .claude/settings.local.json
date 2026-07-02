@@ -238,7 +238,22 @@
       "Bash(python3 -c \"import os; p='C:/m/apps/mobile/node_modules/expo-dev-client'; print\\('symlink:', os.path.islink\\(p\\), '-> ', os.readlink\\(p\\) if os.path.islink\\(p\\) else 'N/A'\\)\")",
       "Read(//c/pm/expo@56.0.11_@babel+core@7._ba4969321360f74ae5fe451cab933aae/node_modules/expo/**)",
       "Read(//c/m/apps/mobile/node_modules/expo/metro-config/**)",
-      "Bash(pnpm --filter @manamap/mobile add @react-native-google-signin/google-signin)"
+      "Bash(pnpm --filter @manamap/mobile add @react-native-google-signin/google-signin)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(git -C c:/m status --porcelain apps/api/.env apps/mobile/.env apps/admin/.env.local .env.example)",
+      "Bash(git -C c:/m check-ignore -v apps/api/.env apps/mobile/.env apps/admin/.env.local)",
+      "Bash(xargs wc -l)",
+      "Bash(mkdir -p \"apps/api/prisma/migrations/20260702000000_account_deletion\")",
+      "Bash(pnpm --filter @manamap/shared exec tsc --noEmit)",
+      "Bash(pnpm --filter @manamap/api exec tsc --noEmit -p tsconfig.json)",
+      "Bash(pnpm --filter @manamap/admin exec tsc --noEmit -p tsconfig.json)",
+      "Bash(pnpm --filter @manamap/api exec eslint src/me src/auth/auth.guard.ts src/auth/__tests__/auth.guard.spec.ts)",
+      "Bash(pnpm --filter @manamap/api exec eslint src/auth/auth.guard.ts src/me/me.controller.ts src/me/me.service.ts)",
+      "Bash(pnpm --filter @manamap/api exec eslint src/me/me.module.ts)",
+      "Bash(pnpm --filter @manamap/shared exec eslint src/index.ts)",
+      "Bash(pnpm --filter @manamap/mobile exec eslint src/hooks/useMe.ts src/screens/YouScreen.tsx)",
+      "Bash(pnpm --filter @manamap/admin exec eslint src/pages/SupportPage.tsx)"
     ]
   }
 }

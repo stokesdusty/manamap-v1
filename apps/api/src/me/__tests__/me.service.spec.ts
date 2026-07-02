@@ -4,11 +4,26 @@ import type { OnboardingSubmit } from '@manamap/shared';
 import { MeService } from '../me.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EndorsementsService } from '../../endorsements/endorsements.service';
+import { EventRemindersService } from '../../event-reminders/event-reminders.service';
+import { PresenceService } from '../../presence/presence.service';
+import { LfgService } from '../../lfg/lfg.service';
 
 function makeEndorsementsMock() {
   return {
     getSummary: jest.fn().mockResolvedValue({ total: 0, byTag: [] }),
   };
+}
+
+function makeEventRemindersMock() {
+  return { cancelReminders: jest.fn().mockResolvedValue(undefined) };
+}
+
+function makePresenceMock() {
+  return { checkout: jest.fn().mockResolvedValue(undefined) };
+}
+
+function makeLfgMock() {
+  return { remove: jest.fn().mockResolvedValue(undefined) };
 }
 
 function makePrismaMock() {
@@ -21,6 +36,7 @@ function makePrismaMock() {
     privacySettings: {
       findUnique: jest.fn(),
       upsert: jest.fn(),
+      deleteMany: jest.fn(),
     },
     deckLink: {
       findMany: jest.fn(),
@@ -29,22 +45,42 @@ function makePrismaMock() {
       createMany: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      deleteMany: jest.fn(),
     },
     pushToken: {
       upsert: jest.fn(),
+      deleteMany: jest.fn(),
     },
     store: {
       findUnique: jest.fn(),
     },
     userBadge: {
       findMany: jest.fn(),
+      deleteMany: jest.fn(),
     },
     streak: {
       findMany: jest.fn(),
+      deleteMany: jest.fn(),
     },
     gameLog: {
       findMany: jest.fn(),
     },
+    socialLink: { findMany: jest.fn(), deleteMany: jest.fn() },
+    checkin: { findMany: jest.fn(), deleteMany: jest.fn() },
+    eventAttendee: { findMany: jest.fn(), deleteMany: jest.fn() },
+    connection: { findMany: jest.fn(), deleteMany: jest.fn() },
+    encounter: { findMany: jest.fn() },
+    gamePlayer: { findMany: jest.fn() },
+    endorsement: { findMany: jest.fn() },
+    offerRedemption: { findMany: jest.fn() },
+    block: { findMany: jest.fn() },
+    report: { findMany: jest.fn() },
+    refreshToken: { deleteMany: jest.fn() },
+    notification: { deleteMany: jest.fn() },
+    identity: { deleteMany: jest.fn() },
+    questProgress: { deleteMany: jest.fn() },
+    storeConfirmation: { deleteMany: jest.fn() },
+    storeOwnership: { deleteMany: jest.fn() },
   };
 }
 
@@ -52,16 +88,25 @@ describe('MeService', () => {
   let service: MeService;
   let prisma: ReturnType<typeof makePrismaMock>;
   let endorsements: ReturnType<typeof makeEndorsementsMock>;
+  let eventReminders: ReturnType<typeof makeEventRemindersMock>;
+  let presence: ReturnType<typeof makePresenceMock>;
+  let lfg: ReturnType<typeof makeLfgMock>;
 
   beforeEach(async () => {
     prisma = makePrismaMock();
     endorsements = makeEndorsementsMock();
+    eventReminders = makeEventRemindersMock();
+    presence = makePresenceMock();
+    lfg = makeLfgMock();
 
     const module = await Test.createTestingModule({
       providers: [
         MeService,
         { provide: PrismaService, useValue: prisma },
         { provide: EndorsementsService, useValue: endorsements },
+        { provide: EventRemindersService, useValue: eventReminders },
+        { provide: PresenceService, useValue: presence },
+        { provide: LfgService, useValue: lfg },
       ],
     }).compile();
 
@@ -587,6 +632,225 @@ describe('MeService', () => {
       const onboardedAt: Date = tx.user.update.mock.calls[0][0].data.onboardedAt;
       expect(onboardedAt).toBeInstanceOf(Date);
       expect(onboardedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // exportData
+  // -------------------------------------------------------------------------
+
+  describe('exportData', () => {
+    function stubAllQueries() {
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', displayName: 'Alice' });
+      jest.spyOn(service, 'getPrivacy').mockResolvedValue({} as never);
+      jest.spyOn(service, 'getDecks').mockResolvedValue([]);
+      jest.spyOn(service, 'getBadges').mockResolvedValue([]);
+      prisma.socialLink.findMany.mockResolvedValue([]);
+      prisma.streak.findMany.mockResolvedValue([]);
+      prisma.checkin.findMany.mockResolvedValue([]);
+      prisma.eventAttendee.findMany.mockResolvedValue([]);
+      prisma.connection.findMany.mockResolvedValue([]);
+      prisma.encounter.findMany.mockResolvedValue([]);
+      prisma.gamePlayer.findMany.mockResolvedValue([]);
+      prisma.endorsement.findMany.mockResolvedValue([]);
+      prisma.offerRedemption.findMany.mockResolvedValue([]);
+      prisma.block.findMany.mockResolvedValue([]);
+      prisma.report.findMany.mockResolvedValue([]);
+    }
+
+    it('throws NotFoundException when the user does not exist', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      await expect(service.exportData('ghost')).rejects.toThrow(NotFoundException);
+    });
+
+    it('includes an exportedAt timestamp and the profile with endorsements', async () => {
+      stubAllQueries();
+      const result = await service.exportData('u1');
+      expect(typeof result.exportedAt).toBe('string');
+      expect(result.profile).toMatchObject({ id: 'u1', endorsements: { total: 0, byTag: [] } });
+    });
+
+    it('tags sent and received connections with direction and lowercases status', async () => {
+      stubAllQueries();
+      prisma.connection.findMany
+        .mockResolvedValueOnce([
+          {
+            id: 'c1',
+            status: 'ACCEPTED',
+            createdAt: new Date('2026-01-01'),
+            addressee: { id: 'u2', displayName: 'Bob' },
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'c2',
+            status: 'PENDING',
+            createdAt: new Date('2026-01-02'),
+            requester: { id: 'u3', displayName: 'Cara' },
+          },
+        ]);
+
+      const result = await service.exportData('u1');
+      expect(result.connections).toEqual([
+        { id: 'c1', otherUserId: 'u2', otherUserName: 'Bob', direction: 'sent', status: 'accepted', createdAt: new Date('2026-01-01') },
+        { id: 'c2', otherUserId: 'u3', otherUserName: 'Cara', direction: 'received', status: 'pending', createdAt: new Date('2026-01-02') },
+      ]);
+    });
+
+    it('derives isWinner per game from winnerId', async () => {
+      stubAllQueries();
+      prisma.gamePlayer.findMany.mockResolvedValue([
+        {
+          deck: 'Storm',
+          gameLog: {
+            id: 'g1',
+            storeId: null,
+            format: 'commander',
+            status: 'CONFIRMED',
+            winnerId: 'u1',
+            createdAt: new Date('2026-01-01'),
+          },
+        },
+        {
+          deck: 'Burn',
+          gameLog: {
+            id: 'g2',
+            storeId: null,
+            format: 'modern',
+            status: 'CONFIRMED',
+            winnerId: 'other',
+            createdAt: new Date('2026-01-02'),
+          },
+        },
+      ]);
+
+      const result = await service.exportData('u1');
+      expect(result.games).toEqual([
+        expect.objectContaining({ id: 'g1', isWinner: true }),
+        expect.objectContaining({ id: 'g2', isWinner: false }),
+      ]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // deleteAccount
+  // -------------------------------------------------------------------------
+
+  describe('deleteAccount', () => {
+    function stubTransaction() {
+      const tx = {
+        refreshToken: { deleteMany: jest.fn() },
+        pushToken: { deleteMany: jest.fn() },
+        notification: { deleteMany: jest.fn() },
+        identity: { deleteMany: jest.fn() },
+        deckLink: { deleteMany: jest.fn() },
+        socialLink: { deleteMany: jest.fn() },
+        questProgress: { deleteMany: jest.fn() },
+        storeConfirmation: { deleteMany: jest.fn() },
+        eventAttendee: { deleteMany: jest.fn() },
+        checkin: { deleteMany: jest.fn() },
+        streak: { deleteMany: jest.fn() },
+        userBadge: { deleteMany: jest.fn() },
+        storeOwnership: { deleteMany: jest.fn() },
+        privacySettings: { deleteMany: jest.fn() },
+        connection: { deleteMany: jest.fn() },
+        user: { update: jest.fn().mockResolvedValue({}) },
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma.$transaction.mockImplementation((fn: any) => fn(tx));
+      return tx;
+    }
+
+    it('throws NotFoundException when the user does not exist', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      await expect(service.deleteAccount('ghost')).rejects.toThrow(NotFoundException);
+    });
+
+    it('is a no-op when the account is already deleted', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', deletedAt: new Date() });
+      await service.deleteAccount('u1');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('cancels reminders for every event the user is attending', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', deletedAt: null });
+      prisma.eventAttendee.findMany.mockResolvedValue([{ eventId: 'e1' }, { eventId: 'e2' }]);
+      stubTransaction();
+
+      await service.deleteAccount('u1');
+
+      expect(eventReminders.cancelReminders).toHaveBeenCalledWith('u1', 'e1');
+      expect(eventReminders.cancelReminders).toHaveBeenCalledWith('u1', 'e2');
+    });
+
+    it('clears ephemeral presence and LFG state', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', deletedAt: null });
+      prisma.eventAttendee.findMany.mockResolvedValue([]);
+      stubTransaction();
+
+      await service.deleteAccount('u1');
+
+      expect(presence.checkout).toHaveBeenCalledWith('u1');
+      expect(lfg.remove).toHaveBeenCalledWith('u1');
+    });
+
+    it('does not block deletion when redis cleanup fails', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', deletedAt: null });
+      prisma.eventAttendee.findMany.mockResolvedValue([]);
+      presence.checkout.mockRejectedValue(new Error('redis down'));
+      const tx = stubTransaction();
+
+      await service.deleteAccount('u1');
+
+      expect(tx.user.update).toHaveBeenCalled();
+    });
+
+    it('hard-deletes personal/session data and anonymizes the user row', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', deletedAt: null });
+      prisma.eventAttendee.findMany.mockResolvedValue([]);
+      const tx = stubTransaction();
+
+      await service.deleteAccount('u1');
+
+      for (const model of [
+        'refreshToken',
+        'pushToken',
+        'notification',
+        'identity',
+        'deckLink',
+        'socialLink',
+        'questProgress',
+        'storeConfirmation',
+        'eventAttendee',
+        'checkin',
+        'streak',
+        'userBadge',
+        'storeOwnership',
+        'privacySettings',
+      ] as const) {
+        expect(tx[model].deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } });
+      }
+
+      const updateData = tx.user.update.mock.calls[0][0].data;
+      expect(updateData.email).toBe('deleted-u1@manamap.invalid');
+      expect(updateData.displayName).toBe('Deleted User');
+      expect(updateData.name).toBeNull();
+      expect(updateData.homeStoreId).toBeNull();
+      expect(updateData.lastLat).toBeNull();
+      expect(updateData.role).toBe('USER');
+      expect(updateData.deletedAt).toBeInstanceOf(Date);
+    });
+
+    it('only deletes PENDING connections, leaving accepted ones intact for the other party', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'u1', deletedAt: null });
+      prisma.eventAttendee.findMany.mockResolvedValue([]);
+      const tx = stubTransaction();
+
+      await service.deleteAccount('u1');
+
+      expect(tx.connection.deleteMany).toHaveBeenCalledWith({
+        where: { status: 'PENDING', OR: [{ requesterId: 'u1' }, { addresseeId: 'u1' }] },
+      });
     });
   });
 });

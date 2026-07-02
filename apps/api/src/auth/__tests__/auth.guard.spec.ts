@@ -112,4 +112,16 @@ describe('AuthGuard', () => {
     const result = await guard.canActivate(mockContext({ authorization: 'Bearer valid.jwt' }));
     expect(result).toBe(true);
   });
+
+  it('throws 401 for a deleted account, even with an otherwise-valid unexpired token', async () => {
+    jwtService.verify.mockReturnValue(VALID_PAYLOAD);
+    prismaService.user.findUnique.mockResolvedValue({
+      moderationStatus: 'ACTIVE',
+      suspendedUntil: null,
+      deletedAt: new Date(),
+    });
+    await expect(
+      guard.canActivate(mockContext({ authorization: 'Bearer valid.jwt' })),
+    ).rejects.toThrow(UnauthorizedException);
+  });
 });

@@ -34,7 +34,11 @@ export function SupportPage() {
           <li>App crashing or not loading? Try closing and reopening the app.</li>
           <li>Can't find your local game store? Use "Suggest a Store" inside the app.</li>
           <li>Check-in not working? Make sure location permissions are enabled.</li>
-          <li>Want to remove your account or data? Email us and we'll take care of it.</li>
+          <li>
+            Want to export or delete your account data? Open the app, go to Your Profile, and use
+            "Export my data" or "Delete my account" — no need to email us. If you run into
+            trouble, reach out and we'll take care of it.
+          </li>
         </ul>
       </div>
     </div>

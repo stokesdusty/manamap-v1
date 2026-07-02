@@ -7,6 +7,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Switch,
   Text,
@@ -36,7 +37,9 @@ import { useIdentityTheme } from '../hooks/useIdentityTheme';
 import {
   useCreateDeck,
   useDecks,
+  useDeleteAccount,
   useDeleteDeck,
+  useExportAccountData,
   useHomeStore,
   usePrivacy,
   useProfile,
@@ -2149,6 +2152,93 @@ const rv = StyleSheet.create({
   },
 });
 
+function AccountActionsCard() {
+  const { signOut } = useAuth();
+  const exportData = useExportAccountData();
+  const deleteAccount = useDeleteAccount();
+
+  const handleExport = () => {
+    exportData.mutate(undefined, {
+      onSuccess: (data) => {
+        void Share.share({
+          title: 'ManaMap data export',
+          message: JSON.stringify(data, null, 2),
+        });
+      },
+      onError: () => {
+        Alert.alert("Couldn't export your data", 'Please try again in a moment.');
+      },
+    });
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete your account?',
+      "This permanently removes your profile, check-ins, streaks, badges, decks, and connections. This can't be undone.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete my account',
+          style: 'destructive',
+          onPress: () => {
+            deleteAccount.mutate(undefined, {
+              onSuccess: () => void signOut(),
+              onError: () => {
+                Alert.alert("Couldn't delete your account", 'Please try again in a moment.');
+              },
+            });
+          },
+        },
+      ],
+    );
+  };
+
+  return (
+    <View style={[section.card, { paddingHorizontal: 0, paddingVertical: spacing.sm, gap: 0 }]}>
+      <Pressable
+        style={({ pressed }) => [accountActions.row, pressed && styles.pressed]}
+        onPress={handleExport}
+        disabled={exportData.isPending}
+      >
+        <Text style={accountActions.label}>Export my data</Text>
+        {exportData.isPending ? (
+          <ActivityIndicator size="small" color={colors.textSecondary} />
+        ) : (
+          <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+        )}
+      </Pressable>
+      <Pressable
+        style={({ pressed }) => [accountActions.row, pressed && styles.pressed]}
+        onPress={handleDelete}
+        disabled={deleteAccount.isPending}
+      >
+        <Text style={[accountActions.label, accountActions.dangerLabel]}>Delete my account</Text>
+        {deleteAccount.isPending ? (
+          <ActivityIndicator size="small" color={colors.error} />
+        ) : (
+          <Ionicons name="chevron-forward" size={18} color={colors.error} />
+        )}
+      </Pressable>
+    </View>
+  );
+}
+
+const accountActions = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+  },
+  label: {
+    fontFamily: typography.fontFamily.medium,
+    fontSize: typography.fontSize.md,
+    color: colors.textPrimary,
+  },
+  dangerLabel: { color: colors.error },
+});
+
 // ---------------------------------------------------------------------------
 // YouScreen
 // ---------------------------------------------------------------------------
@@ -2227,6 +2317,8 @@ export function YouScreen() {
         <RecentGamesCard myId={profile.id} />
 
         <RivalriesCard />
+
+        <AccountActionsCard />
 
         <Pressable
           style={({ pressed }) => [styles.signOutBtn, pressed && styles.pressed]}

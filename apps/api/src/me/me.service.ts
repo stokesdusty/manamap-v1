@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { DeckSite } from '@prisma/client';
+import { UserRole, type DeckSite } from '@prisma/client';
 import {
   siteFromUrl,
   type CreateDeckLink,
@@ -11,12 +11,18 @@ import {
 } from '@manamap/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { EndorsementsService } from '../endorsements/endorsements.service';
+import { EventRemindersService } from '../event-reminders/event-reminders.service';
+import { PresenceService } from '../presence/presence.service';
+import { LfgService } from '../lfg/lfg.service';
 
 @Injectable()
 export class MeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly endorsements: EndorsementsService,
+    private readonly eventReminders: EventRemindersService,
+    private readonly presence: PresenceService,
+    private readonly lfg: LfgService,
   ) {}
 
   async getProfile(userId: string) {
@@ -287,6 +293,320 @@ export class MeService {
       winRate: total > 0 ? wins / total : 0,
       byDeck,
     };
+  }
+
+  // -------------------------------------------------------------------------
+  // Data export & account deletion (GDPR / CCPA)
+  // -------------------------------------------------------------------------
+
+  async exportData(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const [
+      privacy,
+      decks,
+      socialLinks,
+      badges,
+      streaks,
+      checkins,
+      eventAttendance,
+      sentConnections,
+      receivedConnections,
+      encounters,
+      gamePlayers,
+      endorsementsGiven,
+      endorsementsReceived,
+      offerRedemptions,
+      blocksMade,
+      reportsMade,
+    ] = await Promise.all([
+      this.getPrivacy(userId),
+      this.getDecks(userId),
+      this.prisma.socialLink.findMany({
+        where: { userId },
+        select: { id: true, platform: true, value: true, visibility: true, sort: true },
+        orderBy: { sort: 'asc' },
+      }),
+      this.getBadges(userId),
+      this.prisma.streak.findMany({
+        where: { userId },
+        select: {
+          currentStreak: true,
+          longestStreak: true,
+          totalCheckins: true,
+          lastCheckinAt: true,
+          store: { select: { id: true, name: true } },
+        },
+      }),
+      this.prisma.checkin.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          eventId: true,
+          checkedInAt: true,
+          checkedOutAt: true,
+          store: { select: { id: true, name: true } },
+        },
+        orderBy: { checkedInAt: 'desc' },
+      }),
+      this.prisma.eventAttendee.findMany({
+        where: { userId },
+        select: { id: true, rsvpAt: true, event: { select: { id: true, name: true } } },
+        orderBy: { rsvpAt: 'desc' },
+      }),
+      this.prisma.connection.findMany({
+        where: { requesterId: userId },
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          addressee: { select: { id: true, displayName: true } },
+        },
+      }),
+      this.prisma.connection.findMany({
+        where: { addresseeId: userId },
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          requester: { select: { id: true, displayName: true } },
+        },
+      }),
+      this.prisma.encounter.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          result: true,
+          storeId: true,
+          createdAt: true,
+          opponent: { select: { id: true, displayName: true } },
+        },
+      }),
+      this.prisma.gamePlayer.findMany({
+        where: { userId },
+        select: {
+          deck: true,
+          gameLog: {
+            select: {
+              id: true,
+              storeId: true,
+              format: true,
+              status: true,
+              winnerId: true,
+              createdAt: true,
+            },
+          },
+        },
+      }),
+      this.prisma.endorsement.findMany({
+        where: { fromUserId: userId },
+        select: { id: true, tag: true, createdAt: true, toUser: { select: { id: true, displayName: true } } },
+      }),
+      this.prisma.endorsement.findMany({
+        where: { toUserId: userId },
+        select: { id: true, tag: true, createdAt: true, fromUser: { select: { id: true, displayName: true } } },
+      }),
+      this.prisma.offerRedemption.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          code: true,
+          status: true,
+          createdAt: true,
+          redeemedAt: true,
+          store: { select: { id: true, name: true } },
+        },
+      }),
+      this.prisma.block.findMany({
+        where: { blockerId: userId },
+        select: { blockedId: true, createdAt: true },
+      }),
+      this.prisma.report.findMany({
+        where: { reporterId: userId },
+        select: {
+          id: true,
+          reportedId: true,
+          reason: true,
+          detail: true,
+          status: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    return {
+      exportedAt: new Date().toISOString(),
+      profile: { ...user, endorsements: await this.endorsements.getSummary(userId) },
+      privacy,
+      decks,
+      socialLinks,
+      badges,
+      streaks: streaks.map((s) => ({
+        storeId: s.store.id,
+        storeName: s.store.name,
+        currentStreak: s.currentStreak,
+        longestStreak: s.longestStreak,
+        totalCheckins: s.totalCheckins,
+        lastCheckinAt: s.lastCheckinAt,
+      })),
+      checkins: checkins.map((c) => ({
+        id: c.id,
+        storeId: c.store.id,
+        storeName: c.store.name,
+        eventId: c.eventId,
+        checkedInAt: c.checkedInAt,
+        checkedOutAt: c.checkedOutAt,
+      })),
+      eventAttendance: eventAttendance.map((a) => ({
+        id: a.id,
+        eventId: a.event.id,
+        eventName: a.event.name,
+        rsvpAt: a.rsvpAt,
+      })),
+      connections: [
+        ...sentConnections.map((c) => ({
+          id: c.id,
+          otherUserId: c.addressee.id,
+          otherUserName: c.addressee.displayName,
+          direction: 'sent' as const,
+          status: c.status.toLowerCase(),
+          createdAt: c.createdAt,
+        })),
+        ...receivedConnections.map((c) => ({
+          id: c.id,
+          otherUserId: c.requester.id,
+          otherUserName: c.requester.displayName,
+          direction: 'received' as const,
+          status: c.status.toLowerCase(),
+          createdAt: c.createdAt,
+        })),
+      ],
+      encounters: encounters.map((e) => ({
+        id: e.id,
+        opponentId: e.opponent.id,
+        opponentName: e.opponent.displayName,
+        result: e.result,
+        storeId: e.storeId,
+        createdAt: e.createdAt,
+      })),
+      games: gamePlayers.map((gp) => ({
+        id: gp.gameLog.id,
+        storeId: gp.gameLog.storeId,
+        format: gp.gameLog.format,
+        status: gp.gameLog.status,
+        isWinner: gp.gameLog.winnerId === userId,
+        deck: gp.deck,
+        createdAt: gp.gameLog.createdAt,
+      })),
+      endorsementsGiven: endorsementsGiven.map((e) => ({
+        id: e.id,
+        otherUserId: e.toUser.id,
+        otherUserName: e.toUser.displayName,
+        tag: e.tag,
+        createdAt: e.createdAt,
+      })),
+      endorsementsReceived: endorsementsReceived.map((e) => ({
+        id: e.id,
+        otherUserId: e.fromUser.id,
+        otherUserName: e.fromUser.displayName,
+        tag: e.tag,
+        createdAt: e.createdAt,
+      })),
+      offerRedemptions: offerRedemptions.map((r) => ({
+        id: r.id,
+        storeId: r.store.id,
+        storeName: r.store.name,
+        code: r.code,
+        status: r.status,
+        createdAt: r.createdAt,
+        redeemedAt: r.redeemedAt,
+      })),
+      blocksMade: blocksMade.map((b) => ({ blockedUserId: b.blockedId, createdAt: b.createdAt })),
+      reportsMade: reportsMade.map((r) => ({
+        id: r.id,
+        reportedUserId: r.reportedId,
+        reason: r.reason,
+        detail: r.detail,
+        status: r.status,
+        createdAt: r.createdAt,
+      })),
+    };
+  }
+
+  /**
+   * Anonymizes and deactivates the account rather than hard-deleting the User row:
+   * GameLog/Encounter/Connection records the user participated in are other users'
+   * data too (confirmed W/L history, shared encounters), so erasing the row outright
+   * would corrupt everyone else's records. PII is scrubbed and every
+   * session/device/preference record is hard-deleted instead; deletedAt blocks the
+   * account in AuthGuard immediately even if an access token hasn't expired yet.
+   */
+  async deleteAccount(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, deletedAt: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.deletedAt) return;
+
+    const attending = await this.prisma.eventAttendee.findMany({
+      where: { userId },
+      select: { eventId: true },
+    });
+    await Promise.all(
+      attending.map((a) => this.eventReminders.cancelReminders(userId, a.eventId).catch(() => undefined)),
+    );
+    await Promise.all([
+      this.presence.checkout(userId).catch(() => undefined),
+      this.lfg.remove(userId).catch(() => undefined),
+    ]);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.refreshToken.deleteMany({ where: { userId } });
+      await tx.pushToken.deleteMany({ where: { userId } });
+      await tx.notification.deleteMany({ where: { userId } });
+      await tx.identity.deleteMany({ where: { userId } });
+      await tx.deckLink.deleteMany({ where: { userId } });
+      await tx.socialLink.deleteMany({ where: { userId } });
+      await tx.questProgress.deleteMany({ where: { userId } });
+      await tx.storeConfirmation.deleteMany({ where: { userId } });
+      await tx.eventAttendee.deleteMany({ where: { userId } });
+      await tx.checkin.deleteMany({ where: { userId } });
+      await tx.streak.deleteMany({ where: { userId } });
+      await tx.userBadge.deleteMany({ where: { userId } });
+      await tx.storeOwnership.deleteMany({ where: { userId } });
+      await tx.privacySettings.deleteMany({ where: { userId } });
+      await tx.connection.deleteMany({
+        where: { status: 'PENDING', OR: [{ requesterId: userId }, { addresseeId: userId }] },
+      });
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          email: `deleted-${userId}@manamap.invalid`,
+          name: null,
+          displayName: 'Deleted User',
+          avatarUrl: null,
+          bio: null,
+          pronouns: null,
+          avatarColors: [],
+          commander: null,
+          powerLevel: null,
+          vibes: [],
+          formats: [],
+          spelltable: false,
+          convokeGames: false,
+          homeStoreId: null,
+          lastLat: null,
+          lastLng: null,
+          lastLocatedAt: null,
+          tradeWants: null,
+          tradeHaves: null,
+          role: UserRole.USER,
+          deletedAt: new Date(),
+        },
+      });
+    });
   }
 
   async setHomeStore(userId: string, dto: SetHomeStore) {

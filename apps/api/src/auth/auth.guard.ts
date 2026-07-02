@@ -43,10 +43,10 @@ export class AuthGuard implements CanActivate {
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { moderationStatus: true, suspendedUntil: true },
+      select: { moderationStatus: true, suspendedUntil: true, deletedAt: true },
     });
 
-    if (!user) throw new UnauthorizedException();
+    if (!user || user.deletedAt) throw new UnauthorizedException();
 
     if (user.moderationStatus === ModerationStatus.BANNED) {
       throw new ForbiddenException('account_banned');

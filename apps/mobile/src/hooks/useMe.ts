@@ -157,3 +157,17 @@ export function useSubmitOnboarding() {
     },
   });
 }
+
+// --- Account data export & deletion (GDPR / CCPA) ---
+
+export function useExportAccountData() {
+  return useMutation({
+    mutationFn: () => api.get<Record<string, unknown>>('/v1/me/export').then((r) => r.data),
+  });
+}
+
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: () => api.delete('/v1/me', { data: { confirm: true } }),
+  });
+}
