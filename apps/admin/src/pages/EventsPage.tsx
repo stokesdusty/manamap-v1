@@ -13,7 +13,7 @@ interface Format {
 interface PartnerEvent {
   id: string;
   name: string;
-  source: 'STORE' | 'DISCORD' | 'WIZARDS';
+  source: 'STORE';
   description: string | null;
   formatId: string | null;
   formatName: string | null;
@@ -76,20 +76,6 @@ function SourceBadge({ event }: { event: PartnerEvent }) {
         style={{ background: 'var(--muted-bg)', color: 'var(--text-tertiary)' }}
       >
         Past
-      </span>
-    );
-  }
-  if (event.source === 'DISCORD') {
-    return (
-      <span className="badge" style={{ background: '#e0e7ff', color: '#3730a3' }}>
-        Discord
-      </span>
-    );
-  }
-  if (event.source === 'WIZARDS') {
-    return (
-      <span className="badge" style={{ background: '#fef3c7', color: '#b45309' }}>
-        Wizards
       </span>
     );
   }

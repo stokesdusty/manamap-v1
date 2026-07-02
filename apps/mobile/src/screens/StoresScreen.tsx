@@ -75,12 +75,6 @@ function regionToBbox(region: Region): string {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const SOURCE_COLORS: Record<string, string> = {
-  DISCORD: '#5865F2',
-  WIZARDS: '#9333ea',
-  STORE: colors.accent,
-};
-
 // Stores have no brand color of their own — derive a stable WUBRG identity
 // pip from the store id so the reward celebration reads as "this store",
 // not a generic green button. Falls back to the brand accent when unknown.
@@ -153,7 +147,7 @@ function EventRow({ event, storeId }: { event: StoreEvent; storeId: string }) {
 
   const isPending = isAttending || isUnattending;
   const attending = event.isAttending;
-  const sourceColor = SOURCE_COLORS[event.source] ?? colors.accent;
+  const sourceColor = colors.accent;
 
   const handleRsvpPress = () => {
     if (attending) {

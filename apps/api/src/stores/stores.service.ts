@@ -20,10 +20,6 @@ import { GamificationService } from '../gamification/gamification.service';
 import { EventRemindersService } from '../event-reminders/event-reminders.service';
 import { SafetyService } from '../safety/safety.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { StoreConnector } from './connectors/store.connector';
-import { DiscordConnector } from './connectors/discord.connector';
-import { WizardsConnector } from './connectors/wizards.connector';
-import type { IEventConnector } from './connectors/event-connector.interface';
 import { QuestsService } from '../quests/quests.service';
 
 const DEFAULT_CHECKIN_RADIUS_M = 1000;
@@ -63,12 +59,6 @@ type StoreDetailRow = {
 
 @Injectable()
 export class StoresService {
-  private readonly connectors: IEventConnector[] = [
-    new StoreConnector(),
-    new DiscordConnector(),
-    new WizardsConnector(),
-  ];
-
   private static readonly PROFILE_SELECT = {
     id: true,
     displayName: true,
@@ -792,9 +782,5 @@ export class StoresService {
         data: { type: 'store_approved', storeId },
       });
     }
-  }
-
-  getConnectors() {
-    return this.connectors;
   }
 }

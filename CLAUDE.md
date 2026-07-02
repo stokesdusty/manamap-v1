@@ -47,6 +47,7 @@ JWT_SECRET=...
 DISCORD_CLIENT_ID=1510362228526809199
 DISCORD_CLIENT_SECRET=...
 DISCORD_REDIRECT_URI=manamap://auth/discord
+ADMIN_EMAILS=stokes.dusty@gmail.com
 ```
 
 **Modules** (all in `apps/api/src/`):
@@ -62,6 +63,8 @@ DISCORD_REDIRECT_URI=manamap://auth/discord
 | connections | standard CRUD |
 | safety | POST /v1/blocks, DELETE /v1/blocks/:userId, GET /v1/blocks, POST /v1/reports |
 | admin-moderation | GET /v1/admin/moderation/stats, GET /v1/admin/moderation/reports, GET /v1/admin/moderation/reports/:id, POST /v1/admin/moderation/reports/:id/resolve — ADMIN only |
+| admin-users | GET /v1/admin/users (search), GET/PATCH /v1/admin/users/:id, POST /v1/admin/users/:id/moderation-action (WARN/SUSPEND/BAN/UNBAN, no report required) — ADMIN only |
+| admin-stores | GET /v1/admin/stores (search), GET/PATCH /v1/admin/stores/:id, POST /v1/admin/stores/:id/reject\|reactivate, DELETE /v1/admin/stores/:id/owners/:userId — plus the pre-existing submission queue (GET .../submissions, POST .../:id/approve, POST .../:id/claim-code) — ADMIN only |
 | gamification | BullMQ queue, processes badge/streak logic after checkin |
 | event-reminders | BullMQ queue + processor — schedules/cancels morning-of + T-60min push reminders on RSVP; no HTTP routes |
 | lfg | GET/POST/PATCH/DELETE /v1/lfg, GET /v1/lfg/me, POST /v1/lfg/:hostUserId/invite, POST /v1/lfg/:hostUserId/lock |
@@ -153,8 +156,10 @@ VITE_API_URL=http://localhost:3000/api
 | /stores/:storeId/offers/new | Create offer |
 | /stores/:storeId/offers/:id/edit | Edit offer |
 | /moderation | Admin-only moderation queue + detail (redirects non-ADMINs) |
+| /admin/users | Admin-only user lookup — search, view detail, edit displayName/role, Warn/Suspend/Ban/Unban directly (no report required) |
+| /admin/stores | Admin-only store lookup — search any store, edit basic info, manage owners, deactivate/reactivate |
 
-`AuthContext` exposes `role` decoded from the JWT (no extra network call). The sidebar shows an Admin section with the Moderation link only when `role === 'ADMIN'`.
+`AuthContext` exposes `role` decoded from the JWT (no extra network call). The sidebar shows an Admin section with the Moderation/Users/All Stores links only when `role === 'ADMIN'`.
 
 **Discord setup**: Add `http://localhost:5173/auth/callback` as an OAuth2 redirect URI in the Discord developer portal.
 
@@ -180,7 +185,7 @@ All IDs are `TEXT` (Prisma `@id @default(uuid())`), stored as plain text UUIDs i
 | UserBadge | Earned badge, optionally tied to a store |
 | Badge | Badge definition with `criteria` JSON |
 | RewardOffer | Store reward — type `FIRST_VISIT` or `STREAK`, has `redemptionCode`, `active`, `streakRequired` |
-| Event | Store event (source: STORE/DISCORD/WIZARDS) |
+| Event | Store event (source: STORE — manually entered only; no external connectors) |
 | Encounter | PvP game result or co-presence encounter; `gameId` FK links to GameLog |
 | GameLog | Logged game — `status (PENDING/CONFIRMED/DISPUTED)`, `winnerId`, `format?`, `storeId?`; format stored as plain `String?` (no FK) |
 | GamePlayer | Player row per game — `deck?`, `confirmed`; @@unique([gameLogId, userId]); creator auto-confirmed |
@@ -188,7 +193,7 @@ All IDs are `TEXT` (Prisma `@id @default(uuid())`), stored as plain text UUIDs i
 | RefreshToken | Hashed refresh tokens (rotated on use) |
 | Block | Bidirectional block between two users |
 | Report | Player report — `reason`, `status (OPEN/REVIEWED/ACTIONED)`, `resolvedById/At/note` — reporter identity never returned by admin endpoints |
-| ModerationAction | Immutable audit log entry — `action (DISMISS/WARN/SUSPEND/BAN)`, `targetUserId`, `adminId`, optional `reportId` |
+| ModerationAction | Immutable audit log entry — `action (DISMISS/WARN/SUSPEND/BAN/UNBAN)`, `targetUserId`, `adminId`, optional `reportId` (null for direct admin actions taken outside the report flow) |
 
 **PostGIS**: `stores.geom` is `geography(Point,4326)`. Always use `$queryRaw`/`$executeRaw` for geom queries — Prisma doesn't natively support it.
 
@@ -204,6 +209,7 @@ Located at `apps/api/prisma/migrations/`. Applied in timestamp order. Key notes:
 - Migration `20260531172252_safety_blocks_reports` adds `blocks` and `reports` tables, `ReportReason`/`ReportStatus` enums
 - Migration `20260531210000_moderation` adds `ModerationStatus`/`ModerationActionType` enums, `moderationStatus`/`suspendedUntil` to `users`, resolution fields to `reports`, and the `moderation_actions` table
 - Migration `20260601120000_games` adds `GameStatus` enum, `game_logs` and `game_players` tables, `game_id` column on `encounters`
+- Migration `20260702020000_add_unban_action` adds `UNBAN` to `ModerationActionType` (used by the direct admin-users moderation-action endpoint, not the report-resolution flow)
 - If Prisma detects drift and wants to reset — check if shadow DB ordering is the cause before agreeing
 
 ---
@@ -224,6 +230,8 @@ Located at `apps/api/prisma/migrations/`. Applied in timestamp order. Key notes:
 - `GameStatusSchema`, `GamePlayerSchema`, `GameSchema`, `CreateGameSchema`, `DeckStatSchema`, `GameStatsSchema`, `WinsLeaderboardEntrySchema`
 - `WinsLeaderboardEntrySchema` **must be declared before `LeaderboardResponseSchema`** — forward reference; `LeaderboardResponseSchema` has an optional `winsLeaderboard` key
 - `AttendEventResponseSchema`, `UnattendEventResponseSchema` — RSVP responses (same shape: `{ eventId, eventName }`)
+- `AdminUserActionSchema`, `AdminUpdateUserSchema`, `AdminUserSummarySchema`, `AdminUserDetailSchema` — direct (non-report) admin user lookup/moderation; `AdminUserActionSchema`'s action enum includes `UNBAN` and is intentionally separate from `ModerationActionTypeSchema`/`ResolveReportSchema`, which remain report-flow-only
+- `AdminStoreSummarySchema`, `AdminStoreOwnerSchema`, `AdminStoreDetailSchema` — general (non-submission-queue) admin store lookup/management
 
 ---
 
@@ -273,6 +281,8 @@ Assumed running locally:
 - **Event reminder job idempotency**: `EventRemindersService.scheduleReminders` uses deterministic BullMQ jobIds (`${eventId}:${userId}:morning|hour`). Re-RSVPing is safe — BullMQ silently ignores adds for existing jobIds. `cancelReminders` calls `job.remove()` which is also safe when the job doesn't exist.
 - **Event reminder timezone**: `morningOfAt()` in `event-reminders.service.ts` uses an `Intl` probe to find the UTC time corresponding to 9am in the store's timezone. Falls back to `America/Los_Angeles` when `Store.timezone` is null.
 - **Notification opt-out**: `PrivacySettings.eventReminders` (default `true`) gates this — `EventRemindersProcessor.process()` returns early when it's `false`.
+- **ADMIN_EMAILS promotion is self-healing, not a one-time migration**: `AuthService.upsertUserByEmail` checks the email against `ADMIN_EMAILS` on *every* login/signup (all three providers) and sets `role: ADMIN` on both create and update. Since `TokenService.issueTokens` re-reads `role` from the DB on every login/refresh, an existing account is promoted the next time it logs in — no backfill script needed. Removing an email from `ADMIN_EMAILS` does **not** demote an already-promoted account; use the admin-users `PATCH /:id` endpoint (or direct DB update) to demote.
+- **Admin can't lock themselves out**: `AdminUsersService.updateProfile` blocks an admin from changing their own `role` away from `ADMIN`, and `takeModerationAction` blocks an admin from moderating (warn/suspend/ban/unban) themselves.
 
 ---
 

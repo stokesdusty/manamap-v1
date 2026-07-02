@@ -141,9 +141,14 @@ export function Layout() {
               )}
             </NavLink>
             <NavLink
-              to="/users"
+              to="/admin/stores"
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-              style={{ opacity: 0.45, pointerEvents: 'none' }}
+            >
+              All Stores
+            </NavLink>
+            <NavLink
+              to="/admin/users"
+              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
             >
               Users
             </NavLink>

@@ -531,7 +531,7 @@ export type NotifyWhenActiveResponse = z.infer<typeof NotifyWhenActiveResponseSc
 
 // --- Events ---
 
-export const EventSourceSchema = z.enum(['STORE', 'DISCORD', 'WIZARDS']);
+export const EventSourceSchema = z.enum(['STORE']);
 export type EventSource = z.infer<typeof EventSourceSchema>;
 
 export const StoreEventSchema = z.object({
@@ -1573,3 +1573,107 @@ export const AccountExportSchema = z.object({
   reportsMade: z.array(AccountExportReportSchema),
 });
 export type AccountExport = z.infer<typeof AccountExportSchema>;
+
+// --- Admin: direct user lookup & moderation ---
+
+export const AdminUserActionSchema = z.object({
+  action: z.enum(['WARN', 'SUSPEND', 'BAN', 'UNBAN']),
+  note: z.string().max(1000).optional(),
+  suspendDays: z.number().int().min(1).max(365).optional(),
+});
+export type AdminUserAction = z.infer<typeof AdminUserActionSchema>;
+
+export const AdminUpdateUserSchema = z.object({
+  displayName: z.string().min(1).max(64).optional(),
+  role: UserRoleSchema.optional(),
+});
+export type AdminUpdateUser = z.infer<typeof AdminUpdateUserSchema>;
+
+export const AdminUserSummarySchema = z.object({
+  id: IdSchema,
+  displayName: z.string(),
+  email: z.string().email(),
+  handle: z.string().nullable(),
+  role: UserRoleSchema,
+  moderationStatus: ModerationStatusSchema,
+  avatarColors: z.array(z.string()),
+  isBot: z.boolean(),
+});
+export type AdminUserSummary = z.infer<typeof AdminUserSummarySchema>;
+
+export const AdminUserIdentitySchema = z.object({
+  provider: z.string(),
+  discordHandle: z.string().nullable(),
+});
+export type AdminUserIdentity = z.infer<typeof AdminUserIdentitySchema>;
+
+export const AdminUserModerationHistoryEntrySchema = z.object({
+  id: IdSchema,
+  action: z.enum(['DISMISS', 'WARN', 'SUSPEND', 'BAN', 'UNBAN']),
+  note: z.string().nullable(),
+  createdAt: TimestampSchema,
+});
+export type AdminUserModerationHistoryEntry = z.infer<
+  typeof AdminUserModerationHistoryEntrySchema
+>;
+
+export const AdminUserReportSchema = z.object({
+  id: IdSchema,
+  reason: ReportReasonSchema,
+  status: z.enum(['OPEN', 'REVIEWED', 'ACTIONED']),
+  createdAt: TimestampSchema,
+});
+export type AdminUserReport = z.infer<typeof AdminUserReportSchema>;
+
+export const AdminUserDetailSchema = AdminUserSummarySchema.extend({
+  suspendedUntil: TimestampSchema.nullable(),
+  createdAt: TimestampSchema,
+  identities: z.array(AdminUserIdentitySchema),
+  storeOwnerships: z.array(z.object({ storeId: IdSchema, storeName: z.string() })),
+  counts: z.object({
+    checkins: z.number().int().nonnegative(),
+    connections: z.number().int().nonnegative(),
+    gamesPlayed: z.number().int().nonnegative(),
+  }),
+  reportsAgainst: z.array(AdminUserReportSchema),
+  moderationHistory: z.array(AdminUserModerationHistoryEntrySchema),
+});
+export type AdminUserDetail = z.infer<typeof AdminUserDetailSchema>;
+
+// --- Admin: direct store lookup & management ---
+
+export const AdminStoreSummarySchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  city: z.string().nullable(),
+  state: z.string().nullable(),
+  status: StoreStatusSchema,
+  ownerCount: z.number().int().nonnegative(),
+});
+export type AdminStoreSummary = z.infer<typeof AdminStoreSummarySchema>;
+
+export const AdminStoreOwnerSchema = z.object({
+  userId: IdSchema,
+  displayName: z.string(),
+  email: z.string().email(),
+});
+export type AdminStoreOwner = z.infer<typeof AdminStoreOwnerSchema>;
+
+export const AdminStoreDetailSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  address: z.string().nullable(),
+  city: z.string().nullable(),
+  state: z.string().nullable(),
+  zip: z.string().nullable(),
+  website: z.string().nullable(),
+  discordUrl: z.string().nullable(),
+  status: StoreStatusSchema,
+  owners: z.array(AdminStoreOwnerSchema),
+  counts: z.object({
+    activeOffers: z.number().int().nonnegative(),
+    checkins: z.number().int().nonnegative(),
+    upcomingEvents: z.number().int().nonnegative(),
+  }),
+});
+export type AdminStoreDetail = z.infer<typeof AdminStoreDetailSchema>;

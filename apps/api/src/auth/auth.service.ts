@@ -1,12 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import type { ConfigService } from '@nestjs/config';
+import { UserRole } from '@prisma/client';
 import type { AuthTokens } from '@manamap/shared';
 import type { PinoLogger } from 'nestjs-pino';
 import { InjectPinoLogger } from 'nestjs-pino';
-import { PrismaService } from '../prisma/prisma.service';
-import { AppleService } from './apple.service';
-import { DiscordService } from './discord.service';
-import { GoogleService } from './google.service';
-import { TokenService } from './token.service';
+import type { Env } from '../config/config.schema';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { AppleService } from './apple.service';
+import type { DiscordService } from './discord.service';
+import type { GoogleService } from './google.service';
+import type { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +20,7 @@ export class AuthService {
     private readonly google: GoogleService,
     private readonly tokens: TokenService,
     private readonly prisma: PrismaService,
+    private readonly config: ConfigService<Env>,
   ) {}
 
   async signInWithApple(identityToken: string): Promise<AuthTokens> {
@@ -123,17 +127,27 @@ export class AuthService {
     return this.tokens.issueTokens(user.id, user.email);
   }
 
+  private isAdminEmail(email: string): boolean {
+    const adminEmails = (this.config.get('ADMIN_EMAILS', { infer: true }) ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    return adminEmails.includes(email.trim().toLowerCase());
+  }
+
   private async upsertUserByEmail(
     email: string,
     displayName: string,
   ): Promise<{ id: string; email: string }> {
+    const adminRole = this.isAdminEmail(email) ? { role: UserRole.ADMIN } : {};
     return this.prisma.user.upsert({
       where: { email },
-      update: {},
+      update: { ...adminRole },
       create: {
         email,
         displayName,
         privacySettings: { create: {} },
+        ...adminRole,
       },
       select: { id: true, email: true },
     });

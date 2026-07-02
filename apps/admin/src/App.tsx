@@ -9,6 +9,8 @@ import { ClaimStorePage } from './pages/ClaimStorePage';
 import { StoreDashboardPage } from './pages/StoreDashboardPage';
 import { OfferFormPage } from './pages/OfferFormPage';
 import { ModerationPage } from './pages/ModerationPage';
+import { AdminUsersPage } from './pages/AdminUsersPage';
+import { AdminStoresPage } from './pages/AdminStoresPage';
 import { StoreSubmissionsPage } from './pages/StoreSubmissionsPage';
 import { StoreClaimsPage } from './pages/StoreClaimsPage';
 import { BroadcastPage } from './pages/BroadcastPage';
@@ -82,6 +84,22 @@ function AppRoutes() {
           element={
             <RequireAdmin>
               <StoreClaimsPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RequireAdmin>
+              <AdminUsersPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/stores"
+          element={
+            <RequireAdmin>
+              <AdminStoresPage />
             </RequireAdmin>
           }
         />

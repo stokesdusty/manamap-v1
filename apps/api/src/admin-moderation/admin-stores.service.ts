@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationKind, Prisma, StoreStatus } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import type { UpdateStoreProfile } from '@manamap/shared';
+import type { PrismaService } from '../prisma/prisma.service';
+import type { NotificationsService } from '../notifications/notifications.service';
 import { generateCode } from '../common/codes';
 
 @Injectable()
@@ -134,5 +135,127 @@ export class AdminStoresService {
     await this.prisma.store.update({ where: { id: storeId }, data: { claimCode: code! } });
 
     return { storeId, claimCode: code! };
+  }
+
+  // ---------------------------------------------------------------------------
+  // General store lookup & management (not tied to the submission queue)
+  // ---------------------------------------------------------------------------
+
+  async search(q: string | undefined) {
+    const query = q?.trim();
+    const stores = await this.prisma.store.findMany({
+      where: query
+        ? {
+            OR: [
+              { name: { contains: query, mode: 'insensitive' } },
+              { city: { contains: query, mode: 'insensitive' } },
+              { state: { contains: query, mode: 'insensitive' } },
+            ],
+          }
+        : {},
+      take: 20,
+      orderBy: { name: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        state: true,
+        status: true,
+        _count: { select: { ownerships: true } },
+      },
+    });
+
+    return stores.map((s) => ({
+      id: s.id,
+      name: s.name,
+      city: s.city,
+      state: s.state,
+      status: s.status,
+      ownerCount: s._count.ownerships,
+    }));
+  }
+
+  async getDetail(storeId: string) {
+    const store = await this.prisma.store.findUnique({
+      where: { id: storeId },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        city: true,
+        state: true,
+        zip: true,
+        website: true,
+        discordUrl: true,
+        status: true,
+        ownerships: {
+          select: { userId: true, user: { select: { displayName: true, email: true } } },
+        },
+      },
+    });
+    if (!store) throw new NotFoundException('Store not found');
+
+    const [activeOffers, checkins, upcomingEvents] = await Promise.all([
+      this.prisma.rewardOffer.count({ where: { storeId, active: true } }),
+      this.prisma.checkin.count({ where: { storeId } }),
+      this.prisma.event.count({ where: { storeId, startsAt: { gte: new Date() } } }),
+    ]);
+
+    return {
+      id: store.id,
+      name: store.name,
+      address: store.address,
+      city: store.city,
+      state: store.state,
+      zip: store.zip,
+      website: store.website,
+      discordUrl: store.discordUrl,
+      status: store.status,
+      owners: store.ownerships.map((o) => ({
+        userId: o.userId,
+        displayName: o.user.displayName,
+        email: o.user.email,
+      })),
+      counts: { activeOffers, checkins, upcomingEvents },
+    };
+  }
+
+  async updateProfile(storeId: string, dto: UpdateStoreProfile) {
+    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { id: true } });
+    if (!store) throw new NotFoundException('Store not found');
+
+    return this.prisma.store.update({
+      where: { id: storeId },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.address !== undefined ? { address: dto.address } : {}),
+        ...(dto.city !== undefined ? { city: dto.city } : {}),
+        ...(dto.state !== undefined ? { state: dto.state } : {}),
+        ...(dto.zip !== undefined ? { zip: dto.zip } : {}),
+        ...(dto.discordUrl !== undefined ? { discordUrl: dto.discordUrl } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        city: true,
+        state: true,
+        zip: true,
+        discordUrl: true,
+      },
+    });
+  }
+
+  async reactivateStore(storeId: string) {
+    const store = await this.prisma.store.findUnique({ where: { id: storeId }, select: { id: true } });
+    if (!store) throw new NotFoundException('Store not found');
+
+    await this.prisma.store.update({ where: { id: storeId }, data: { status: StoreStatus.ACTIVE } });
+    return { id: storeId, status: 'ACTIVE' };
+  }
+
+  async removeOwner(storeId: string, userId: string) {
+    await this.prisma.storeOwnership.deleteMany({ where: { storeId, userId } });
+    return { success: true };
   }
 }

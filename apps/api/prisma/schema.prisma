@@ -42,8 +42,6 @@ enum DeckSite {
 
 enum EventSource {
   STORE
-  DISCORD
-  WIZARDS
 }
 
 enum EncounterSource {
@@ -88,6 +86,7 @@ enum ModerationActionType {
   WARN
   SUSPEND
   BAN
+  UNBAN
 }
 
 enum GameStatus {

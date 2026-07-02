@@ -257,7 +257,14 @@
       "Bash(pnpm --filter @manamap/shared run build)",
       "Bash(pnpm --filter @manamap/shared exec eslint src/legal.ts src/index.ts)",
       "Bash(pnpm --filter @manamap/admin exec eslint src/App.tsx src/pages/LoginPage.tsx src/pages/TermsPage.tsx src/pages/PrivacyPage.tsx src/components/LegalDocument.tsx)",
-      "Bash(pnpm --filter @manamap/mobile exec eslint src/navigation/RootNavigator.tsx src/navigation/types.ts src/screens/LegalDocumentScreen.tsx src/screens/SignInScreen.tsx src/screens/YouScreen.tsx)"
+      "Bash(pnpm --filter @manamap/mobile exec eslint src/navigation/RootNavigator.tsx src/navigation/types.ts src/screens/LegalDocumentScreen.tsx src/screens/SignInScreen.tsx src/screens/YouScreen.tsx)",
+      "Bash(rm \"c:/m/apps/api/src/stores/connectors/discord.connector.ts\" \"c:/m/apps/api/src/stores/connectors/wizards.connector.ts\" \"c:/m/apps/api/src/stores/connectors/store.connector.ts\" \"c:/m/apps/api/src/stores/connectors/event-connector.interface.ts\")",
+      "Bash(rmdir \"c:/m/apps/api/src/stores/connectors\")",
+      "Bash(mkdir -p \"c:/m/apps/api/prisma/migrations/20260702010000_remove_event_connectors\")",
+      "Bash(pnpm --filter @manamap/api exec tsc --noEmit -p apps/api/tsconfig.json)",
+      "Bash(mkdir -p apps/api/prisma/migrations/20260702020000_add_unban_action)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm turbo *)"
     ]
   }
 }

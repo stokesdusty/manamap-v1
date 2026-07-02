@@ -29,12 +29,6 @@ type HomeScreenProps = CompositeScreenProps<
   NativeStackScreenProps<RootStackParamList>
 >;
 
-const SOURCE_COLORS: Record<string, string> = {
-  DISCORD: '#5865F2',
-  WIZARDS: '#9333ea',
-  STORE: colors.accent,
-};
-
 function greet() {
   const h = new Date().getHours();
   return h < 12 ? 'Morning' : h < 17 ? 'Hey' : 'Evening';
@@ -50,10 +44,9 @@ function formatTime(iso: string) {
 // ---------------------------------------------------------------------------
 
 function EventItem({ event, accent }: { event: StoreEvent; accent: string }) {
-  const sourceColor = SOURCE_COLORS[event.source] ?? accent;
   return (
     <View style={evtStyles.row}>
-      <View style={[evtStyles.dot, { backgroundColor: sourceColor }]} />
+      <View style={[evtStyles.dot, { backgroundColor: colors.accent }]} />
       <Text style={evtStyles.name} numberOfLines={1}>
         {event.name}
       </Text>
