@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { MarkReadBodySchema, type MarkReadBody } from '@manamap/shared';
 import { AuthGuard } from '../auth/auth.guard';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { NotificationsService } from './notifications.service';
 
 @Controller('v1/notifications')
@@ -26,7 +28,10 @@ export class NotificationsController {
   }
 
   @Post('read')
-  markRead(@Request() req: { user: { sub: string } }, @Body() body: { ids?: string[] }) {
+  markRead(
+    @Request() req: { user: { sub: string } },
+    @Body(new ZodValidationPipe(MarkReadBodySchema)) body: MarkReadBody,
+  ) {
     return this.notifications.markRead(req.user.sub, body.ids);
   }
 
