@@ -1,5 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post, Query, Req, Res, ForbiddenException } from '@nestjs/common';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import { Body, Controller, HttpCode, Post, ForbiddenException } from '@nestjs/common';
 import {
   AppleAuthBodySchema,
   DiscordAuthBodySchema,
@@ -41,45 +40,7 @@ export class AuthController {
   google(
     @Body(new ZodValidationPipe(GoogleAuthBodySchema)) body: GoogleAuthBody,
   ): Promise<AuthTokens> {
-    return this.auth.signInWithGoogle(body.code, body.codeVerifier, body.redirectUri);
-  }
-
-  @Get('google/callback')
-  async googleCallback(
-    @Query('code') code: string | undefined,
-    @Query('error') error: string | undefined,
-    @Query('state') state: string | undefined,
-    @Req() req: FastifyRequest,
-    @Res() reply: FastifyReply,
-  ): Promise<void> {
-    if (error || !code) {
-      void reply.redirect(
-        `manamap://auth/google?error=${encodeURIComponent(error ?? 'cancelled')}`,
-      );
-      return;
-    }
-    try {
-      let codeVerifier: string | undefined;
-      if (state) {
-        try {
-          const parsed = JSON.parse(Buffer.from(state, 'base64').toString()) as {
-            cv?: string;
-          };
-          codeVerifier = parsed.cv;
-        } catch {
-          // ignore malformed state
-        }
-      }
-      const redirectUri = `${req.protocol}://${req.hostname}/api/v1/auth/google/callback`;
-      const tokens = await this.auth.signInWithGoogle(code, codeVerifier, redirectUri);
-      void reply.redirect(
-        `manamap://auth/google?accessToken=${encodeURIComponent(tokens.accessToken)}&refreshToken=${encodeURIComponent(tokens.refreshToken)}&expiresIn=${tokens.expiresIn}`,
-      );
-    } catch {
-      void reply.redirect(
-        `manamap://auth/google?error=${encodeURIComponent('Sign in failed. Please try again.')}`,
-      );
-    }
+    return this.auth.signInWithGoogle(body.idToken);
   }
 
   @Post('refresh')
@@ -104,7 +65,6 @@ export class AuthController {
     if (process.env.NODE_ENV === 'production') {
       throw new ForbiddenException('Dev login is only available in development mode');
     }
-    // Bypass OAuth for testing
     return this.auth.signInByEmail(email);
   }
 }

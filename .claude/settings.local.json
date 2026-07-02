@@ -237,7 +237,8 @@
       "Bash(ls \"C:/m/node_modules/expo-dev-client\" 2>/dev/null && echo \"found at root\" || echo \"not at root\" *)",
       "Bash(python3 -c \"import os; p='C:/m/apps/mobile/node_modules/expo-dev-client'; print\\('symlink:', os.path.islink\\(p\\), '-> ', os.readlink\\(p\\) if os.path.islink\\(p\\) else 'N/A'\\)\")",
       "Read(//c/pm/expo@56.0.11_@babel+core@7._ba4969321360f74ae5fe451cab933aae/node_modules/expo/**)",
-      "Read(//c/m/apps/mobile/node_modules/expo/metro-config/**)"
+      "Read(//c/m/apps/mobile/node_modules/expo/metro-config/**)",
+      "Bash(pnpm --filter @manamap/mobile add @react-native-google-signin/google-signin)"
     ]
   }
 }

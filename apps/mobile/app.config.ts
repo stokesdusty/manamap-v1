@@ -65,6 +65,13 @@ const config: ExpoConfig = {
           "$(PRODUCT_NAME) uses your location to confirm you're at the store before checking in.",
       },
     ],
+    [
+      '@react-native-google-signin/google-signin',
+      {
+        iosUrlScheme:
+          'com.googleusercontent.apps.845371862440-q9tc2kupom074tuft5jbmomlakomaval',
+      },
+    ],
     './plugins/withXcodeEnvFix',
   ],
   extra: {

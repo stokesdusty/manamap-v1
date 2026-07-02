@@ -11,9 +11,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as AuthSession from 'expo-auth-session';
-import * as Crypto from 'expo-crypto';
-import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { colors, typography, spacing, radii, shadows } from '../theme';
@@ -23,9 +27,15 @@ WebBrowser.maybeCompleteAuthSession();
 
 const DISCORD_CLIENT_ID = process.env['EXPO_PUBLIC_DISCORD_CLIENT_ID'] ?? '';
 const GOOGLE_WEB_CLIENT_ID = process.env['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'] ?? '';
-const API_BASE = process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3000';
-const GOOGLE_CALLBACK_URL = `${API_BASE}/api/v1/auth/google/callback`;
-const GOOGLE_RETURN_SCHEME = 'manamap://auth/google';
+const GOOGLE_IOS_CLIENT_ID = process.env['EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'] ?? '';
+
+if (GOOGLE_WEB_CLIENT_ID) {
+  GoogleSignin.configure({
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID || undefined,
+    offlineAccess: false,
+  });
+}
 
 const googleEnabled = !!GOOGLE_WEB_CLIENT_ID;
 
@@ -36,78 +46,38 @@ const discordDiscovery = {
 
 type LoadingState = 'apple' | 'discord' | 'google' | null;
 
-async function generatePKCE(): Promise<{ codeVerifier: string; codeChallenge: string }> {
-  const bytes = await Crypto.getRandomBytesAsync(32);
-  let bin = '';
-  bytes.forEach((b) => { bin += String.fromCharCode(b); });
-  const codeVerifier = btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-
-  const hash = await Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    codeVerifier,
-    { encoding: Crypto.CryptoEncoding.BASE64 },
-  );
-  const codeChallenge = hash.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-
-  return { codeVerifier, codeChallenge };
-}
-
 function GoogleSignInButton({
   loading,
   onStart,
-  onTokens,
+  onIdToken,
   onError,
   onDismiss,
 }: {
   loading: LoadingState;
   onStart: () => void;
-  onTokens: (tokens: AuthTokens) => void;
+  onIdToken: (idToken: string) => void;
   onError: (msg: string) => void;
   onDismiss: () => void;
 }) {
   async function handlePress() {
     onStart();
     try {
-      const { codeVerifier, codeChallenge } = await generatePKCE();
-      // Pass the verifier to the API via state so it can complete the code exchange
-      const state = btoa(JSON.stringify({ cv: codeVerifier }));
-
-      const authUrl =
-        `https://accounts.google.com/o/oauth2/v2/auth` +
-        `?client_id=${encodeURIComponent(GOOGLE_WEB_CLIENT_ID)}` +
-        `&redirect_uri=${encodeURIComponent(GOOGLE_CALLBACK_URL)}` +
-        `&response_type=code` +
-        `&scope=${encodeURIComponent('openid email profile')}` +
-        `&code_challenge=${codeChallenge}` +
-        `&code_challenge_method=S256` +
-        `&state=${encodeURIComponent(state)}` +
-        `&access_type=offline`;
-
-      // openAuthSessionAsync monitors for the manamap:// redirect and closes the tab
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, GOOGLE_RETURN_SCHEME);
-
-      if (result.type !== 'success') {
-        onDismiss();
-        return;
-      }
-
-      const parsed = Linking.parse(result.url);
-      const params = parsed.queryParams as Record<string, string | undefined>;
-
-      if (params['error']) {
-        onError(decodeURIComponent(params['error']));
-        return;
-      }
-
-      const { accessToken, refreshToken, expiresIn } = params;
-      if (accessToken && refreshToken) {
-        onTokens({ accessToken, refreshToken, expiresIn: Number(expiresIn ?? 900) });
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      if (isSuccessResponse(response)) {
+        const idToken = response.data.idToken;
+        if (!idToken) throw new Error('no idToken returned');
+        onIdToken(idToken);
       } else {
         onDismiss();
       }
     } catch (err) {
-      onError('Something went wrong. Please try again.');
-      console.error('Google sign in error:', err);
+      if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
+        onDismiss();
+      } else {
+        onError('Google sign in failed. Please try again.');
+        console.error('Google sign in error:', err);
+      }
     }
   }
 
@@ -158,11 +128,17 @@ export function SignInScreen() {
     }
   }, [response]);
 
-  async function handleGoogleTokens(tokens: AuthTokens) {
+  async function handleGoogleIdToken(idToken: string) {
     try {
-      await signIn(tokens);
-    } catch {
-      Alert.alert('Sign in failed', 'Please try again.');
+      const { data } = await api.post<AuthTokens>('/v1/auth/google', { idToken });
+      await signIn(data);
+    } catch (err: unknown) {
+      const msg =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { data?: unknown } }).response?.data;
+      Alert.alert('Sign in failed', JSON.stringify(msg ?? err));
     } finally {
       setLoading(null);
     }
@@ -252,7 +228,7 @@ export function SignInScreen() {
             <GoogleSignInButton
               loading={loading}
               onStart={() => setLoading('google')}
-              onTokens={handleGoogleTokens}
+              onIdToken={handleGoogleIdToken}
               onError={(msg) => {
                 setLoading(null);
                 Alert.alert('Sign in failed', msg);

@@ -5,15 +5,12 @@ import type { PinoLogger } from 'nestjs-pino';
 import { InjectPinoLogger } from 'nestjs-pino';
 import type { Env } from '../config/config.schema';
 
-interface GoogleTokenResponse {
-  access_token: string;
-  id_token: string;
-}
-
-interface GoogleUserInfo {
+interface GoogleTokenInfo {
   sub: string;
-  email: string | undefined;
-  name: string | undefined;
+  email?: string;
+  name?: string;
+  aud: string;
+  email_verified?: string;
 }
 
 export interface GoogleProfile {
@@ -29,51 +26,30 @@ export class GoogleService {
     private readonly config: ConfigService<Env>,
   ) {}
 
-  async exchangeCode(
-    code: string,
-    codeVerifier?: string,
-    redirectUri?: string,
-  ): Promise<GoogleProfile> {
+  async verifyIdToken(idToken: string): Promise<GoogleProfile> {
     const clientId = this.config.get<string>('GOOGLE_CLIENT_ID');
-    const clientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET');
-
-    if (!clientId || !clientSecret) {
+    if (!clientId) {
       throw new ServiceUnavailableException('Google OAuth is not configured on this server');
     }
 
     try {
-      const params: Record<string, string> = {
-        client_id: clientId,
-        client_secret: clientSecret,
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: redirectUri ?? '',
-      };
-      if (codeVerifier) params['code_verifier'] = codeVerifier;
-
-      const tokenRes = await axios.post<GoogleTokenResponse>(
-        'https://oauth2.googleapis.com/token',
-        new URLSearchParams(params),
-        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+      const { data } = await axios.get<GoogleTokenInfo>(
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
       );
 
-      const userinfoRes = await axios.get<GoogleUserInfo>(
-        'https://www.googleapis.com/oauth2/v3/userinfo',
-        { headers: { Authorization: `Bearer ${tokenRes.data.access_token}` } },
-      );
+      if (data.aud !== clientId) {
+        throw new UnauthorizedException('Google token audience mismatch');
+      }
 
-      return {
-        sub: userinfoRes.data.sub,
-        email: userinfoRes.data.email,
-        name: userinfoRes.data.name,
-      };
+      return { sub: data.sub, email: data.email, name: data.name };
     } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
       const axiosData = (err as { response?: { data?: unknown } }).response?.data;
       this.logger.warn(
         { err: err instanceof Error ? err : new Error(String(err)), googleError: axiosData },
-        'Google OAuth failed',
+        'Google ID token verification failed',
       );
-      throw new UnauthorizedException('Google OAuth failed — invalid or expired code');
+      throw new UnauthorizedException('Google sign in failed — invalid token');
     }
   }
 }

@@ -90,19 +90,8 @@ export class AuthService {
     return this.tokens.issueTokens(user.id, user.email);
   }
 
-  async signInWithGoogle(
-    code: string,
-    codeVerifier?: string,
-    redirectUri?: string,
-  ): Promise<AuthTokens> {
-    let profile;
-    try {
-      profile = await this.google.exchangeCode(code, codeVerifier, redirectUri);
-    } catch (error: unknown) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error({ err }, 'Google code exchange failed');
-      throw error;
-    }
+  async signInWithGoogle(idToken: string): Promise<AuthTokens> {
+    const profile = await this.google.verifyIdToken(idToken);
 
     if (!profile.email) {
       throw new BadRequestException('Google account must have an email');

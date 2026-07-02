@@ -697,9 +697,7 @@ export const DiscordAuthBodySchema = z.object({
 export type DiscordAuthBody = z.infer<typeof DiscordAuthBodySchema>;
 
 export const GoogleAuthBodySchema = z.object({
-  code: z.string().min(1, 'code is required'),
-  codeVerifier: z.string().optional(),
-  redirectUri: z.string().optional(),
+  idToken: z.string().min(1, 'idToken is required'),
 });
 export type GoogleAuthBody = z.infer<typeof GoogleAuthBodySchema>;
 
