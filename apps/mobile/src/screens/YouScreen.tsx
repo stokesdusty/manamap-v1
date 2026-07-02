@@ -2156,6 +2156,7 @@ function AccountActionsCard() {
   const { signOut } = useAuth();
   const exportData = useExportAccountData();
   const deleteAccount = useDeleteAccount();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleExport = () => {
     exportData.mutate(undefined, {
@@ -2195,6 +2196,20 @@ function AccountActionsCard() {
 
   return (
     <View style={[section.card, { paddingHorizontal: 0, paddingVertical: spacing.sm, gap: 0 }]}>
+      <Pressable
+        style={({ pressed }) => [accountActions.row, pressed && styles.pressed]}
+        onPress={() => navigation.navigate('Legal', { doc: 'terms' })}
+      >
+        <Text style={accountActions.label}>Terms of Service</Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+      </Pressable>
+      <Pressable
+        style={({ pressed }) => [accountActions.row, pressed && styles.pressed]}
+        onPress={() => navigation.navigate('Legal', { doc: 'privacy' })}
+      >
+        <Text style={accountActions.label}>Privacy Policy</Text>
+        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+      </Pressable>
       <Pressable
         style={({ pressed }) => [accountActions.row, pressed && styles.pressed]}
         onPress={handleExport}

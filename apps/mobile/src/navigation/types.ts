@@ -27,6 +27,7 @@ export type RootStackParamList = {
   Pod: { podId: string };
   LifeTracker: { podId?: string; initialPlayers?: PodFormPlayer[] };
   Dev: undefined;
+  Legal: { doc: 'terms' | 'privacy' };
 };
 
 export type TabParamList = {

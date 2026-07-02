@@ -15,6 +15,7 @@ import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { useProfile } from '../hooks/useMe';
 import { DevScreen } from '../screens/DevScreen';
+import { LegalDocumentScreen } from '../screens/LegalDocumentScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -84,10 +85,22 @@ export function RootNavigator() {
                   options={{ presentation: 'modal' }}
                 />
               ) : null}
+              <Stack.Screen
+                name="Legal"
+                component={LegalDocumentScreen}
+                options={{ presentation: 'modal' }}
+              />
             </>
           )
         ) : (
-          <Stack.Screen name="SignIn" component={SignInScreen} />
+          <>
+            <Stack.Screen name="SignIn" component={SignInScreen} />
+            <Stack.Screen
+              name="Legal"
+              component={LegalDocumentScreen}
+              options={{ presentation: 'modal' }}
+            />
+          </>
         )}
       </Stack.Navigator>
     </>

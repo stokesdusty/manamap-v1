@@ -15,6 +15,8 @@ import { BroadcastPage } from './pages/BroadcastPage';
 import { EventsPage } from './pages/EventsPage';
 import { RedeemPage } from './pages/RedeemPage';
 import { SupportPage } from './pages/SupportPage';
+import { TermsPage } from './pages/TermsPage';
+import { PrivacyPage } from './pages/PrivacyPage';
 
 const qc = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 60_000 } },
@@ -41,6 +43,8 @@ function AppRoutes() {
       />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/support" element={<SupportPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
       <Route
         element={
           <RequireAuth>

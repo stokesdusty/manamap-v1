@@ -253,7 +253,11 @@
       "Bash(pnpm --filter @manamap/api exec eslint src/me/me.module.ts)",
       "Bash(pnpm --filter @manamap/shared exec eslint src/index.ts)",
       "Bash(pnpm --filter @manamap/mobile exec eslint src/hooks/useMe.ts src/screens/YouScreen.tsx)",
-      "Bash(pnpm --filter @manamap/admin exec eslint src/pages/SupportPage.tsx)"
+      "Bash(pnpm --filter @manamap/admin exec eslint src/pages/SupportPage.tsx)",
+      "Bash(pnpm --filter @manamap/shared run build)",
+      "Bash(pnpm --filter @manamap/shared exec eslint src/legal.ts src/index.ts)",
+      "Bash(pnpm --filter @manamap/admin exec eslint src/App.tsx src/pages/LoginPage.tsx src/pages/TermsPage.tsx src/pages/PrivacyPage.tsx src/components/LegalDocument.tsx)",
+      "Bash(pnpm --filter @manamap/mobile exec eslint src/navigation/RootNavigator.tsx src/navigation/types.ts src/screens/LegalDocumentScreen.tsx src/screens/SignInScreen.tsx src/screens/YouScreen.tsx)"
     ]
   }
 }

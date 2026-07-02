@@ -18,10 +18,13 @@ import {
   isSuccessResponse,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { colors, typography, spacing, radii, shadows } from '../theme';
 import type { AuthTokens } from '@manamap/shared';
+import type { RootStackParamList } from '../navigation/types';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -103,6 +106,7 @@ function GoogleSignInButton({
 export function SignInScreen() {
   const { signIn } = useAuth();
   const [loading, setLoading] = useState<LoadingState>(null);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const redirectUri = AuthSession.makeRedirectUri({ scheme: 'manamap', path: 'auth/discord' });
 
@@ -236,6 +240,24 @@ export function SignInScreen() {
               onDismiss={() => setLoading(null)}
             />
           )}
+
+          <Text style={styles.legalText}>
+            By continuing, you agree to our{' '}
+            <Text
+              style={styles.legalLink}
+              onPress={() => navigation.navigate('Legal', { doc: 'terms' })}
+            >
+              Terms of Service
+            </Text>{' '}
+            and{' '}
+            <Text
+              style={styles.legalLink}
+              onPress={() => navigation.navigate('Legal', { doc: 'privacy' })}
+            >
+              Privacy Policy
+            </Text>
+            .
+          </Text>
         </View>
       </View>
     </SafeAreaView>
@@ -310,5 +332,16 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.semiBold,
     fontSize: typography.fontSize.md,
     color: '#1F1F1F',
+  },
+  legalText: {
+    fontFamily: typography.fontFamily.regular,
+    fontSize: typography.fontSize.xs,
+    color: colors.textTertiary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  legalLink: {
+    color: colors.textSecondary,
+    textDecorationLine: 'underline',
   },
 });

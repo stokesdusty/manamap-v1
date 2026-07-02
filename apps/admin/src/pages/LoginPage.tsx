@@ -37,6 +37,17 @@ export function LoginPage() {
         <p style={{ marginTop: 20, fontSize: 12, color: 'var(--text-tertiary)' }}>
           First time? Claim your store after signing in.
         </p>
+        <p style={{ marginTop: 16, fontSize: 12, color: 'var(--text-tertiary)' }}>
+          By continuing, you agree to our{' '}
+          <a href="/terms" style={{ color: 'var(--text-secondary)' }}>
+            Terms of Service
+          </a>{' '}
+          and{' '}
+          <a href="/privacy" style={{ color: 'var(--text-secondary)' }}>
+            Privacy Policy
+          </a>
+          .
+        </p>
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export * from './legal';
+
 // --- Primitives ---
 
 export const IdSchema = z.string().uuid();
