@@ -23,7 +23,7 @@
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "845371862440-13v8bvs2gdlegj9p7o8c02v03sm3eflq.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "845371862440-q9tc2kupom074tuft5jbmomlakomaval.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "845371862440-sq4b79e1ngssgpdoh9t8h6rg2bhf3pa5.apps.googleusercontent.com",
-        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "armeabi-v7a,arm64-v8a,x86,x86_64"
+        "ORG_GRADLE_PROJECT_reactNativeArchitectures": "arm64-v8a"
       }
     },
     "production": {
