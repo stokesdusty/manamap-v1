@@ -13,7 +13,16 @@ import {
   type RefreshBody,
 } from '@manamap/shared';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
+import { Throttle } from '../throttle/throttle.decorator';
+import { THROTTLE_AUTH_LIMIT, THROTTLE_AUTH_TTL } from '../throttle/throttle.constants';
 import { AuthService } from './auth.service';
+
+const AUTH_THROTTLE = {
+  name: 'auth',
+  limit: THROTTLE_AUTH_LIMIT,
+  ttl: THROTTLE_AUTH_TTL,
+  failClosed: true,
+} as const;
 
 @Controller('v1/auth')
 export class AuthController {
@@ -21,6 +30,7 @@ export class AuthController {
 
   @Post('apple')
   @HttpCode(200)
+  @Throttle(AUTH_THROTTLE)
   apple(
     @Body(new ZodValidationPipe(AppleAuthBodySchema)) body: AppleAuthBody,
   ): Promise<AuthTokens> {
@@ -29,6 +39,7 @@ export class AuthController {
 
   @Post('discord')
   @HttpCode(200)
+  @Throttle(AUTH_THROTTLE)
   discord(
     @Body(new ZodValidationPipe(DiscordAuthBodySchema)) body: DiscordAuthBody,
   ): Promise<AuthTokens> {
@@ -37,6 +48,7 @@ export class AuthController {
 
   @Post('google')
   @HttpCode(200)
+  @Throttle(AUTH_THROTTLE)
   google(
     @Body(new ZodValidationPipe(GoogleAuthBodySchema)) body: GoogleAuthBody,
   ): Promise<AuthTokens> {
@@ -45,6 +57,7 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
+  @Throttle(AUTH_THROTTLE)
   refresh(@Body(new ZodValidationPipe(RefreshBodySchema)) body: RefreshBody): Promise<AuthTokens> {
     return this.auth.refresh(body.refreshToken);
   }

@@ -204,6 +204,31 @@ describe('ThrottleGuard', () => {
     expect(result).toBe(true);
   });
 
+  it('fails closed (rejects with 503) when ThrottleService throws on a failClosed route', async () => {
+    const routeConfig: ThrottleOptions = {
+      name: 'auth',
+      limit: 10,
+      ttl: 600_000,
+      failClosed: true,
+    };
+    reflector.getAllAndOverride
+      .mockReturnValueOnce(undefined) // SKIP_THROTTLE_KEY → no skip
+      .mockReturnValueOnce(routeConfig); // THROTTLE_KEY → named config
+    throttleService.check.mockRejectedValue(new Error('ECONNREFUSED'));
+
+    const ctx = makeContext({});
+    let caught: HttpException | undefined;
+    try {
+      await guard.canActivate(ctx);
+    } catch (e) {
+      caught = e as HttpException;
+    }
+
+    expect(caught).toBeInstanceOf(HttpException);
+    expect(caught!.getStatus()).toBe(503);
+    expect(ctx._res.header).toHaveBeenCalledWith('Retry-After', '5');
+  });
+
   it('minimum Retry-After is 1 second when retryAfterMs rounds to 0', async () => {
     throttleService.check.mockResolvedValue({ allowed: false, retryAfterMs: 0 });
     const ctx = makeContext({});

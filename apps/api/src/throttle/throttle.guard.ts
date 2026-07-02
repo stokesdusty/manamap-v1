@@ -49,6 +49,20 @@ export class ThrottleGuard implements CanActivate {
     try {
       result = await this.throttleService.check(key, config.limit, config.ttl);
     } catch {
+      if (config.failClosed) {
+        // Fail closed: a Redis outage must not remove brute-force protection
+        // on auth-sensitive routes, so reject rather than let the request through.
+        const res = context.switchToHttp().getResponse<{ header: (k: string, v: string) => void }>();
+        res.header('Retry-After', '5');
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.SERVICE_UNAVAILABLE,
+            error: 'Service Unavailable',
+            message: 'Service temporarily unavailable',
+          },
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
       // Fail open: if Redis is unavailable, don't block legitimate traffic
       return true;
     }

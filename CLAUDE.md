@@ -85,8 +85,11 @@ ADMIN_EMAILS=stokes.dusty@gmail.com
 | connections | POST /v1/connections | 10 req | 10 min |
 | reports | POST /v1/reports | 5 req | 10 min |
 | exchange | POST /v1/exchange/token | 20 req | 5 min |
+| auth | POST /v1/auth/apple\|discord\|google\|refresh | 10 req | 10 min |
 
 Constants live in `apps/api/src/throttle/throttle.constants.ts`. Exceeding a limit returns 429 with `Retry-After` (seconds) and `{ statusCode: 429, error: "Too Many Requests", message: "Rate limit exceeded" }`.
+
+**Fail-open vs fail-closed on Redis errors**: `ThrottleOptions.failClosed` (default falsy) controls what happens when the Redis check itself throws. Everything defaults to fail-open (request is allowed) so a Redis blip doesn't take the whole API down. The `auth` throttler on `/v1/auth/apple|discord|google|refresh` sets `failClosed: true` — these are the brute-force-sensitive login/token routes, so a Redis outage there returns 503 with `Retry-After` instead of silently removing rate limiting. Set `failClosed: true` on any other route where losing rate-limit protection during a Redis outage would be a bigger risk than a temporary outage.
 
 Env var: `THROTTLE_DISABLED=true` — skips all throttling. Set this in e2e / CI environments to prevent flaky tests.
 

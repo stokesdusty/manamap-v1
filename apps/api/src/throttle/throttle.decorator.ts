@@ -7,6 +7,10 @@ export interface ThrottleOptions {
   name: string;
   limit: number;
   ttl: number; // ms
+  // When true, a Redis outage rejects the request instead of letting it through.
+  // Reserve for brute-force-sensitive routes (login, token exchange) — everything
+  // else should fail open so a Redis blip doesn't take down the whole API.
+  failClosed?: boolean;
 }
 
 export const Throttle = (options: ThrottleOptions): MethodDecorator & ClassDecorator =>
