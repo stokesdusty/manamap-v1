@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as AuthSession from 'expo-auth-session';
+import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../context/AuthContext';
@@ -36,16 +37,17 @@ const discordDiscovery = {
 type LoadingState = 'apple' | 'discord' | 'google' | null;
 
 async function generatePKCE(): Promise<{ codeVerifier: string; codeChallenge: string }> {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
+  const bytes = await Crypto.getRandomBytesAsync(32);
   let bin = '';
   bytes.forEach((b) => { bin += String.fromCharCode(b); });
   const codeVerifier = btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier));
-  let b64 = '';
-  new Uint8Array(digest).forEach((b) => { b64 += String.fromCharCode(b); });
-  const codeChallenge = btoa(b64).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  const hash = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    codeVerifier,
+    { encoding: Crypto.CryptoEncoding.BASE64 },
+  );
+  const codeChallenge = hash.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 
   return { codeVerifier, codeChallenge };
 }
@@ -65,42 +67,47 @@ function GoogleSignInButton({
 }) {
   async function handlePress() {
     onStart();
-    const { codeVerifier, codeChallenge } = await generatePKCE();
-    // Pass the verifier to the API via state so it can complete the code exchange
-    const state = btoa(JSON.stringify({ cv: codeVerifier }));
+    try {
+      const { codeVerifier, codeChallenge } = await generatePKCE();
+      // Pass the verifier to the API via state so it can complete the code exchange
+      const state = btoa(JSON.stringify({ cv: codeVerifier }));
 
-    const authUrl =
-      `https://accounts.google.com/o/oauth2/v2/auth` +
-      `?client_id=${encodeURIComponent(GOOGLE_WEB_CLIENT_ID)}` +
-      `&redirect_uri=${encodeURIComponent(GOOGLE_CALLBACK_URL)}` +
-      `&response_type=code` +
-      `&scope=${encodeURIComponent('openid email profile')}` +
-      `&code_challenge=${codeChallenge}` +
-      `&code_challenge_method=S256` +
-      `&state=${encodeURIComponent(state)}` +
-      `&access_type=offline`;
+      const authUrl =
+        `https://accounts.google.com/o/oauth2/v2/auth` +
+        `?client_id=${encodeURIComponent(GOOGLE_WEB_CLIENT_ID)}` +
+        `&redirect_uri=${encodeURIComponent(GOOGLE_CALLBACK_URL)}` +
+        `&response_type=code` +
+        `&scope=${encodeURIComponent('openid email profile')}` +
+        `&code_challenge=${codeChallenge}` +
+        `&code_challenge_method=S256` +
+        `&state=${encodeURIComponent(state)}` +
+        `&access_type=offline`;
 
-    // openAuthSessionAsync monitors for the manamap:// redirect and closes the tab
-    const result = await WebBrowser.openAuthSessionAsync(authUrl, GOOGLE_RETURN_SCHEME);
+      // openAuthSessionAsync monitors for the manamap:// redirect and closes the tab
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, GOOGLE_RETURN_SCHEME);
 
-    if (result.type !== 'success') {
-      onDismiss();
-      return;
-    }
+      if (result.type !== 'success') {
+        onDismiss();
+        return;
+      }
 
-    const parsed = Linking.parse(result.url);
-    const params = parsed.queryParams as Record<string, string | undefined>;
+      const parsed = Linking.parse(result.url);
+      const params = parsed.queryParams as Record<string, string | undefined>;
 
-    if (params['error']) {
-      onError(decodeURIComponent(params['error']));
-      return;
-    }
+      if (params['error']) {
+        onError(decodeURIComponent(params['error']));
+        return;
+      }
 
-    const { accessToken, refreshToken, expiresIn } = params;
-    if (accessToken && refreshToken) {
-      onTokens({ accessToken, refreshToken, expiresIn: Number(expiresIn ?? 900) });
-    } else {
-      onDismiss();
+      const { accessToken, refreshToken, expiresIn } = params;
+      if (accessToken && refreshToken) {
+        onTokens({ accessToken, refreshToken, expiresIn: Number(expiresIn ?? 900) });
+      } else {
+        onDismiss();
+      }
+    } catch (err) {
+      onError('Something went wrong. Please try again.');
+      console.error('Google sign in error:', err);
     }
   }
 
