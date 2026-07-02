@@ -266,7 +266,8 @@
       "Bash(pnpm build *)",
       "Bash(pnpm turbo *)",
       "Bash(echo \"EXIT_CODE=$?\")",
-      "Bash(pnpm --filter @manamap/api exec tsc --noEmit)"
+      "Bash(pnpm --filter @manamap/api exec tsc --noEmit)",
+      "Bash(pnpm --filter @manamap/api exec tsc --noEmit -p apps/api)"
     ]
   }
 }

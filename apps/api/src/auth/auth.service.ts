@@ -31,7 +31,7 @@ export class AuthService {
       where: { provider: 'apple', providerId: sub },
       include: { user: true },
     });
-    if (existing) return this.tokens.issueTokens(existing.user.id, existing.user.email);
+    if (existing) return this.tokens.issueTokens(existing.user.id);
 
     // First sign-in: Apple includes email only once
     if (!email) throw new BadRequestException('Email is required on first Apple sign-in');
@@ -40,7 +40,7 @@ export class AuthService {
     await this.prisma.identity.create({
       data: { userId: user.id, provider: 'apple', providerId: sub },
     });
-    return this.tokens.issueTokens(user.id, user.email);
+    return this.tokens.issueTokens(user.id);
   }
 
   async signInWithDiscord(
@@ -79,7 +79,7 @@ export class AuthService {
           data: { discordHandle },
         });
       }
-      return this.tokens.issueTokens(existing.user.id, existing.user.email);
+      return this.tokens.issueTokens(existing.user.id);
     }
 
     const user = await this.upsertUserByEmail(profile.email, discordHandle);
@@ -91,7 +91,7 @@ export class AuthService {
       create: { userId: user.id, platform: 'DISCORD', value: discordHandle, visibility: 'PUBLIC' },
       update: {},
     });
-    return this.tokens.issueTokens(user.id, user.email);
+    return this.tokens.issueTokens(user.id);
   }
 
   async signInWithGoogle(idToken: string): Promise<AuthTokens> {
@@ -105,13 +105,13 @@ export class AuthService {
       where: { provider: 'google', providerId: profile.sub },
       include: { user: true },
     });
-    if (existing) return this.tokens.issueTokens(existing.user.id, existing.user.email);
+    if (existing) return this.tokens.issueTokens(existing.user.id);
 
     const user = await this.upsertUserByEmail(profile.email, profile.name ?? 'Google User');
     await this.prisma.identity.create({
       data: { userId: user.id, provider: 'google', providerId: profile.sub },
     });
-    return this.tokens.issueTokens(user.id, user.email);
+    return this.tokens.issueTokens(user.id);
   }
 
   refresh(rawToken: string): Promise<AuthTokens> {
@@ -124,7 +124,7 @@ export class AuthService {
 
   async signInByEmail(email: string): Promise<AuthTokens> {
     const user = await this.upsertUserByEmail(email, email.split('@')[0]);
-    return this.tokens.issueTokens(user.id, user.email);
+    return this.tokens.issueTokens(user.id);
   }
 
   private isAdminEmail(email: string): boolean {

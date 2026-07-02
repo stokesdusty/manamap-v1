@@ -6,7 +6,6 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export interface AccessTokenPayload {
   sub: string;
-  email: string;
   role: string; // UserRole value
   iat: number;
   exp: number;

@@ -51,29 +51,28 @@ describe('TokenService', () => {
     });
 
     it('returns a signed access token', async () => {
-      const result = await service.issueTokens(MOCK_USER.id, MOCK_USER.email);
+      const result = await service.issueTokens(MOCK_USER.id);
       expect(result.accessToken).toBe('signed.access.token');
       expect(jwtService.sign).toHaveBeenCalledWith({
         sub: MOCK_USER.id,
-        email: MOCK_USER.email,
         role: 'USER',
       });
     });
 
     it('returns a 64-char hex refresh token (32 random bytes)', async () => {
-      const { refreshToken } = await service.issueTokens(MOCK_USER.id, MOCK_USER.email);
+      const { refreshToken } = await service.issueTokens(MOCK_USER.id);
       expect(refreshToken).toMatch(/^[0-9a-f]{64}$/);
     });
 
     it('stores a SHA-256 hash — NOT the raw token', async () => {
-      const { refreshToken } = await service.issueTokens(MOCK_USER.id, MOCK_USER.email);
+      const { refreshToken } = await service.issueTokens(MOCK_USER.id);
       const stored = prisma.refreshToken.create.mock.calls[0][0].data.tokenHash as string;
       expect(stored).not.toBe(refreshToken);
       expect(stored).toMatch(/^[0-9a-f]{64}$/); // 32-byte SHA-256 hex
     });
 
     it('sets expiresAt ~30 days in the future', async () => {
-      await service.issueTokens(MOCK_USER.id, MOCK_USER.email);
+      await service.issueTokens(MOCK_USER.id);
       const { expiresAt } = prisma.refreshToken.create.mock.calls[0][0].data as { expiresAt: Date };
       const diff = expiresAt.getTime() - Date.now();
       expect(diff).toBeGreaterThan(29 * 24 * 3600 * 1000);
@@ -81,7 +80,7 @@ describe('TokenService', () => {
     });
 
     it('returns expiresIn = 900 (15 min)', async () => {
-      const { expiresIn } = await service.issueTokens(MOCK_USER.id, MOCK_USER.email);
+      const { expiresIn } = await service.issueTokens(MOCK_USER.id);
       expect(expiresIn).toBe(900);
     });
   });

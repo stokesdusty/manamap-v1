@@ -18,13 +18,13 @@ export class TokenService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async issueTokens(userId: string, email: string): Promise<AuthTokens> {
+  async issueTokens(userId: string): Promise<AuthTokens> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { role: true },
     });
     const role = user?.role ?? 'USER';
-    const accessToken = this.jwt.sign({ sub: userId, email, role });
+    const accessToken = this.jwt.sign({ sub: userId, role });
 
     const rawRefresh = randomBytes(32).toString('hex');
     await this.prisma.refreshToken.create({
@@ -45,7 +45,6 @@ export class TokenService {
         revokedAt: null,
         expiresAt: { gt: new Date() },
       },
-      include: { user: true },
     });
 
     if (!stored) throw new UnauthorizedException('Refresh token invalid or expired');
@@ -56,7 +55,7 @@ export class TokenService {
       data: { revokedAt: new Date() },
     });
 
-    return this.issueTokens(stored.userId, stored.user.email);
+    return this.issueTokens(stored.userId);
   }
 
   async revoke(rawToken: string): Promise<void> {
