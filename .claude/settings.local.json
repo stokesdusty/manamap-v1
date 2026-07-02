@@ -264,7 +264,8 @@
       "Bash(pnpm --filter @manamap/api exec tsc --noEmit -p apps/api/tsconfig.json)",
       "Bash(mkdir -p apps/api/prisma/migrations/20260702020000_add_unban_action)",
       "Bash(pnpm build *)",
-      "Bash(pnpm turbo *)"
+      "Bash(pnpm turbo *)",
+      "Bash(echo \"EXIT_CODE=$?\")"
     ]
   }
 }

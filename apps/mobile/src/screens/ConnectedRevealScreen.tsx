@@ -118,6 +118,8 @@ function CelebrationCard({ peer, myDisplayName, myColors, via, onDismiss }: Cele
         onPress={onDismiss}
         style={({ pressed }) => [celeb.closeBtn, pressed && { opacity: 0.5 }]}
         hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss"
       >
         <Ionicons name="close" size={20} color={on + 'CC'} />
       </Pressable>
@@ -156,6 +158,8 @@ function DeckRow({ deck }: { deck: DeckLink }) {
       style={({ pressed }) => [drow.root, pressed && deck.url != null && { opacity: 0.75 }]}
       onPress={() => deck.url != null && void Linking.openURL(deck.url)}
       disabled={deck.url == null}
+      accessibilityRole={deck.url != null ? 'link' : undefined}
+      accessibilityLabel={deck.url != null ? `Open ${deck.name} deck list` : undefined}
     >
       <View style={drow.iconWell}>
         <Ionicons name="layers-outline" size={20} color={colors.accentInk} />
@@ -327,6 +331,8 @@ export function ConnectedRevealScreen({ navigation, route }: RootStackScreenProp
               onPress={() => navigation.goBack()}
               style={({ pressed }) => [styles.dismissBtn, pressed && { opacity: 0.5 }]}
               hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
             >
               <Ionicons name="chevron-down" size={26} color={colors.textTertiary} />
             </Pressable>

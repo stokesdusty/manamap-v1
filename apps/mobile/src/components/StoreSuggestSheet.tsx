@@ -122,7 +122,13 @@ export function StoreSuggestSheet({ visible, onClose }: Props) {
       <SafeAreaView style={s.safe}>
         {/* Header */}
         <View style={s.header}>
-          <Pressable onPress={onClose} hitSlop={8} style={s.backBtn}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            style={s.backBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
             <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={s.title}>Suggest a Store</Text>
@@ -180,6 +186,7 @@ export function StoreSuggestSheet({ visible, onClose }: Props) {
             placeholderTextColor={colors.textTertiary}
             returnKeyType="next"
             autoCorrect={false}
+            accessibilityLabel="Store name"
           />
 
           {/* Website */}
@@ -195,6 +202,7 @@ export function StoreSuggestSheet({ visible, onClose }: Props) {
             autoCorrect={false}
             keyboardType="url"
             returnKeyType="next"
+            accessibilityLabel="Website"
           />
 
           {/* Note */}
@@ -209,6 +217,7 @@ export function StoreSuggestSheet({ visible, onClose }: Props) {
             multiline
             numberOfLines={2}
             returnKeyType="done"
+            accessibilityLabel="Note"
           />
         </KeyboardAwareScrollView>
 
@@ -223,6 +232,8 @@ export function StoreSuggestSheet({ visible, onClose }: Props) {
               ]}
               onPress={handleSubmit}
               disabled={!name.trim() || isPending}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !name.trim() || isPending }}
             >
               {isPending ? (
                 <ActivityIndicator size="small" color={colors.textInverse} />

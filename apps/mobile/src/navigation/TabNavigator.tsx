@@ -19,7 +19,12 @@ const Tab = createBottomTabNavigator<TabParamList>();
 function ScanButton({ onPress }: BottomTabBarButtonProps) {
   const { accent } = useIdentityTheme();
   return (
-    <Pressable onPress={onPress ?? undefined} style={styles.scanWrap}>
+    <Pressable
+      onPress={onPress ?? undefined}
+      style={styles.scanWrap}
+      accessibilityRole="button"
+      accessibilityLabel="Scan QR"
+    >
       <View style={[styles.scanPip, { backgroundColor: accent }]}>
         <Ionicons name="scan-outline" size={24} color={colors.textInverse} />
       </View>

@@ -138,6 +138,8 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
             onPress={onClose}
             hitSlop={8}
             style={({ pressed }) => pressed && { opacity: 0.6 }}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
           >
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
@@ -160,6 +162,8 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
                   pressed && { opacity: 0.8 },
                 ]}
                 onPress={() => setPlatform('spelltable')}
+                accessibilityRole="button"
+                accessibilityState={{ selected: platform === 'spelltable' }}
               >
                 <Ionicons
                   name="globe-outline"
@@ -183,6 +187,8 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
                   pressed && { opacity: 0.8 },
                 ]}
                 onPress={() => setPlatform('convoke')}
+                accessibilityRole="button"
+                accessibilityState={{ selected: platform === 'convoke' }}
               >
                 <Ionicons
                   name="videocam-outline"
@@ -212,6 +218,7 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
               autoCapitalize="none"
               autoCorrect={false}
               maxLength={512}
+              accessibilityLabel="Room name or invite link"
             />
 
             {/* Connection picker */}
@@ -233,6 +240,8 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
                       pressed && { opacity: 0.8 },
                     ]}
                     onPress={() => toggleConnection(opt.connectionId)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
                   >
                     <PlayerAvatar name={opt.displayName} avatarColors={opt.avatarColors} />
                     <Text style={sh.connectionName} numberOfLines={1}>
@@ -260,6 +269,8 @@ export function PlayOnlineSheet({ visible, onClose }: Props) {
             ]}
             onPress={handleSend}
             disabled={!canSend || isPending}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !canSend || isPending, busy: isPending }}
           >
             {isPending ? (
               <ActivityIndicator size="small" color={colors.textInverse} />

@@ -264,6 +264,8 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
           onPress={() => navigation.goBack()}
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.5 }]}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
         >
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </Pressable>
@@ -272,6 +274,8 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
           onPress={() => setMenuOpen(true)}
           style={({ pressed }) => [styles.menuBtn, pressed && { opacity: 0.5 }]}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="More options"
         >
           <Ionicons name="ellipsis-horizontal" size={22} color={colors.textSecondary} />
         </Pressable>
@@ -368,6 +372,9 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
             style={({ pressed }) => [styles.ctaBtn, (pressed || isPending) && { opacity: 0.8 }]}
             onPress={isPending ? undefined : handleConnect}
             disabled={isPending}
+            accessibilityRole="button"
+            accessibilityLabel="Send connect request"
+            accessibilityState={{ disabled: isPending, busy: isPending }}
           >
             {isPending ? (
               <ActivityIndicator size="small" color={colors.textInverse} />
@@ -387,7 +394,7 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
         animationType="fade"
         onRequestClose={() => setMenuOpen(false)}
       >
-        <Pressable style={menu.overlay} onPress={() => setMenuOpen(false)}>
+        <Pressable style={menu.overlay} onPress={() => setMenuOpen(false)} accessible={false}>
           <View style={menu.sheet}>
             <Text style={menu.name} numberOfLines={1}>
               {profile.displayName}
@@ -395,6 +402,7 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
             <Pressable
               style={({ pressed }) => [menu.item, pressed && { opacity: 0.6 }]}
               onPress={handleOpenReport}
+              accessibilityRole="button"
             >
               <Ionicons name="flag-outline" size={20} color={colors.textPrimary} />
               <Text style={menu.itemText}>Report player</Text>
@@ -403,6 +411,8 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
               style={({ pressed }) => [menu.item, menu.itemDanger, pressed && { opacity: 0.6 }]}
               onPress={handleBlock}
               disabled={isBlocking}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isBlocking, busy: isBlocking }}
             >
               <Ionicons name="ban-outline" size={20} color={colors.error} />
               <Text style={[menu.itemText, { color: colors.error }]}>Block player</Text>
@@ -410,6 +420,7 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
             <Pressable
               style={({ pressed }) => [menu.cancel, pressed && { opacity: 0.6 }]}
               onPress={() => setMenuOpen(false)}
+              accessibilityRole="button"
             >
               <Text style={menu.cancelText}>Cancel</Text>
             </Pressable>
@@ -424,7 +435,7 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
         animationType="slide"
         onRequestClose={() => setReportOpen(false)}
       >
-        <Pressable style={menu.overlay} onPress={() => setReportOpen(false)}>
+        <Pressable style={menu.overlay} onPress={() => setReportOpen(false)} accessible={false}>
           <View style={[menu.sheet, { gap: spacing.sm }]}>
             <Text style={menu.name}>Report {profile.displayName}</Text>
             <Text style={menu.sectionLabel}>Reason</Text>
@@ -437,6 +448,8 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
                   pressed && { opacity: 0.7 },
                 ]}
                 onPress={() => setSelectedReason(r.value)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: selectedReason === r.value }}
               >
                 <Text
                   style={[menu.itemText, selectedReason === r.value && { color: colors.accent }]}
@@ -451,6 +464,8 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
             <Pressable
               style={[menu.reasonRow, alsoBlock && menu.reasonRowActive]}
               onPress={() => setAlsoBlock((v) => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: alsoBlock }}
             >
               <Text style={[menu.itemText, alsoBlock && { color: colors.accent }]}>
                 Also block this player
@@ -465,6 +480,11 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
               ]}
               onPress={handleSubmitReport}
               disabled={!selectedReason || isReporting}
+              accessibilityRole="button"
+              accessibilityState={{
+                disabled: !selectedReason || isReporting,
+                busy: isReporting,
+              }}
             >
               {isReporting ? (
                 <ActivityIndicator size="small" color={colors.textInverse} />
@@ -475,6 +495,7 @@ export function PlayerPreviewScreen({ navigation, route }: RootStackScreenProps<
             <Pressable
               style={({ pressed }) => [menu.cancel, pressed && { opacity: 0.6 }]}
               onPress={() => setReportOpen(false)}
+              accessibilityRole="button"
             >
               <Text style={menu.cancelText}>Cancel</Text>
             </Pressable>

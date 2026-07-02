@@ -83,6 +83,8 @@ function StepHeader({
         style={({ pressed }) => [hdr.back, pressed && { opacity: 0.6 }]}
         onPress={onBack}
         hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
       >
         {onBack ? (
           <Ionicons name="chevron-back" size={22} color={colors.accent} />
@@ -225,6 +227,8 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
                   hitSlop={8}
                   onPress={() => removeFromRoster(p.userId)}
                   style={({ pressed }) => pressed && { opacity: 0.5 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove ${p.displayName}`}
                 >
                   <Ionicons name="close-circle" size={20} color={colors.error} />
                 </Pressable>
@@ -240,6 +244,8 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
                   key={c.userId}
                   style={({ pressed }) => [sh.addRow, pressed && { opacity: 0.7 }]}
                   onPress={() => addToRoster(c)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Add ${c.displayName}`}
                 >
                   <PlayerAvatar player={c} />
                   <Text style={sh.playerName} numberOfLines={1}>
@@ -265,6 +271,8 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
             ]}
             onPress={() => setStep('decks')}
             disabled={roster.length < 2}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: roster.length < 2 }}
           >
             <Text style={sh.nextBtnText}>Next — Decks</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textInverse} />
@@ -308,6 +316,7 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
                   placeholder="Deck name (optional)"
                   placeholderTextColor={colors.textTertiary}
                   maxLength={128}
+                  accessibilityLabel={`${p.displayName}'s deck name`}
                 />
               </View>
             </View>
@@ -318,6 +327,7 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
           <Pressable
             style={({ pressed }) => [sh.nextBtn, pressed && { opacity: 0.8 }]}
             onPress={() => setStep('winner')}
+            accessibilityRole="button"
           >
             <Text style={sh.nextBtnText}>Next — Who won?</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textInverse} />
@@ -352,6 +362,8 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
                   pressed && { opacity: 0.8 },
                 ]}
                 onPress={() => setWinnerId(p.userId)}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
               >
                 <PlayerAvatar player={p} />
                 <Text style={[sh.playerName, { flex: 1 }]} numberOfLines={1}>
@@ -376,6 +388,8 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
             ]}
             onPress={() => winnerId && setStep('confirm')}
             disabled={!winnerId}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !winnerId }}
           >
             <Text style={sh.nextBtnText}>Review & submit</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textInverse} />
@@ -400,6 +414,8 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
             style={({ pressed }) => [hdr.back, pressed && { opacity: 0.6 }]}
             onPress={() => setStep('winner')}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
           >
             <Ionicons name="chevron-back" size={22} color={colors.accent} />
           </Pressable>
@@ -444,6 +460,8 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
             ]}
             onPress={handleSubmit}
             disabled={isPending}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isPending, busy: isPending }}
           >
             {isPending ? (
               <ActivityIndicator size="small" color={colors.textInverse} />
@@ -473,6 +491,8 @@ export function LogGameSheet({ visible, onClose, onSuccess, preselectedPlayers, 
             onPress={onClose}
             hitSlop={8}
             style={({ pressed }) => pressed && { opacity: 0.6 }}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
           >
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>

@@ -94,6 +94,8 @@ function HeroAction({
         pressed && { opacity: 0.85 },
       ]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${eyebrow}. ${title}. ${sub}`}
     >
       <View style={[heroStyles.iconWell, { backgroundColor: accent + '22' }]}>
         <Ionicons name={icon} size={26} color={accent} />
@@ -129,6 +131,8 @@ function SecondaryTile({ icon, label, sub, badge, onPress }: SecondaryTileProps)
     <Pressable
       style={({ pressed }) => [stStyles.tile, pressed && { opacity: 0.75 }]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}. ${sub}`}
     >
       {badge != null && badge > 0 && (
         <View style={stStyles.badge}>
@@ -232,6 +236,8 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
               style={[styles.bellWrap, { backgroundColor: onAccent + '38' }]}
               onPress={() => navigation.navigate('Notifications')}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={bellCount > 0 ? `Notifications, ${bellCount} unread` : 'Notifications'}
             >
               <Ionicons name="notifications" size={22} color={onAccent} />
               {bellCount > 0 && <View style={styles.bellDot} />}
@@ -251,7 +257,11 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             </View>
 
             {activeStore ? (
-              <Pressable style={styles.storeRow} onPress={() => navigation.navigate('StoresMap')}>
+              <Pressable
+                style={styles.storeRow}
+                onPress={() => navigation.navigate('StoresMap')}
+                accessibilityRole="button"
+              >
                 <View style={styles.storeGlowDot} />
                 <Text style={[styles.storeRowName, { color: onAccent }]} numberOfLines={1}>
                   {activeStore.name}
@@ -263,7 +273,11 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                 </View>
               </Pressable>
             ) : (
-              <Pressable style={styles.storeRow} onPress={() => navigation.navigate('StoresMap')}>
+              <Pressable
+                style={styles.storeRow}
+                onPress={() => navigation.navigate('StoresMap')}
+                accessibilityRole="button"
+              >
                 <Ionicons name="location-outline" size={13} color={onAccent + '99'} />
                 <Text style={[styles.storeRowMuted, { color: onAccent + '99' }]}>
                   Find a store →
@@ -395,6 +409,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                 <Pressable
                   style={({ pressed }) => [styles.attentionRow, pressed && { opacity: 0.75 }]}
                   onPress={() => navigation.navigate('Connections')}
+                  accessibilityRole="button"
                 >
                   <View style={[styles.attentionDot, { backgroundColor: accent }]} />
                   <Text style={styles.attentionText}>
@@ -412,6 +427,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                     pressed && { opacity: 0.75 },
                   ]}
                   onPress={() => navigation.navigate('Connections')}
+                  accessibilityRole="button"
                 >
                   <View style={[styles.attentionDot, { backgroundColor: colors.success }]} />
                   <Text style={styles.attentionText}>
@@ -431,7 +447,11 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
               <Text style={styles.sectionLabel} numberOfLines={1}>
                 Tonight · {activeStore.name}
               </Text>
-              <Pressable onPress={() => navigation.navigate('StoresMap')} hitSlop={8}>
+              <Pressable
+                onPress={() => navigation.navigate('StoresMap')}
+                hitSlop={8}
+                accessibilityRole="button"
+              >
                 <Text style={[styles.seeAll, { color: accent }]}>See all →</Text>
               </Pressable>
             </View>
@@ -449,7 +469,11 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <Text style={styles.sectionLabel}>Your Month</Text>
-            <Pressable onPress={() => navigation.navigate('History')} hitSlop={8}>
+            <Pressable
+              onPress={() => navigation.navigate('History')}
+              hitSlop={8}
+              accessibilityRole="button"
+            >
               <Text style={[styles.seeAll, { color: accent }]}>History ›</Text>
             </Pressable>
           </View>

@@ -304,6 +304,8 @@ function RequestRow({
           style={({ pressed }) => [req.declineBtn, pressed && { opacity: 0.6 }]}
           onPress={onDecline}
           disabled={isDeclining}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isDeclining, busy: isDeclining }}
         >
           {isDeclining ? (
             <ActivityIndicator size="small" color={colors.error} />
@@ -315,6 +317,8 @@ function RequestRow({
           style={({ pressed }) => [req.approveBtn, pressed && { opacity: 0.6 }]}
           onPress={onApprove}
           disabled={isApproving}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isApproving, busy: isApproving }}
         >
           {isApproving ? (
             <ActivityIndicator size="small" color={colors.textInverse} />
@@ -385,7 +389,12 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
     return (
       <SafeAreaView style={s.safe}>
         <View style={s.header}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={s.title}>Pod</Text>
@@ -422,7 +431,12 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
         )}
 
         <View style={s.header}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={s.title}>Your Pod</Text>
@@ -430,6 +444,8 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
             style={({ pressed }) => [s.disbandBtn, pressed && { opacity: 0.7 }]}
             onPress={handleDisband}
             disabled={disband.isPending}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: disband.isPending, busy: disband.isPending }}
           >
             {disband.isPending ? (
               <ActivityIndicator size="small" color={colors.error} />
@@ -465,6 +481,8 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
                 style={({ pressed }) => [s.lockBtn, pressed && { opacity: 0.75 }]}
                 onPress={handleLock}
                 disabled={lock.isPending}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: lock.isPending, busy: lock.isPending }}
               >
                 {lock.isPending ? (
                   <ActivityIndicator size="small" color={colors.textInverse} />
@@ -475,6 +493,7 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
               <Pressable
                 style={({ pressed }) => [s.trackerBtn, pressed && { opacity: 0.75 }]}
                 onPress={() => navigation.navigate('LifeTracker', { podId })}
+                accessibilityRole="button"
               >
                 <Ionicons name="heart-outline" size={16} color={colors.accent} />
                 <Text style={s.trackerBtnText}>Life Tracker</Text>
@@ -484,6 +503,7 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
             <Pressable
               style={({ pressed }) => [s.trackerBtn, pressed && { opacity: 0.75 }]}
               onPress={() => navigation.navigate('LifeTracker', { podId })}
+              accessibilityRole="button"
             >
               <Ionicons name="heart-outline" size={16} color={colors.accent} />
               <Text style={s.trackerBtnText}>Life Tracker</Text>
@@ -585,6 +605,7 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
           <Pressable
             style={({ pressed }) => [s.trackerBtn, pressed && { opacity: 0.75 }]}
             onPress={() => navigation.navigate('LifeTracker', { podId })}
+            accessibilityRole="button"
           >
             <Ionicons name="heart-outline" size={16} color={colors.accent} />
             <Text style={s.trackerBtnText}>Life Tracker</Text>
@@ -611,6 +632,8 @@ export function PodScreen({ route, navigation }: PodScreenProps) {
             style={({ pressed }) => [s.joinBtn, pressed && { opacity: 0.8 }]}
             onPress={handleRequest}
             disabled={request.isPending}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: request.isPending, busy: request.isPending }}
           >
             {request.isPending ? (
               <ActivityIndicator size="small" color={colors.textInverse} />

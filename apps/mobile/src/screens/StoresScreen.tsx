@@ -159,7 +159,11 @@ function EventRow({ event, storeId }: { event: StoreEvent; storeId: string }) {
 
   return (
     <View style={evtRow.root}>
-      <Pressable onPress={() => setExpanded((v) => !v)}>
+      <Pressable
+        onPress={() => setExpanded((v) => !v)}
+        accessibilityRole="button"
+        accessibilityLabel={`${event.name}, ${expanded ? 'collapse' : 'expand'} attendees`}
+      >
         <View style={evtRow.topRow}>
           <View style={[evtRow.sourceDot, { backgroundColor: sourceColor }]} />
           <Text style={evtRow.name} numberOfLines={2}>
@@ -203,6 +207,9 @@ function EventRow({ event, storeId }: { event: StoreEvent; storeId: string }) {
           ]}
           onPress={isPending ? undefined : handleRsvpPress}
           disabled={isPending}
+          accessibilityRole="button"
+          accessibilityLabel={attending ? 'Going' : 'RSVP'}
+          accessibilityState={{ disabled: isPending, busy: isPending, selected: attending }}
         >
           {isPending ? (
             <ActivityIndicator size="small" color={attending ? colors.success : colors.accent} />
@@ -224,6 +231,7 @@ function EventRow({ event, storeId }: { event: StoreEvent; storeId: string }) {
           <Pressable
             style={({ pressed }) => [evtRow.channelBtn, pressed && { opacity: 0.7 }]}
             onPress={() => void Linking.openURL(event.eventChannelUrl!)}
+            accessibilityRole="link"
           >
             <Ionicons name="logo-discord" size={13} color="#5865F2" />
             <Text style={evtRow.channelText}>Event channel</Text>
@@ -505,11 +513,17 @@ function StoreDetailSheet({
   return (
     <>
       <Modal transparent visible={!!storeId} animationType="none" onRequestClose={onClose}>
-        <Pressable style={sheet.overlay} onPress={onClose} />
+        <Pressable style={sheet.overlay} onPress={onClose} accessible={false} />
         <Animated.View style={[sheet.container, { transform: [{ translateY }] }]}>
           <View style={sheet.handle} />
 
-          <Pressable onPress={onClose} style={sheet.closeBtn} hitSlop={8}>
+          <Pressable
+            onPress={onClose}
+            style={sheet.closeBtn}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
             <Ionicons name="close" size={22} color={colors.textSecondary} />
           </Pressable>
 
@@ -547,6 +561,7 @@ function StoreDetailSheet({
                 <Pressable
                   style={({ pressed }) => [sheet.discordRow, pressed && { opacity: 0.7 }]}
                   onPress={() => void Linking.openURL(store.discordUrl!)}
+                  accessibilityRole="link"
                 >
                   <Ionicons name="logo-discord" size={16} color="#5865F2" />
                   <Text style={sheet.discordText}>Join Discord community</Text>
@@ -587,6 +602,9 @@ function StoreDetailSheet({
                       ]}
                       onPress={() => void handleConfirm()}
                       disabled={isConfirming}
+                      accessibilityRole="button"
+                      accessibilityLabel="Confirm this is real"
+                      accessibilityState={{ disabled: isConfirming, busy: isConfirming }}
                     >
                       {isConfirming ? (
                         <ActivityIndicator size="small" color={colors.textInverse} />
@@ -652,6 +670,8 @@ function StoreDetailSheet({
                       key={tab}
                       style={[sheet.tab, activeTab === tab && sheet.tabActive]}
                       onPress={() => setActiveTab(tab)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: activeTab === tab }}
                     >
                       <Text style={[sheet.tabText, activeTab === tab && sheet.tabTextActive]}>
                         {tab === 'schedule' ? 'Schedule' : 'Leaderboard'}
@@ -749,7 +769,11 @@ function StoreDetailSheet({
                   <Text style={sheet.alertText}>
                     Location access is needed to verify you're at the store.
                   </Text>
-                  <Pressable onPress={() => void Linking.openSettings()} style={sheet.alertLink}>
+                  <Pressable
+                    onPress={() => void Linking.openSettings()}
+                    style={sheet.alertLink}
+                    accessibilityRole="button"
+                  >
                     <Text style={sheet.alertLinkText}>Open Settings</Text>
                   </Pressable>
                 </View>
@@ -773,6 +797,7 @@ function StoreDetailSheet({
                       setTooFarError(null);
                       void handleCheckin();
                     }}
+                    accessibilityRole="button"
                   >
                     <Text style={sheet.retryText}>Try again</Text>
                   </Pressable>
@@ -795,6 +820,11 @@ function StoreDetailSheet({
                     ]}
                     onPress={isActiveStore ? onClose : () => void handleCheckin()}
                     disabled={isCheckinPending || locPhase === 'acquiring'}
+                    accessibilityRole="button"
+                    accessibilityState={{
+                      disabled: isCheckinPending || locPhase === 'acquiring',
+                      busy: isCheckinPending || locPhase === 'acquiring',
+                    }}
                   >
                     {isCheckinPending || locPhase === 'acquiring' ? (
                       <ActivityIndicator size="small" color={colors.textInverse} />
@@ -833,7 +863,11 @@ function StoreDetailSheet({
           visible={true}
           onRequestClose={() => setActiveEvents([])}
         >
-          <Pressable style={promoStyles.backdrop} onPress={() => setActiveEvents([])}>
+          <Pressable
+            style={promoStyles.backdrop}
+            onPress={() => setActiveEvents([])}
+            accessible={false}
+          >
             <View style={promoStyles.card}>
               <Text style={promoStyles.heading}>Here for an event?</Text>
               {activeEvents.map((evt) => (
@@ -851,6 +885,9 @@ function StoreDetailSheet({
                       { onSettled: () => setActiveEvents([]) },
                     );
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel={evt.name}
+                  accessibilityState={{ disabled: isAssociating, busy: isAssociating }}
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={eventTagStyles.eventName}>{evt.name}</Text>
@@ -865,6 +902,7 @@ function StoreDetailSheet({
               <Pressable
                 style={({ pressed }) => [eventTagStyles.skipBtn, pressed && { opacity: 0.7 }]}
                 onPress={() => setActiveEvents([])}
+                accessibilityRole="button"
               >
                 <Text style={eventTagStyles.skipText}>Just visiting</Text>
               </Pressable>
@@ -881,7 +919,11 @@ function StoreDetailSheet({
           visible={true}
           onRequestClose={() => setEligibleOffers([])}
         >
-          <Pressable style={promoStyles.backdrop} onPress={() => setEligibleOffers([])}>
+          <Pressable
+            style={promoStyles.backdrop}
+            onPress={() => setEligibleOffers([])}
+            accessible={false}
+          >
             <View style={promoStyles.card}>
               <View style={rewardStyles.glyphWrap}>
                 <RewardGlyph color={accent} size={56} />
@@ -912,6 +954,9 @@ function StoreDetailSheet({
                         },
                       );
                     }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Redeem at counter"
+                    accessibilityState={{ disabled: isClaiming, busy: isClaiming }}
                   >
                     {isClaiming ? (
                       <ActivityIndicator size="small" color={colors.textInverse} />
@@ -924,6 +969,7 @@ function StoreDetailSheet({
               <Pressable
                 style={({ pressed }) => [promoStyles.dismissBtn, pressed && { opacity: 0.8 }]}
                 onPress={() => setEligibleOffers([])}
+                accessibilityRole="button"
               >
                 <Text style={promoStyles.dismissText}>Not now</Text>
               </Pressable>
@@ -940,7 +986,11 @@ function StoreDetailSheet({
           visible={true}
           onRequestClose={() => setClaimResult(null)}
         >
-          <Pressable style={promoStyles.backdrop} onPress={() => setClaimResult(null)}>
+          <Pressable
+            style={promoStyles.backdrop}
+            onPress={() => setClaimResult(null)}
+            accessible={false}
+          >
             <View style={[promoStyles.card, { alignItems: 'center' }]}>
               <RewardGlyph color={accent} size={48} />
               <Text style={[promoStyles.heading, claimStyles.eyebrow, { color: accent }]}>
@@ -972,6 +1022,7 @@ function StoreDetailSheet({
                   pressed && { opacity: 0.8 },
                 ]}
                 onPress={() => setClaimResult(null)}
+                accessibilityRole="button"
               >
                 <Text style={promoStyles.dismissText}>Done</Text>
               </Pressable>
@@ -1087,7 +1138,13 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
     <SafeAreaView style={styles.safe} edges={['bottom', 'left', 'right']}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerCloseBtn} hitSlop={8}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={styles.headerCloseBtn}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <Ionicons name="chevron-back" size={26} color={colors.textSecondary} />
         </Pressable>
         <View style={{ flex: 1 }}>
@@ -1104,6 +1161,9 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
           <Pressable
             style={[styles.toggleBtn, viewMode === 'map' && styles.toggleBtnActive]}
             onPress={() => setViewMode('map')}
+            accessibilityRole="button"
+            accessibilityLabel="Map view"
+            accessibilityState={{ selected: viewMode === 'map' }}
           >
             <Ionicons
               name="map-outline"
@@ -1114,6 +1174,9 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
           <Pressable
             style={[styles.toggleBtn, viewMode === 'list' && styles.toggleBtnActive]}
             onPress={() => setViewMode('list')}
+            accessibilityRole="button"
+            accessibilityLabel="List view"
+            accessibilityState={{ selected: viewMode === 'list' }}
           >
             <Ionicons
               name="list-outline"
@@ -1137,9 +1200,15 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
             if (viewMode === 'map' && t.length > 0) setViewMode('list');
           }}
           returnKeyType="search"
+          accessibilityLabel="Search stores"
         />
         {searchQuery.length > 0 && (
-          <Pressable onPress={() => setSearchQuery('')} hitSlop={8}>
+          <Pressable
+            onPress={() => setSearchQuery('')}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+          >
             <Ionicons name="close-circle" size={16} color={colors.textTertiary} />
           </Pressable>
         )}
@@ -1194,6 +1263,7 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
           <Pressable
             style={({ pressed }) => [styles.suggestBtn, pressed && { opacity: 0.8 }]}
             onPress={() => setShowSuggest(true)}
+            accessibilityRole="button"
           >
             <Ionicons name="add" size={18} color={colors.textInverse} />
             <Text style={styles.suggestBtnText}>Add store</Text>
@@ -1229,6 +1299,8 @@ export function StoresScreen({ navigation, route }: StoresScreenProps) {
                 pressed && { opacity: 0.7 },
               ]}
               onPress={() => handleSelectRow(store)}
+              accessibilityRole="button"
+              accessibilityLabel={store.name}
             >
               <Ionicons
                 name={activeStore?.id === store.id ? 'radio-outline' : 'storefront-outline'}

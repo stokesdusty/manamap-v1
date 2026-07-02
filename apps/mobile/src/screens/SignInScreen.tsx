@@ -93,6 +93,9 @@ function GoogleSignInButton({
       ]}
       onPress={handlePress}
       disabled={!!loading}
+      accessibilityRole="button"
+      accessibilityLabel="Continue with Google"
+      accessibilityState={{ disabled: !!loading, busy: loading === 'google' }}
     >
       {loading === 'google' ? (
         <ActivityIndicator color={colors.textPrimary} />
@@ -220,6 +223,12 @@ export function SignInScreen() {
             ]}
             onPress={() => promptDiscord()}
             disabled={!!loading || !request}
+            accessibilityRole="button"
+            accessibilityLabel="Continue with Discord"
+            accessibilityState={{
+              disabled: !!loading || !request,
+              busy: loading === 'discord',
+            }}
           >
             {loading === 'discord' ? (
               <ActivityIndicator color={colors.textInverse} />
@@ -246,6 +255,7 @@ export function SignInScreen() {
             <Text
               style={styles.legalLink}
               onPress={() => navigation.navigate('Legal', { doc: 'terms' })}
+              accessibilityRole="link"
             >
               Terms of Service
             </Text>{' '}
@@ -253,6 +263,7 @@ export function SignInScreen() {
             <Text
               style={styles.legalLink}
               onPress={() => navigation.navigate('Legal', { doc: 'privacy' })}
+              accessibilityRole="link"
             >
               Privacy Policy
             </Text>

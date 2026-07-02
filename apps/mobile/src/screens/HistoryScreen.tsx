@@ -71,7 +71,12 @@ function EncounterCard({ item, onPress }: { item: EncounterItem; onPress: () => 
     : colors.textInverse;
 
   return (
-    <Pressable style={({ pressed }) => [card.root, pressed && { opacity: 0.75 }]} onPress={onPress}>
+    <Pressable
+      style={({ pressed }) => [card.root, pressed && { opacity: 0.75 }]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`View ${item.peer.displayName}'s profile`}
+    >
       {/* Avatar */}
       <View style={[card.avatar, { backgroundColor: fill }]}>
         <Text style={[card.avatarText, { color: textFill }]}>
@@ -151,6 +156,8 @@ export function HistoryScreen({ navigation }: RootStackScreenProps<'History'>) {
           onPress={() => navigation.goBack()}
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.5 }]}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
         >
           <Ionicons name="chevron-down" size={28} color={colors.textSecondary} />
         </Pressable>
@@ -170,6 +177,7 @@ export function HistoryScreen({ navigation }: RootStackScreenProps<'History'>) {
             <Pressable
               onPress={() => navigation.goBack()}
               style={({ pressed }) => [{ marginTop: 6 }, pressed && { opacity: 0.6 }]}
+              accessibilityRole="button"
             >
               <Text style={styles.nudgeAction}>See nearby players ›</Text>
             </Pressable>

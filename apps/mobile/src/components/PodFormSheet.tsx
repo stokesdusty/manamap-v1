@@ -106,7 +106,13 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
         <View style={s.header}>
           <View style={s.handle} />
           <View style={s.titleRow}>
-            <Pressable onPress={handleClose} hitSlop={8} style={s.backBtn}>
+            <Pressable
+              onPress={handleClose}
+              hitSlop={8}
+              style={s.backBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+            >
               <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
             </Pressable>
             <Text style={s.title}>Form a Pod</Text>
@@ -125,7 +131,12 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
                   {p.id === myProfile.id ? 'You' : p.displayName.split(' ')[0]}
                 </Text>
                 {p.id !== myProfile.id && (
-                  <Pressable onPress={() => removePlayer(p.id)} hitSlop={6}>
+                  <Pressable
+                    onPress={() => removePlayer(p.id)}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${p.displayName}`}
+                  >
                     <Ionicons name="close" size={13} color={colors.accent} />
                   </Pressable>
                 )}
@@ -147,6 +158,7 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
             onChangeText={setSearch}
             placeholder="Search contacts…"
             placeholderTextColor={colors.textTertiary}
+            accessibilityLabel="Search contacts"
           />
           {connPlayers.length === 0 ? (
             <Text style={s.emptyHint}>No contacts yet — add a guest below</Text>
@@ -162,6 +174,8 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
                     key={p.id}
                     style={[s.row, i > 0 && s.rowBorder, disabled && s.rowDisabled]}
                     onPress={() => !disabled && toggle(p.id)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isIn, disabled }}
                   >
                     <Avatar
                       name={p.displayName}
@@ -191,11 +205,14 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
                 placeholderTextColor={colors.textTertiary}
                 returnKeyType="done"
                 maxLength={30}
+                accessibilityLabel="Guest player name"
               />
               <Pressable
                 style={[s.addBtn, (!guestInput.trim() || isFull) && s.addBtnDisabled]}
                 onPress={addGuest}
                 disabled={!guestInput.trim() || isFull}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !guestInput.trim() || isFull }}
               >
                 <Text
                   style={[s.addBtnText, (!guestInput.trim() || isFull) && s.addBtnTextDisabled]}
@@ -211,7 +228,12 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
                 <View style={s.guestTag}>
                   <Text style={s.guestTagText}>Guest</Text>
                 </View>
-                <Pressable onPress={() => removePlayer(g.id)} hitSlop={8}>
+                <Pressable
+                  onPress={() => removePlayer(g.id)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove ${g.displayName}`}
+                >
                   <Ionicons name="close" size={16} color={colors.textTertiary} />
                 </Pressable>
               </View>
@@ -225,6 +247,8 @@ export function PodFormSheet({ visible, myProfile, connections, onStartGame, onC
               style={[s.startBtn, !canStart && s.startBtnDisabled]}
               onPress={handleStart}
               disabled={!canStart}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !canStart }}
             >
               <Text style={[s.startBtnText, !canStart && s.startBtnTextDisabled]}>
                 {canStart

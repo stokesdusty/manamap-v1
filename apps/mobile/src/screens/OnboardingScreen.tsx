@@ -336,6 +336,7 @@ function Step1({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
           placeholderTextColor={colors.textTertiary}
           autoFocus
           autoCapitalize="words"
+          accessibilityLabel="Display name"
         />
       </View>
 
@@ -350,6 +351,7 @@ function Step1({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
           maxLength={32}
           placeholder="e.g. they/them"
           placeholderTextColor={colors.textTertiary}
+          accessibilityLabel="Pronouns"
         />
       </View>
 
@@ -365,6 +367,7 @@ function Step1({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
           placeholder="e.g. Alex Smith or Alex S."
           placeholderTextColor={colors.textTertiary}
           autoCapitalize="words"
+          accessibilityLabel="Real or chosen name"
         />
         {draft.name.trim().length > 0 && (
           <View style={step.nameShareRow}>
@@ -379,6 +382,7 @@ function Step1({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
               }
               trackColor={{ true: colors.accent, false: colors.border }}
               thumbColor={colors.surface}
+              accessibilityLabel="Share with contacts"
             />
           </View>
         )}
@@ -405,6 +409,9 @@ function Step2({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
               key={c}
               onPress={() => dispatch({ type: 'TOGGLE_COLOR', color: c })}
               style={[step.pipBtn, !active && step.pipBtnInactive]}
+              accessibilityRole="button"
+              accessibilityLabel={c}
+              accessibilityState={{ selected: active }}
             >
               <ManaPip color={c} size={48} />
               {active && (
@@ -452,6 +459,8 @@ function Step3({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
                 key={f}
                 onPress={() => dispatch({ type: 'TOGGLE_FORMAT', format: f })}
                 style={[step.chip, active && step.chipActive]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
               >
                 <Text style={[step.chipText, active && step.chipTextActive]}>
                   {FORMAT_LABELS[f]}
@@ -474,6 +483,8 @@ function Step3({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
                 key={v}
                 onPress={() => dispatch({ type: 'TOGGLE_VIBE', vibe: v })}
                 style={[step.chip, active && step.chipActive]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
               >
                 <Text style={[step.chipText, active && step.chipTextActive]}>{VIBE_LABELS[v]}</Text>
               </Pressable>
@@ -493,6 +504,7 @@ function Step3({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
           maxLength={128}
           placeholder="e.g. Atraxa, Praetors' Voice"
           placeholderTextColor={colors.textTertiary}
+          accessibilityLabel="Favorite Commander"
         />
       </View>
     </KeyboardAwareScrollView>
@@ -568,6 +580,7 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType={socialKeyboardType(platform)}
+              accessibilityLabel={meta.label}
             />
           </View>
         );
@@ -587,7 +600,12 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
                   </Text>
                 )}
               </View>
-              <Pressable onPress={() => dispatch({ type: 'REMOVE_DECK', index: i })} hitSlop={8}>
+              <Pressable
+                onPress={() => dispatch({ type: 'REMOVE_DECK', index: i })}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${d.name}`}
+              >
                 <Ionicons name="trash-outline" size={18} color={colors.error} />
               </Pressable>
             </View>
@@ -603,6 +621,7 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
         <Pressable
           style={({ pressed }) => [step.addDeckBtn, pressed && { opacity: 0.7 }]}
           onPress={() => setShowAddDeck(true)}
+          accessibilityRole="button"
         >
           <Ionicons name="add-circle-outline" size={20} color={colors.accent} />
           <Text style={step.addDeckText}>Add a deck link</Text>
@@ -616,6 +635,7 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
             maxLength={64}
             placeholder="Deck name"
             placeholderTextColor={colors.textTertiary}
+            accessibilityLabel="Deck name"
           />
           <TextInput
             style={[step.input, deckUrlError ? step.inputError : null]}
@@ -629,6 +649,7 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
             keyboardType="url"
             placeholder="URL (optional) — Moxfield or Archidekt only"
             placeholderTextColor={colors.textTertiary}
+            accessibilityLabel="Deck URL"
           />
           {deckUrlError ? <Text style={step.errorText}>{deckUrlError}</Text> : null}
           <View style={step.formBtns}>
@@ -638,6 +659,7 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
                 setShowAddDeck(false);
                 setDeckUrlError('');
               }}
+              accessibilityRole="button"
             >
               <Text style={step.cancelBtnText}>Cancel</Text>
             </Pressable>
@@ -649,6 +671,8 @@ function Step4({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
               ]}
               onPress={addDeck}
               disabled={!deckName.trim()}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !deckName.trim() }}
             >
               <Text style={step.saveBtnText}>Add</Text>
             </Pressable>
@@ -689,6 +713,8 @@ function Step5({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
                 dispatch({ type: 'SET', key: 'homeStoreId', value: null });
                 dispatch({ type: 'SET', key: 'homeStoreName', value: null });
               }}
+              accessibilityRole="button"
+              accessibilityLabel="Clear home store"
             >
               <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
             </Pressable>
@@ -703,6 +729,7 @@ function Step5({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
             placeholderTextColor={colors.textTertiary}
             value={query}
             onChangeText={setQuery}
+            accessibilityLabel="Search stores"
           />
         </View>
       </ScrollView>
@@ -724,6 +751,9 @@ function Step5({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
                     dispatch({ type: 'SET', key: 'homeStoreName', value: item.name });
                     setQuery('');
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.name}
+                  accessibilityState={{ selected: draft.homeStoreId === item.id }}
                 >
                   <Ionicons name="storefront-outline" size={18} color={colors.textTertiary} />
                   <View style={{ flex: 1 }}>
@@ -758,6 +788,7 @@ function Step5({ draft, dispatch }: { draft: Draft; dispatch: React.Dispatch<Dra
             onValueChange={(v) => dispatch({ type: 'SET', key: 'discoverable', value: v })}
             trackColor={{ true: colors.accent, false: colors.border }}
             thumbColor={colors.surface}
+            accessibilityLabel="Appear in nearby search"
           />
         </View>
       </View>
@@ -880,6 +911,9 @@ export function OnboardingScreen() {
             ]}
             onPress={handleEnter}
             disabled={isPending}
+            accessibilityRole="button"
+            accessibilityLabel="Enter ManaMap"
+            accessibilityState={{ disabled: isPending, busy: isPending }}
           >
             {isPending ? (
               <ActivityIndicator color={colors.textInverse} />
@@ -902,6 +936,7 @@ export function OnboardingScreen() {
           <Pressable
             onPress={handleBack}
             style={({ pressed }) => [ob.backBtn, pressed && { opacity: 0.6 }]}
+            accessibilityRole="button"
           >
             <Ionicons name="chevron-back" size={20} color={colors.accent} />
             <Text style={ob.backText}>Back</Text>
@@ -931,6 +966,7 @@ export function OnboardingScreen() {
           <Pressable
             style={({ pressed }) => [ob.skipBtn, pressed && { opacity: 0.6 }]}
             onPress={() => setCurrentStep(4)}
+            accessibilityRole="button"
           >
             <Text style={ob.skipText}>Skip</Text>
           </Pressable>
@@ -943,6 +979,9 @@ export function OnboardingScreen() {
           ]}
           onPress={handleNext}
           disabled={!canContinue}
+          accessibilityRole="button"
+          accessibilityLabel={isLastStep ? 'Finish' : 'Continue'}
+          accessibilityState={{ disabled: !canContinue }}
         >
           <Text style={ob.continueBtnText}>{isLastStep ? 'Finish' : 'Continue'}</Text>
           <Ionicons

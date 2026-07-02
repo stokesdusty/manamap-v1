@@ -40,11 +40,12 @@ function playerColor(avatarColors: string[]): string {
 interface RepeatButtonProps {
   onDelta: () => void;
   label: string;
+  accessibilityLabel?: string;
   style?: object;
   textStyle?: object;
 }
 
-function RepeatButton({ onDelta, label, style, textStyle }: RepeatButtonProps) {
+function RepeatButton({ onDelta, label, accessibilityLabel, style, textStyle }: RepeatButtonProps) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stop = useCallback(() => {
@@ -63,6 +64,8 @@ function RepeatButton({ onDelta, label, style, textStyle }: RepeatButtonProps) {
       }}
       onPressOut={stop}
       delayLongPress={400}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
     >
       <Text style={[rb.text, textStyle]}>{label}</Text>
     </Pressable>
@@ -96,7 +99,12 @@ function CommanderDamageSheet({ player, allPlayers, onDelta, onClose }: CmdSheet
   const sources = allPlayers.filter((p) => p.userId !== player.userId);
   return (
     <Modal transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={cds.overlay} onPress={onClose} />
+      <Pressable
+        style={cds.overlay}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Dismiss"
+      />
       <View style={cds.sheet}>
         <View style={cds.handle} />
         <Text style={cds.title}>Commander Damage → {player.displayName}</Text>
@@ -115,12 +123,14 @@ function CommanderDamageSheet({ player, allPlayers, onDelta, onClose }: CmdSheet
                 <RepeatButton
                   onDelta={() => onDelta(src.userId, -1)}
                   label="−"
+                  accessibilityLabel={`Decrease commander damage from ${src.displayName}`}
                   style={cds.adjBtn}
                   textStyle={cds.adjText}
                 />
                 <RepeatButton
                   onDelta={() => onDelta(src.userId, 1)}
                   label="+"
+                  accessibilityLabel={`Increase commander damage from ${src.displayName}`}
                   style={[cds.adjBtn, cds.adjBtnPlus]}
                   textStyle={cds.adjTextPlus}
                 />
@@ -128,7 +138,7 @@ function CommanderDamageSheet({ player, allPlayers, onDelta, onClose }: CmdSheet
             </View>
           );
         })}
-        <Pressable style={cds.doneBtn} onPress={onClose}>
+        <Pressable style={cds.doneBtn} onPress={onClose} accessibilityRole="button">
           <Text style={cds.doneText}>Done</Text>
         </Pressable>
       </View>
@@ -232,14 +242,26 @@ function CounterRow({ player, compact, onDelta }: CounterRowProps) {
         if (compact && val === 0 && key !== 'poison') return null;
         return (
           <View key={key} style={cr.item}>
-            <Pressable onPress={() => onDelta(key, -1)} hitSlop={8} style={cr.adjMin}>
+            <Pressable
+              onPress={() => onDelta(key, -1)}
+              hitSlop={8}
+              style={cr.adjMin}
+              accessibilityRole="button"
+              accessibilityLabel={`Decrease ${key}`}
+            >
               <Text style={cr.adjText}>−</Text>
             </Pressable>
             <Text style={[cr.icon, compact && cr.iconCompact, danger && cr.iconDanger]}>
               {icon}
             </Text>
             <Text style={[cr.val, danger && cr.valDanger]}>{val}</Text>
-            <Pressable onPress={() => onDelta(key, 1)} hitSlop={8} style={cr.adjPlus}>
+            <Pressable
+              onPress={() => onDelta(key, 1)}
+              hitSlop={8}
+              style={cr.adjPlus}
+              accessibilityRole="button"
+              accessibilityLabel={`Increase ${key}`}
+            >
               <Text style={[cr.adjText, cr.adjPlusText]}>+</Text>
             </Pressable>
           </View>
@@ -331,7 +353,15 @@ function PlayerPanel({
             {player.hasCitysBlessing && <Text style={pp.badge}>🏙</Text>}
           </View>
         )}
-        <Pressable onPress={onEliminateToggle} hitSlop={8} style={pp.xBtn}>
+        <Pressable
+          onPress={onEliminateToggle}
+          hitSlop={8}
+          style={pp.xBtn}
+          accessibilityRole="button"
+          accessibilityLabel={
+            player.isEliminated ? `Restore ${player.displayName}` : `Eliminate ${player.displayName}`
+          }
+        >
           <Ionicons
             name={player.isEliminated ? 'refresh-circle' : 'close-circle-outline'}
             size={compact ? 20 : 26}
@@ -356,24 +386,28 @@ function PlayerPanel({
           <RepeatButton
             onDelta={() => onLifeDelta(-5)}
             label="-5"
+            accessibilityLabel="Decrease life by 5"
             style={[pp.bigBtn, compact && pp.bigBtnCompact]}
             textStyle={[pp.bigBtnText, compact && pp.bigBtnTextCompact]}
           />
           <RepeatButton
             onDelta={() => onLifeDelta(-1)}
             label="−"
+            accessibilityLabel="Decrease life by 1"
             style={[pp.bigBtn, compact && pp.bigBtnCompact]}
             textStyle={[pp.bigBtnText, compact && pp.bigBtnTextCompact]}
           />
           <RepeatButton
             onDelta={() => onLifeDelta(1)}
             label="+"
+            accessibilityLabel="Increase life by 1"
             style={[pp.bigBtn, compact && pp.bigBtnCompact]}
             textStyle={[pp.bigBtnText, compact && pp.bigBtnTextCompact]}
           />
           <RepeatButton
             onDelta={() => onLifeDelta(5)}
             label="+5"
+            accessibilityLabel="Increase life by 5"
             style={[pp.bigBtn, compact && pp.bigBtnCompact]}
             textStyle={[pp.bigBtnText, compact && pp.bigBtnTextCompact]}
           />
@@ -384,7 +418,12 @@ function PlayerPanel({
       <CounterRow player={player} compact={compact} onDelta={onCounterDelta} />
 
       {/* Commander damage row — always visible so the first hit can be recorded */}
-      <Pressable style={pp.cmdRow} onPress={() => setCmdSheetOpen(true)}>
+      <Pressable
+        style={pp.cmdRow}
+        onPress={() => setCmdSheetOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel={`Commander damage for ${player.displayName}`}
+      >
         <Text
           style={[pp.cmdLabel, compact && pp.cmdLabelCompact, hasCmdDamage && pp.cmdLabelActive]}
         >
@@ -558,7 +597,13 @@ function GameBar({
 
   return (
     <View style={gb.bar}>
-      <Pressable onPress={onClose} hitSlop={8} style={gb.closeBtn}>
+      <Pressable
+        onPress={onClose}
+        hitSlop={8}
+        style={gb.closeBtn}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+      >
         <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
       </Pressable>
 
@@ -598,6 +643,9 @@ function GameBar({
           disabled={!canUndo}
           hitSlop={8}
           style={[gb.actionBtn, !canUndo && gb.actionDisabled]}
+          accessibilityRole="button"
+          accessibilityLabel="Undo"
+          accessibilityState={{ disabled: !canUndo }}
         >
           <Ionicons
             name="arrow-undo"
@@ -605,10 +653,22 @@ function GameBar({
             color={canUndo ? colors.textSecondary : colors.border}
           />
         </Pressable>
-        <Pressable onPress={onNextTurn} hitSlop={8} style={[gb.actionBtn, gb.actionBtnNext]}>
+        <Pressable
+          onPress={onNextTurn}
+          hitSlop={8}
+          style={[gb.actionBtn, gb.actionBtnNext]}
+          accessibilityRole="button"
+          accessibilityLabel="Next turn"
+        >
           <Ionicons name="play-skip-forward" size={20} color={colors.accentInk} />
         </Pressable>
-        <Pressable onPress={onReset} hitSlop={8} style={gb.actionBtn}>
+        <Pressable
+          onPress={onReset}
+          hitSlop={8}
+          style={gb.actionBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Reset game"
+        >
           <Ionicons name="refresh" size={20} color={colors.textTertiary} />
         </Pressable>
       </View>
@@ -694,7 +754,12 @@ function SetupSheet({ format, isHost, onStart, onClose }: SetupSheetProps) {
       <View style={ss.card}>
         <View style={ss.header}>
           <Text style={ss.title}>{isHost ? 'Start Life Tracker' : 'Waiting for host…'}</Text>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
             <Ionicons name="close" size={20} color={colors.textSecondary} />
           </Pressable>
         </View>
@@ -711,6 +776,8 @@ function SetupSheet({ format, isHost, onStart, onClose }: SetupSheetProps) {
                     setLife(p);
                     setShowCustom(false);
                   }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: life === p && !showCustom }}
                 >
                   <Text style={[ss.presetText, life === p && ss.presetTextActive]}>{p}</Text>
                 </Pressable>
@@ -718,6 +785,8 @@ function SetupSheet({ format, isHost, onStart, onClose }: SetupSheetProps) {
               <Pressable
                 style={[ss.preset, showCustom && ss.presetActive]}
                 onPress={() => setShowCustom(true)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: showCustom }}
               >
                 <Text style={[ss.presetText, showCustom && ss.presetTextActive]}>Custom</Text>
               </Pressable>
@@ -736,10 +805,11 @@ function SetupSheet({ format, isHost, onStart, onClose }: SetupSheetProps) {
                   if (n > 0) setLife(n);
                 }}
                 autoFocus
+                accessibilityLabel="Custom life total"
               />
             )}
 
-            <Pressable style={ss.startBtn} onPress={() => onStart(life)}>
+            <Pressable style={ss.startBtn} onPress={() => onStart(life)} accessibilityRole="button">
               <Text style={ss.startBtnText}>Start — {life} life</Text>
             </Pressable>
           </>
@@ -863,7 +933,12 @@ function LocalSetupSheet({
       <View style={ss.card}>
         <View style={ss.header}>
           <Text style={ss.title}>Confirm Starting Life</Text>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
             <Ionicons name="close" size={20} color={colors.textSecondary} />
           </Pressable>
         </View>
@@ -886,12 +961,14 @@ function LocalSetupSheet({
               key={n}
               style={[ss.preset, life === n && ss.presetActive]}
               onPress={() => setLife(n)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: life === n }}
             >
               <Text style={[ss.presetText, life === n && ss.presetTextActive]}>{n}</Text>
             </Pressable>
           ))}
         </View>
-        <Pressable style={ss.startBtn} onPress={() => onStart(life)}>
+        <Pressable style={ss.startBtn} onPress={() => onStart(life)} accessibilityRole="button">
           <Text style={ss.startBtnText}>Continue →</Text>
         </Pressable>
       </View>
@@ -1022,7 +1099,11 @@ function FirstPlayerPicker({
         })}
       </View>
       {pickedIdx !== null && (
-        <Pressable style={fpp.letsPlay} onPress={() => onConfirm(pickedIdx)}>
+        <Pressable
+          style={fpp.letsPlay}
+          onPress={() => onConfirm(pickedIdx)}
+          accessibilityRole="button"
+        >
           <Text style={fpp.letsPlayText}>Let's play!</Text>
         </Pressable>
       )}

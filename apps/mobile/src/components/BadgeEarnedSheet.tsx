@@ -31,7 +31,7 @@ export function BadgeEarnedSheet({ badges, onDismiss }: Props) {
 
   return (
     <Modal transparent animationType="none" visible={visible} onRequestClose={onDismiss}>
-      <Pressable style={styles.backdrop} onPress={onDismiss}>
+      <Pressable style={styles.backdrop} onPress={onDismiss} accessible={false}>
         <Animated.View style={[styles.sheet, { transform: [{ scale }], opacity }]}>
           <Text style={styles.unlocked}>Badge unlocked!</Text>
           <Text style={styles.icon}>{badge.icon}</Text>
@@ -41,6 +41,7 @@ export function BadgeEarnedSheet({ badges, onDismiss }: Props) {
           <Pressable
             style={({ pressed }) => [styles.btn, pressed && { opacity: 0.8 }]}
             onPress={onDismiss}
+            accessibilityRole="button"
           >
             <Text style={styles.btnText}>Nice!</Text>
           </Pressable>

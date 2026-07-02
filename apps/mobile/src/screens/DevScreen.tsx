@@ -175,7 +175,11 @@ export function DevScreen({ navigation }: Props) {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <Text style={styles.title}>🔧 Dev Panel</Text>
-        <Pressable onPress={() => navigation.goBack()} style={styles.closeBtn}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={styles.closeBtn}
+          accessibilityRole="button"
+        >
           <Text style={styles.closeText}>Close</Text>
         </Pressable>
       </View>
@@ -192,6 +196,9 @@ export function DevScreen({ navigation }: Props) {
             ]}
             onPress={() => confirmAndRun(action)}
             disabled={loading !== null}
+            accessibilityRole="button"
+            accessibilityLabel={action.label}
+            accessibilityState={{ disabled: loading !== null, busy: loading === action.id }}
           >
             <View style={styles.cardRow}>
               <View style={styles.cardText}>

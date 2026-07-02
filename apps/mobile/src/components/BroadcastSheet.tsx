@@ -13,8 +13,8 @@ interface Props {
 export function BroadcastSheet({ visible, storeName, title, body, onClose }: Props) {
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+      <Pressable style={styles.backdrop} onPress={onClose} accessible={false}>
+        <Pressable style={styles.sheet} onPress={() => {}} accessible={false}>
           <View style={styles.header}>
             <View style={styles.storeBadge}>
               <Ionicons name="megaphone" size={13} color={colors.accent} />
@@ -22,7 +22,12 @@ export function BroadcastSheet({ visible, storeName, title, body, onClose }: Pro
                 {storeName}
               </Text>
             </View>
-            <Pressable onPress={onClose} hitSlop={8}>
+            <Pressable
+              onPress={onClose}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
               <Ionicons name="close" size={22} color={colors.textSecondary} />
             </Pressable>
           </View>

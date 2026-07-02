@@ -151,6 +151,7 @@ function IdentityHero({ profile, onEdit }: { profile: Profile; onEdit: () => voi
         <Pressable
           style={({ pressed }) => [hero.editBtn, pressed && { opacity: 0.6 }]}
           onPress={onEdit}
+          accessibilityRole="button"
         >
           <Ionicons name="pencil-outline" size={16} color={accent} />
           <Text style={[hero.editText, { color: accent }]}>Edit</Text>
@@ -352,6 +353,7 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
       <Pressable
         style={[section.invisibleRow, isInvisible && section.invisibleRowActive]}
         onPress={() => mutate({ discoverable: isInvisible })}
+        accessible={false}
       >
         <Ionicons
           name={isInvisible ? 'eye-off' : 'eye-outline'}
@@ -375,6 +377,7 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
           onValueChange={(val) => mutate({ discoverable: val })}
           trackColor={{ true: colors.success, false: colors.border }}
           thumbColor={colors.surface}
+          accessibilityLabel="Discoverable in nearby search"
         />
       </Pressable>
 
@@ -392,6 +395,7 @@ function PrivacyCard({ privacy }: { privacy: Privacy }) {
             onValueChange={(val) => mutate({ [row.key]: val })}
             trackColor={{ true: colors.accent, false: colors.border }}
             thumbColor={colors.surface}
+            accessibilityLabel={row.label}
           />
         </View>
       ))}
@@ -437,6 +441,8 @@ function BlockedPlayersCard() {
           <Pressable
             style={({ pressed }) => [section.unblockBtn, pressed && { opacity: 0.6 }]}
             onPress={() => confirmUnblock(item)}
+            accessibilityRole="button"
+            accessibilityLabel={`Unblock ${item.displayName}`}
           >
             <Text style={section.unblockText}>Unblock</Text>
           </Pressable>
@@ -473,6 +479,7 @@ function DecksCard() {
         <Pressable
           style={({ pressed }) => [section.addBtn, pressed && { opacity: 0.6 }]}
           onPress={() => setShowAdd(true)}
+          accessibilityRole="button"
         >
           <Ionicons name="add" size={18} color={colors.accent} />
           <Text style={section.addText}>Add</Text>
@@ -502,6 +509,8 @@ function DecksCard() {
             style={({ pressed }) => [section.deleteBtn, pressed && { opacity: 0.5 }]}
             onPress={() => confirmDelete(deck.id, deck.name)}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove ${deck.name}`}
           >
             <Ionicons name="trash-outline" size={18} color={colors.error} />
           </Pressable>
@@ -552,7 +561,11 @@ function EditTradeListModal({
     >
       <SafeAreaView style={modal.safe}>
         <View style={modal.topBar}>
-          <Pressable onPress={onClose} style={({ pressed }) => pressed && { opacity: 0.6 }}>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => pressed && { opacity: 0.6 }}
+            accessibilityRole="button"
+          >
             <Text style={modal.cancel}>Cancel</Text>
           </Pressable>
           <Text style={modal.title}>Trade List</Text>
@@ -560,6 +573,8 @@ function EditTradeListModal({
             onPress={handleSave}
             disabled={isPending}
             style={({ pressed }) => [modal.saveBtn, pressed && { opacity: 0.6 }]}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isPending, busy: isPending }}
           >
             {isPending ? (
               <ActivityIndicator size="small" color={colors.surface} />
@@ -585,6 +600,7 @@ function EditTradeListModal({
               placeholderTextColor={colors.textTertiary}
               multiline
               textAlignVertical="top"
+              accessibilityLabel="Looking for"
             />
           </FormField>
 
@@ -598,6 +614,7 @@ function EditTradeListModal({
               placeholderTextColor={colors.textTertiary}
               multiline
               textAlignVertical="top"
+              accessibilityLabel="Have / For trade"
             />
           </FormField>
         </KeyboardAwareScrollView>
@@ -619,6 +636,7 @@ function TradeListCard({ profile }: { profile: Profile }) {
         <Pressable
           style={({ pressed }) => [section.addBtn, pressed && { opacity: 0.6 }]}
           onPress={() => setManageOpen(true)}
+          accessibilityRole="button"
         >
           <Ionicons name="list-outline" size={17} color={colors.accent} />
           <Text style={section.addText}>Manage</Text>
@@ -822,7 +840,13 @@ function HomeStorePicker({
     >
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.paper }}>
         <View style={section.pickerHeader}>
-          <Pressable onPress={onClose} hitSlop={8} style={section.pickerBack}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            style={section.pickerBack}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
             <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={section.pickerTitle}>Set home store</Text>
@@ -835,9 +859,15 @@ function HomeStorePicker({
             placeholderTextColor={colors.textTertiary}
             value={query}
             onChangeText={setQuery}
+            accessibilityLabel="Search stores"
           />
           {query.length > 0 && (
-            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+            <Pressable
+              onPress={() => setQuery('')}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+            >
               <Ionicons name="close-circle" size={16} color={colors.textTertiary} />
             </Pressable>
           )}
@@ -860,6 +890,8 @@ function HomeStorePicker({
                   onSelect(item.id);
                   onClose();
                 }}
+                accessibilityRole="button"
+                accessibilityLabel={item.name}
               >
                 <Ionicons name="storefront-outline" size={18} color={colors.textTertiary} />
                 <View style={{ flex: 1 }}>
@@ -901,6 +933,7 @@ function HomeStoreRow() {
       <Pressable
         style={({ pressed }) => [section.storeRow, pressed && { opacity: 0.7 }]}
         onPress={() => setShowPicker(true)}
+        accessibilityRole="button"
       >
         <Ionicons name="storefront-outline" size={20} color={colors.textTertiary} />
         <View style={{ flex: 1 }}>
@@ -1232,7 +1265,11 @@ function EditProfileModal({
     >
       <SafeAreaView style={modal.safe}>
         <View style={modal.topBar}>
-          <Pressable onPress={onClose} style={({ pressed }) => pressed && { opacity: 0.6 }}>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => pressed && { opacity: 0.6 }}
+            accessibilityRole="button"
+          >
             <Text style={modal.cancel}>Cancel</Text>
           </Pressable>
           <Text style={modal.title}>Edit Profile</Text>
@@ -1240,6 +1277,8 @@ function EditProfileModal({
             onPress={handleSave}
             disabled={isPending}
             style={({ pressed }) => [modal.saveBtn, pressed && { opacity: 0.6 }]}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isPending, busy: isPending }}
           >
             {isPending ? (
               <ActivityIndicator size="small" color={colors.surface} />
@@ -1263,6 +1302,7 @@ function EditProfileModal({
               maxLength={64}
               placeholder="Your name"
               placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Display name"
             />
           </FormField>
 
@@ -1275,6 +1315,7 @@ function EditProfileModal({
               placeholder="e.g. Alex Smith or Alex S."
               placeholderTextColor={colors.textTertiary}
               autoCapitalize="words"
+              accessibilityLabel="Real or chosen name"
             />
             <Text style={form.fieldHint}>
               Shared only with contacts when you enable "Share real name" in Privacy
@@ -1289,6 +1330,7 @@ function EditProfileModal({
               maxLength={32}
               placeholder="e.g. they/them"
               placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Pronouns"
             />
           </FormField>
 
@@ -1303,6 +1345,7 @@ function EditProfileModal({
               multiline
               numberOfLines={4}
               textAlignVertical="top"
+              accessibilityLabel="Bio"
             />
           </FormField>
 
@@ -1315,6 +1358,9 @@ function EditProfileModal({
                     key={c}
                     onPress={() => toggleColor(c)}
                     style={[form.colorBtn, active && form.colorBtnActive]}
+                    accessibilityRole="button"
+                    accessibilityLabel={c}
+                    accessibilityState={{ selected: active }}
                   >
                     <ManaPip color={c} size={28} />
                   </Pressable>
@@ -1348,6 +1394,8 @@ function EditProfileModal({
                       )
                     }
                     style={[form.chip, active && form.chipActive]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
                   >
                     <Text style={[form.chipText, active && form.chipTextActive]}>
                       {VIBE_LABELS[v]}
@@ -1367,6 +1415,8 @@ function EditProfileModal({
                     key={f}
                     onPress={() => toggleFormat(f)}
                     style={[form.chip, active && form.chipActive]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
                   >
                     <Text style={[form.chipText, active && form.chipTextActive]}>
                       {FORMAT_LABELS[f]}
@@ -1388,6 +1438,7 @@ function EditProfileModal({
                 onValueChange={(v) => set('spelltable', v)}
                 trackColor={{ true: colors.accent, false: colors.border }}
                 thumbColor={colors.surface}
+                accessibilityLabel="SpellTable"
               />
             </View>
             <View style={[form.toggleRow, { marginTop: spacing.sm }]}>
@@ -1400,6 +1451,7 @@ function EditProfileModal({
                 onValueChange={(v) => set('convokeGames', v)}
                 trackColor={{ true: colors.accent, false: colors.border }}
                 thumbColor={colors.surface}
+                accessibilityLabel="Convoke.games"
               />
             </View>
           </FormField>
@@ -1587,7 +1639,11 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
     >
       <SafeAreaView style={addDeck.safe}>
         <View style={modal.topBar}>
-          <Pressable onPress={onClose} style={({ pressed }) => pressed && { opacity: 0.6 }}>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => pressed && { opacity: 0.6 }}
+            accessibilityRole="button"
+          >
             <Text style={modal.cancel}>Cancel</Text>
           </Pressable>
           <Text style={modal.title}>Add Deck</Text>
@@ -1595,6 +1651,8 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
             onPress={handleSave}
             disabled={isPending || !name.trim()}
             style={({ pressed }) => [modal.saveBtn, (pressed || !name.trim()) && { opacity: 0.6 }]}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isPending || !name.trim(), busy: isPending }}
           >
             {isPending ? (
               <ActivityIndicator size="small" color={colors.surface} />
@@ -1617,6 +1675,7 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
               maxLength={64}
               placeholder="My Commander Deck"
               placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Deck name"
             />
           </FormField>
 
@@ -1634,6 +1693,7 @@ function AddDeckModal({ visible, onClose }: { visible: boolean; onClose: () => v
               keyboardType="url"
               placeholder="https://moxfield.com/decks/..."
               placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Deck URL"
             />
             {urlError ? <Text style={addDeck.errorText}>{urlError}</Text> : null}
           </FormField>
@@ -2199,6 +2259,7 @@ function AccountActionsCard() {
       <Pressable
         style={({ pressed }) => [accountActions.row, pressed && styles.pressed]}
         onPress={() => navigation.navigate('Legal', { doc: 'terms' })}
+        accessibilityRole="button"
       >
         <Text style={accountActions.label}>Terms of Service</Text>
         <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
@@ -2206,6 +2267,7 @@ function AccountActionsCard() {
       <Pressable
         style={({ pressed }) => [accountActions.row, pressed && styles.pressed]}
         onPress={() => navigation.navigate('Legal', { doc: 'privacy' })}
+        accessibilityRole="button"
       >
         <Text style={accountActions.label}>Privacy Policy</Text>
         <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
@@ -2214,6 +2276,8 @@ function AccountActionsCard() {
         style={({ pressed }) => [accountActions.row, pressed && styles.pressed]}
         onPress={handleExport}
         disabled={exportData.isPending}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: exportData.isPending, busy: exportData.isPending }}
       >
         <Text style={accountActions.label}>Export my data</Text>
         {exportData.isPending ? (
@@ -2226,6 +2290,8 @@ function AccountActionsCard() {
         style={({ pressed }) => [accountActions.row, pressed && styles.pressed]}
         onPress={handleDelete}
         disabled={deleteAccount.isPending}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: deleteAccount.isPending, busy: deleteAccount.isPending }}
       >
         <Text style={[accountActions.label, accountActions.dangerLabel]}>Delete my account</Text>
         {deleteAccount.isPending ? (
@@ -2291,7 +2357,13 @@ export function YouScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.backBtn}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            hitSlop={8}
+            style={styles.backBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </Pressable>
           <Pressable
@@ -2338,6 +2410,7 @@ export function YouScreen() {
         <Pressable
           style={({ pressed }) => [styles.signOutBtn, pressed && styles.pressed]}
           onPress={signOut}
+          accessibilityRole="button"
         >
           <Text style={styles.signOutText}>Sign out</Text>
         </Pressable>

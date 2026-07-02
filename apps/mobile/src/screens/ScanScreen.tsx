@@ -112,6 +112,8 @@ function MyCodePane({ displayName }: { displayName: string }) {
           onPress={() => void refetch()}
           style={({ pressed }) => [pane.refreshBtn, pressed && { opacity: 0.5 }]}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Refresh code"
         >
           <Ionicons name="refresh-outline" size={16} color={colors.accent} />
         </Pressable>
@@ -234,6 +236,7 @@ function ScanPane({ onScanned }: { onScanned: (profile: PublicProfile) => void }
         <Pressable
           style={({ pressed }) => [scanPane.permBtn, pressed && { opacity: 0.7 }]}
           onPress={requestPermission}
+          accessibilityRole="button"
         >
           <Text style={scanPane.permBtnText}>Grant permission</Text>
         </Pressable>
@@ -368,6 +371,8 @@ export function ScanScreen({ navigation }: ScanScreenProps) {
           style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.5 }]}
           onPress={() => navigation.navigate('Discover')}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
         >
           <Ionicons name="close" size={24} color={colors.textSecondary} />
         </Pressable>
@@ -380,6 +385,8 @@ export function ScanScreen({ navigation }: ScanScreenProps) {
               key={m}
               onPress={() => setMode(m)}
               style={[styles.segTab, mode === m && styles.segTabActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: mode === m }}
             >
               <Text style={[styles.segLabel, mode === m && styles.segLabelActive]}>
                 {m === 'mycode' ? 'My code' : 'Scan'}

@@ -87,6 +87,8 @@ export function EndorsementPromptSheet({ visible, onClose, gameLogId, coPlayers 
             onPress={finish}
             hitSlop={8}
             style={({ pressed }) => pressed && { opacity: 0.6 }}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
           >
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
@@ -122,6 +124,7 @@ export function EndorsementPromptSheet({ visible, onClose, gameLogId, coPlayers 
           <Pressable
             style={({ pressed }) => [s.sendBtn, pressed && { opacity: 0.85 }]}
             onPress={finish}
+            accessibilityRole="button"
           >
             <Text style={s.sendBtnText}>{hasAny ? 'Send' : 'Skip'}</Text>
           </Pressable>

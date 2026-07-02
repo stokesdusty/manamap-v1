@@ -101,6 +101,7 @@ function ConnectionCard({
           <Pressable
             style={({ pressed }) => [row.declineBtn, pressed && { opacity: 0.6 }]}
             onPress={onDecline}
+            accessibilityRole="button"
           >
             <Text style={row.declineText}>Decline</Text>
           </Pressable>
@@ -112,6 +113,8 @@ function ConnectionCard({
             ]}
             onPress={isPending ? undefined : onAccept}
             disabled={isPending}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isPending, busy: isPending }}
           >
             {isPending ? (
               <ActivityIndicator size="small" color={colors.textInverse} />
@@ -133,6 +136,8 @@ function ConnectionCard({
       <Pressable
         style={({ pressed }) => [row.connCard, pressed && { opacity: 0.75 }]}
         onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`View ${item.peer.displayName}'s profile`}
       >
         <View style={row.avatar}>
           <Text style={row.avatarText}>{initial}</Text>
@@ -159,11 +164,23 @@ function ConnectionCard({
           ) : null}
         </View>
         {onAddContact && (
-          <Pressable onPress={onAddContact} hitSlop={8} style={row.addContactBtn}>
+          <Pressable
+            onPress={onAddContact}
+            hitSlop={8}
+            style={row.addContactBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Add to phone contacts"
+          >
             <Ionicons name="person-add-outline" size={18} color={colors.textTertiary} />
           </Pressable>
         )}
-        <Pressable onPress={onEditNote} hitSlop={8} style={row.noteBtn}>
+        <Pressable
+          onPress={onEditNote}
+          hitSlop={8}
+          style={row.noteBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Edit private note"
+        >
           <Ionicons name="create-outline" size={18} color={colors.textTertiary} />
         </Pressable>
         <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
@@ -283,6 +300,11 @@ function ConfirmResultsSection({ myId }: { myId: string }) {
                 ]}
                 onPress={() => handleDispute(game.id)}
                 disabled={isDisputing || isConfirming}
+                accessibilityRole="button"
+                accessibilityState={{
+                  disabled: isDisputing || isConfirming,
+                  busy: isDisputing,
+                }}
               >
                 {isDisputing ? (
                   <ActivityIndicator size="small" color={colors.error} />
@@ -297,6 +319,11 @@ function ConfirmResultsSection({ myId }: { myId: string }) {
                 ]}
                 onPress={() => handleConfirm(game)}
                 disabled={isConfirming || isDisputing}
+                accessibilityRole="button"
+                accessibilityState={{
+                  disabled: isConfirming || isDisputing,
+                  busy: isConfirming,
+                }}
               >
                 {isConfirming ? (
                   <ActivityIndicator size="small" color={colors.textInverse} />
@@ -444,7 +471,13 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.backBtn}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            hitSlop={8}
+            style={styles.backBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </Pressable>
           <Text style={styles.title}>Connections</Text>
@@ -531,11 +564,21 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
       >
         <SafeAreaView style={noteStyles.safe}>
           <View style={noteStyles.header}>
-            <Pressable onPress={() => setNoteModal(null)} hitSlop={8}>
+            <Pressable
+              onPress={() => setNoteModal(null)}
+              hitSlop={8}
+              accessibilityRole="button"
+            >
               <Text style={noteStyles.cancel}>Cancel</Text>
             </Pressable>
             <Text style={noteStyles.title}>Private note</Text>
-            <Pressable onPress={handleSaveNote} hitSlop={8} disabled={savingNote}>
+            <Pressable
+              onPress={handleSaveNote}
+              hitSlop={8}
+              disabled={savingNote}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: savingNote, busy: savingNote }}
+            >
               {savingNote ? (
                 <ActivityIndicator size="small" color={colors.accent} />
               ) : (
@@ -553,6 +596,7 @@ export function ConnectScreen({ navigation }: ConnectScreenProps) {
               multiline
               maxLength={500}
               autoFocus
+              accessibilityLabel="Private note"
             />
             <Text style={noteStyles.hint}>Only visible to you · {noteText.length}/500</Text>
           </View>

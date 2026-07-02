@@ -241,6 +241,8 @@ function SocialRow({ link }: { link: SocialLink }) {
     <Pressable
       style={({ pressed }) => [row.root, pressed && { opacity: 0.7 }]}
       onPress={handleAction}
+      accessibilityRole="button"
+      accessibilityLabel={profileUrl ? `Open ${meta.label} profile` : `Copy ${meta.label} handle`}
     >
       {({ pressed }) => (
         <>
@@ -356,7 +358,13 @@ function ManageSocialsSheet({ visible, onClose }: ManageSheetProps) {
     >
       <SafeAreaView style={ms.safe}>
         <View style={ms.topBar}>
-          <Pressable onPress={onClose} hitSlop={8} style={ms.backBtn}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            style={ms.backBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </Pressable>
           <Text style={ms.title}>Your Socials</Text>
@@ -400,6 +408,8 @@ function ManageSocialsSheet({ visible, onClose }: ManageSheetProps) {
                             setAddValue('');
                           }}
                           hitSlop={8}
+                          accessibilityRole="button"
+                          accessibilityLabel="Cancel"
                         >
                           <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
                         </Pressable>
@@ -414,6 +424,7 @@ function ManageSocialsSheet({ visible, onClose }: ManageSheetProps) {
                         autoCapitalize="none"
                         autoCorrect={false}
                         keyboardType={socialKeyboardType(addingPlatform)}
+                        accessibilityLabel={`${SOCIAL_META[addingPlatform].label} value`}
                       />
                       <Pressable
                         style={({ pressed }) => [
@@ -423,6 +434,8 @@ function ManageSocialsSheet({ visible, onClose }: ManageSheetProps) {
                         ]}
                         onPress={handleAdd}
                         disabled={!addValue.trim() || isAdding}
+                        accessibilityRole="button"
+                        accessibilityState={{ disabled: !addValue.trim() || isAdding }}
                       >
                         {isAdding ? (
                           <ActivityIndicator size="small" color={colors.textInverse} />
@@ -441,6 +454,8 @@ function ManageSocialsSheet({ visible, onClose }: ManageSheetProps) {
                             setAddingPlatform(p);
                             setAddValue('');
                           }}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Add ${SOCIAL_META[p].label}`}
                         >
                           {({ pressed }) => (
                             <>
@@ -485,6 +500,8 @@ function ManageLinkRow({
           onPress={onDelete}
           hitSlop={8}
           style={({ pressed }) => pressed && { opacity: 0.5 }}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${meta.label} link`}
         >
           <Ionicons name="trash-outline" size={16} color={colors.error} />
         </Pressable>
@@ -499,6 +516,8 @@ function ManageLinkRow({
               pressed && { opacity: 0.7 },
             ]}
             onPress={() => onVisibilityChange(opt.value)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: link.visibility === opt.value }}
           >
             <Text style={[ml.visSegText, link.visibility === opt.value && ml.visSegTextActive]}>
               {opt.label}
@@ -688,6 +707,7 @@ export function SocialsCard({
           <Pressable
             onPress={() => setManageOpen(true)}
             style={({ pressed }) => [sc.manageBtn, pressed && { opacity: 0.6 }]}
+            accessibilityRole="button"
           >
             <Ionicons name="pencil-outline" size={14} color={colors.accent} />
             <Text style={sc.manageText}>Manage</Text>

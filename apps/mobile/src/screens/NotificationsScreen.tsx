@@ -121,6 +121,8 @@ function NotifRow({ id, kind, title, body, data, readAt, createdAt, onPress }: N
         pressed && { opacity: 0.75 },
       ]}
       onPress={() => onPress(id)}
+      accessibilityRole="button"
+      accessibilityLabel={`${unread ? 'Unread. ' : ''}${title}`}
     >
       <View style={styles.iconTile}>
         <Ionicons name={kindIcon(kind)} size={21} color={colors.accentInk} />
@@ -208,12 +210,22 @@ export function NotificationsScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.backBtn}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={8}
+          style={styles.backBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </Pressable>
         <Text style={styles.screenTitle}>Notifications</Text>
         {newItems.length > 0 ? (
-          <Pressable onPress={handleMarkAll} style={styles.markAllBtn}>
+          <Pressable
+            onPress={handleMarkAll}
+            style={styles.markAllBtn}
+            accessibilityRole="button"
+          >
             <Text style={styles.markAllText}>Mark read</Text>
           </Pressable>
         ) : (

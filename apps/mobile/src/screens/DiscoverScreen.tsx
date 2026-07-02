@@ -126,7 +126,12 @@ function StorePicker({ visible, onClose, onSelect }: StorePickerProps) {
       <SafeAreaView style={picker.safe}>
         <View style={picker.header}>
           <Text style={picker.title}>Select your store</Text>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
         </View>
@@ -145,6 +150,7 @@ function StorePicker({ visible, onClose, onSelect }: StorePickerProps) {
             value={query}
             onChangeText={setQuery}
             autoFocus
+            accessibilityLabel="Search stores"
           />
         </View>
 
@@ -169,6 +175,8 @@ function StorePicker({ visible, onClose, onSelect }: StorePickerProps) {
                   });
                   onClose();
                 }}
+                accessibilityRole="button"
+                accessibilityLabel={item.name}
               >
                 <Ionicons name="storefront-outline" size={18} color={colors.textTertiary} />
                 <View style={{ flex: 1 }}>
@@ -230,7 +238,12 @@ function PlayerRow({ player, onPress }: PlayerRowProps) {
     : colors.textInverse;
 
   return (
-    <Pressable style={({ pressed }) => [row.root, pressed && { opacity: 0.75 }]} onPress={onPress}>
+    <Pressable
+      style={({ pressed }) => [row.root, pressed && { opacity: 0.75 }]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`View ${player.displayName}'s profile`}
+    >
       <View style={[row.avatar, { backgroundColor: fill }]}>
         <Text style={[row.avatarText, { color: textFill }]}>
           {avatarInitial(player.displayName)}
@@ -288,7 +301,12 @@ function SuggestionCard({ suggestion, onPress }: SuggestionCardProps) {
   const topReasons = suggestion.reasons.slice(0, 2);
 
   return (
-    <Pressable style={({ pressed }) => [sugg.card, pressed && { opacity: 0.75 }]} onPress={onPress}>
+    <Pressable
+      style={({ pressed }) => [sugg.card, pressed && { opacity: 0.75 }]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`View ${suggestion.displayName}'s profile`}
+    >
       <View style={[sugg.avatar, { backgroundColor: fill }]}>
         <Text style={[sugg.avatarText, { color: textFill }]}>
           {avatarInitial(suggestion.displayName)}
@@ -439,18 +457,24 @@ function LFGStatusBar({
         <Pressable
           style={({ pressed }) => [lfgBar.actionBtn, pressed && { opacity: 0.6 }]}
           onPress={onManagePod}
+          accessibilityRole="button"
+          accessibilityLabel="Manage pod"
         >
           <Ionicons name="people-outline" size={15} color={colors.accent} />
         </Pressable>
         <Pressable
           style={({ pressed }) => [lfgBar.actionBtn, pressed && { opacity: 0.6 }]}
           onPress={onEdit}
+          accessibilityRole="button"
+          accessibilityLabel="Edit session"
         >
           <Ionicons name="pencil-outline" size={15} color={colors.textSecondary} />
         </Pressable>
         <Pressable
           style={({ pressed }) => [lfgBar.actionBtn, lfgBar.stopBtn, pressed && { opacity: 0.6 }]}
           onPress={onStop}
+          accessibilityRole="button"
+          accessibilityLabel="Stop being open to play"
         >
           <Ionicons name="stop-circle-outline" size={15} color={colors.error} />
         </Pressable>
@@ -652,6 +676,8 @@ function PodsSection({ pods, isCheckedIn, onStartPod, onOpenPod }: PodsSectionPr
                 key={pod.id}
                 style={({ pressed }) => [podsSection.row, pressed && { opacity: 0.7 }]}
                 onPress={() => onOpenPod(pod)}
+                accessibilityRole="button"
+                accessibilityLabel={`${pod.host.displayName}'s pod`}
               >
                 <View style={[podsSection.avatar, { backgroundColor: fill }]}>
                   <Text style={[podsSection.avatarText, { color: textFill }]}>
@@ -762,7 +788,12 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
     >
       <SafeAreaView style={podCreate.safe}>
         <View style={podCreate.header}>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={podCreate.title}>Start a pod</Text>
@@ -775,6 +806,9 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
             ]}
             onPress={handleSubmit}
             disabled={isSubmitting || !canSubmit}
+            accessibilityRole="button"
+            accessibilityLabel="Create"
+            accessibilityState={{ disabled: isSubmitting || !canSubmit, busy: isSubmitting }}
           >
             {isSubmitting ? (
               <ActivityIndicator size="small" color={colors.textInverse} />
@@ -802,6 +836,8 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
                   key={f}
                   style={[podCreate.chip, active && podCreate.chipActive]}
                   onPress={() => setFormat(format === f ? null : f)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
                 >
                   <Text style={[podCreate.chipText, active && podCreate.chipTextActive]}>
                     {FORMAT_FULL_LABELS[f] ?? f}
@@ -817,6 +853,8 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
               style={podCreate.stepBtn}
               onPress={() => setTargetPower((p) => Math.max(1, p - 1))}
               hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel="Decrease target power"
             >
               <Ionicons name="remove" size={16} color={colors.textSecondary} />
             </Pressable>
@@ -825,6 +863,8 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
               style={podCreate.stepBtn}
               onPress={() => setTargetPower((p) => Math.min(10, p + 1))}
               hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel="Increase target power"
             >
               <Ionicons name="add" size={16} color={colors.textSecondary} />
             </Pressable>
@@ -837,6 +877,8 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
                 key={t}
                 style={[podCreate.seg, tolerance === t && podCreate.segActive]}
                 onPress={() => setTolerance(t)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: tolerance === t }}
               >
                 <Text style={[podCreate.segText, tolerance === t && podCreate.segTextActive]}>
                   ±{t}
@@ -852,6 +894,8 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
                 key={s}
                 style={[podCreate.seg, seats === s && podCreate.segActive]}
                 onPress={() => setSeats(s)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: seats === s }}
               >
                 <Text style={[podCreate.segText, seats === s && podCreate.segTextActive]}>{s}</Text>
               </Pressable>
@@ -868,6 +912,7 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
             value={where}
             onChangeText={setWhere}
             maxLength={40}
+            accessibilityLabel="Where to meet"
           />
           <Text style={podCreate.charCount}>{where.length}/40</Text>
 
@@ -880,6 +925,7 @@ function PodCreateSheet({ visible, onClose, onSubmit, isSubmitting }: PodCreateS
             onChangeText={setNote}
             maxLength={140}
             multiline
+            accessibilityLabel="Note"
           />
         </KeyboardAwareScrollView>
       </SafeAreaView>
@@ -947,7 +993,12 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
     >
       <SafeAreaView style={composer.safe}>
         <View style={composer.header}>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={composer.title}>{initial ? 'Edit session' : "I'm open to play"}</Text>
@@ -959,6 +1010,9 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
             ]}
             onPress={handleSubmit}
             disabled={isSubmitting}
+            accessibilityRole="button"
+            accessibilityLabel={initial ? 'Save' : 'Go open'}
+            accessibilityState={{ disabled: isSubmitting, busy: isSubmitting }}
           >
             {isSubmitting ? (
               <ActivityIndicator size="small" color={colors.textInverse} />
@@ -986,6 +1040,8 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
                   key={f}
                   style={[composer.chip, active && composer.chipActive]}
                   onPress={() => setFormat(format === f ? null : f)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
                 >
                   <Text style={[composer.chipText, active && composer.chipTextActive]}>
                     {FORMAT_FULL_LABELS[f] ?? f}
@@ -1001,6 +1057,8 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
               style={composer.stepBtn}
               onPress={() => setPower((p) => Math.max(1, p - 1))}
               hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel="Decrease power level"
             >
               <Ionicons name="remove" size={16} color={colors.textSecondary} />
             </Pressable>
@@ -1009,6 +1067,8 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
               style={composer.stepBtn}
               onPress={() => setPower((p) => Math.min(10, p + 1))}
               hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel="Increase power level"
             >
               <Ionicons name="add" size={16} color={colors.textSecondary} />
             </Pressable>
@@ -1021,6 +1081,8 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
                 key={s}
                 style={[composer.seg, seats === s && composer.segActive]}
                 onPress={() => setSeats(s)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: seats === s }}
               >
                 <Text style={[composer.segText, seats === s && composer.segTextActive]}>{s}</Text>
               </Pressable>
@@ -1034,6 +1096,8 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
                 key={d}
                 style={[composer.seg, duration === d && composer.segActive]}
                 onPress={() => setDuration(d)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: duration === d }}
               >
                 <Text style={[composer.segText, duration === d && composer.segTextActive]}>
                   {DURATION_LABELS[d]}
@@ -1051,6 +1115,7 @@ function LFGComposer({ visible, initial, onClose, onSubmit, isSubmitting }: LFGC
             onChangeText={setNote}
             maxLength={140}
             multiline
+            accessibilityLabel="Note"
           />
         </KeyboardAwareScrollView>
       </SafeAreaView>
@@ -1103,7 +1168,12 @@ function PodSheet({ visible, mySession, feed, onClose, onLock, isLocking }: PodS
     >
       <SafeAreaView style={pod.safe}>
         <View style={pod.header}>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
             <Ionicons name="close" size={24} color={colors.textSecondary} />
           </Pressable>
           <Text style={pod.title}>Lock your pod</Text>
@@ -1115,6 +1185,9 @@ function PodSheet({ visible, mySession, feed, onClose, onLock, isLocking }: PodS
             ]}
             onPress={() => onLock([...selected])}
             disabled={isLocking || selected.size === 0}
+            accessibilityRole="button"
+            accessibilityLabel={`Lock (${selected.size})`}
+            accessibilityState={{ disabled: isLocking || selected.size === 0, busy: isLocking }}
           >
             {isLocking ? (
               <ActivityIndicator size="small" color={colors.textInverse} />
@@ -1171,6 +1244,9 @@ function PodSheet({ visible, mySession, feed, onClose, onLock, isLocking }: PodS
                     pressed && { opacity: 0.7 },
                   ]}
                   onPress={() => toggleSelect(item.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.displayName}
+                  accessibilityState={{ selected: isSelected }}
                 >
                   <View style={[pod.avatar, { backgroundColor: fill }]}>
                     <Text style={[pod.avatarText, { color: textFill }]}>
@@ -1246,6 +1322,7 @@ function EmptyStoreState({
         <Pressable
           style={({ pressed }) => [emptyState.cta, pressed && { opacity: 0.85 }]}
           onPress={onGoOpen}
+          accessibilityRole="button"
         >
           <Ionicons name="flash" size={16} color={colors.textInverse} />
           <Text style={emptyState.ctaText}>Go Open to Play</Text>
@@ -1471,7 +1548,13 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
         <View style={styles.titleRow}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.backBtn}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            hitSlop={8}
+            style={styles.backBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </Pressable>
           <Text style={styles.title}>Discover</Text>
@@ -1491,6 +1574,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
                     : undefined,
               )
             }
+            accessibilityRole="button"
           >
             {activeStore ? (
               <>
@@ -1525,7 +1609,11 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
 
       {/* Invisible banner */}
       {isInvisible && (
-        <Pressable style={styles.invisibleBanner} onPress={handleToggleInvisible}>
+        <Pressable
+          style={styles.invisibleBanner}
+          onPress={handleToggleInvisible}
+          accessibilityRole="button"
+        >
           <Ionicons name="eye-off-outline" size={16} color={colors.textInverse} />
           <Text style={styles.invisibleBannerText}>You're invisible — nobody here can see you</Text>
           <Text style={styles.invisibleBannerCta}>Go visible</Text>
@@ -1545,7 +1633,12 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
                 >
                   {activeStore.name}
                 </Text>
-                <Pressable onPress={() => checkout()} hitSlop={8} style={styles.leaveBtn}>
+                <Pressable
+                  onPress={() => checkout()}
+                  hitSlop={8}
+                  style={styles.leaveBtn}
+                  accessibilityRole="button"
+                >
                   <Text style={styles.leaveBtnText}>Leave</Text>
                 </Pressable>
               </View>
@@ -1555,6 +1648,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
             <Pressable
               style={styles.storeSectionEmpty}
               onPress={() => navigation.navigate('StoresMap')}
+              accessibilityRole="button"
             >
               <View style={styles.storeSectionRow}>
                 <Ionicons name="storefront-outline" size={16} color={colors.textSecondary} />
@@ -1572,6 +1666,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
             <Pressable
               style={styles.storeSectionEmpty}
               onPress={() => navigation.navigate('StoresMap')}
+              accessibilityRole="button"
             >
               <Ionicons name="location-outline" size={15} color={colors.textTertiary} />
               <Text style={styles.storeSectionEmptyText}>Find a nearby store to check in</Text>
@@ -1641,6 +1736,7 @@ export function DiscoverScreen({ navigation }: DiscoverScreenProps) {
               <Pressable
                 style={({ pressed }) => [styles.nudge, pressed && { opacity: 0.8 }]}
                 onPress={() => navigation.navigate('History')}
+                accessibilityRole="button"
               >
                 <Ionicons name="footsteps-outline" size={14} color={identityTheme.accent} />
                 <Text style={[styles.nudgeText, { color: identityTheme.accent }]}>
