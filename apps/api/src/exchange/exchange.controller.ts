@@ -15,7 +15,12 @@ export class ExchangeController {
   @Post('token')
   @HttpCode(200)
   @UseGuards(AuthGuard)
-  @Throttle({ name: 'exchange', limit: THROTTLE_EXCHANGE_LIMIT, ttl: THROTTLE_EXCHANGE_TTL })
+  @Throttle({
+    name: 'exchange',
+    limit: THROTTLE_EXCHANGE_LIMIT,
+    ttl: THROTTLE_EXCHANGE_TTL,
+    failClosed: true,
+  })
   mintToken(@Req() req: AuthRequest) {
     return this.exchange.mintToken(req.user.sub);
   }

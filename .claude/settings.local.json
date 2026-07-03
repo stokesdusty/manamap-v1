@@ -269,7 +269,8 @@
       "Bash(pnpm --filter @manamap/api exec tsc --noEmit)",
       "Bash(pnpm --filter @manamap/api exec tsc --noEmit -p apps/api)",
       "Bash(pnpm --filter @manamap/api exec jest src/throttle/__tests__/throttle.guard.spec.ts)",
-      "Bash(pnpm --filter @manamap/api exec jest src/auth src/throttle)"
+      "Bash(pnpm --filter @manamap/api exec jest src/auth src/throttle)",
+      "Bash(pnpm --filter @manamap/api exec jest src/exchange src/auth src/throttle)"
     ]
   }
 }
