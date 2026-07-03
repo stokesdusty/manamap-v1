@@ -1,15 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import type { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { UserRole } from '@prisma/client';
 import type { AuthTokens } from '@manamap/shared';
 import type { PinoLogger } from 'nestjs-pino';
 import { InjectPinoLogger } from 'nestjs-pino';
 import type { Env } from '../config/config.schema';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { AppleService } from './apple.service';
-import type { DiscordService } from './discord.service';
-import type { GoogleService } from './google.service';
-import type { TokenService } from './token.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { AppleService } from './apple.service';
+import { DiscordService } from './discord.service';
+import { GoogleService } from './google.service';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {

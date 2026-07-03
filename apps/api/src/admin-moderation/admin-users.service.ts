@@ -5,7 +5,7 @@ import type Redis from 'ioredis';
 import { Inject } from '@nestjs/common';
 import type { AdminUpdateUser, AdminUserAction } from '@manamap/shared';
 import { REDIS } from '../redis/redis.module';
-import type { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AdminUsersService {

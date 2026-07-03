@@ -277,7 +277,29 @@
       "Bash(awk 'NR>=17 && NR<=23{print NR\": \"$0}' src/stores/stores.service.ts)",
       "Bash(awk 'NR==3||NR==4||NR==6{print NR\": \"$0}' src/throttle/throttle.guard.ts)",
       "Bash(grep -oE \"^C:.*\\\\.ts$\")",
-      "Bash(pnpm --filter @manamap/api lint)"
+      "Bash(pnpm --filter @manamap/api lint)",
+      "Bash(pnpm peers *)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist //FI \"PID eq 10232\")",
+      "Bash(docker rm *)",
+      "Bash(pnpm --filter @manamap/api test:e2e)",
+      "Bash(timeout 20 pnpm dev)",
+      "Bash(grep -rn \"consistent-type-imports\" apps/api/.eslintrc* .eslintrc*)",
+      "Bash(find . -maxdepth 3 -iname \".eslintrc*\" -not -path \"*/node_modules/*\")",
+      "Bash(timeout 15 pnpm dev)",
+      "Bash(pnpm dev *)",
+      "Bash(echo \"started with PID $!\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/v1/health)",
+      "Read(//c/Users/NoUse/AppData/Local/Temp/claude/c--m/ecd5e752-c077-449b-bdf5-bef5c3835cc5/scratchpad/**)",
+      "Bash(tasklist //FI \"IMAGENAME eq node.exe\")",
+      "Bash(curl -s -i http://localhost:3000/api/health)",
+      "Bash(curl -s -i \"http://localhost:3000/api/v1/stores?lat=0&lng=0\")",
+      "Bash(curl -s -i -X OPTIONS http://localhost:3000/api/v1/stores -H 'Origin: http://localhost:5173' -H 'Access-Control-Request-Method: GET' -H 'Access-Control-Request-Headers: authorization')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} \" -X POST http://localhost:3000/api/v1/auth/refresh)",
+      "Bash(taskkill //F //PID 8507)",
+      "Bash(wmic process *)",
+      "Bash(taskkill //F //PID 26648)",
+      "Bash(taskkill //F //PID 10128)"
     ]
   }
 }
