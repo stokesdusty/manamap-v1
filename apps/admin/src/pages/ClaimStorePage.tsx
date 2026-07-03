@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 import { api } from '../api/client';
 
 interface StoreResult {
@@ -10,7 +11,8 @@ interface StoreResult {
   state: string | null;
 }
 
-function claimErrorMessage(err: any): string {
+function claimErrorMessage(err: unknown): string {
+  if (!axios.isAxiosError(err)) return 'Claim failed. Please try again.';
   const code = err.response?.data?.code;
   if (code === 'already_claimed') return 'This store has already been claimed by someone else.';
   if (code === 'invalid_claim_code') {
@@ -85,7 +87,7 @@ export function ClaimStorePage() {
         );
         setSelectedStore(null);
       }
-    } catch (err: any) {
+    } catch (err) {
       setClaimError(claimErrorMessage(err));
     } finally {
       setClaiming(false);

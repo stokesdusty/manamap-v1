@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 import { api } from '../api/client';
 import { EVENT_RECURRENCE_WEEKS } from '@manamap/shared';
 
@@ -118,8 +119,9 @@ export function EventsPage() {
             : 'Event created.',
       );
     },
-    onError: (err: any) => {
-      setFormError(err.response?.data?.message ?? 'Save failed. Check your inputs.');
+    onError: (err) => {
+      const msg = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
+      setFormError(msg ?? 'Save failed. Check your inputs.');
     },
   });
 

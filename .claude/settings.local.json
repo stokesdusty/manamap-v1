@@ -270,7 +270,14 @@
       "Bash(pnpm --filter @manamap/api exec tsc --noEmit -p apps/api)",
       "Bash(pnpm --filter @manamap/api exec jest src/throttle/__tests__/throttle.guard.spec.ts)",
       "Bash(pnpm --filter @manamap/api exec jest src/auth src/throttle)",
-      "Bash(pnpm --filter @manamap/api exec jest src/exchange src/auth src/throttle)"
+      "Bash(pnpm --filter @manamap/api exec jest src/exchange src/auth src/throttle)",
+      "Bash(pnpm --filter @manamap/admin lint)",
+      "Bash(pnpm --filter @manamap/api test)",
+      "Bash(awk 'NR==27{print NR\": \"$0}' src/stores/stores.controller.ts)",
+      "Bash(awk 'NR>=17 && NR<=23{print NR\": \"$0}' src/stores/stores.service.ts)",
+      "Bash(awk 'NR==3||NR==4||NR==6{print NR\": \"$0}' src/throttle/throttle.guard.ts)",
+      "Bash(grep -oE \"^C:.*\\\\.ts$\")",
+      "Bash(pnpm --filter @manamap/api lint)"
     ]
   }
 }

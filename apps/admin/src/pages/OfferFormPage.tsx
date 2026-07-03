@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import type { RewardOffer } from '@manamap/shared';
 import { api } from '../api/client';
 
 interface OfferFormData {
@@ -35,8 +37,8 @@ export function OfferFormPage() {
     queryKey: ['partner', 'offer', storeId, offerId],
     queryFn: () =>
       api
-        .get(`/v1/partner/stores/${storeId}/offers`)
-        .then((r) => r.data.find((o: any) => o.id === offerId) ?? null),
+        .get<RewardOffer[]>(`/v1/partner/stores/${storeId}/offers`)
+        .then((r) => r.data.find((o) => o.id === offerId) ?? null),
     enabled: isEdit,
   });
 
@@ -80,8 +82,9 @@ export function OfferFormPage() {
       await qc.invalidateQueries({ queryKey: ['partner', 'offers', storeId] });
       await qc.invalidateQueries({ queryKey: ['partner', 'analytics', storeId] });
       navigate(`/stores/${storeId}`);
-    } catch (err: any) {
-      setError(err.response?.data?.message ?? 'Save failed. Please check your inputs.');
+    } catch (err) {
+      const msg = axios.isAxiosError(err) ? err.response?.data?.message : undefined;
+      setError(msg ?? 'Save failed. Please check your inputs.');
     } finally {
       setSaving(false);
     }
