@@ -301,7 +301,8 @@
       "Bash(taskkill //F //PID 26648)",
       "Bash(taskkill //F //PID 10128)",
       "Bash(xargs grep -ln \"defaultOptIn\")",
-      "Bash(pnpm --filter @manamap/mobile lint)"
+      "Bash(pnpm --filter @manamap/mobile lint)",
+      "Bash(xargs grep -l \"Route\")"
     ]
   }
 }
