@@ -359,3 +359,37 @@ Push notifications when a user RSVPs to a store event — morning-of (9am store 
 { "type": "event_reminder", "eventId": "...", "storeId": "..." }
 ```
 Title: `"Event starting soon"` (hour) / `"Event reminder"` (morning).
+
+---
+
+## Analytics (PostHog)
+
+Product analytics on PostHog Cloud's free tier — no self-hosting, no session replay. Scoped to
+`apps/api` and `apps/mobile` only; `apps/admin` has none. Mobile relies on autocapture (screen
+views, app lifecycle) for engagement data; API events are the authoritative "business outcome"
+events for funnels/retention since there's no such thing as autocapture server-side.
+
+### API
+- `apps/api/src/analytics/` — `AnalyticsModule` (`@Global()`), `AnalyticsService` wrapping `posthog-node`
+- No-op when `POSTHOG_API_KEY` is unset (dev/CI safe, mirrors Sentry's conditional init in `main.ts`)
+- `AnalyticsService.capture(distinctId, event, properties)` — call sites use `void this.analytics.capture(...)`, fire-and-forget like the existing `this.quests.evaluate(...)` calls
+- `onModuleDestroy` calls `client.shutdown()` to flush queued events on process exit
+- Env: `POSTHOG_API_KEY`, `POSTHOG_HOST` (default `https://us.i.posthog.com`)
+
+### Mobile
+- `PostHogProvider` wraps the tree in `App.tsx`, between `SafeAreaProvider` and `QueryClientProvider` — must be an ancestor of `AuthProvider` so `usePostHog()` works there
+- The provider is given an explicit `client` (constructed in a `useMemo`, not via its `apiKey` prop) so `client.optOut()` can be called synchronously at construction time when `EXPO_PUBLIC_POSTHOG_API_KEY` is blank — the true no-op path
+- `captureScreens` autocapture is disabled on the provider (`autocapture={{ captureScreens: false }}`) because the provider sits above `NavigationContainer` in the tree, where its internal screen tracker can't see navigation state. Screen views are tracked instead by a small `PostHogScreenTracker` component (calls `useNavigationTracker()`) rendered *inside* `NavigationContainer`
+- `AuthContext.signIn` decodes the JWT `sub` claim client-side (no signature verification — only used as a PostHog distinct ID) and calls `posthog.identify(sub)`; the initial session-restore effect does the same for already-logged-in users on cold start; `signOut` calls `posthog.reset()` (covers manual sign-out and forced 401 logout, both routed through `signOut`)
+- Env: `EXPO_PUBLIC_POSTHOG_API_KEY`, `EXPO_PUBLIC_POSTHOG_HOST`
+
+### Events (`@manamap/shared` → `AnalyticsEvent`)
+| Event | Fired from |
+|---|---|
+| `store_checkin` | `StoresService.checkin` |
+| `event_rsvp_created` | `StoresService.attendEvent` |
+| `event_rsvp_cancelled` | `StoresService.unattendEvent` |
+| `badge_earned` | `GamificationService.evaluateAndAwardBadges` (once per badge actually persisted) |
+| `game_confirmed` | `GamesService.confirm` (once per player, `won` property distinguishes winner/loser) |
+
+`distinctId` is the `User.id` / JWT `sub` on both platforms, so mobile and API events join into the same funnels.

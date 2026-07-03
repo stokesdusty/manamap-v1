@@ -18,6 +18,7 @@ import { MeModule } from './me/me.module';
 import { PresenceModule } from './presence/presence.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { StoresModule } from './stores/stores.module';
 import { PartnerModule } from './partner/partner.module';
 import { SafetyModule } from './safety/safety.module';
@@ -81,6 +82,7 @@ const conditionalModules: Array<DynamicModule | typeof DevModule> = devEnabled ?
     }),
     PrismaModule,
     RedisModule,
+    AnalyticsModule,
     AuthModule,
     GamificationModule,
     HealthModule,

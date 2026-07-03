@@ -2,8 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import type Redis from 'ioredis';
+import { AnalyticsEvent } from '@manamap/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS } from '../redis/redis.module';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 export type BadgeCriteria =
   | { type: 'first_checkin' }
@@ -35,6 +37,7 @@ export class GamificationService {
     private readonly prisma: PrismaService,
     @Inject(REDIS) private readonly redis: Redis,
     @InjectQueue('gamification') private readonly queue: Queue,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   async processCheckin(userId: string, storeId: string): Promise<CheckinGamificationResult> {
@@ -176,6 +179,10 @@ export class GamificationService {
             name: badge.name,
             icon: badge.icon,
             description: badge.description,
+          });
+          void this.analytics.capture(userId, AnalyticsEvent.BADGE_EARNED, {
+            badgeCode: badge.code,
+            storeId,
           });
         } catch {
           // Race condition: badge already awarded

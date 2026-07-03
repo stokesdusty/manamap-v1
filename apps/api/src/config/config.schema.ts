@@ -33,6 +33,10 @@ export const envSchema = z.object({
 
   // Error tracking — omit to disable Sentry entirely (true no-op)
   SENTRY_DSN: z.string().url().optional(),
+
+  // Product analytics — omit POSTHOG_API_KEY to disable (true no-op)
+  POSTHOG_API_KEY: z.string().optional(),
+  POSTHOG_HOST: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

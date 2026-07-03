@@ -13,6 +13,7 @@ import { SafetyService } from '../../safety/safety.service';
 import { GamificationService } from '../../gamification/gamification.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { QuestsService } from '../../quests/quests.service';
+import { AnalyticsService } from '../../analytics/analytics.service';
 import type { CreateGame } from '@manamap/shared';
 
 // ---------------------------------------------------------------------------
@@ -116,6 +117,7 @@ describe('GamesService', () => {
   let gamification: { refreshWinsLeaderboard: jest.Mock };
   let notifications: { create: jest.Mock };
   let quests: { evaluate: jest.Mock };
+  let analytics: { capture: jest.Mock };
 
   beforeEach(async () => {
     prisma = makePrismaMock();
@@ -123,6 +125,7 @@ describe('GamesService', () => {
     gamification = { refreshWinsLeaderboard: jest.fn().mockResolvedValue(undefined) };
     notifications = { create: jest.fn().mockResolvedValue(undefined) };
     quests = { evaluate: jest.fn().mockResolvedValue(undefined) };
+    analytics = { capture: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -132,6 +135,7 @@ describe('GamesService', () => {
         { provide: GamificationService, useValue: gamification },
         { provide: NotificationsService, useValue: notifications },
         { provide: QuestsService, useValue: quests },
+        { provide: AnalyticsService, useValue: analytics },
       ],
     }).compile();
 

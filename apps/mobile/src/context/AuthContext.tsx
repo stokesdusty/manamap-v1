@@ -1,7 +1,22 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { usePostHog } from 'posthog-react-native';
 import { getTokens, setTokens, clearTokens } from '../lib/storage';
 import { registerClearAuth } from '../lib/authCallbacks';
 import type { AuthTokens } from '@manamap/shared';
+
+declare const atob: (data: string) => string;
+
+function decodeJwtSub(accessToken: string): string | null {
+  try {
+    const payload = accessToken.split('.')[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(base64);
+    return (JSON.parse(json) as { sub?: string }).sub ?? null;
+  } catch {
+    return null;
+  }
+}
 
 interface AuthState {
   accessToken: string | null;
@@ -17,6 +32,7 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const posthog = usePostHog();
   const [state, setState] = useState<AuthState>({
     accessToken: null,
     isAuthenticated: false,
@@ -30,18 +46,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!tokens?.accessToken,
         isLoading: false,
       });
+      if (tokens?.accessToken) {
+        const sub = decodeJwtSub(tokens.accessToken);
+        if (sub) posthog.identify(sub);
+      }
     });
-  }, []);
+  }, [posthog]);
 
-  const signIn = useCallback(async (tokens: AuthTokens) => {
-    await setTokens(tokens);
-    setState({ accessToken: tokens.accessToken, isAuthenticated: true, isLoading: false });
-  }, []);
+  const signIn = useCallback(
+    async (tokens: AuthTokens) => {
+      await setTokens(tokens);
+      setState({ accessToken: tokens.accessToken, isAuthenticated: true, isLoading: false });
+      const sub = decodeJwtSub(tokens.accessToken);
+      if (sub) posthog.identify(sub);
+    },
+    [posthog],
+  );
 
   const signOut = useCallback(async () => {
     await clearTokens();
     setState({ accessToken: null, isAuthenticated: false, isLoading: false });
-  }, []);
+    posthog.reset();
+  }, [posthog]);
 
   useEffect(() => {
     registerClearAuth(signOut);

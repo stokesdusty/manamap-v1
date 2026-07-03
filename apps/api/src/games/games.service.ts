@@ -12,11 +12,13 @@ import {
   NotificationKind,
 } from '@prisma/client';
 import type { CreateGame } from '@manamap/shared';
+import { AnalyticsEvent } from '@manamap/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { SafetyService } from '../safety/safety.service';
 import { GamificationService } from '../gamification/gamification.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { QuestsService } from '../quests/quests.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class GamesService {
@@ -26,6 +28,7 @@ export class GamesService {
     private readonly gamification: GamificationService,
     private readonly notifications: NotificationsService,
     private readonly quests: QuestsService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   private async fetchGame(gameId: string) {
@@ -192,6 +195,11 @@ export class GamesService {
 
       for (const p of game.players) {
         void this.quests.evaluate(p.userId);
+        void this.analytics.capture(p.userId, AnalyticsEvent.GAME_CONFIRMED, {
+          gameId,
+          storeId: game.storeId,
+          won: p.userId === game.winnerId,
+        });
       }
     }
 

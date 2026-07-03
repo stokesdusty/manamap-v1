@@ -9,6 +9,7 @@ import { EventRemindersService } from '../../event-reminders/event-reminders.ser
 import { SafetyService } from '../../safety/safety.service';
 import { QuestsService } from '../../quests/quests.service';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { AnalyticsService } from '../../analytics/analytics.service';
 
 function makePrismaMock() {
   return {
@@ -65,6 +66,7 @@ describe('StoresService', () => {
   let safety: { getBlockedIds: jest.Mock };
   let quests: { evaluate: jest.Mock };
   let notifications: { create: jest.Mock };
+  let analytics: { capture: jest.Mock };
 
   beforeEach(async () => {
     prisma = makePrismaMock();
@@ -85,6 +87,7 @@ describe('StoresService', () => {
     safety = { getBlockedIds: jest.fn().mockResolvedValue(new Set()) };
     quests = { evaluate: jest.fn().mockResolvedValue(undefined) };
     notifications = { create: jest.fn().mockResolvedValue(undefined) };
+    analytics = { capture: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -97,6 +100,7 @@ describe('StoresService', () => {
         { provide: SafetyService, useValue: safety },
         { provide: QuestsService, useValue: quests },
         { provide: NotificationsService, useValue: notifications },
+        { provide: AnalyticsService, useValue: analytics },
       ],
     }).compile();
 

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export * from './legal';
+export * from './analytics';
 
 // --- Primitives ---
 

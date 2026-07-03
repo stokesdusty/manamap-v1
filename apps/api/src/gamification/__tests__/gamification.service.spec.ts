@@ -4,6 +4,7 @@ import { GamificationService } from '../gamification.service';
 import type { BadgeCriteria } from '../gamification.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { REDIS } from '../../redis/redis.module';
+import { AnalyticsService } from '../../analytics/analytics.service';
 
 function makePrismaMock() {
   return {
@@ -50,11 +51,13 @@ describe('GamificationService', () => {
   let prisma: ReturnType<typeof makePrismaMock>;
   let redis: ReturnType<typeof makeRedisMock>;
   let queue: { add: jest.Mock };
+  let analytics: { capture: jest.Mock };
 
   beforeEach(async () => {
     prisma = makePrismaMock();
     redis = makeRedisMock();
     queue = { add: jest.fn().mockResolvedValue({}) };
+    analytics = { capture: jest.fn() };
 
     const module = await Test.createTestingModule({
       providers: [
@@ -62,6 +65,7 @@ describe('GamificationService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: REDIS, useValue: redis },
         { provide: getQueueToken('gamification'), useValue: queue },
+        { provide: AnalyticsService, useValue: analytics },
       ],
     }).compile();
 

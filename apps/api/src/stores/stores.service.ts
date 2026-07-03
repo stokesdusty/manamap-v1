@@ -11,6 +11,7 @@ import type {
   ConfirmStore,
   SuggestStore,
 } from '@manamap/shared';
+import { AnalyticsEvent } from '@manamap/shared';
 import type { PinoLogger } from 'nestjs-pino';
 import { InjectPinoLogger } from 'nestjs-pino';
 import { ModerationStatus, NotificationKind, Prisma, StoreStatus } from '@prisma/client';
@@ -21,6 +22,7 @@ import { EventRemindersService } from '../event-reminders/event-reminders.servic
 import { SafetyService } from '../safety/safety.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { QuestsService } from '../quests/quests.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 const DEFAULT_CHECKIN_RADIUS_M = 1000;
 const ACCURACY_CAP_M = 150;
@@ -80,6 +82,7 @@ export class StoresService {
     private readonly safety: SafetyService,
     private readonly quests: QuestsService,
     private readonly notifications: NotificationsService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   // -------------------------------------------------------------------------
@@ -279,6 +282,7 @@ export class StoresService {
       ]);
 
     void this.quests.evaluate(userId);
+    void this.analytics.capture(userId, AnalyticsEvent.STORE_CHECKIN, { storeId: store.id });
 
     return {
       checkinId: checkin.id,
@@ -630,6 +634,11 @@ export class StoresService {
       timezone: event.store.timezone,
     });
 
+    void this.analytics.capture(userId, AnalyticsEvent.EVENT_RSVP_CREATED, {
+      storeId,
+      eventId: event.id,
+    });
+
     return { eventId: event.id, eventName: event.name };
   }
 
@@ -642,6 +651,11 @@ export class StoresService {
 
     await this.prisma.eventAttendee.deleteMany({ where: { userId, eventId } });
     await this.eventReminders.cancelReminders(userId, eventId);
+
+    void this.analytics.capture(userId, AnalyticsEvent.EVENT_RSVP_CANCELLED, {
+      storeId,
+      eventId: event.id,
+    });
 
     return { eventId: event.id, eventName: event.name };
   }
