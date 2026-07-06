@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { api } from '../api/client';
 import { EVENT_RECURRENCE_WEEKS } from '@manamap/shared';
+import { Icon } from '../components/Icon';
 
 interface Format {
   id: string;
@@ -71,14 +72,7 @@ function isPast(e: PartnerEvent): boolean {
 
 function SourceBadge({ event }: { event: PartnerEvent }) {
   if (isPast(event)) {
-    return (
-      <span
-        className="badge"
-        style={{ background: 'var(--muted-bg)', color: 'var(--text-tertiary)' }}
-      >
-        Past
-      </span>
-    );
+    return <span className="badge badge-inactive">Past</span>;
   }
   return <span className="badge badge-active">Store</span>;
 }
@@ -207,26 +201,16 @@ export function EventsPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Link
-          to={`/stores/${storeId}`}
-          style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 14 }}
-        >
-          ← Dashboard
-        </Link>
-      </div>
+      <Link to={`/stores/${storeId}`} className="page-back">
+        <Icon name="chevronLeft" size={15} /> Dashboard
+      </Link>
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 20,
-        }}
-      >
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Events</h1>
+      <div className="page-header">
+        <div className="page-title">
+          <Icon name="calendar" size={22} color="var(--primary)" /> Events
+        </div>
         <button className="btn btn-primary" onClick={openCreate}>
-          + New Event
+          <Icon name="plus" size={15} color="#fff" /> New Event
         </button>
       </div>
 
@@ -235,7 +219,9 @@ export function EventsPage() {
           <p style={{ padding: 24, color: 'var(--text-secondary)' }}>Loading events…</p>
         ) : !events?.length ? (
           <div className="empty-state">
-            <div className="empty-state-icon">📅</div>
+            <div className="empty-state-icon">
+              <Icon name="calendar" size={22} color="var(--text-tertiary)" />
+            </div>
             <p className="empty-state-text">No events yet. Create one to get players RSVPing.</p>
           </div>
         ) : (
@@ -257,16 +243,12 @@ export function EventsPage() {
                     <div style={{ fontWeight: 600 }}>{e.name}</div>
                     {e.description && (
                       <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>
-                        {e.description.length > 60
-                          ? e.description.slice(0, 60) + '…'
-                          : e.description}
+                        {e.description.length > 60 ? e.description.slice(0, 60) + '…' : e.description}
                       </div>
                     )}
                   </td>
                   <td style={{ color: 'var(--text-secondary)' }}>{e.formatName ?? '—'}</td>
-                  <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                    {formatWhen(e.startsAt)}
-                  </td>
+                  <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{formatWhen(e.startsAt)}</td>
                   <td style={{ textAlign: 'center' }}>{e.attendeeCount}</td>
                   <td>
                     <SourceBadge event={e} />
@@ -277,11 +259,7 @@ export function EventsPage() {
                         <button className="btn btn-sm btn-outline" onClick={() => openEdit(e)}>
                           Edit
                         </button>
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() => handleDelete(e.id)}
-                          disabled={del.isPending}
-                        >
+                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(e.id)} disabled={del.isPending}>
                           Delete
                         </button>
                       </div>
@@ -302,7 +280,8 @@ export function EventsPage() {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.45)',
+            background: 'rgba(10,7,16,0.6)',
+            backdropFilter: 'blur(2px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -313,40 +292,19 @@ export function EventsPage() {
         >
           <div
             className="card"
-            style={{
-              width: '100%',
-              maxWidth: 520,
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              margin: 0,
-            }}
+            style={{ width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', margin: 0, boxShadow: 'var(--shadow-pop)' }}
             onClick={(ev) => ev.stopPropagation()}
           >
-            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>
-              {editingId ? 'Edit Event' : 'New Event'}
-            </h2>
-            <form
-              onSubmit={handleSave}
-              style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
-            >
+            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 20 }}>{editingId ? 'Edit Event' : 'New Event'}</h2>
+            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label className="label">Name *</label>
-                <input
-                  className="input"
-                  value={form.name}
-                  onChange={(e) => set('name', e.target.value)}
-                  placeholder="Friday Night Magic"
-                  required
-                />
+                <input className="input" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Friday Night Magic" required />
               </div>
 
               <div>
                 <label className="label">Format</label>
-                <select
-                  className="input"
-                  value={form.formatId}
-                  onChange={(e) => set('formatId', e.target.value)}
-                >
+                <select className="input" value={form.formatId} onChange={(e) => set('formatId', e.target.value)}>
                   <option value="">— None —</option>
                   {formats?.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -359,23 +317,11 @@ export function EventsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label className="label">Starts At *</label>
-                  <input
-                    className="input"
-                    type="datetime-local"
-                    value={form.startsAt}
-                    onChange={(e) => set('startsAt', e.target.value)}
-                    required
-                  />
+                  <input className="input" type="datetime-local" value={form.startsAt} onChange={(e) => set('startsAt', e.target.value)} required />
                 </div>
                 <div>
                   <label className="label">Ends At</label>
-                  <input
-                    className="input"
-                    type="datetime-local"
-                    value={form.endsAt}
-                    onChange={(e) => set('endsAt', e.target.value)}
-                    min={form.startsAt}
-                  />
+                  <input className="input" type="datetime-local" value={form.endsAt} onChange={(e) => set('endsAt', e.target.value)} min={form.startsAt} />
                 </div>
               </div>
 
@@ -387,7 +333,7 @@ export function EventsPage() {
                     checked={form.repeatWeekly}
                     onChange={(e) => setForm((f) => ({ ...f, repeatWeekly: e.target.checked }))}
                   />
-                  <label htmlFor="repeatWeekly" className="label" style={{ marginBottom: 0 }}>
+                  <label htmlFor="repeatWeekly" className="label" style={{ marginBottom: 0, textTransform: 'none' }}>
                     Repeat weekly for the next {EVENT_RECURRENCE_WEEKS} weeks
                   </label>
                 </div>
@@ -421,11 +367,7 @@ export function EventsPage() {
                 <button className="btn btn-primary" type="submit" disabled={save.isPending}>
                   {save.isPending ? 'Saving…' : editingId ? 'Save Changes' : 'Create Event'}
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => setModalOpen(false)}
-                >
+                <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>
                   Cancel
                 </button>
               </div>

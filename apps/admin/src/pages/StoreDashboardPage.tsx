@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { Icon } from '../components/Icon';
 
 interface Analytics {
   totalCheckins: number;
@@ -34,12 +35,32 @@ function useOffers(storeId: string) {
   });
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value, icon }: { label: string; value: number; icon: string }) {
   return (
-    <div className="card" style={{ flex: 1, textAlign: 'center', padding: '20px 16px' }}>
-      <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--primary)' }}>{value}</div>
-      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>{label}</div>
+    <div className="stat-card">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <Icon name={icon} size={17} color="var(--primary)" />
+      </div>
+      <div className="stat-value">{value}</div>
+      <div className="stat-label">{label}</div>
     </div>
+  );
+}
+
+function QuickLink({ to, icon, label }: { to: string; icon: string; label: string }) {
+  return (
+    <Link to={to} style={{ textDecoration: 'none' }}>
+      <div
+        className="card card-hover"
+        style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px' }}
+      >
+        <div className="store-card-icon" style={{ width: 36, height: 36 }}>
+          <Icon name={icon} size={17} />
+        </div>
+        <div style={{ flex: 1, fontWeight: 700, fontSize: 14 }}>{label}</div>
+        <Icon name="chevronRight" size={16} color="var(--text-tertiary)" />
+      </div>
+    </Link>
   );
 }
 
@@ -65,137 +86,85 @@ export function StoreDashboardPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Link
-          to="/stores"
-          style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: 14 }}
-        >
-          ← My Stores
-        </Link>
-      </div>
+      <Link to="/stores" className="page-back">
+        <Icon name="chevronLeft" size={15} /> My Stores
+      </Link>
 
-      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20 }}>Dashboard</h1>
+      <div className="page-header">
+        <div className="page-title">Dashboard</div>
+      </div>
 
       {loadingAnalytics ? (
         <p style={{ color: 'var(--text-secondary)' }}>Loading analytics…</p>
       ) : analytics ? (
-        <div style={{ display: 'flex', gap: 12, marginBottom: 32, flexWrap: 'wrap' }}>
-          <StatCard label="Total Check-ins" value={analytics.totalCheckins} />
-          <StatCard label="This Week" value={analytics.checkinsThisWeek} />
-          <StatCard label="This Month" value={analytics.checkinsThisMonth} />
-          <StatCard label="Unique Visitors" value={analytics.uniqueVisitors} />
+        <div className="stats-grid">
+          <StatCard label="Total Check-ins" value={analytics.totalCheckins} icon="chart" />
+          <StatCard label="This Week" value={analytics.checkinsThisWeek} icon="clock" />
+          <StatCard label="This Month" value={analytics.checkinsThisMonth} icon="calendar" />
+          <StatCard label="Unique Visitors" value={analytics.uniqueVisitors} icon="users" />
         </div>
       ) : null}
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 16,
-        }}
-      >
-        <h2 style={{ fontSize: 17, fontWeight: 700 }}>Reward Offers</h2>
-        <Link
-          to={`/stores/${storeId}/offers/new`}
-          className="btn btn-primary"
-          style={{ textDecoration: 'none', fontSize: 13 }}
-        >
-          + New Offer
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 32 }}>
+        <QuickLink to={`/stores/${storeId}/events`} icon="calendar" label="Events" />
+        <QuickLink to={`/stores/${storeId}/broadcast`} icon="megaphone" label="Broadcast" />
+        <QuickLink to={`/stores/${storeId}/redeem`} icon="ticket" label="Redeem" />
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div className="card-title" style={{ marginBottom: 0, fontSize: 17 }}>
+          Reward Offers
+        </div>
+        <Link to={`/stores/${storeId}/offers/new`} className="btn btn-primary btn-sm">
+          <Icon name="plus" size={14} color="#fff" /> New Offer
         </Link>
       </div>
 
       {loadingOffers ? (
         <p style={{ color: 'var(--text-secondary)' }}>Loading offers…</p>
       ) : offers?.length === 0 ? (
-        <div
-          className="card"
-          style={{ textAlign: 'center', padding: '36px 24px', color: 'var(--text-secondary)' }}
-        >
-          <div style={{ fontSize: 36, marginBottom: 8 }}>🎁</div>
-          <p style={{ marginBottom: 16 }}>
+        <div className="card" style={{ textAlign: 'center', padding: '40px 24px' }}>
+          <div className="empty-state-icon">
+            <Icon name="gift" size={22} color="var(--text-tertiary)" />
+          </div>
+          <p style={{ marginBottom: 16, color: 'var(--text-secondary)' }}>
             No offers yet. Create one to start rewarding customers.
           </p>
-          <Link
-            to={`/stores/${storeId}/offers/new`}
-            className="btn btn-primary"
-            style={{ textDecoration: 'none' }}
-          >
+          <Link to={`/stores/${storeId}/offers/new`} className="btn btn-primary">
             Create first offer
           </Link>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {offers?.map((offer) => (
-            <div
-              key={offer.id}
-              className="card"
-              style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}
-            >
+            <div key={offer.id} className="card" style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 0 }}>
+              <div className="store-card-icon" style={{ marginTop: 2 }}>
+                <Icon name="gift" size={19} />
+              </div>
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontWeight: 600 }}>{offer.title}</span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      padding: '2px 7px',
-                      borderRadius: 12,
-                      background:
-                        offer.type === 'FIRST_VISIT' ? 'var(--success-bg)' : 'var(--primary-bg)',
-                      color: offer.type === 'FIRST_VISIT' ? 'var(--success)' : 'var(--primary)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {offer.type === 'FIRST_VISIT'
-                      ? 'First Visit'
-                      : `Streak ×${offer.streakRequired}`}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 700 }}>{offer.title}</span>
+                  <span className={`badge ${offer.type === 'FIRST_VISIT' ? 'badge-active' : 'badge-accent'}`}>
+                    {offer.type === 'FIRST_VISIT' ? 'First Visit' : `Streak ×${offer.streakRequired}`}
                   </span>
-                  {!offer.active && (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        padding: '2px 7px',
-                        borderRadius: 12,
-                        background: 'var(--muted-bg)',
-                        color: 'var(--text-tertiary)',
-                      }}
-                    >
-                      Inactive
-                    </span>
-                  )}
+                  {!offer.active && <span className="badge badge-inactive">Inactive</span>}
                 </div>
                 {offer.description && (
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
-                    {offer.description}
-                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>{offer.description}</div>
                 )}
                 <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
-                  Code:{' '}
-                  <code
-                    style={{
-                      background: 'var(--muted-bg)',
-                      padding: '1px 5px',
-                      borderRadius: 4,
-                      letterSpacing: 1,
-                    }}
-                  >
-                    {offer.redemptionCode}
-                  </code>
+                  Code: <code style={{ background: 'var(--bg-elevated)', padding: '2px 6px', borderRadius: 4, letterSpacing: 1 }}>{offer.redemptionCode}</code>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 <button
-                  className="btn btn-sm"
+                  className="btn btn-sm btn-ghost"
                   onClick={() => toggleOffer.mutate({ offerId: offer.id, active: !offer.active })}
                   disabled={toggleOffer.isPending}
                 >
                   {offer.active ? 'Deactivate' : 'Activate'}
                 </button>
-                <Link
-                  to={`/stores/${storeId}/offers/${offer.id}/edit`}
-                  className="btn btn-sm"
-                  style={{ textDecoration: 'none' }}
-                >
+                <Link to={`/stores/${storeId}/offers/${offer.id}/edit`} className="btn btn-sm btn-outline">
                   Edit
                 </Link>
                 <button

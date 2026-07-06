@@ -2,6 +2,7 @@ import { NavLink, Outlet, useMatch } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { Icon } from './Icon';
 
 export function Layout() {
   const { logout, role } = useAuth();
@@ -39,129 +40,108 @@ export function Layout() {
   return (
     <div className="layout">
       <nav className="sidebar">
-        <div className="sidebar-brand">🗺️ ManaMap Partner</div>
-        <NavLink
-          to="/stores"
-          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-        >
-          My Stores
+        <div className="sidebar-brand">
+          <div className="sidebar-brand-mark" />
+          <div>
+            <div className="sidebar-brand-text">manamap</div>
+            <div className="sidebar-brand-sub">Partner Portal</div>
+          </div>
+        </div>
+
+        <NavLink to="/stores" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+          <Icon name="store" size={17} /> My Stores
         </NavLink>
-        <NavLink
-          to="/stores/claim"
-          className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-        >
-          + Claim Store
+        <NavLink to="/stores/claim" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+          <Icon name="plus" size={17} /> Claim Store
         </NavLink>
+
         {inStore && (
           <>
+            <div className="sidebar-store-ctx">
+              <div className="store-card-icon" style={{ width: 30, height: 30 }}>
+                <Icon name="store" size={14} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div className="sidebar-store-ctx-label">Current store</div>
+                <div className="sidebar-store-ctx-name">Dashboard</div>
+              </div>
+            </div>
+            <NavLink
+              to={`/stores/${currentStoreId}`}
+              end
+              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+            >
+              <Icon name="chart" size={17} /> Dashboard
+            </NavLink>
             <NavLink
               to={`/stores/${currentStoreId}/events`}
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
             >
-              📅 Events
+              <Icon name="calendar" size={17} /> Events
             </NavLink>
             <NavLink
               to={`/stores/${currentStoreId}/broadcast`}
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
             >
-              📢 Broadcast
+              <Icon name="megaphone" size={17} /> Broadcast
             </NavLink>
             <NavLink
               to={`/stores/${currentStoreId}/redeem`}
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
             >
-              🎟 Redeem
+              <Icon name="ticket" size={17} /> Redeem
             </NavLink>
           </>
         )}
+
         {isAdmin && (
           <>
-            <div
-              style={{
-                margin: '16px 8px 8px',
-                fontSize: 11,
-                fontWeight: 700,
-                color: 'var(--text-tertiary)',
-                textTransform: 'uppercase',
-                letterSpacing: 1,
-              }}
-            >
-              Admin
-            </div>
-            <NavLink
-              to="/moderation"
-              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-            >
-              Moderation
+            <div className="sidebar-section-label">Admin</div>
+            <NavLink to="/moderation" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+              <Icon name="shield" size={17} />
+              <span style={{ flex: 1 }}>Moderation</span>
             </NavLink>
             <NavLink
               to="/stores/submissions"
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+              style={{ display: 'flex', alignItems: 'center' }}
             >
-              <span>Store Submissions</span>
-              {submissionCount > 0 && (
-                <span
-                  style={{
-                    background: 'var(--accent)',
-                    color: 'white',
-                    borderRadius: 'var(--radius-full)',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: '1px 7px',
-                    minWidth: 20,
-                    textAlign: 'center',
-                  }}
-                >
-                  {submissionCount}
-                </span>
-              )}
+              <Icon name="inbox" size={17} />
+              <span style={{ flex: 1 }}>Store Submissions</span>
+              {submissionCount > 0 && <span className="sidebar-link-badge">{submissionCount}</span>}
             </NavLink>
             <NavLink
               to="/stores/claims"
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+              style={{ display: 'flex', alignItems: 'center' }}
             >
-              <span>Store Claims</span>
-              {claimCount > 0 && (
-                <span
-                  style={{
-                    background: 'var(--accent)',
-                    color: 'white',
-                    borderRadius: 'var(--radius-full)',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: '1px 7px',
-                    minWidth: 20,
-                    textAlign: 'center',
-                  }}
-                >
-                  {claimCount}
-                </span>
-              )}
+              <Icon name="checkCircle" size={17} />
+              <span style={{ flex: 1 }}>Store Claims</span>
+              {claimCount > 0 && <span className="sidebar-link-badge">{claimCount}</span>}
             </NavLink>
-            <NavLink
-              to="/admin/stores"
-              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-            >
-              All Stores
+            <NavLink to="/admin/stores" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+              <Icon name="hash" size={17} /> All Stores
             </NavLink>
-            <NavLink
-              to="/admin/users"
-              className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
-            >
-              Users
+            <NavLink to="/admin/users" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+              <Icon name="users" size={17} /> Users
             </NavLink>
           </>
         )}
+
         <div style={{ flex: 1 }} />
-        <button
-          className="sidebar-link"
-          style={{ textAlign: 'left', width: '100%', color: 'var(--text-tertiary)' }}
-          onClick={logout}
-        >
-          Sign out
-        </button>
+        <div className="sidebar-foot">
+          <div className="sidebar-foot-avatar">
+            <Icon name="store" size={14} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+              {isAdmin ? 'Admin' : 'Partner'}
+            </div>
+            <button className="sidebar-signout" onClick={logout}>
+              Sign out
+            </button>
+          </div>
+        </div>
       </nav>
       <main className="main-content">
         <Outlet />

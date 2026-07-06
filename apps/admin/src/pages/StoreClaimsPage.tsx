@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
+import { Icon } from '../components/Icon';
 
 interface PendingClaim {
   id: string;
@@ -190,13 +191,8 @@ function DetailPanel({ claim, onRemove }: { claim: PendingClaim; onRemove: () =>
 
         {!rejectExpanded ? (
           <div className="mod-actions">
-            <button
-              className="btn btn-sm"
-              style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0' }}
-              onClick={() => approve.mutate()}
-              disabled={isPending}
-            >
-              ✓ Approve
+            <button className="btn btn-success btn-sm" onClick={() => approve.mutate()} disabled={isPending}>
+              <Icon name="check" size={14} /> Approve
             </button>
             <button
               className="btn btn-outline btn-sm"
@@ -204,7 +200,7 @@ function DetailPanel({ claim, onRemove }: { claim: PendingClaim; onRemove: () =>
               onClick={() => setRejectExpanded(true)}
               disabled={isPending}
             >
-              ✕ Reject
+              <Icon name="x" size={14} /> Reject
             </button>
           </div>
         ) : (
@@ -269,10 +265,14 @@ export function StoreClaimsPage() {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Store Claims</div>
-        <div className="page-sub">
-          Review pending ownership claims, or generate a one-time code to fast-track a verified
-          owner.
+        <div>
+          <div className="page-title">
+            <Icon name="checkCircle" size={22} color="var(--primary)" /> Store Claims
+          </div>
+          <div className="page-sub">
+            Review pending ownership claims, or generate a one-time code to fast-track a verified
+            owner.
+          </div>
         </div>
       </div>
 
@@ -292,12 +292,7 @@ export function StoreClaimsPage() {
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>
               Pending
             </span>
-            <span
-              className="badge"
-              style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}
-            >
-              {claims.length}
-            </span>
+            <span className="badge badge-accent">{claims.length}</span>
           </div>
 
           <div className="mod-queue-list">
@@ -308,7 +303,9 @@ export function StoreClaimsPage() {
             )}
             {!isLoading && claims.length === 0 && (
               <div className="empty-state">
-                <div className="empty-state-icon">🏷️</div>
+                <div className="empty-state-icon">
+                  <Icon name="checkCircle" size={20} color="var(--text-tertiary)" />
+                </div>
                 <div className="empty-state-text">No pending claims</div>
               </div>
             )}
@@ -335,7 +332,9 @@ export function StoreClaimsPage() {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <div className="empty-state">
-              <div className="empty-state-icon">🏷️</div>
+              <div className="empty-state-icon">
+                <Icon name="checkCircle" size={20} color="var(--text-tertiary)" />
+              </div>
               <div className="empty-state-text">Select a claim to review</div>
             </div>
           </div>

@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { ModerationReport, ModerationDetail, ModerationStats } from '@manamap/shared';
+import { Icon } from '../components/Icon';
 
 const MANA_COLORS: Record<string, string> = {
-  W: '#f9fafb',
-  U: '#3b82f6',
-  B: '#1f2937',
-  R: '#ef4444',
-  G: '#22c55e',
+  W: '#E7D9A6',
+  U: '#5B9EE8',
+  B: '#9B7BE0',
+  R: '#EC6B57',
+  G: '#5FB97E',
 };
 
 type StatusFilter = 'OPEN' | 'REVIEWED' | 'ACTIONED' | 'ALL';
@@ -17,11 +18,7 @@ function AvatarPill({ colors }: { colors: string[] }) {
   return (
     <span className="avatar-pill">
       {colors.slice(0, 5).map((c, i) => (
-        <span
-          key={i}
-          className="avatar-dot"
-          style={{ background: MANA_COLORS[c] ?? '#aaa', border: '1px solid #d1d5db' }}
-        />
+        <span key={i} className="avatar-dot" style={{ background: MANA_COLORS[c] ?? '#7E7492', border: '1px solid rgba(255,255,255,0.15)' }} />
       ))}
     </span>
   );
@@ -50,12 +47,7 @@ function ModerationStatusBadge({ status }: { status: string }) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function StatsRow({ stats }: { stats: ModerationStats }) {
@@ -66,34 +58,22 @@ function StatsRow({ stats }: { stats: ModerationStats }) {
         <div className="mod-stat-lbl">Open</div>
       </div>
       <div className="mod-stat">
-        <div className="mod-stat-val" style={{ color: '#b91c1c' }}>
-          {stats.repeatOffenders}
-        </div>
+        <div className="mod-stat-val" style={{ color: 'var(--danger)' }}>{stats.repeatOffenders}</div>
         <div className="mod-stat-lbl">Repeat</div>
       </div>
       <div className="mod-stat">
-        <div className="mod-stat-val" style={{ color: '#3730a3' }}>
-          {stats.reviewed}
-        </div>
+        <div className="mod-stat-val" style={{ color: 'var(--info)' }}>{stats.reviewed}</div>
         <div className="mod-stat-lbl">Reviewed</div>
       </div>
       <div className="mod-stat">
-        <div className="mod-stat-val" style={{ color: '#15803d' }}>
-          {stats.actionedAllTime}
-        </div>
+        <div className="mod-stat-val" style={{ color: 'var(--success)' }}>{stats.actionedAllTime}</div>
         <div className="mod-stat-lbl">Actioned</div>
       </div>
     </div>
   );
 }
 
-function DetailPanel({
-  reportId,
-  onResolved,
-}: {
-  reportId: string;
-  onResolved: (nextId: string | null) => void;
-}) {
+function DetailPanel({ reportId, onResolved }: { reportId: string; onResolved: (nextId: string | null) => void }) {
   const qc = useQueryClient();
   const [note, setNote] = useState('');
   const [toast, setToast] = useState<string | null>(null);
@@ -132,15 +112,7 @@ function DetailPanel({
 
   if (isLoading || !detail) {
     return (
-      <div
-        className="mod-detail"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--text-tertiary)',
-        }}
-      >
+      <div className="mod-detail" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
         Loading…
       </div>
     );
@@ -154,28 +126,12 @@ function DetailPanel({
       {toast && <div className="toast">{toast}</div>}
 
       <div className="mod-detail-card">
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: 12,
-          }}
-        >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>
               {detail.reported.displayName}
               {detail.reported.handle && (
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 400,
-                    color: 'var(--text-tertiary)',
-                    marginLeft: 8,
-                  }}
-                >
-                  @{detail.reported.handle}
-                </span>
+                <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-tertiary)', marginLeft: 8 }}>@{detail.reported.handle}</span>
               )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -183,7 +139,7 @@ function DetailPanel({
               <ModerationStatusBadge status={detail.reported.moderationStatus} />
               {isRepeat && (
                 <span className="repeat-flag">
-                  ⚠ Repeat Offender ({detail.reported.priorReports} reports)
+                  <Icon name="alert" size={11} /> Repeat Offender ({detail.reported.priorReports} reports)
                 </span>
               )}
             </div>
@@ -191,12 +147,8 @@ function DetailPanel({
           <StatusBadge status={detail.status} />
         </div>
         <div style={{ display: 'flex', gap: 16, fontSize: 13, color: 'var(--text-secondary)' }}>
-          <span>
-            Prior reports: <strong>{detail.reported.priorReports}</strong>
-          </span>
-          <span>
-            Prior actions: <strong>{detail.reported.priorActions}</strong>
-          </span>
+          <span>Prior reports: <strong style={{ color: 'var(--text-primary)' }}>{detail.reported.priorReports}</strong></span>
+          <span>Prior actions: <strong style={{ color: 'var(--text-primary)' }}>{detail.reported.priorActions}</strong></span>
         </div>
       </div>
 
@@ -204,26 +156,15 @@ function DetailPanel({
         <div className="mod-detail-title">Report</div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
           <ReasonBadge reason={detail.reason} />
-          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
-            {formatDate(detail.createdAt)}
-          </span>
+          <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{formatDate(detail.createdAt)}</span>
         </div>
         {detail.context && (
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
-            <strong>Context:</strong> {detail.context}
+            <strong style={{ color: 'var(--text-primary)' }}>Context:</strong> {detail.context}
           </div>
         )}
         {detail.detail && (
-          <div
-            style={{
-              background: 'var(--paper)',
-              borderRadius: 'var(--radius-md)',
-              padding: '12px 14px',
-              fontSize: 14,
-              fontStyle: 'italic',
-              color: 'var(--text-primary)',
-            }}
-          >
+          <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', padding: '12px 14px', fontSize: 14, fontStyle: 'italic', color: 'var(--text-primary)' }}>
             "{detail.detail}"
           </div>
         )}
@@ -232,19 +173,17 @@ function DetailPanel({
       {detail.signals.length > 0 && (
         <div className="mod-detail-card">
           <div className="mod-detail-title">Signals</div>
-          {detail.signals.map(
-            (s: { type: string; label: string; createdAt: string }, i: number) => (
-              <div key={i} className="mod-signal">
-                <span style={{ fontSize: 16 }}>{s.type === 'open_report' ? '🚨' : '⚡'}</span>
-                <div>
-                  <div style={{ fontWeight: 500 }}>{s.label}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-                    {formatDate(s.createdAt)}
-                  </div>
-                </div>
+          {detail.signals.map((s: { type: string; label: string; createdAt: string }, i: number) => (
+            <div key={i} className="mod-signal">
+              <span className="mod-signal-icon" style={{ background: s.type === 'open_report' ? 'var(--danger-bg)' : 'var(--warning-bg)' }}>
+                <Icon name={s.type === 'open_report' ? 'alert' : 'zap'} size={14} color={s.type === 'open_report' ? 'var(--danger)' : 'var(--warning)'} />
+              </span>
+              <div>
+                <div style={{ fontWeight: 600 }}>{s.label}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{formatDate(s.createdAt)}</div>
               </div>
-            ),
-          )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -254,7 +193,7 @@ function DetailPanel({
             Resolved {detail.resolvedAt ? formatDate(detail.resolvedAt) : ''}
             {detail.resolutionNote && (
               <div style={{ marginTop: 6 }}>
-                <strong>Note:</strong> {detail.resolutionNote}
+                <strong style={{ color: 'var(--text-primary)' }}>Note:</strong> {detail.resolutionNote}
               </div>
             )}
           </div>
@@ -274,34 +213,16 @@ function DetailPanel({
             />
           </div>
           <div className="mod-actions">
-            <button
-              className="btn btn-outline btn-sm"
-              onClick={() => act('DISMISS')}
-              disabled={resolve.isPending}
-            >
+            <button className="btn btn-outline btn-sm" onClick={() => act('DISMISS')} disabled={resolve.isPending}>
               Dismiss
             </button>
-            <button
-              className="btn btn-sm"
-              style={{ background: '#fef3c7', color: '#b45309' }}
-              onClick={() => act('WARN')}
-              disabled={resolve.isPending}
-            >
+            <button className="btn btn-warn btn-sm" onClick={() => act('WARN')} disabled={resolve.isPending}>
               Warn
             </button>
-            <button
-              className="btn btn-sm"
-              style={{ background: '#e0e7ff', color: '#3730a3' }}
-              onClick={() => act('SUSPEND', { suspendDays: 7 })}
-              disabled={resolve.isPending}
-            >
+            <button className="btn btn-info btn-sm" onClick={() => act('SUSPEND', { suspendDays: 7 })} disabled={resolve.isPending}>
               Suspend 7d
             </button>
-            <button
-              className="btn btn-danger btn-sm"
-              onClick={() => act('BAN')}
-              disabled={resolve.isPending}
-            >
+            <button className="btn btn-danger btn-sm" onClick={() => act('BAN')} disabled={resolve.isPending}>
               Ban
             </button>
           </div>
@@ -353,12 +274,18 @@ export function ModerationPage() {
 
   return (
     <div>
-      <div className="page-header">
-        <div className="page-title">Moderation Queue</div>
-        <div className="page-sub">Review player reports and take enforcement action.</div>
+      <div className="mod-header-pad">
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <div>
+            <div className="page-title">
+              <Icon name="shield" size={22} color="var(--primary)" /> Moderation Queue
+            </div>
+            <div className="page-sub">Review player reports and take enforcement action.</div>
+          </div>
+        </div>
       </div>
 
-      <div className="mod-layout">
+      <div className="mod-layout" style={{ marginTop: 24 }}>
         <div className="mod-queue">
           {stats && <StatsRow stats={stats} />}
           <div className="mod-filter-tabs">
@@ -376,36 +303,26 @@ export function ModerationPage() {
             ))}
           </div>
           <div className="mod-queue-list">
-            {isLoading && (
-              <div style={{ padding: 24, color: 'var(--text-tertiary)', fontSize: 14 }}>
-                Loading…
-              </div>
-            )}
+            {isLoading && <div style={{ padding: 24, color: 'var(--text-tertiary)', fontSize: 14 }}>Loading…</div>}
             {!isLoading && reports.length === 0 && (
               <div className="empty-state">
-                <div className="empty-state-icon">✅</div>
+                <div className="empty-state-icon">
+                  <Icon name="checkCircle" size={20} color="var(--text-tertiary)" />
+                </div>
                 <div className="empty-state-text">No reports here</div>
               </div>
             )}
             {reports.map((r) => {
               const isRepeat = r.reported.priorReports >= 3;
               return (
-                <div
-                  key={r.id}
-                  className={`mod-queue-item${selectedId === r.id ? ' selected' : ''}`}
-                  onClick={() => setSelectedId(r.id)}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                    }}
-                  >
+                <div key={r.id} className={`mod-queue-item${selectedId === r.id ? ' selected' : ''}`} onClick={() => setSelectedId(r.id)}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div className="mod-queue-item-name">
                       {r.reported.displayName}
                       {isRepeat && (
-                        <span style={{ marginLeft: 6, fontSize: 11, color: '#b91c1c' }}>⚠</span>
+                        <span style={{ marginLeft: 6, color: 'var(--danger)' }}>
+                          <Icon name="alert" size={11} />
+                        </span>
                       )}
                     </div>
                     <ReasonBadge reason={r.reason} />
@@ -416,8 +333,7 @@ export function ModerationPage() {
                   </div>
                   {r.reported.priorReports > 0 && (
                     <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 3 }}>
-                      {r.reported.priorReports} prior report
-                      {r.reported.priorReports !== 1 ? 's' : ''}
+                      {r.reported.priorReports} prior report{r.reported.priorReports !== 1 ? 's' : ''}
                     </div>
                   )}
                 </div>
@@ -429,12 +345,11 @@ export function ModerationPage() {
         {selectedId ? (
           <DetailPanel key={selectedId} reportId={selectedId} onResolved={handleResolved} />
         ) : (
-          <div
-            className="mod-detail"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
+          <div className="mod-detail" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="empty-state">
-              <div className="empty-state-icon">🛡️</div>
+              <div className="empty-state-icon">
+                <Icon name="shield" size={20} color="var(--text-tertiary)" />
+              </div>
               <div className="empty-state-text">Select a report to review</div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { Icon } from '../components/Icon';
 
 interface Store {
   id: string;
@@ -24,48 +25,43 @@ export function StoresPage() {
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 24,
-        }}
-      >
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>My Stores</h1>
-        <Link to="/stores/claim" className="btn btn-primary" style={{ textDecoration: 'none' }}>
-          + Claim Store
+      <div className="page-header">
+        <div>
+          <div className="page-title">My Stores</div>
+          <div className="page-sub">Manage the stores you've claimed on manamap.</div>
+        </div>
+        <Link to="/stores/claim" className="btn btn-primary">
+          <Icon name="plus" size={16} color="#fff" /> Claim Store
         </Link>
       </div>
 
       {stores?.length === 0 ? (
-        <div
-          className="card"
-          style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-secondary)' }}
-        >
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🏪</div>
-          <p style={{ marginBottom: 16 }}>You haven't claimed any stores yet.</p>
-          <Link to="/stores/claim" className="btn btn-primary" style={{ textDecoration: 'none' }}>
+        <div className="card" style={{ textAlign: 'center', padding: '56px 24px' }}>
+          <div className="empty-state-icon">
+            <Icon name="store" size={24} color="var(--text-tertiary)" />
+          </div>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 18 }}>
+            You haven't claimed any stores yet.
+          </p>
+          <Link to="/stores/claim" className="btn btn-primary">
             Claim your first store
           </Link>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="store-grid">
           {stores?.map((store) => (
             <Link key={store.id} to={`/stores/${store.id}`} style={{ textDecoration: 'none' }}>
-              <div
-                className="card card-hover"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-              >
-                <div>
-                  <div style={{ fontWeight: 600, marginBottom: 2 }}>{store.name}</div>
+              <div className="card card-hover" style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 0 }}>
+                <div className="store-card-icon">
+                  <Icon name="store" size={19} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="store-name">{store.name}</div>
                   {(store.city || store.state) && (
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                      {[store.city, store.state].filter(Boolean).join(', ')}
-                    </div>
+                    <div className="store-location">{[store.city, store.state].filter(Boolean).join(', ')}</div>
                   )}
                 </div>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: 18 }}>›</span>
+                <Icon name="chevronRight" size={17} color="var(--text-tertiary)" />
               </div>
             </Link>
           ))}

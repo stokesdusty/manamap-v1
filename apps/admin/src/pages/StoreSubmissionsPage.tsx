@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
+import { Icon } from '../components/Icon';
 
 interface StoreSubmission {
   id: string;
@@ -28,16 +29,9 @@ function relativeDate(iso: string): string {
 }
 
 function ConfirmBadge({ count }: { count: number }) {
-  let style: React.CSSProperties;
-  if (count >= 3) {
-    style = { background: '#dcfce7', color: '#15803d' };
-  } else if (count > 0) {
-    style = { background: '#fef3c7', color: '#b45309' };
-  } else {
-    style = { background: '#f4f4f5', color: '#a1a1aa' };
-  }
+  const cls = count >= 3 ? 'badge-active' : count > 0 ? 'badge-open' : 'badge-inactive';
   return (
-    <span className="badge" style={style}>
+    <span className={`badge ${cls}`}>
       {count} {count === 1 ? 'confirmation' : 'confirmations'}
     </span>
   );
@@ -146,8 +140,8 @@ function DetailPanel({
           </strong>{' '}
           confirmation{submission.confirmationCount !== 1 ? 's' : ''}
           {submission.proximityConfirmationCount > 0 && (
-            <span style={{ marginLeft: 6, color: 'var(--text-tertiary)' }}>
-              ({submission.proximityConfirmationCount} with proximity 📍)
+            <span style={{ marginLeft: 6, color: 'var(--text-tertiary)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              (<Icon name="pin" size={11} color="var(--text-tertiary)" /> {submission.proximityConfirmationCount} with proximity)
             </span>
           )}
         </div>
@@ -170,13 +164,8 @@ function DetailPanel({
 
         {!rejectExpanded ? (
           <div className="mod-actions">
-            <button
-              className="btn btn-sm"
-              style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0' }}
-              onClick={() => approve.mutate()}
-              disabled={isPending}
-            >
-              ✓ Approve
+            <button className="btn btn-success btn-sm" onClick={() => approve.mutate()} disabled={isPending}>
+              <Icon name="check" size={14} /> Approve
             </button>
             <button
               className="btn btn-outline btn-sm"
@@ -184,7 +173,7 @@ function DetailPanel({
               onClick={() => setRejectExpanded(true)}
               disabled={isPending}
             >
-              ✕ Reject
+              <Icon name="x" size={14} /> Reject
             </button>
           </div>
         ) : (
@@ -250,9 +239,13 @@ export function StoreSubmissionsPage() {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Store Submissions</div>
-        <div className="page-sub">
-          Review crowdsourced store suggestions and approve or reject them.
+        <div>
+          <div className="page-title">
+            <Icon name="inbox" size={22} color="var(--primary)" /> Store Submissions
+          </div>
+          <div className="page-sub">
+            Review crowdsourced store suggestions and approve or reject them.
+          </div>
         </div>
       </div>
 
@@ -270,12 +263,7 @@ export function StoreSubmissionsPage() {
             <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>
               Pending
             </span>
-            <span
-              className="badge"
-              style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}
-            >
-              {sorted.length}
-            </span>
+            <span className="badge badge-accent">{sorted.length}</span>
           </div>
 
           <div className="mod-queue-list">
@@ -286,7 +274,9 @@ export function StoreSubmissionsPage() {
             )}
             {!isLoading && sorted.length === 0 && (
               <div className="empty-state">
-                <div className="empty-state-icon">🏪</div>
+                <div className="empty-state-icon">
+                  <Icon name="store" size={20} color="var(--text-tertiary)" />
+                </div>
                 <div className="empty-state-text">No pending submissions</div>
               </div>
             )}
@@ -313,8 +303,8 @@ export function StoreSubmissionsPage() {
                 <div className="mod-queue-item-meta">
                   {[s.city, s.state].filter(Boolean).join(', ') || '—'}
                   {s.proximityConfirmationCount > 0 && (
-                    <span style={{ marginLeft: 6 }} title="Has proximity confirmation">
-                      📍
+                    <span style={{ marginLeft: 6, display: 'inline-flex', verticalAlign: 'middle' }} title="Has proximity confirmation">
+                      <Icon name="pin" size={11} color="var(--text-tertiary)" />
                     </span>
                   )}
                 </div>
@@ -331,7 +321,9 @@ export function StoreSubmissionsPage() {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <div className="empty-state">
-              <div className="empty-state-icon">🏪</div>
+              <div className="empty-state-icon">
+                <Icon name="store" size={20} color="var(--text-tertiary)" />
+              </div>
               <div className="empty-state-text">Select a submission to review</div>
             </div>
           </div>

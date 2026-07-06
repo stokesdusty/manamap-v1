@@ -302,7 +302,31 @@
       "Bash(taskkill //F //PID 10128)",
       "Bash(xargs grep -ln \"defaultOptIn\")",
       "Bash(pnpm --filter @manamap/mobile lint)",
-      "Bash(xargs grep -l \"Route\")"
+      "Bash(xargs grep -l \"Route\")",
+      "Bash(pnpm --filter @manamap/admin exec tsc --noEmit)",
+      "Bash(npm run *)",
+      "Bash(sed -E 's/Icon name=\"\\([a-zA-Z]+\\)\"/\\\\1/')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/health)",
+      "Bash(docker info *)",
+      "Bash(pnpm --filter @manamap/api dev)",
+      "Bash(disown)",
+      "Bash(echo eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3ODllYzczMi1hNzYxLTRmYzgtOWRjYy03ZjM0ZTQ3ODc3MTIiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3ODMwNTgwNjMsImV4cCI6MTc4MzA1ODk2M30.uiRJgSb3smZgXg2IRopv8ZRsE0_xHNpLgy792V0Ldx4)",
+      "Bash(export TOKEN)",
+      "Bash(curl -s http://localhost:3000/api/v1/partner/stores -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3ODllYzczMi1hNzYxLTRmYzgtOWRjYy03ZjM0ZTQ3ODc3MTIiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3ODMwNTgwNjMsImV4cCI6MTc4MzA1ODk2M30.uiRJgSb3smZgXg2IRopv8ZRsE0_xHNpLgy792V0Ldx4')",
+      "Bash(pnpm --filter @manamap/api exec prisma migrate status)",
+      "Bash(pnpm --filter @manamap/api db:migrate)",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id,StartTime,Path\")",
+      "Bash(powershell -Command \"Stop-Process -Id 31968,38940 -Force -ErrorAction SilentlyContinue\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/api/health)",
+      "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id,StartTime\")",
+      "Bash(curl -s http://localhost:3000/api/v1/partner/stores -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(curl -s http://localhost:3000/api/v1/admin/moderation/stats -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(curl -s http://localhost:3000/api/v1/admin/moderation/reports?status=OPEN -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(curl -s http://localhost:3000/api/v1/admin/moderation/reports/__TRACKED_VAR__ -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(curl -s -X POST http://localhost:3000/api/v1/admin/moderation/reports/__TRACKED_VAR__/resolve -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"action\":\"WARN\"}')",
+      "Bash(grep -noE '#[0-9a-fA-F]{3,6}' AdminUsersPage.tsx AdminStoresPage.tsx StoreSubmissionsPage.tsx StoreClaimsPage.tsx)",
+      "Bash(pnpm --filter @manamap/admin exec tsc --noEmit -p apps/admin)",
+      "Bash(pnpm --filter @manamap/admin build)"
     ]
   }
 }

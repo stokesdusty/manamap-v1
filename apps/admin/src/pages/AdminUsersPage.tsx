@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { AdminUserDetail, AdminUserSummary } from '@manamap/shared';
+import { Icon } from '../components/Icon';
 
 const MANA_COLORS: Record<string, string> = {
-  W: '#f9fafb',
-  U: '#3b82f6',
-  B: '#1f2937',
-  R: '#ef4444',
-  G: '#22c55e',
+  W: '#E7D9A6',
+  U: '#5B9EE8',
+  B: '#9B7BE0',
+  R: '#EC6B57',
+  G: '#5FB97E',
 };
 
 function AvatarPill({ colors }: { colors: string[] }) {
@@ -18,7 +19,7 @@ function AvatarPill({ colors }: { colors: string[] }) {
         <span
           key={i}
           className="avatar-dot"
-          style={{ background: MANA_COLORS[c] ?? '#aaa', border: '1px solid #d1d5db' }}
+          style={{ background: MANA_COLORS[c] ?? '#7E7492', border: '1px solid rgba(255,255,255,0.15)' }}
         />
       ))}
     </span>
@@ -120,14 +121,8 @@ function DetailPanel({ userId }: { userId: string }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <AvatarPill colors={detail.avatarColors} />
               <StatusBadge status={detail.moderationStatus} />
-              <span className="badge" style={{ background: 'var(--border-light)', color: 'var(--text-secondary)' }}>
-                {detail.role}
-              </span>
-              {detail.isBot && (
-                <span className="badge" style={{ background: 'var(--border-light)', color: 'var(--text-tertiary)' }}>
-                  BOT
-                </span>
-              )}
+              <span className="badge badge-other">{detail.role}</span>
+              {detail.isBot && <span className="badge badge-inactive">BOT</span>}
             </div>
           </div>
         </div>
@@ -194,16 +189,14 @@ function DetailPanel({ userId }: { userId: string }) {
         </div>
         <div className="mod-actions">
           <button
-            className="btn btn-sm"
-            style={{ background: '#fef3c7', color: '#b45309' }}
+            className="btn btn-warn btn-sm"
             onClick={() => act.mutate({ action: 'WARN', ...(note ? { note } : {}) })}
             disabled={act.isPending}
           >
             Warn
           </button>
           <button
-            className="btn btn-sm"
-            style={{ background: '#e0e7ff', color: '#3730a3' }}
+            className="btn btn-info btn-sm"
             onClick={() => act.mutate({ action: 'SUSPEND', suspendDays: 7, ...(note ? { note } : {}) })}
             disabled={act.isPending}
           >
@@ -231,7 +224,9 @@ function DetailPanel({ userId }: { userId: string }) {
           <div className="mod-detail-title">Reports against this user</div>
           {detail.reportsAgainst.map((r) => (
             <div key={r.id} className="mod-signal">
-              <span style={{ fontSize: 16 }}>🚨</span>
+              <span className="mod-signal-icon" style={{ background: 'var(--danger-bg)' }}>
+                <Icon name="alert" size={14} color="var(--danger)" />
+              </span>
               <div>
                 <div style={{ fontWeight: 500 }}>
                   {r.reason} — {r.status}
@@ -248,7 +243,9 @@ function DetailPanel({ userId }: { userId: string }) {
           <div className="mod-detail-title">Moderation history</div>
           {detail.moderationHistory.map((a) => (
             <div key={a.id} className="mod-signal">
-              <span style={{ fontSize: 16 }}>⚡</span>
+              <span className="mod-signal-icon" style={{ background: 'var(--warning-bg)' }}>
+                <Icon name="zap" size={14} color="var(--warning)" />
+              </span>
               <div>
                 <div style={{ fontWeight: 500 }}>
                   {a.action}
@@ -266,7 +263,9 @@ function DetailPanel({ userId }: { userId: string }) {
           <div className="mod-detail-title">Owns stores</div>
           {detail.storeOwnerships.map((o) => (
             <div key={o.storeId} className="mod-signal">
-              <span style={{ fontSize: 16 }}>🏪</span>
+              <span className="mod-signal-icon" style={{ background: 'var(--primary-bg)' }}>
+                <Icon name="store" size={14} color="var(--primary)" />
+              </span>
               <div style={{ fontWeight: 500 }}>{o.storeName}</div>
             </div>
           ))}
@@ -291,8 +290,12 @@ export function AdminUsersPage() {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Users</div>
-        <div className="page-sub">Look up any player and take direct action on their account.</div>
+        <div>
+          <div className="page-title">
+            <Icon name="users" size={22} color="var(--primary)" /> Users
+          </div>
+          <div className="page-sub">Look up any player and take direct action on their account.</div>
+        </div>
       </div>
 
       <div className="mod-layout">
@@ -311,7 +314,9 @@ export function AdminUsersPage() {
             )}
             {!isLoading && users.length === 0 && (
               <div className="empty-state">
-                <div className="empty-state-icon">🔍</div>
+                <div className="empty-state-icon">
+                  <Icon name="search" size={20} color="var(--text-tertiary)" />
+                </div>
                 <div className="empty-state-text">No users found</div>
               </div>
             )}
@@ -337,11 +342,13 @@ export function AdminUsersPage() {
         {selectedId ? (
           <DetailPanel key={selectedId} userId={selectedId} />
         ) : (
-          <div
-            className="mod-detail"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}
-          >
-            Select a user to view details
+          <div className="mod-detail" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <Icon name="users" size={20} color="var(--text-tertiary)" />
+              </div>
+              <div className="empty-state-text">Select a user to view details</div>
+            </div>
           </div>
         )}
       </div>

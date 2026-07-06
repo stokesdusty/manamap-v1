@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import type { AdminStoreDetail, AdminStoreSummary } from '@manamap/shared';
+import { Icon } from '../components/Icon';
 
 function StatusBadge({ status }: { status: string }) {
   const cls = status === 'ACTIVE' ? 'badge-active' : status === 'REJECTED' ? 'badge-banned' : 'badge-suspended';
@@ -181,8 +182,12 @@ export function AdminStoresPage() {
   return (
     <div>
       <div className="page-header">
-        <div className="page-title">Stores</div>
-        <div className="page-sub">Look up any store and manage it directly.</div>
+        <div>
+          <div className="page-title">
+            <Icon name="hash" size={22} color="var(--primary)" /> Stores
+          </div>
+          <div className="page-sub">Look up any store and manage it directly.</div>
+        </div>
       </div>
 
       <div className="mod-layout">
@@ -201,7 +206,9 @@ export function AdminStoresPage() {
             )}
             {!isLoading && stores.length === 0 && (
               <div className="empty-state">
-                <div className="empty-state-icon">🏪</div>
+                <div className="empty-state-icon">
+                  <Icon name="store" size={20} color="var(--text-tertiary)" />
+                </div>
                 <div className="empty-state-text">No stores found</div>
               </div>
             )}
@@ -227,11 +234,13 @@ export function AdminStoresPage() {
         {selectedId ? (
           <DetailPanel key={selectedId} storeId={selectedId} />
         ) : (
-          <div
-            className="mod-detail"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}
-          >
-            Select a store to view details
+          <div className="mod-detail" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <Icon name="store" size={20} color="var(--text-tertiary)" />
+              </div>
+              <div className="empty-state-text">Select a store to view details</div>
+            </div>
           </div>
         )}
       </div>

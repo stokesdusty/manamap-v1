@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>manamap Partner Portal — Preview</title>
+<link rel="stylesheet" href="admin/src/index.css" />
+<style>
+  /* preview-only chrome, not part of the delivered CSS */
+  .pv-badge { position: fixed; top: 14px; right: 14px; z-index: 500; background: var(--surface-2); border: 1px solid var(--border-strong);
+    color: var(--text-secondary); font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 999px; }
+  .sidebar-link.pv-active-js { background: var(--primary-bg); color: var(--primary); }
+</style>
+</head>
+<body>
+<span class="pv-badge">STATIC PREVIEW — not wired to the API</span>
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-mark"></div>
+      <div>
+        <div class="sidebar-brand-text">manamap</div>
+        <div class="sidebar-brand-sub">Partner Portal</div>
+      </div>
+    </div>
+
+    <a class="sidebar-link js-nav active" data-view="stores" href="#">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.2-5h15.6L21 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 20v-6h6v6"/><path d="M3 9h18"/></svg>
+      My Stores
+    </a>
+    <a class="sidebar-link js-nav" data-view="stores" href="#">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      Claim Store
+    </a>
+
+    <div class="sidebar-store-ctx">
+      <div class="store-card-icon" style="width:30px;height:30px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.2-5h15.6L21 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 20v-6h6v6"/><path d="M3 9h18"/></svg>
+      </div>
+      <div style="min-width:0">
+        <div class="sidebar-store-ctx-label">Current store</div>
+        <div class="sidebar-store-ctx-name">Dragon's Den</div>
+      </div>
+    </div>
+    <a class="sidebar-link js-nav" data-view="dashboard" href="#">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M20 20H4"/></svg>
+      Dashboard
+    </a>
+    <a class="sidebar-link js-nav" data-view="events" href="#">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>
+      Events
+    </a>
+    <a class="sidebar-link js-nav" data-view="broadcast" href="#">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v3a1 1 0 0 0 1 1h2l2 5h2l-1.4-5H11l7 4V6l-7 4H3z"/><path d="M3 11h5"/></svg>
+      Broadcast
+    </a>
+    <a class="sidebar-link js-nav" data-view="redeem" href="#">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 0 0 0 4v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3a2 2 0 0 1 0-4V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z"/><path d="M13 4.5v3M13 10.5v3M13 16.5v3"/></svg>
+      Redeem
+    </a>
+
+    <div class="sidebar-section-label">Admin</div>
+    <a class="sidebar-link js-nav" data-view="moderation" href="#">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9.2 12.2l1.8 1.8 3.8-3.8"/></svg>
+      <span style="flex:1">Moderation</span>
+    </a>
+    <a class="sidebar-link" href="#" style="display:flex;align-items:center;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12h5l1.5 3h4l1.5-3h5"/><path d="M6 5h12l2.5 7v7a1 1 0 0 1-1 1H4.5a1 1 0 0 1-1-1v-7z"/></svg>
+      <span style="flex:1">Store Submissions</span>
+      <span class="sidebar-link-badge">3</span>
+    </a>
+    <a class="sidebar-link" href="#" style="display:flex;align-items:center;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.3l2.3 2.3 4.7-4.8"/></svg>
+      <span style="flex:1">Store Claims</span>
+      <span class="sidebar-link-badge">1</span>
+    </a>
+    <a class="sidebar-link" href="#">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14M5 15h14M9 4L7 20M17 4l-2 16"/></svg>
+      All Stores
+    </a>
+    <a class="sidebar-link" href="#">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20c0-3.5 2.5-6 5.5-6s5.5 2.5 5.5 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 13.5c2.4.3 4 2.2 4 5.5"/></svg>
+      Users
+    </a>
+
+    <div style="flex:1"></div>
+    <div class="sidebar-foot">
+      <div class="sidebar-foot-avatar">DD</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;color:var(--text-primary)">Partner</div>
+        <button class="sidebar-signout">Sign out</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+
+    <!-- STORES -->
+    <section class="view" id="view-stores">
+      <div class="page-header">
+        <div>
+          <div class="page-title">My Stores</div>
+          <div class="page-sub">Manage the stores you've claimed on manamap.</div>
+        </div>
+        <button class="btn btn-primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Claim Store</button>
+      </div>
+      <div class="store-grid">
+        <div class="card card-hover" style="display:flex;align-items:center;gap:14px;margin-bottom:0;">
+          <div class="store-card-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.2-5h15.6L21 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 20v-6h6v6"/><path d="M3 9h18"/></svg></div>
+          <div style="flex:1;min-width:0"><div class="store-name">Dragon's Den</div><div class="store-location">Portland, OR</div></div>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </div>
+        <div class="card card-hover" style="display:flex;align-items:center;gap:14px;margin-bottom:0;">
+          <div class="store-card-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.2-5h15.6L21 9"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/><path d="M9 20v-6h6v6"/><path d="M3 9h18"/></svg></div>
+          <div style="flex:1;min-width:0"><div class="store-name">Wrenfield Games</div><div class="store-location">Beaverton, OR</div></div>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section class="view" id="view-dashboard" style="display:none">
+      <a href="#" class="page-back js-nav" data-view="stores"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg> My Stores</a>
+      <div class="page-header"><div class="page-title">Dashboard</div></div>
+      <div class="stats-grid">
+        <div class="stat-card"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><path d="M4 20V10M10 20V4M16 20v-7M20 20H4"/></svg><div class="stat-value">1,284</div><div class="stat-label">Total Check-ins</div></div>
+        <div class="stat-card"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><div class="stat-value">47</div><div class="stat-label">This Week</div></div>
+        <div class="stat-card"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg><div class="stat-value">203</div><div class="stat-label">This Month</div></div>
+        <div class="stat-card"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><circle cx="9" cy="8" r="3"/><path d="M3.5 20c0-3.5 2.5-6 5.5-6s5.5 2.5 5.5 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 13.5c2.4.3 4 2.2 4 5.5"/></svg><div class="stat-value">312</div><div class="stat-label">Unique Visitors</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px;">
+        <div class="card card-hover js-nav" data-view="events" style="margin-bottom:0;display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer;">
+          <div class="store-card-icon" style="width:36px;height:36px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg></div>
+          <div style="flex:1;font-weight:700;font-size:14px;">Events</div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </div>
+        <div class="card card-hover js-nav" data-view="broadcast" style="margin-bottom:0;display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer;">
+          <div class="store-card-icon" style="width:36px;height:36px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v3a1 1 0 0 0 1 1h2l2 5h2l-1.4-5H11l7 4V6l-7 4H3z"/><path d="M3 11h5"/></svg></div>
+          <div style="flex:1;font-weight:700;font-size:14px;">Broadcast</div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </div>
+        <div class="card card-hover js-nav" data-view="redeem" style="margin-bottom:0;display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer;">
+          <div class="store-card-icon" style="width:36px;height:36px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 0 0 0 4v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3a2 2 0 0 1 0-4V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z"/><path d="M13 4.5v3M13 10.5v3M13 16.5v3"/></svg></div>
+          <div style="flex:1;font-weight:700;font-size:14px;">Redeem</div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:0;font-size:17px;">Reward Offers</div>
+        <button class="btn btn-primary btn-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> New Offer</button>
+      </div>
+      <div class="card" style="display:flex;align-items:flex-start;gap:16px;">
+        <div class="store-card-icon" style="margin-top:2px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M4 13h16"/><path d="M12 9v11"/><path d="M12 9C9.5 9 8 7.6 8 6a2 2 0 0 1 4 0 2 2 0 0 1 4 0c0 1.6-1.5 3-4 3z"/></svg></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="font-weight:700">Welcome Back</span><span class="badge badge-active">First Visit</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">10% off your first purchase</div>
+          <div style="font-size:12px;color:var(--text-tertiary);">Code: <code style="background:var(--bg-elevated);padding:2px 6px;border-radius:4px;letter-spacing:1px;">WELC0M3</code></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm btn-ghost">Deactivate</button>
+          <button class="btn btn-sm btn-outline">Edit</button>
+          <button class="btn btn-sm btn-danger">Delete</button>
+        </div>
+      </div>
+      <div class="card" style="display:flex;align-items:flex-start;gap:16px;">
+        <div class="store-card-icon" style="margin-top:2px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M4 13h16"/><path d="M12 9v11"/><path d="M12 9C9.5 9 8 7.6 8 6a2 2 0 0 1 4 0 2 2 0 0 1 4 0c0 1.6-1.5 3-4 3z"/></svg></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span style="font-weight:700">3-Week Streak</span><span class="badge badge-accent">Streak ×3</span><span class="badge badge-inactive">Inactive</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">Free playmat for regulars</div>
+          <div style="font-size:12px;color:var(--text-tertiary);">Code: <code style="background:var(--bg-elevated);padding:2px 6px;border-radius:4px;letter-spacing:1px;">STRK3X</code></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm btn-ghost">Activate</button>
+          <button class="btn btn-sm btn-outline">Edit</button>
+          <button class="btn btn-sm btn-danger">Delete</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- EVENTS -->
+    <section class="view" id="view-events" style="display:none">
+      <a href="#" class="page-back js-nav" data-view="dashboard"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg> Dashboard</a>
+      <div class="page-header">
+        <div class="page-title"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg> Events</div>
+        <button class="btn btn-primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> New Event</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="table">
+          <thead><tr><th>Event</th><th>Format</th><th>When</th><th>RSVPs</th><th>Source</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div style="font-weight:600">Friday Night Magic</div><div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;">Weekly draft, all skill levels</div></td>
+              <td style="color:var(--text-secondary)">Draft</td>
+              <td style="color:var(--text-secondary);white-space:nowrap;">Jul 4, 6:00 PM</td>
+              <td style="text-align:center">14</td>
+              <td><span class="badge badge-active">Store</span></td>
+              <td><div style="display:flex;gap:8px;"><button class="btn btn-sm btn-outline">Edit</button><button class="btn btn-sm btn-danger">Delete</button></div></td>
+            </tr>
+            <tr>
+              <td><div style="font-weight:600">Commander Night</div></td>
+              <td style="color:var(--text-secondary)">Commander</td>
+              <td style="color:var(--text-secondary);white-space:nowrap;">Jul 6, 5:00 PM</td>
+              <td style="text-align:center">22</td>
+              <td><span class="badge badge-active">Store</span></td>
+              <td><div style="display:flex;gap:8px;"><button class="btn btn-sm btn-outline">Edit</button><button class="btn btn-sm btn-danger">Delete</button></div></td>
+            </tr>
+            <tr>
+              <td><div style="font-weight:600">Pioneer Challenge</div></td>
+              <td style="color:var(--text-secondary)">Pioneer</td>
+              <td style="color:var(--text-secondary);white-space:nowrap;">Jun 28, 4:00 PM</td>
+              <td style="text-align:center">9</td>
+              <td><span class="badge badge-inactive">Past</span></td>
+              <td><span style="font-size:12px;color:var(--text-tertiary);">Read-only</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- BROADCAST -->
+    <section class="view" id="view-broadcast" style="display:none">
+      <a href="#" class="page-back js-nav" data-view="dashboard"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg> Dashboard</a>
+      <div class="page-header">
+        <div><div class="page-title"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v3a1 1 0 0 0 1 1h2l2 5h2l-1.4-5H11l7 4V6l-7 4H3z"/><path d="M3 11h5"/></svg> Broadcast</div>
+        <div class="page-sub">Send a push notification to players connected to your store.</div></div>
+      </div>
+      <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+        <div style="flex:1 1 380px;min-width:0;">
+          <div class="card">
+            <div class="card-title">Who receives this?</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:11px;border:1.5px solid var(--accent);background:var(--primary-bg);cursor:pointer;">
+                <input type="radio" name="aud" checked style="width:16px;height:16px;">
+                <div style="flex:1"><div style="font-weight:700;font-size:14px;color:var(--primary);">Checked in now</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Players with an active presence at your store right now</div></div>
+                <div style="font-weight:800;font-size:18px;color:var(--primary);">6</div>
+              </label>
+              <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:11px;border:1.5px solid var(--border);cursor:pointer;">
+                <input type="radio" name="aud" style="width:16px;height:16px;">
+                <div style="flex:1"><div style="font-weight:700;font-size:14px;">Here today</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Players who have checked in today</div></div>
+                <div style="font-weight:800;font-size:18px;color:var(--text-secondary);">23</div>
+              </label>
+              <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:11px;border:1.5px solid var(--border);cursor:pointer;">
+                <input type="radio" name="aud" style="width:16px;height:16px;">
+                <div style="flex:1"><div style="font-weight:700;font-size:14px;">Event RSVPs <span style="font-weight:400;color:var(--text-secondary);font-size:12px;">(Friday Night Magic)</span></div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Players who RSVPed to your next event</div></div>
+                <div style="font-weight:800;font-size:18px;color:var(--text-secondary);">14</div>
+              </label>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Message</div>
+            <div style="margin-bottom:12px;"><label class="label" style="margin-bottom:6px;">Title</label><input type="text" value="Friday Night Magic tonight!"></div>
+            <div><label class="label" style="margin-bottom:6px;">Body</label><textarea rows="3">Spots still open — come join us at 6pm!</textarea></div>
+          </div>
+          <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px;">Send to 6 players</button>
+        </div>
+        <div style="flex-shrink:0;">
+          <div style="background:var(--bg-elevated);border-radius:16px;padding:12px 14px;border:1px solid var(--border);max-width:320px;">
+            <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;">Push preview</div>
+            <div style="background:rgba(255,255,255,.96);border-radius:12px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.28);">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <div style="width:28px;height:28px;border-radius:7px;background:conic-gradient(from 210deg,#E7D9A6,#5FB97E,#5B9EE8,#9B7BE0,#EC6B57,#E7D9A6);flex-shrink:0;"></div>
+                <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:#1a1a1a;">Friday Night Magic tonight!</div><div style="font-size:11px;color:#6b6b76;margin-top:1px;">Dragon's Den · manamap</div></div>
+                <div style="font-size:11px;color:#8a8a94;">now</div>
+              </div>
+              <div style="font-size:12px;color:#1a1a1a;line-height:1.4;margin-left:36px;">Spots still open — come join us at 6pm!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:36px;">
+        <div class="card-title" style="font-size:17px;">Recent broadcasts</div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <table class="table">
+            <thead><tr><th>Message</th><th>Audience</th><th style="text-align:right">Delivered</th><th style="text-align:right">Sent</th></tr></thead>
+            <tbody>
+              <tr><td><div style="font-weight:700;margin-bottom:2px;">Commander night moved</div><div style="color:var(--text-secondary);">Now starting at 5:30, same night!</div></td><td><span class="badge badge-accent">Here today</span></td><td style="text-align:right;font-weight:800;color:var(--primary);">18</td><td style="text-align:right;color:var(--text-tertiary);">Jun 28</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- REDEEM -->
+    <section class="view" id="view-redeem" style="display:none">
+      <a href="#" class="page-back js-nav" data-view="dashboard"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg> Dashboard</a>
+      <div class="page-header">
+        <div><div class="page-title"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 0 0 0 4v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3a2 2 0 0 1 0-4V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z"/><path d="M13 4.5v3M13 10.5v3M13 16.5v3"/></svg> Redeem Offer</div>
+        <div class="page-sub">Enter the 8-character code shown in the player's app to verify and redeem a reward.</div></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <input type="text" value="WELC0M3" style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;letter-spacing:6px;width:220px;padding:12px 14px;border:1.5px solid var(--border-strong);border-radius:11px;text-transform:uppercase;">
+          <button class="btn btn-primary" style="padding:13px 26px;font-size:15px;">Verify</button>
+        </div>
+        <p style="font-size:12px;color:var(--text-tertiary);margin-top:10px;">Type or paste the code — letters and numbers only, case-insensitive</p>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.3l2.3 2.3 4.7-4.8"/></svg>
+          <span style="font-weight:800;font-size:16px;">Valid Code</span>
+        </div>
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:10px 12px;margin-bottom:16px;font-size:14px;">
+          <span style="color:var(--text-tertiary);font-weight:600;">Player</span><span style="font-weight:700;">Mossbrook</span>
+          <span style="color:var(--text-tertiary);font-weight:600;">Offer</span><span>Welcome Back</span>
+          <span style="color:var(--text-tertiary);font-weight:600;">Qualifies</span><span style="color:var(--success);">First check-in at this store</span>
+          <span style="color:var(--text-tertiary);font-weight:600;">Code</span><code style="font-family:'JetBrains Mono',monospace;background:var(--bg-elevated);padding:2px 7px;border-radius:4px;letter-spacing:2px;">WELC0M3</code>
+        </div>
+        <button class="btn btn-primary" style="width:100%;">Mark as Redeemed</button>
+      </div>
+      <div class="card-title" style="font-size:16px;">Recent Redemptions</div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;padding:13px 16px;">
+        <div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;"><span style="font-weight:700;font-size:14px;">Sol Ringer</span><span class="badge badge-active">First Visit</span></div><div style="font-size:13px;color:var(--text-secondary);">Welcome Back</div><div style="font-size:12px;color:var(--text-tertiary);margin-top:2px;"><code style="font-family:'JetBrains Mono',monospace;letter-spacing:1px;">7XQ2K9AB</code> · 12m ago</div></div>
+        <span class="badge badge-active">Redeemed</span>
+      </div>
+    </section>
+
+    <!-- MODERATION -->
+    <section class="view" id="view-moderation" style="display:none">
+      <div class="mod-header-pad">
+        <div class="page-header" style="margin-bottom:0;">
+          <div><div class="page-title"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9.2 12.2l1.8 1.8 3.8-3.8"/></svg> Moderation Queue</div>
+          <div class="page-sub">Review player reports and take enforcement action.</div></div>
+        </div>
+      </div>
+      <div class="mod-layout" style="margin-top:24px;">
+        <div class="mod-queue">
+          <div class="mod-stats">
+            <div class="mod-stat"><div class="mod-stat-val">4</div><div class="mod-stat-lbl">Open</div></div>
+            <div class="mod-stat"><div class="mod-stat-val" style="color:var(--danger)">1</div><div class="mod-stat-lbl">Repeat</div></div>
+            <div class="mod-stat"><div class="mod-stat-val" style="color:var(--info)">2</div><div class="mod-stat-lbl">Reviewed</div></div>
+            <div class="mod-stat"><div class="mod-stat-val" style="color:var(--success)">31</div><div class="mod-stat-lbl">Actioned</div></div>
+          </div>
+          <div class="mod-filter-tabs">
+            <button class="mod-tab active">Open</button>
+            <button class="mod-tab">Reviewed</button>
+            <button class="mod-tab">Actioned</button>
+            <button class="mod-tab">All</button>
+          </div>
+          <div class="mod-queue-list">
+            <div class="mod-queue-item selected">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div class="mod-queue-item-name">Pearl <span style="color:var(--danger)">⚠</span></div>
+                <span class="badge badge-harassment">Harassment</span>
+              </div>
+              <div class="mod-queue-item-meta"><span class="avatar-pill"><span class="avatar-dot" style="background:#5B9EE8"></span><span class="avatar-dot" style="background:#E7D9A6"></span></span><span style="margin-left:6px;">Jul 2, 2:14 PM</span></div>
+              <div style="font-size:11px;color:var(--text-tertiary);margin-top:3px;">3 prior reports</div>
+            </div>
+            <div class="mod-queue-item">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div class="mod-queue-item-name">Mossbrook</div>
+                <span class="badge badge-spam">Spam</span>
+              </div>
+              <div class="mod-queue-item-meta"><span class="avatar-pill"><span class="avatar-dot" style="background:#5FB97E"></span></span><span style="margin-left:6px;">Jul 1, 9:02 AM</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="mod-detail">
+          <div class="mod-detail-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+              <div>
+                <div style="font-size:18px;font-weight:800;margin-bottom:4px;">Pearl <span style="font-size:13px;font-weight:400;color:var(--text-tertiary);margin-left:8px;">@pearl</span></div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span class="avatar-pill"><span class="avatar-dot" style="background:#5B9EE8"></span><span class="avatar-dot" style="background:#E7D9A6"></span></span>
+                  <span class="badge badge-active">Active</span>
+                  <span class="repeat-flag">⚠ Repeat Offender (3 reports)</span>
+                </div>
+              </div>
+              <span class="badge badge-open">Open</span>
+            </div>
+            <div style="display:flex;gap:16px;font-size:13px;color:var(--text-secondary);">
+              <span>Prior reports: <strong style="color:var(--text-primary)">3</strong></span>
+              <span>Prior actions: <strong style="color:var(--text-primary)">1</strong></span>
+            </div>
+          </div>
+          <div class="mod-detail-card">
+            <div class="mod-detail-title">Report</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;"><span class="badge badge-harassment">Harassment</span><span style="font-size:12px;color:var(--text-tertiary);">Jul 2, 2:14 PM</span></div>
+            <div style="background:var(--bg-elevated);border-radius:11px;padding:12px 14px;font-size:14px;font-style:italic;">"Kept making comments about my deck choices after I asked them to stop."</div>
+          </div>
+          <div class="mod-detail-card">
+            <div class="mod-detail-title">Resolve</div>
+            <div class="form-group" style="margin-bottom:12px;"><label class="label">Internal note (optional)</label><textarea rows="3" placeholder="Add context for the audit log…"></textarea></div>
+            <div class="mod-actions">
+              <button class="btn btn-outline btn-sm">Dismiss</button>
+              <button class="btn btn-warn btn-sm">Warn</button>
+              <button class="btn btn-info btn-sm">Suspend 7d</button>
+              <button class="btn btn-danger btn-sm">Ban</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+<script>
+  document.querySelectorAll('.js-nav').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const view = el.dataset.view;
+      document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+      document.getElementById('view-' + view).style.display = '';
+      document.querySelectorAll('.sidebar .js-nav').forEach(n => n.classList.remove('pv-active-js'));
+      document.querySelectorAll(`.sidebar .js-nav[data-view="${view}"]`).forEach(n => n.classList.add('pv-active-js'));
+      window.scrollTo(0, 0);
+    });
+  });
+</script>
+</body>
+</html>
