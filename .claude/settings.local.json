@@ -330,7 +330,18 @@
       "Bash(cd c:/m && grep -n \"legal\" packages/shared/dist/index.js && echo --- && cat packages/shared/../../tsconfig.json 2>/dev/null | head -30)",
       "Bash(node -e \"console.log\\(require\\('@manamap/shared'\\)\\)\")",
       "Bash(node -e \"console.log\\(Object.keys\\(require\\('@manamap/shared'\\)\\).slice\\(0,5\\)\\)\")",
-      "Bash(node -e \"const s = require\\('@manamap/shared'\\); console.log\\(!!s.PRIVACY_POLICY, !!s.TERMS_OF_SERVICE, s.LEGAL_CONTACT_EMAIL\\)\")"
+      "Bash(node -e \"const s = require\\('@manamap/shared'\\); console.log\\(!!s.PRIVACY_POLICY, !!s.TERMS_OF_SERVICE, s.LEGAL_CONTACT_EMAIL\\)\")",
+      "Bash(rm -rf ios)",
+      "Bash(pnpm -v)",
+      "Bash(corepack -v)",
+      "Bash(npm ls *)",
+      "Bash(rm -rf /Users/dprime/.cache/node/corepack/v1/pnpm/11.5.0)",
+      "Bash(corepack prepare *)",
+      "Bash(nvm ls *)",
+      "Bash(nvm ls-remote *)",
+      "Bash(rm -rf /Users/dprime/Library/Developer/Xcode/DerivedData/manamap-* && echo \"DerivedData cleared\")",
+      "Read(//Applications/**)",
+      "Bash(open -a Xcode /Users/dprime/Documents/GitHub/manamap-v1/apps/mobile/ios/manamap.xcworkspace)"
     ]
   }
 }
