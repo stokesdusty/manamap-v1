@@ -326,7 +326,11 @@
       "Bash(curl -s -X POST http://localhost:3000/api/v1/admin/moderation/reports/__TRACKED_VAR__/resolve -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"action\":\"WARN\"}')",
       "Bash(grep -noE '#[0-9a-fA-F]{3,6}' AdminUsersPage.tsx AdminStoresPage.tsx StoreSubmissionsPage.tsx StoreClaimsPage.tsx)",
       "Bash(pnpm --filter @manamap/admin exec tsc --noEmit -p apps/admin)",
-      "Bash(pnpm --filter @manamap/admin build)"
+      "Bash(pnpm --filter @manamap/admin build)",
+      "Bash(cd c:/m && grep -n \"legal\" packages/shared/dist/index.js && echo --- && cat packages/shared/../../tsconfig.json 2>/dev/null | head -30)",
+      "Bash(node -e \"console.log\\(require\\('@manamap/shared'\\)\\)\")",
+      "Bash(node -e \"console.log\\(Object.keys\\(require\\('@manamap/shared'\\)\\).slice\\(0,5\\)\\)\")",
+      "Bash(node -e \"const s = require\\('@manamap/shared'\\); console.log\\(!!s.PRIVACY_POLICY, !!s.TERMS_OF_SERVICE, s.LEGAL_CONTACT_EMAIL\\)\")"
     ]
   }
 }
