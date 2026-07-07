@@ -31,7 +31,10 @@ export class AuthService {
       where: { provider: 'apple', providerId: sub },
       include: { user: true },
     });
-    if (existing) return this.tokens.issueTokens(existing.user.id);
+    if (existing) {
+      await this.promoteIfAdmin(existing.user);
+      return this.tokens.issueTokens(existing.user.id);
+    }
 
     // First sign-in: Apple includes email only once
     if (!email) throw new BadRequestException('Email is required on first Apple sign-in');
@@ -79,6 +82,7 @@ export class AuthService {
           data: { discordHandle },
         });
       }
+      await this.promoteIfAdmin(existing.user);
       return this.tokens.issueTokens(existing.user.id);
     }
 
@@ -105,7 +109,10 @@ export class AuthService {
       where: { provider: 'google', providerId: profile.sub },
       include: { user: true },
     });
-    if (existing) return this.tokens.issueTokens(existing.user.id);
+    if (existing) {
+      await this.promoteIfAdmin(existing.user);
+      return this.tokens.issueTokens(existing.user.id);
+    }
 
     const user = await this.upsertUserByEmail(profile.email, profile.name ?? 'Google User');
     await this.prisma.identity.create({
@@ -133,6 +140,15 @@ export class AuthService {
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
     return adminEmails.includes(email.trim().toLowerCase());
+  }
+
+  // Promotion-only: mirrors upsertUserByEmail's ADMIN_EMAILS check for the
+  // "existing identity" fast path, which otherwise never re-evaluates role.
+  // Never demotes — removing an email from ADMIN_EMAILS doesn't strip access.
+  private async promoteIfAdmin(user: { id: string; email: string; role: UserRole }): Promise<void> {
+    if (user.role !== UserRole.ADMIN && this.isAdminEmail(user.email)) {
+      await this.prisma.user.update({ where: { id: user.id }, data: { role: UserRole.ADMIN } });
+    }
   }
 
   private async upsertUserByEmail(
