@@ -30,5 +30,11 @@ jobs:
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y postgresql-client-17
 
+      # The runner image ships an older PGDG-built client that otherwise wins
+      # on PATH — prepend 17's real binary dir rather than relying on
+      # update-alternatives/wrapper defaults picking it up.
+      - name: Prefer PostgreSQL 17 client binaries
+        run: echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
       - name: Run backup
         run: bash scripts/backup-db.sh
