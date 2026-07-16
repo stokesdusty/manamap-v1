@@ -407,7 +407,16 @@ These don't block beta but should be done before public launch.
 
 - [ ] **Sentry error tracking**: Create a free project at **sentry.io** → "Create Project" → Node.js. Copy the DSN. Set `SENTRY_DSN=https://xxx@oXXX.ingest.sentry.io/xxx` in Railway env vars. Sentry is already instrumented in `apps/api/src/main.ts` — just the DSN is needed to activate it.
 - [ ] **Database connection pooling**: Prisma opens a new connection per request under load. Append `?connection_limit=5&pool_timeout=10` to the `DATABASE_URL` in Railway to cap it at 5 connections. A shared Railway Postgres plan allows ~25 connections total; 5 leaves headroom for migrations and admin tools. Increase if you add more API instances.
-- [ ] **Database backups**: Railway free-tier Postgres does not auto-backup. Either upgrade to a paid Railway plan (has point-in-time recovery) or set up a daily `pg_dump` via a Railway cron job / external service like Pipedream. Do this before beta traffic writes any real user data.
+- [x] **Database backups**: Supabase Free tier has no automatic backups. Implemented as a daily GitHub Actions workflow (`.github/workflows/db-backup.yml` + `scripts/backup-db.sh`) — `pg_dump` against Supabase's **Session pooler** connection string (the Direct connection is IPv6-only on Free tier and unreachable from Actions runners; the Transaction pooler doesn't support `pg_dump`), uploaded to a Cloudflare R2 bucket (free tier, no egress fees), with 7-day retention pruned by the script itself.
+
+  **One-time setup** (see plan for full manual steps): copy the Session pooler URI from Supabase → Project Settings → Database → Connection string; create an R2 bucket + scoped API token in the Cloudflare dashboard; add `BACKUP_DATABASE_URL`, `BACKUP_R2_ACCOUNT_ID`, `BACKUP_R2_ACCESS_KEY_ID`, `BACKUP_R2_SECRET_ACCESS_KEY`, `BACKUP_R2_BUCKET` as GitHub Actions repo secrets; trigger the workflow once manually (`workflow_dispatch`) to verify before trusting the schedule.
+
+  **Restore procedure**:
+  ```bash
+  aws s3 cp s3://<bucket>/manamap/<timestamp>.dump ./restore.dump --endpoint-url https://<account-id>.r2.cloudflarestorage.com
+  pg_restore --clean --if-exists --no-owner --dbname="$BACKUP_DATABASE_URL" ./restore.dump
+  ```
+  Recovery point objective is up to 24h (daily dump). If tighter RPO is needed later, Supabase Pro (~$25/mo) adds built-in daily backups + optional PITR — a budget decision, not an engineering one.
 - [ ] **Confirm DEV_TOOLS is absent in production**: In Railway API service Variables tab, confirm there is NO `DEV_TOOLS` variable. If it exists and is set to `true`, the `/api/v1/dev/*` endpoints are live (bot manipulation, data reset). It must be absent or set to anything other than `"true"`.
 - [ ] **OTA updates workflow** (post-launch, for JS-only fixes): When you fix a bug that touches only TypeScript/JS/assets (no new native modules or app.config.ts changes), publish an OTA update instead of submitting a new build:
   ```bash

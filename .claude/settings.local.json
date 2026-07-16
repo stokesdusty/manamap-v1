@@ -341,7 +341,27 @@
       "Bash(nvm ls-remote *)",
       "Bash(rm -rf /Users/dprime/Library/Developer/Xcode/DerivedData/manamap-* && echo \"DerivedData cleared\")",
       "Read(//Applications/**)",
-      "Bash(open -a Xcode /Users/dprime/Documents/GitHub/manamap-v1/apps/mobile/ios/manamap.xcworkspace)"
+      "Bash(open -a Xcode /Users/dprime/Documents/GitHub/manamap-v1/apps/mobile/ios/manamap.xcworkspace)",
+      "Bash(pnpm --filter @manamap/admin exec tsc --noEmit -p apps/admin/tsconfig.json)",
+      "Bash(powershell -Command \"Test-NetConnection -ComputerName localhost -Port 5432 -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded; Test-NetConnection -ComputerName localhost -Port 6379 -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded\")",
+      "Bash(powershell -Command 'Get-Service | Where-Object { $_.Name -match '\\\\''postgre|redis'\\\\'' } | Format-Table -AutoSize')",
+      "Bash(powershell -Command \"Get-Process -Name 'Docker Desktop' -ErrorAction SilentlyContinue; Test-Path 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\")",
+      "Bash(powershell -Command \"Start-Process 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\")",
+      "Bash(pnpm --filter @manamap/api db:seed)",
+      "Bash(echo \"started with pid $!\")",
+      "Bash(powershell -Command \"Test-NetConnection -ComputerName localhost -Port 3000 -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded\")",
+      "Bash(pnpm --filter @manamap/admin dev)",
+      "Bash(sleep 3 && cat /c/Users/NoUse/AppData/Local/Temp/claude/c--m/9919c0b8-d305-416b-b305-d5139bd5613e/scratchpad/admin.log)",
+      "Bash(curl -s http://localhost:3000/api/v1/stores/82901b72-b81a-401c-837c-a8b743f7e68d -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyM2UyMWQwOS0wOGIyLTQ2NjAtODk0NS1iZmE0MjgzYzgxMDciLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4MzUyODE0NSwiZXhwIjoxNzgzNTI5MDQ1fQ.7Web2Kkyn97FEVuh3sQIcZZKr-c_PT3Gcjxbi0qq-II')",
+      "Bash(curl -s -X PATCH http://localhost:3000/api/v1/partner/stores/82901b72-b81a-401c-837c-a8b743f7e68d -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyM2UyMWQwOS0wOGIyLTQ2NjAtODk0NS1iZmE0MjgzYzgxMDciLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4MzUyODE0NSwiZXhwIjoxNzgzNTI5MDQ1fQ.7Web2Kkyn97FEVuh3sQIcZZKr-c_PT3Gcjxbi0qq-II' -H 'Content-Type: application/json' -d '{\"discordUrl\":\"https://discord.gg/manamap-test\"}')",
+      "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X PATCH http://localhost:3000/api/v1/partner/stores/82901b72-b81a-401c-837c-a8b743f7e68d -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyM2UyMWQwOS0wOGIyLTQ2NjAtODk0NS1iZmE0MjgzYzgxMDciLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4MzUyODE0NSwiZXhwIjoxNzgzNTI5MDQ1fQ.7Web2Kkyn97FEVuh3sQIcZZKr-c_PT3Gcjxbi0qq-II' -H 'Content-Type: application/json' -d '{\"discordUrl\":\"not-a-url\"}')",
+      "Bash(curl -s -X PATCH http://localhost:3000/api/v1/partner/stores/82901b72-b81a-401c-837c-a8b743f7e68d -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyM2UyMWQwOS0wOGIyLTQ2NjAtODk0NS1iZmE0MjgzYzgxMDciLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4MzUyODE0NSwiZXhwIjoxNzgzNTI5MDQ1fQ.7Web2Kkyn97FEVuh3sQIcZZKr-c_PT3Gcjxbi0qq-II' -H 'Content-Type: application/json' -d '{\"discordUrl\":null}')",
+      "Bash(curl -s -w '\\\\nHTTP %{http_code}\\\\n' -X PATCH http://localhost:3000/api/v1/partner/stores/6584c519-f7fe-4d68-8948-1b3fad8ffc6b -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyM2UyMWQwOS0wOGIyLTQ2NjAtODk0NS1iZmE0MjgzYzgxMDciLCJyb2xlIjoiVVNFUiIsImlhdCI6MTc4MzUyODE0NSwiZXhwIjoxNzgzNTI5MDQ1fQ.7Web2Kkyn97FEVuh3sQIcZZKr-c_PT3Gcjxbi0qq-II' -H 'Content-Type: application/json' -d '{\"discordUrl\":\"https://discord.gg/hacked\"}')",
+      "Bash(powershell -Command 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '\\\\''ts-node.*src/main.ts'\\\\'' -or $_.CommandLine -match '\\\\''vite$'\\\\'' -or \\($_.CommandLine -match '\\\\''node_modules[\\\\\\\\/]\\\\.bin[\\\\\\\\/]vite'\\\\''\\) } | Select-Object ProcessId, CommandLine')",
+      "Bash(powershell -Command \"Stop-Process -Id 23956,54492,39852 -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 500; Test-NetConnection -ComputerName localhost -Port 3000 -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded; Test-NetConnection -ComputerName localhost -Port 5173 -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded\")",
+      "Bash(powershell -Command 'Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '\\\\''vite'\\\\'' } | Select-Object ProcessId, CommandLine')",
+      "Bash(powershell -Command \"Stop-Process -Id 53644 -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 500; Test-NetConnection -ComputerName localhost -Port 5173 -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded\")",
+      "Bash(timeout 100 pnpm typecheck)"
     ]
   }
 }

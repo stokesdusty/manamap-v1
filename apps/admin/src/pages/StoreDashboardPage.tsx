@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
+import axios from 'axios';
+import type { StoreDetail } from '@manamap/shared';
 import { api } from '../api/client';
 import { Icon } from '../components/Icon';
 
@@ -33,6 +36,74 @@ function useOffers(storeId: string) {
     queryKey: ['partner', 'offers', storeId],
     queryFn: () => api.get(`/v1/partner/stores/${storeId}/offers`).then((r) => r.data),
   });
+}
+
+function useStoreProfile(storeId: string) {
+  return useQuery<StoreDetail>({
+    queryKey: ['store-detail', storeId],
+    queryFn: () => api.get(`/v1/stores/${storeId}`).then((r) => r.data),
+  });
+}
+
+function DiscordCard({ storeId }: { storeId: string }) {
+  const qc = useQueryClient();
+  const { data: profile } = useStoreProfile(storeId);
+  const [discordUrl, setDiscordUrl] = useState('');
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setDiscordUrl(profile?.discordUrl ?? '');
+  }, [profile?.discordUrl]);
+
+  const save = useMutation({
+    mutationFn: (value: string | null) =>
+      api.patch(`/v1/partner/stores/${storeId}`, { discordUrl: value }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['store-detail', storeId] });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    },
+    onError: (err) => {
+      setSaved(false);
+      setError(
+        axios.isAxiosError(err) && err.response?.status === 400
+          ? 'Enter a valid link (e.g. https://discord.gg/yourserver)'
+          : 'Failed to save',
+      );
+    },
+  });
+
+  function handleSave() {
+    setError('');
+    const trimmed = discordUrl.trim();
+    save.mutate(trimmed === '' ? null : trimmed);
+  }
+
+  return (
+    <div className="card" style={{ marginBottom: 32 }}>
+      <div className="card-title" style={{ fontSize: 17 }}>
+        Discord Server
+      </div>
+      <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
+        Share an invite link to your store's Discord server. It's shown on your store's map card
+        and detail page in the app.
+      </p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          className="input"
+          style={{ flex: 1 }}
+          placeholder="https://discord.gg/yourserver"
+          value={discordUrl}
+          onChange={(e) => setDiscordUrl(e.target.value)}
+        />
+        <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={save.isPending}>
+          {saved ? 'Saved!' : 'Save'}
+        </button>
+      </div>
+      {error && <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 6 }}>{error}</div>}
+    </div>
+  );
 }
 
 function StatCard({ label, value, icon }: { label: string; value: number; icon: string }) {
@@ -110,6 +181,8 @@ export function StoreDashboardPage() {
         <QuickLink to={`/stores/${storeId}/broadcast`} icon="megaphone" label="Broadcast" />
         <QuickLink to={`/stores/${storeId}/redeem`} icon="ticket" label="Redeem" />
       </div>
+
+      <DiscordCard storeId={storeId!} />
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div className="card-title" style={{ marginBottom: 0, fontSize: 17 }}>
